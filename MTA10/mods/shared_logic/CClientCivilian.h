@@ -28,7 +28,12 @@ class CClientCivilian : public CClientEntity
 {
     friend class CClientCivilianManager;
 
+    void                            InstanceLua( lua_State *L );
+
 public:
+                                    CClientCivilian( class CClientManager* pManager, int iPedModel, ElementID ID, lua_State *L );
+                                    CClientCivilian( class CClientManager* pManager, ElementID ID, lua_State *L, CCivilianPed *pCivilianPed );
+
                                     ~CClientCivilian();
     
     void                            Unlink();
@@ -39,10 +44,9 @@ public:
 
     inline void                     GetPosition( CVector& vecPosition ) const               { m_pCivilianPed->GetPosition( vecPosition ); };
     inline void                     SetPosition( const CVector& vecPosition )               { m_pCivilianPed->SetPosition( vecPosition ); };
-    int                             GetRotation();
-    void                            GetRotation( CVector& vecRotation ) const;
-    void                            SetRotation( const CVector& vecRotation );
-    void                            SetRotation( int iRotation );
+
+    float                           GetCurrentRotation() const                              { return m_pCivilianPed->GetCurrentRotation(); }
+    void                            SetCurrentRotation( float rot )                         { m_pCivilianPed->SetCurrentRotation( rot ); }
 
     inline void                     ModelRequestCallback( unsigned short usModelID )        {};
 
@@ -62,14 +66,7 @@ public:
     float                           GetHealth() const;
     void                            SetHealth( float fHealth );
 
-    int                             GetModelID();
-    void                            SetModelID( int iModelID );
-
 private:
-                                    CClientCivilian( class CClientManager* pManager, ElementID ID, int iPedModel );
-                                    CClientCivilian( class CClientManager* pManager, ElementID ID, CCivilianPed* pCivilianPed );
-
-    void                            Dump( FILE* pFile, bool bDumpDetails, unsigned int uiIndex );
 
     void                            Create();
     void                            Destroy();

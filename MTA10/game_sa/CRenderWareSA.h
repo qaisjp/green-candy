@@ -34,6 +34,9 @@ public:
     CModel*             CreateClump();
 
     bool                IsRendering() const;
+    
+    void                EnableEnvMapRendering( bool enabled );
+    bool                IsEnvMapRenderingEnabled( void ) const;
 
     // uiModelID == 0 means no collisions will be loaded
     RpClump*            ReadDFF( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
@@ -51,5 +54,7 @@ extern IDirect3DDevice9 *const *g_renderDevice;
 #include "CRenderWareSA.pipeline.h"
 #include "CRenderWareSA.mem.h"
 #include "CRenderWareSA.render.h"
+#include "CRenderWareSA.rtcallback.h"
+#include "CRenderWareSA.lighting.h"
 
 #endif

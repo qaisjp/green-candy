@@ -167,7 +167,7 @@ void CDeathmatchObject::UpdateContacting ( const CVector& vecCenterOfRotation, c
 
     // Step through each contacting ped
     list < CClientPed * > ::iterator iter = m_Contacts.begin ();
-    for ( ; iter != m_Contacts.end () ; iter++ )
+    for ( ; iter != m_Contacts.end () ; ++iter )
     {
         CClientPed* pPed = *iter;
 

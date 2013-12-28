@@ -598,7 +598,7 @@ LuaMain* LuaManager::Get( lua_State *lua )
     // Find a matching VM in our list
     list <LuaMain*>::const_iterator iter = IterBegin();
 
-    for ( ; iter != IterEnd(); iter++ )
+    for ( ; iter != IterEnd(); ++iter )
     {
         if ( lua == (*iter)->GetVirtualMachine() )
             return *iter;
@@ -643,6 +643,6 @@ void LuaManager::DoPulse()
 
     // List integrity cannot be broken by managed Lua code because Resources can only
     // be terminated by packets. They are called by netc.dll
-    for ( iter = IterBegin(); iter != IterEnd(); iter++ )
+    for ( iter = IterBegin(); iter != IterEnd(); ++iter )
         (*iter)->DoPulse();
 }

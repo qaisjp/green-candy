@@ -109,7 +109,7 @@ namespace RwImportedScan
     {
         dictImportList_t& imported = g_dictImports[txdId];
 
-        for ( dictImportList_t::const_iterator iter = imported.begin(); iter != imported.end(); iter++ )
+        for ( dictImportList_t::const_iterator iter = imported.begin(); iter != imported.end(); ++iter )
         {
             if ( stricmp( (*iter)->GetName(), name ) == 0 )
                 return (*iter)->GetTexture();

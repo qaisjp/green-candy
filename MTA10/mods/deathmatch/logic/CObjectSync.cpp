@@ -203,7 +203,7 @@ void CObjectSync::Sync ( void )
         // Write each object to packet
         CBitStream bitStream;
         list < CDeathmatchObject* > ::const_iterator iter = m_List.begin ();
-        for ( ; iter != m_List.end (); iter++ )
+        for ( ; iter != m_List.end (); ++iter )
         {
             WriteObjectInformation ( bitStream.pBitStream, *iter );
         }

@@ -10,7 +10,7 @@
 *               Jax <>
 *               Stanislav Bobrov <lil_toady@hotmail.com>
 *               Alberto Alonso <rydencillo@gmail.com>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -422,7 +422,7 @@ protected:
     // This constructor is for peds managed by a player. These are unknown to the ped manager.
                                 CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system, bool bIsLocalPlayer );
 
-    void                        InstanceLua( bool system );
+    void                        InstanceLua( lua_State *L, bool system );
     void                        Init( CClientManager* pManager, unsigned short ulModelID, bool bIsLocalPlayer );
 
     void                        Dump( FILE* pFile, bool bDumpDetails, unsigned int uiIndex );

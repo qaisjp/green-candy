@@ -21,6 +21,7 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
+// DEPRECATED globals. Use Pools namespace methods instead!
 CPtrNodeSinglePool      **ppPtrNodeSinglePool = (CPtrNodeSinglePool**)CLASS_CPtrNodeSingleLinkPool;
 CPtrNodeDoublePool      **ppPtrNodeDoublePool = (CPtrNodeDoublePool**)CLASS_CPtrNodeDoubleLinkPool;
 CEntryInfoPool          **ppEntryInfoPool = (CEntryInfoPool**)CLASS_CEntryInfoNodePool;
@@ -59,28 +60,28 @@ CPoolsSA::CPoolsSA( void )
     // Do not let GTA:SA init pools!
     *(unsigned char*)FUNC_InitGamePools = 0xC3;
 
-    *ppPtrNodeSinglePool = new CPtrNodeSinglePool();
-    *ppPtrNodeDoublePool = new CPtrNodeDoublePool();
-    *ppEntryInfoPool = new CEntryInfoPool();
+    Pools::GetPtrNodeSinglePool() = new CPtrNodeSinglePool();
+    Pools::GetPtrNodeDoublePool() = new CPtrNodeDoublePool();
+    Pools::GetEntryInfoPool() = new CEntryInfoPool();
 
-    *ppVehiclePool = new CVehiclePool();
-    *ppPedPool = new CPedPool();
-    *ppBuildingPool = new CBuildingPool();
-    *ppObjectPool = new CObjectPool();
+    Pools::GetVehiclePool() = new CVehiclePool();
+    Pools::GetPedPool() = new CPedPool();
+    Pools::GetBuildingPool() = new CBuildingPool();
+    Pools::GetObjectPool() = new CObjectPool();
 
-    *ppDummyPool = new CDummyPool();
-    *ppColModelPool = new CColModelPool();
+    Pools::GetDummyPool() = new CDummyPool();
+    Pools::GetColModelPool() = new CColModelPool();
 
-    *ppTaskPool = new CTaskPool();
-    *ppEventPool = new CEventPool();
+    Pools::GetTaskPool() = new CTaskPool();
+    Pools::GetEventPool() = new CEventPool();
 
-    *ppPointRoutePool = new CPointRoutePool();
-    *ppPatrolRoutePool = new CPatrolRoutePool();
-    *ppNodeRoutePool = new CNodeRoutePool();
+    Pools::GetPointRoutePool() = new CPointRoutePool();
+    Pools::GetPatrolRoutePool() = new CPatrolRoutePool();
+    Pools::GetNodeRoutePool() = new CNodeRoutePool();
 
-    *ppTaskAllocatorPool = new CTaskAllocatorPool();
-    *ppPedIntelligencePool = new CPedIntelligencePool();
-    *ppPedAttractorPool = new CPedAttractorPool();
+    Pools::GetTaskAllocatorPool() = new CTaskAllocatorPool();
+    Pools::GetPedIntelligencePool() = new CPedIntelligencePool();
+    Pools::GetPedAttractorPool() = new CPedAttractorPool();
 
     // Init our pools
     mtaVehiclePool = new CMTAVehiclePool;
@@ -102,37 +103,40 @@ CPoolsSA::~CPoolsSA( void )
     mtaPedPool->Clear();
     mtaObjectPool->Clear();
 
+    //todo: clean destruction of interfaces through managers.
+    // i.e. entities have to be removed from world first.
+
     delete mtaObjectPool;
     delete mtaObjectDataPool;
     delete mtaPedPool;
     delete mtaPlayerDataPool;
     delete mtaVehiclePool;
 
-    delete *ppPtrNodeSinglePool;
-    delete *ppPtrNodeDoublePool;
-    delete *ppEntryInfoPool;
+    delete Pools::GetPtrNodeSinglePool();
+    delete Pools::GetPtrNodeDoublePool();
+    delete Pools::GetEntryInfoPool();
 
     // Seems to be crashy
 #if TODO
-    delete *ppVehiclePool;
-    delete *ppPedPool;
-    delete *ppBuildingPool;
-    delete *ppObjectPool;
+    delete Pools::GetVehiclePool();
+    delete Pools::GetPedPool();
+    delete Pools::GetBuildingPool();
+    delete Pools::GetObjectPool();
 
-    delete *ppDummyPool;
+    delete Pools::GetDummyPool();
 #endif
-    delete *ppColModelPool;
+    delete Pools::GetColModelPool();
 
-    delete *ppTaskPool;
-    delete *ppEventPool;
+    delete Pools::GetTaskPool();
+    delete Pools::GetEventPool();
 
-    delete *ppPointRoutePool;
-    delete *ppPatrolRoutePool;
-    delete *ppNodeRoutePool;
+    delete Pools::GetPointRoutePool();
+    delete Pools::GetPatrolRoutePool();
+    delete Pools::GetNodeRoutePool();
 
-    delete *ppTaskAllocatorPool;
-    delete *ppPedIntelligencePool;
-    delete *ppPedAttractorPool;
+    delete Pools::GetTaskAllocatorPool();
+    delete Pools::GetPedIntelligencePool();
+    delete Pools::GetPedAttractorPool();
 }
 
 void Pools::DeleteAllBuildings( void )
@@ -177,7 +181,7 @@ CBicycleSA* Pools::AddBicycle( modelId_t modelID )
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -196,7 +200,7 @@ CBikeSA* Pools::AddBike( modelId_t modelID )
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -223,7 +227,7 @@ CHeliSA* Pools::AddHeli( modelId_t modelID )
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -242,7 +246,7 @@ CPlaneSA* Pools::AddPlane( modelId_t modelID )
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -261,7 +265,7 @@ CTrainSA* Pools::AddTrain( modelId_t modelID, const CVector& pos, bool direction
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -330,7 +334,7 @@ CAutomobileTrailerSA* Pools::AddTrailer( modelId_t modelID )
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -349,7 +353,7 @@ CQuadBikeSA* Pools::AddQuadBike( modelId_t modelID )
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -368,7 +372,7 @@ CMonsterTruckSA* Pools::AddMonsterTruck( modelId_t modelID )
         return NULL;
 
     // We do not wanna add when the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -387,7 +391,7 @@ CAutomobileSA* Pools::AddAutomobile( modelId_t modelID )
         return NULL;
 
     // We do not wanna add if the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -422,7 +426,7 @@ CBoatSA* Pools::AddBoat( modelId_t modelID )
         return NULL;
 
     // We do not wanna add if the pool is full
-    if ( (*ppVehiclePool)->Full() )
+    if ( Pools::GetVehiclePool()->Full() )
         return NULL;
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
@@ -469,7 +473,7 @@ CVehicleSA* Pools::AddVehicle( modelId_t modelID )
 // Safe retrieval of our instance
 CVehicleSA* Pools::GetVehicle( void *entity )
 {
-    unsigned int id = (*ppVehiclePool)->GetIndex( (CVehicleSAInterface*)entity );
+    unsigned int id = Pools::GetVehiclePool()->GetIndex( (CVehicleSAInterface*)entity );
     
     if ( id > MAX_VEHICLES-1 )
         return NULL;
@@ -491,7 +495,7 @@ void Pools::DeleteAllVehicles( void )
 {
     DEBUG_TRACE("void Pools::DeleteAllVehicles( void )");
 
-    (*ppVehiclePool)->Clear();
+    Pools::GetVehiclePool()->Clear();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -513,7 +517,7 @@ static inline CObjectSAInterface* CreateObject( modelId_t model )
         mov     obj, eax
     }
 
-    pGame->GetWorld()->Add( obj );
+    World::AddEntity( obj );
     return obj;
 }
 
@@ -521,7 +525,7 @@ CObjectSA* Pools::AddObject( modelId_t modelId )
 {
     DEBUG_TRACE("CObjectSA* Pools::AddObject( modelId_t modelId )");
 
-    if ( (*ppObjectPool)->Full() )
+    if ( Pools::GetObjectPool()->Full() )
         return NULL;
 
     CBaseModelInfoSAInterface *info = ppModelInfo[modelId];
@@ -531,7 +535,7 @@ CObjectSA* Pools::AddObject( modelId_t modelId )
 
 CObjectSA* Pools::GetObject( void *entity )
 {
-    unsigned int id = (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity );
+    unsigned int id = Pools::GetObjectPool()->GetIndex( (CObjectSAInterface*)entity );
 
     if ( id > MAX_OBJECTS-1 )
         return NULL;
@@ -553,7 +557,7 @@ void Pools::DeleteAllObjects( void )
 {
     DEBUG_TRACE("void Pools::DeleteAllObjects( void )");
 
-    (*ppObjectPool)->Clear();
+    Pools::GetObjectPool()->Clear();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -565,7 +569,7 @@ inline static CPlayerPedSAInterface* CreatePlayerPed( void )
 {
     // based on CPlayerPed::SetupPlayerPed (R*)
     DWORD CPlayerPedConstructor = FUNC_CPlayerPedConstructor;
-    CPlayerPedSAInterface *player = (CPlayerPedSAInterface*)(*ppPedPool)->Allocate();
+    CPlayerPedSAInterface *player = (CPlayerPedSAInterface*)Pools::GetPedPool()->Allocate();
 
     _asm
     {
@@ -582,7 +586,7 @@ CPedSA* Pools::AddPed( modelId_t modelId )
 {
     DEBUG_TRACE("CPedSA* Pools::AddPed( modelId_t modelId )");
 
-    if ( (*ppPedPool)->Full() )
+    if ( Pools::GetPedPool()->Full() )
         return NULL;
 
     if ( modelId > MAX_MODELS-1 )
@@ -600,7 +604,7 @@ inline static CCivilianPedSAInterface* CreateCivilianPed( void )
 {
     // based on CCivilianPed::SetupPlayerPed (R*)
     DWORD CCivilianPedConstructor = FUNC_CCivilianPedConstructor;
-    CCivilianPedSAInterface *ped = (CCivilianPedSAInterface*)(*ppPedPool)->Allocate();
+    CCivilianPedSAInterface *ped = (CCivilianPedSAInterface*)Pools::GetPedPool()->Allocate();
 
     _asm
     {
@@ -614,26 +618,26 @@ inline static CCivilianPedSAInterface* CreateCivilianPed( void )
     return ped;
 }
 
-CPedSA* Pools::AddCivilianPed( modelId_t modelID )
+CCivilianPedSA* Pools::AddCivilianPed( modelId_t modelID )
 {
-    DEBUG_TRACE("CPedSA* Pools::AddCivilianPed( modelId_t modelID )");
+    DEBUG_TRACE("CCivilianPedSA* Pools::AddCivilianPed( modelId_t modelID )");
 
-    if ( (*ppPedPool)->Full() )
+    if ( Pools::GetPedPool()->Full() )
         return NULL;
 
     return new CCivilianPedSA( CreateCivilianPed(), modelID );
 }
 
-CPedSA* Pools::AddCivilianPed( void *entity )
+CCivilianPedSA* Pools::AddCivilianPed( void *entity )
 {
-    DEBUG_TRACE("CPedSA* Pools::AddCivilianPed( void *entity )");
+    DEBUG_TRACE("CCivilianPedSA* Pools::AddCivilianPed( void *entity )");
 
     return new CCivilianPedSA( (CCivilianPedSAInterface*)entity, ((CCivilianPedSAInterface*)entity)->m_model );
 }
 
 CPedSA* Pools::GetPed( void *entity )
 {
-    unsigned int id = (*ppPedPool)->GetIndex( (CPedSAInterface*)entity );
+    unsigned int id = Pools::GetPedPool()->GetIndex( (CPedSAInterface*)entity );
 
     if ( id >= MAX_PEDS )
         return NULL;
@@ -679,7 +683,7 @@ CBuildingSA* Pools::AddBuilding( modelId_t modelID )
 {
     DEBUG_TRACE("CBuildingSA* CPoolsSA::AddBuilding( modelId_t modelID )");
 
-    if ( (*ppBuildingPool)->Full() )
+    if ( Pools::GetBuildingPool()->Full() )
         return NULL;
     
     return new CBuildingSA( modelID );
@@ -748,23 +752,23 @@ unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool ) const
 {
     switch( pool )
     {
-    case BUILDING_POOL:             return (*ppBuildingPool)->GetCount();
-    case PED_POOL:                  return (*ppPedPool)->GetCount();
-    case OBJECT_POOL:               return (*ppObjectPool)->GetCount();
-    case DUMMY_POOL:                return (*ppDummyPool)->GetCount();
-    case VEHICLE_POOL:              return (*ppVehiclePool)->GetCount();
-    case COL_MODEL_POOL:            return (*ppColModelPool)->GetCount();
-    case TASK_POOL:                 return (*ppTaskPool)->GetCount();
-    case EVENT_POOL:                return (*ppEventPool)->GetCount();
-    case TASK_ALLOCATOR_POOL:       return (*ppTaskAllocatorPool)->GetCount();
-    case PED_INTELLIGENCE_POOL:     return (*ppPedIntelligencePool)->GetCount();
-    case PED_ATTRACTOR_POOL:        return (*ppPedAttractorPool)->GetCount();
-    case ENTRY_INFO_NODE_POOL:      return (*ppEntryInfoPool)->GetCount();
-    case NODE_ROUTE_POOL:           return (*ppNodeRoutePool)->GetCount();
-    case PATROL_ROUTE_POOL:         return (*ppPatrolRoutePool)->GetCount();
-    case POINT_ROUTE_POOL:          return (*ppPointRoutePool)->GetCount();
-    case POINTER_DOUBLE_LINK_POOL:  return (*ppPtrNodeDoublePool)->GetCount();
-    case POINTER_SINGLE_LINK_POOL:  return (*ppPtrNodeSinglePool)->GetCount();
+    case BUILDING_POOL:             return Pools::GetBuildingPool()->GetCount();
+    case PED_POOL:                  return Pools::GetPedPool()->GetCount();
+    case OBJECT_POOL:               return Pools::GetObjectPool()->GetCount();
+    case DUMMY_POOL:                return Pools::GetDummyPool()->GetCount();
+    case VEHICLE_POOL:              return Pools::GetVehiclePool()->GetCount();
+    case COL_MODEL_POOL:            return Pools::GetColModelPool()->GetCount();
+    case TASK_POOL:                 return Pools::GetTaskPool()->GetCount();
+    case EVENT_POOL:                return Pools::GetEventPool()->GetCount();
+    case TASK_ALLOCATOR_POOL:       return Pools::GetTaskAllocatorPool()->GetCount();
+    case PED_INTELLIGENCE_POOL:     return Pools::GetPedIntelligencePool()->GetCount();
+    case PED_ATTRACTOR_POOL:        return Pools::GetPedAttractorPool()->GetCount();
+    case ENTRY_INFO_NODE_POOL:      return Pools::GetEntryInfoPool()->GetCount();
+    case NODE_ROUTE_POOL:           return Pools::GetNodeRoutePool()->GetCount();
+    case PATROL_ROUTE_POOL:         return Pools::GetPatrolRoutePool()->GetCount();
+    case POINT_ROUTE_POOL:          return Pools::GetPointRoutePool()->GetCount();
+    case POINTER_DOUBLE_LINK_POOL:  return Pools::GetPtrNodeDoublePool()->GetCount();
+    case POINTER_SINGLE_LINK_POOL:  return Pools::GetPtrNodeSinglePool()->GetCount();
     case ENV_MAP_MATERIAL_POOL:     return (*ppEnvMapMaterialPool)->GetCount();
     case ENV_MAP_ATOMIC_POOL:       return (*ppEnvMapAtomicPool)->GetCount();
     case SPEC_MAP_MATERIAL_POOL:    return (*ppSpecMapMaterialPool)->GetCount();
@@ -779,23 +783,23 @@ unsigned int CPoolsSA::GetPoolCapacity( ePools pool ) const
 {
     switch( pool )
     {
-    case BUILDING_POOL:                 return (*ppBuildingPool)->m_max;
-    case PED_POOL:                      return (*ppPedPool)->m_max;
-    case OBJECT_POOL:                   return (*ppObjectPool)->m_max;
-    case DUMMY_POOL:                    return (*ppDummyPool)->m_max;
-    case VEHICLE_POOL:                  return (*ppVehiclePool)->m_max;
-    case COL_MODEL_POOL:                return (*ppColModelPool)->m_max;
-    case TASK_POOL:                     return (*ppTaskPool)->m_max;
-    case EVENT_POOL:                    return (*ppEventPool)->m_max;
-    case TASK_ALLOCATOR_POOL:           return (*ppTaskAllocatorPool)->m_max;
-    case PED_INTELLIGENCE_POOL:         return (*ppPedIntelligencePool)->m_max;
-    case PED_ATTRACTOR_POOL:            return (*ppPedAttractorPool)->m_max;
-    case ENTRY_INFO_NODE_POOL:          return (*ppEntryInfoPool)->m_max;
-    case NODE_ROUTE_POOL:               return (*ppNodeRoutePool)->m_max;
-    case PATROL_ROUTE_POOL:             return (*ppPatrolRoutePool)->m_max;
-    case POINT_ROUTE_POOL:              return (*ppPointRoutePool)->m_max;
-    case POINTER_DOUBLE_LINK_POOL:      return (*ppPtrNodeDoublePool)->m_max;
-    case POINTER_SINGLE_LINK_POOL:      return (*ppPtrNodeSinglePool)->m_max;
+    case BUILDING_POOL:                 return Pools::GetBuildingPool()->GetMax();
+    case PED_POOL:                      return Pools::GetPedPool()->GetMax();
+    case OBJECT_POOL:                   return Pools::GetObjectPool()->GetMax();
+    case DUMMY_POOL:                    return Pools::GetDummyPool()->GetMax();
+    case VEHICLE_POOL:                  return Pools::GetVehiclePool()->GetMax();
+    case COL_MODEL_POOL:                return Pools::GetColModelPool()->GetMax();
+    case TASK_POOL:                     return Pools::GetTaskPool()->GetMax();
+    case EVENT_POOL:                    return Pools::GetEventPool()->GetMax();
+    case TASK_ALLOCATOR_POOL:           return Pools::GetTaskAllocatorPool()->GetMax();
+    case PED_INTELLIGENCE_POOL:         return Pools::GetPedIntelligencePool()->GetMax();
+    case PED_ATTRACTOR_POOL:            return Pools::GetPedAttractorPool()->GetMax();
+    case ENTRY_INFO_NODE_POOL:          return Pools::GetEntryInfoPool()->GetMax();
+    case NODE_ROUTE_POOL:               return Pools::GetNodeRoutePool()->GetMax();
+    case PATROL_ROUTE_POOL:             return Pools::GetPatrolRoutePool()->GetMax();
+    case POINT_ROUTE_POOL:              return Pools::GetPointRoutePool()->GetMax();
+    case POINTER_DOUBLE_LINK_POOL:      return Pools::GetPtrNodeDoublePool()->GetMax();
+    case POINTER_SINGLE_LINK_POOL:      return Pools::GetPtrNodeSinglePool()->GetMax();
     case ENV_MAP_MATERIAL_POOL:         return (*ppEnvMapMaterialPool)->GetMax();
     case ENV_MAP_ATOMIC_POOL:           return (*ppEnvMapAtomicPool)->GetMax();
     case SPEC_MAP_MATERIAL_POOL:        return (*ppSpecMapMaterialPool)->GetMax();

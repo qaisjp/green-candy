@@ -163,7 +163,7 @@ static int sysentity_constructor( lua_State *L )
     return 0;
 }
 
-CGameEntity::CGameEntity( lua_State *L, bool system, CEntity& entity ) : m_entity( entity ), LuaElement( L ), m_sync( entityDef )
+CGameEntity::CGameEntity( lua_State *L, bool system, CEntity& entity ) : m_entity( entity ), LuaElement( L )
 {
     PushStack( L );
     lua_pushlightuserdata( L, this );
@@ -189,6 +189,7 @@ CGameEntity::~CGameEntity()
 
 void CGameEntity::Frame()
 {
+#if 0
     entity_network::streamType stream( entityDef );
 
     entity_network newNet( entityDef );
@@ -206,4 +207,5 @@ void CGameEntity::Frame()
 
         m_sync.Establish( entityDef, m_entity, stream );
     }
+#endif
 }

@@ -37,6 +37,7 @@
 class RwScene;
 class RwCamera;
 class RpAtomic;
+class RpLight;
 class RpClump;
 class RwTexture;
 class RpGeometry;
@@ -415,7 +416,11 @@ public:
     unsigned char           format;                             // 35
     unsigned char*          origPixels;                         // 36
     int                     origWidth, origHeight, origDepth;   // 40
+
+    // Begin of Direct3D9_Raster extension
     IDirect3DBaseTexture9*  renderResource;                     // 52, Direct3D texture resource
+    BYTE                    pad[4];                             // 56
+    bool                    isAlpha;                            // 60
 };
 class RwTexture
 {
@@ -498,17 +503,56 @@ struct RpMaterialLighting
 {
     float ambient, specular, diffuse;
 };
+class CEnvMapMaterialSA //size: 12 bytes
+{
+public:
+    char                m_envMod;           // 0
+    char                m_envMod2;          // 1
+
+    char                m_envMod3;          // 2
+    char                m_envMod4;          // 3
+
+    unsigned char       m_envMapBrightness; // 4
+
+    BYTE                m_pad3[1];          // 5
+
+    unsigned short      m_updateFrame;      // 6
+    RwTexture*          m_envTexture;       // 8
+};
+class CSpecMapMaterialSA    //size: 8 bytes
+{
+public:
+    float               m_specular;         // 0
+    BYTE                m_pad[4];           // 4
+};
+//padlevel: 5
 class RpMaterial
 {
 public:
     RwTexture*          m_texture;      // 0
     RwColor             m_color;        // 4
     void*               m_render;       // 8
-    RpMaterialLighting  m_lighting;     // 12
+    union
+    {
+        RpMaterialLighting  m_lighting;     // 12
+        
+        // Shader data.
+        struct
+        {
+            BYTE            m_pad4[4];      // 12
+            unsigned int    m_shaderFlags;  // 16
+            BYTE            m_pad5[4];      // 20
+        };
+    };
     unsigned short      m_refs;         // 24
     short               m_id;           // 26
     void*               m_unknown;      // 28
 
+    BYTE                m_pad[40];      // 32
+
+    CEnvMapMaterialSA*  m_envMapMat;    // 72, env map material plugin, allocated from pool
+    CSpecMapMaterialSA* m_specMapMat;   // 76, specular map material plugin, allocated from pool
+    
     void                SetTexture( RwTexture *tex );
 };
 class RpMaterials
@@ -549,6 +593,40 @@ struct RpAtomicPipelineInfo
     RpAtomicRenderCallback_t        m_render;
 };
 
+template <typename dataType>
+struct RwNodeList
+{
+    RwListEntry <RwNodeList> node;
+    dataType data;
+};
+
+struct RwSector
+{
+    typedef RwNodeList <RpLight*> lightNode;
+
+    RwListEntry <RwSector>  node;               // 0
+    BYTE                    m_pad[56];          // 8
+    RwList <lightNode>      m_localLights;      // 64
+};
+
+class CEnvMapAtomicSA   //size: 12 bytes
+{
+public:
+    CEnvMapAtomicSA( float unk1, float xMod, float yMod )
+    {
+        m_unk1 = unk1;
+        m_xMod = xMod;
+        m_yMod = yMod;
+    }
+
+    float                   m_unk1;             // 0
+    float                   m_xMod;             // 4
+    float                   m_yMod;             // 8
+
+    void* operator new ( size_t );
+    void operator delete ( void *ptr );
+};
+
 #define RW_ATOMIC_RENDER_REFLECTIVE         0x53F20098
 #define RW_ATOMIC_RENDER_VEHICLE            0x53F2009A
 #define RW_ATOMIC_RENDER_NIGHT              0x53F2009C
@@ -556,6 +634,8 @@ struct RpAtomicPipelineInfo
 class RpAtomic : public RwObjectFrame
 {
 public:
+    typedef RwNodeList <RwSector*> sectorNode;
+
     RpAtomicPipelineInfo*   m_info;             // 20
 
     RpGeometry*             m_geometry;         // 24
@@ -573,7 +653,7 @@ public:
 
     unsigned short          frame;              // 96, begin of a substructure
     unsigned short          unknown7;           // 98
-    RwList <void>           sectors;            // 100
+    RwList <sectorNode>     sectors;            // 100
     RwPipeline*             m_pipelineInst;     // 108
 
     RwScene*                m_scene;            // 112
@@ -583,7 +663,8 @@ public:
 
     unsigned short          m_modelId;          // 124
     unsigned short          m_componentFlags;   // 126, used for components (ok/dam)
-    BYTE                    m_pad3[8];          // 128
+    BYTE                    m_pad3[4];          // 128
+    CEnvMapAtomicSA*        m_envMap;           // 132, atomic environment map plugin, allocated from pool (on demand)
     unsigned int            m_pipeline;         // 136
 
     const RwSphere&         GetWorldBoundingSphere();
@@ -606,10 +687,12 @@ struct RpAtomicContainer
 class RpLight : public RwObjectFrame
 {
 public:
+    typedef RwNodeList <RwSector*> sectorNode;
+
     float                   m_radius;           // 20
     RwColorFloat            m_color;            // 24
     float                   m_coneAngle;        // 40
-    RwList <void>           m_sectors;          // 44
+    RwList <sectorNode>     m_sectors;          // 44
     RwListEntry <RpLight>   m_sceneLights;      // 52
     unsigned short          m_frame;            // 60
     unsigned short          unknown2;           // 62
@@ -619,8 +702,10 @@ public:
     RwListEntry <RpLight>   m_clumpLights;      // 76
 
     // Start of D3D9Light plugin
-    unsigned int            m_lightIndex;       // 84, may be 0-7
+    int                     m_lightIndex;       // 84, may be 0-7
     CVector                 m_attenuation;      // 88
+
+    bool                    IsLightActive( void )           { return IS_ANY_FLAG( m_flags, 0x01 ); }
 
     void                    SetLightIndex( unsigned int idx );
     unsigned int            GetLightIndex() const           { return m_lightIndex; }
@@ -785,9 +870,7 @@ public:
     template <class type>
     bool                    ForAllMateria( bool (*callback)( RpMaterial *mat, type data ), type data )
     {
-        unsigned int n;
-
-        for ( n=0; n<m_materials.m_entries; n++ )
+        for ( unsigned int n = 0; n < m_materials.m_entries; n++ )
         {
             if ( !callback( m_materials.m_data[n], data ) )
                 return false;
@@ -920,7 +1003,7 @@ enum eRwDeviceCmd : unsigned int
 
 typedef void*               (__cdecl*RwMemAlloc_t) ( size_t size, unsigned int flags );
 typedef void                (__cdecl*RwMemFree_t) ( void *ptr );
-typedef void*               (__cdecl*RwMemRealloc_t) ( void *ptr, size_t size );
+typedef void*               (__cdecl*RwMemRealloc_t) ( void *ptr, size_t size, unsigned int flags );
 typedef void*               (__cdecl*RwMemCellAlloc_t) ( size_t count, size_t cellSize );
 
 struct RwMemoryDescriptor
@@ -937,7 +1020,7 @@ class RwInterface   // size: 1456
 public:
     RwCamera*               m_renderCam;                                    // 0
     RwScene*                m_currentScene;                                 // 4
-    BYTE                    m_pad8[2];                                      // 6
+    unsigned short          m_renderScanCode;                               // 8
     unsigned short          m_frame;                                        // 10
     
     BYTE                    m_pad11[4];                                     // 12
@@ -1030,10 +1113,14 @@ extern RwInterface **ppRwInterface;
 #define pRwInterface (*ppRwInterface)
 
 // offset 0x00C9BF00 (1.0 US and 1.0 EU)
+//padlevel: 2
 struct RwDeviceInformation
 {
     BYTE                    pad[108];                                       // 0
     char                    maxAnisotropy;                                  // 108
+
+    BYTE                    pad2[48];                                       // 112
+    unsigned int            maxLights;                                      // 160
 };
 
 extern RwDeviceInformation *const pRwDeviceInfo;
@@ -1066,6 +1153,9 @@ private:
 
 // Include plugins.
 #include "RenderWare/RwStream.h"
+#include "RenderWare/RwTextureD3D9.h"
+#include "RenderWare/RwUtilsD3D9.h"
+#include "RenderWare/RpAtomicD3D9.h"
 
 /*****************************************************************************/
 /** RenderWare Plugin System                                                **/
@@ -1074,6 +1164,8 @@ private:
 // Used for functions that are not yet implemented.
 inline void __declspec(naked)    invalid_ptr()
 {
+    // PoD: throw an exception here? we could catch it during runtime and tell the user that
+    // unimplemented functionality was called.
     __asm int 3;
 }
 

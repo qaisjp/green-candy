@@ -99,15 +99,6 @@
     <ClInclude Include="StdInc.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Shared\core\CFileSystem.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h">
-      <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\Shared\core\CFileSystem.Utils.hxx">
-      <Filter>Include</Filter>
-    </ClInclude>
     <ClInclude Include="lua.h">
       <Filter>Include</Filter>
     </ClInclude>
@@ -254,8 +245,6 @@
     <ClCompile Include="sound.cpp" />
     <ClCompile Include="world.cpp" />
     <ClCompile Include="matrix.cpp" />
-    <ClCompile Include="..\..\..\Shared\core\CFileSystem.zip.cpp" />
-    <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp" />
     <ClCompile Include="lua.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\Logger.cpp">
       <Filter>mta_green</Filter>

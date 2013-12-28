@@ -797,7 +797,7 @@ void CClientGame::DoPulsePostFrame ( void )
             // Print each vehicle we're syncing
             CDeathmatchVehicle* pVehicle;
             list < CDeathmatchVehicle* > ::const_iterator iter = m_pUnoccupiedVehicleSync->IterBegin ();
-            for ( ; iter != m_pUnoccupiedVehicleSync->IterEnd (); iter++ )
+            for ( ; iter != m_pUnoccupiedVehicleSync->IterEnd (); ++iter )
             {
                 vecPosition.fY += 0.03f;
                 pVehicle = *iter;
@@ -2422,7 +2422,7 @@ CClientPlayer * CClientGame::GetClosestRemotePlayer ( const CVector & vecPositio
     CVector vecTemp;
     CClientPlayer * pPlayer;
     vector < CClientPlayer * > ::const_iterator iter = m_pPlayerManager->IterBegin ();
-    for ( ; iter != m_pPlayerManager->IterEnd () ; iter++ )
+    for ( ; iter != m_pPlayerManager->IterEnd () ; ++iter )
     {
         pPlayer = *iter;
         if ( !pPlayer->IsLocalPlayer () )

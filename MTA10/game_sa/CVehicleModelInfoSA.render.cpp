@@ -82,9 +82,9 @@ static float cameraRenderAngleRadians = 0;
 
 void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *obj )
 {
-    highQualityRender = g_effectManager->m_fxQuality > 1;       // render High Quality if FX Quality better than Medium
-    renderLOD = g_effectManager->m_fxQuality < 3;               // render LOD vehicles if FX Quality not Very High
-    renderAlpha = highQualityRender && alpha != 255;            // forces sorting of atomics (makes sense with highQualityRender only)
+    highQualityRender = g_effectManager->GetEffectQuality() > 1;        // render High Quality if FX Quality better than Medium
+    renderLOD = g_effectManager->GetEffectQuality() < 3;                  // render LOD vehicles if FX Quality not Very High
+    renderAlpha = highQualityRender && alpha != 255;                    // forces sorting of atomics (makes sense with highQualityRender only)
 
     if ( !highQualityRender )
     {
@@ -173,19 +173,18 @@ void __cdecl ClearVehicleRenderChains( void )
 void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 {
     // Do special alpha blending if quality is set to high/very high
-    if ( g_effectManager->m_fxQuality > 1 )
+    if ( g_effectManager->GetEffectQuality() > 1 )
     {
         {
             RwRenderStateLock zfunc( D3DRS_ZFUNC, D3DCMP_LESS );
-            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, false );
             RwRenderStateLock alphaRef( D3DRS_ALPHAREF, renderAlpha );
+            RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
 
             // Set opaque rendering flags
             {
                 RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );    // for now, instead of D3DCMP_EQUAL
-                RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, renderAlpha != 255 );
+                RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
                 RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
-                RwD3D9ApplyDeviceStates();
 
                 // First render components which are opaque only
                 opaqueRenderChain.Execute();
@@ -195,11 +194,10 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 
             {
                 // Now render translucent polygons
-                RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
+                RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, false );
                 RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_LESS );
                 RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, false );
                 RwRenderStateLock cullMode( D3DRS_CULLMODE, D3DCULL_NONE );
-                RwD3D9ApplyDeviceStates();
 
                 // Render alpha polygons
                 opaqueRenderChain.ExecuteReverse();
@@ -1205,7 +1203,7 @@ static bool RpGeometryMaterialSetupColor( RpMaterial *mat, _colorTextureStorage 
     Purpose:
         Sets the per-vehicle color to the material of the
         vehicle clump and replaces textures. Returns true
-        if color information has been saved.
+        if color information has been saved, false otherwise.
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C8220
 =========================================================*/
@@ -1274,13 +1272,13 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             gameVehicle->GetColor( color1, color2, color3, color4, 0 );
 
             // Each material seems to be individually colored
-            if ( color == 0xFF3C )
+            if ( color == VEHICLE_COLOR_USECOLOR1 )
                 useColor = color1;
-            else if ( color == 0xAF00FF )
+            else if ( color == VEHICLE_COLOR_USECOLOR2 )
                 useColor = color2;
-            else if ( color == 0xFFFF00 )
+            else if ( color == VEHICLE_COLOR_USECOLOR3 )
                 useColor = color3;
-            else if ( color == 0xFF00FF )
+            else if ( color == VEHICLE_COLOR_USECOLOR4 )
                 useColor = color4;
             else
                 return false;   // The_GTA: I made this return whether it saved color information; previously returned true.
@@ -1298,13 +1296,13 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             unsigned char id;
 
             // Each material seems to be individually colored
-            if ( color == 0xFF3C )
+            if ( color == VEHICLE_COLOR_USECOLOR1 )
                 id = _vehColor1;
-            else if ( color == 0xAF00FF )
+            else if ( color == VEHICLE_COLOR_USECOLOR2 )
                 id = _vehColor2;
-            else if ( color == 0xFFFF00 )
+            else if ( color == VEHICLE_COLOR_USECOLOR3 )
                 id = _vehColor3;
-            else if ( color == 0xFF00FF )
+            else if ( color == VEHICLE_COLOR_USECOLOR4 )
                 id = _vehColor4;
             else
                 return false;

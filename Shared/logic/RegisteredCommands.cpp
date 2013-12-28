@@ -43,7 +43,7 @@ bool Command::Execute( argList_t& args )
 
     argList_t::const_iterator iter = args.begin();
 
-    for ( ; iter != args.end(); iter++ )
+    for ( ; iter != args.end(); ++iter )
         lua_pushlstring( L, iter->c_str(), iter->size() );
 
     return lua->PCallStackVoid( args.size() );
@@ -74,7 +74,7 @@ void RegisteredCommands::Clear()
     commandList_t::iterator iter = m_commands.begin();
     luaRefs refs;
 
-    for ( ; iter != m_commands.end(); iter++ )
+    for ( ; iter != m_commands.end(); ++iter )
     {
         (*iter)->Reference( refs );
         (*iter)->Destroy();
@@ -86,7 +86,7 @@ void RegisteredCommands::CleanUp( LuaMain *lua )
     commandList_t::iterator iter = m_commands.begin();
     luaRefs refs;
 
-    for ( ; iter != m_commands.end(); iter++ )
+    for ( ; iter != m_commands.end(); ++iter )
     {
         Command& cmd = **iter;
 
@@ -108,7 +108,7 @@ Command* RegisteredCommands::Get( const char *key, LuaMain *lua )
     commandList_t::iterator iter = m_commands.begin ();
     bool exact;
 
-    for ( ; iter != m_commands.end(); iter++ )
+    for ( ; iter != m_commands.end(); ++iter )
     {
         Command& cmd = **iter;
 

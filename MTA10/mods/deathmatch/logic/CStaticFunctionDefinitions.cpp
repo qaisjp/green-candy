@@ -49,8 +49,8 @@ static CClientProjectileManager*                    m_pProjectileManager;
 static CClientSoundManager*                         m_pSoundManager;
 
 // Used to run a function on all the children of the elements too
-#define RUN_CHILDREN CChildListType::const_iterator iter=Entity.IterBegin();for(;iter!=Entity.IterEnd();iter++)
-#define RUN_CHILDREN_BACKWARDS CChildListType::const_reverse_iterator iter=pEntity->IterReverseBegin();for(;iter!=pEntity->IterReverseEnd();iter++)
+#define RUN_CHILDREN CChildListType::const_iterator iter=Entity.IterBegin();for(;iter!=Entity.IterEnd();++iter)
+#define RUN_CHILDREN_BACKWARDS CChildListType::const_reverse_iterator iter=pEntity->IterReverseBegin();for(;iter!=pEntity->IterReverseEnd();++iter)
 
 
 CStaticFunctionDefinitions::CStaticFunctionDefinitions (
@@ -241,7 +241,7 @@ CClientEntity* CStaticFunctionDefinitions::GetElementChild ( CClientEntity& Enti
     // Grab it
     unsigned int uiCurrent = 0;
     CChildListType ::const_iterator iter = Entity.IterBegin ();
-    for ( ; iter != Entity.IterEnd (); iter++ )
+    for ( ; iter != Entity.IterEnd (); ++iter )
     {
         if ( uiIndex == uiCurrent++ )
         {
@@ -950,7 +950,7 @@ bool CStaticFunctionDefinitions::SetElementDimension ( CClientEntity& Entity, un
         {
             CClientTeam& Team = static_cast < CClientTeam& > ( Entity );
             list < CClientPlayer* > ::const_iterator iter = Team.IterBegin ();
-            for ( ; iter != Team.IterEnd () ; iter++ )
+            for ( ; iter != Team.IterEnd () ; ++iter )
             {
                 (*iter)->SetDimension ( usDimension );
             }

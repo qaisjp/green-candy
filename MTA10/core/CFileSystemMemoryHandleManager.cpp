@@ -38,7 +38,7 @@ CFileSystemMemoryHandle* CFileSystemMemoryHandleManager::Get ( HANDLE hFile )
     if ( m_List.size () > 0 )
     {
         list < CFileSystemMemoryHandle* > ::iterator iter;
-        for ( iter = m_List.begin (); iter != m_List.end (); iter++ )
+        for ( iter = m_List.begin (); iter != m_List.end (); ++iter )
         {
             if ( (*iter)->GetHandle () == hFile )
             {

@@ -1654,7 +1654,7 @@ void CSettings::Initialize ( void )
         // Loop through the binds for a matching control
         unsigned int uiMatchCount = 0;
         list < CKeyBind* > ::const_iterator iter = pKeyBinds->IterBegin ();
-        for ( ; iter != pKeyBinds->IterEnd (); iter++ )
+        for ( ; iter != pKeyBinds->IterEnd (); ++iter )
         {
             // Is it a control bind
             if ( (*iter)->GetType () == KEY_BIND_GTA_CONTROL )
@@ -1713,7 +1713,7 @@ void CSettings::Initialize ( void )
     std::map < std::string, int > iResourceItems;
     // Loop through all the bound commands
     list < CKeyBind* > ::const_iterator iter = pKeyBinds->IterBegin ();
-    for ( unsigned int uiIndex = 0 ; iter != pKeyBinds->IterEnd (); iter++, uiIndex++ )
+    for ( unsigned int uiIndex = 0 ; iter != pKeyBinds->IterEnd (); ++iter, uiIndex++ )
     {
         // keys bound to a console command or a function (we don't show keys bound 
         // from gta controls by scripts as these are clearly not user editable)
@@ -2417,7 +2417,7 @@ void CSettings::SaveData ( void )
 void CSettings::RemoveKeyBindSection ( char * szSectionName )
 {
     list < SKeyBindSection* >::iterator iter = m_pKeyBindSections.begin();
-    for ( ; iter != m_pKeyBindSections.end(); iter++ )
+    for ( ; iter != m_pKeyBindSections.end(); ++iter )
     {
         if ( strcmp ( (*iter)->szOriginalTitle, szSectionName ) == 0 )
         {
@@ -2431,7 +2431,7 @@ void CSettings::RemoveKeyBindSection ( char * szSectionName )
 void CSettings::RemoveAllKeyBindSections ( void )
 {
     list < SKeyBindSection* >::const_iterator iter = m_pKeyBindSections.begin();
-    for ( ; iter != m_pKeyBindSections.end(); iter++ )
+    for ( ; iter != m_pKeyBindSections.end(); ++iter )
     {
         SKeyBindSection * section = (*iter);
         delete section;
@@ -2569,7 +2569,7 @@ void CSettings::LoadChatPresets()
         pPresetsRoot = pPresetsFile->CreateRootNode( CHAT_PRESETS_ROOT );
 
     list < CXMLNode* >::const_iterator iter = pPresetsRoot->ChildrenBegin ();
-    for ( ; iter != pPresetsRoot->ChildrenEnd (); iter++ )
+    for ( ; iter != pPresetsRoot->ChildrenEnd (); ++iter )
     {
         CXMLNode* pNode = reinterpret_cast < CXMLNode* > ( *iter );
         if ( pNode->GetTagName() != "preset" )
@@ -2657,7 +2657,7 @@ bool CSettings::OnChatLoadPresetClick( CGUIElement* pElement )
         return true;
 
     list < CXMLNode* >::const_iterator iter = pNode->ChildrenBegin ();
-    for ( ; iter != pNode->ChildrenEnd (); iter++ )
+    for ( ; iter != pNode->ChildrenEnd (); ++iter )
     {
         // Load all settings provided
         CXMLNode* pSubNode = reinterpret_cast < CXMLNode* > ( *iter );

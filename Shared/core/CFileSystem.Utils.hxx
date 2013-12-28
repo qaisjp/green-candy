@@ -126,7 +126,7 @@ static inline bool _File_ParseRelativeTree( const char *path, const dirTree& roo
     dirTree::const_iterator rootIter;
     dirTree::iterator treeIter;
 
-    for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
+    for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); ++rootIter, ++treeIter )
         if ( *rootIter != *treeIter )
             return false;
 
@@ -138,12 +138,12 @@ static const filePath _dirBack = "..";
 
 static inline bool _File_ParseDeriviation( const dirTree& curTree, dirTree::const_iterator treeIter, dirTree& output, size_t sizeDiff, bool file )
 {
-    for ( dirTree::const_iterator rootIter( curTree.begin() ); rootIter != curTree.end(); rootIter++, treeIter++, sizeDiff-- )
+    for ( dirTree::const_iterator rootIter( curTree.begin() ); rootIter != curTree.end(); ++rootIter, ++treeIter, sizeDiff-- )
     {
         if ( !sizeDiff )
         {
             // This cannot fail, as we go down to root at maximum
-            for ( ; rootIter != curTree.end(); rootIter++ )
+            for ( ; rootIter != curTree.end(); ++rootIter )
                 output.push_back( _dirBack );
 
             if ( file )
@@ -154,7 +154,7 @@ static inline bool _File_ParseDeriviation( const dirTree& curTree, dirTree::cons
 
         if ( *rootIter != *treeIter )
         {
-            for ( ; rootIter != curTree.end(); rootIter++ )
+            for ( ; rootIter != curTree.end(); ++rootIter )
                 output.push_back( _dirBack );
 
             break;
@@ -171,7 +171,7 @@ static inline bool _File_ParseDeriviateTreeRoot( const dirTree& pathFind, const 
     if ( _File_ParseDeriviation( curTree, treeIter, output, file ? pathFind.size() - 1 : pathFind.size(), file ) )
         return true;
 
-    for ( ; treeIter != pathFind.end(); treeIter++ )
+    for ( ; treeIter != pathFind.end(); ++treeIter )
         output.push_back( *treeIter );
 
     return true;
@@ -215,7 +215,7 @@ static inline bool _File_ParseRelativeTreeDeriviate( const char *path, const dir
     dirTree::const_iterator rootIter;
     dirTree::iterator treeIter;
 
-    for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); rootIter++, treeIter++ )
+    for ( rootIter = root.begin(), treeIter = tree.begin(); rootIter != root.end(); ++rootIter, ++treeIter )
         if ( *rootIter != *treeIter )
             return false;
 
@@ -444,7 +444,7 @@ inline bool _File_MatchPattern( const char *input, filePattern_t *pattern )
 {
     size_t input_len = strlen( input );
 
-    for ( filePattern_t::cmdList_t::const_iterator iter = pattern->commands.begin(); iter != pattern->commands.end(); iter++ )
+    for ( filePattern_t::cmdList_t::const_iterator iter = pattern->commands.begin(); iter != pattern->commands.end(); ++iter )
     {
         filePatternCommand_t *genCmd = *iter;
 
@@ -494,7 +494,7 @@ inline bool _File_MatchPattern( const char *input, filePattern_t *pattern )
 
 inline void _File_DestroyPattern( filePattern_t *pattern )
 {
-    for ( filePattern_t::cmdList_t::iterator iter = pattern->commands.begin(); iter != pattern->commands.end(); iter++ )
+    for ( filePattern_t::cmdList_t::iterator iter = pattern->commands.begin(); iter != pattern->commands.end(); ++iter )
     {
         delete *iter;
     }

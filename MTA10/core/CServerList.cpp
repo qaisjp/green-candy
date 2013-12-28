@@ -171,7 +171,7 @@ void CServerList::Refresh ( void )
 {   // Assumes we already have a (saved) list of servers, so we just need to refresh
 
     // Reinitialize each server list item
-    for ( std::list<CServerListItem*>::iterator iter = m_Servers.begin (); iter != m_Servers.end (); iter++ )
+    for ( std::list<CServerListItem*>::iterator iter = m_Servers.begin (); iter != m_Servers.end (); ++iter )
     {
         CServerListItem* pOldItem = *iter;
         *iter = new CServerListItem( *pOldItem );

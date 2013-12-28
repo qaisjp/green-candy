@@ -39,8 +39,10 @@ class CCivilianPedSA : public virtual CCivilianPed, public CPedSA
 private:
 
 public:
-                                        CCivilianPedSA( CCivilianPedSAInterface *ped, unsigned short modelID );
-                                        ~CCivilianPedSA();
+                                        CCivilianPedSA      ( CCivilianPedSAInterface *ped, modelId_t modelID );
+                                        ~CCivilianPedSA     ();
+
+    bool                                IsManagedByGame     ( void ) const                  { return true; }
 };
 
 #endif

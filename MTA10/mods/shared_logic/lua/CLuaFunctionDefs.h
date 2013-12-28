@@ -239,6 +239,9 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( setPedAimTarget );
     LUA_DECLARE( setPedOnFire );
 
+    // Civilian ped functions
+    LUA_DECLARE( createCivilian );
+
     // Clothes and body functions
     LUA_DECLARE( getBodyPartName );
     LUA_DECLARE( getClothesByTypeIndex );
@@ -452,6 +455,8 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineReplaceModel );
     LUA_DECLARE( engineRestoreModel );
     LUA_DECLARE( engineSetModelLODDistance );
+    LUA_DECLARE( engineSetEnvMapRenderingEnabled );
+    LUA_DECLARE( engineIsEnvMapRenderingEnabled );
     LUA_DECLARE( engineSetAsynchronousLoading );
     LUA_DECLARE( engineApplyShaderToWorldTexture );
     LUA_DECLARE( engineRemoveShaderFromWorldTexture );

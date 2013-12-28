@@ -82,7 +82,7 @@ void CRenderItemManager::OnDeviceCreate ( IDirect3DDevice9* pDevice, float fView
 ////////////////////////////////////////////////////////////////
 void CRenderItemManager::OnLostDevice ( void )
 {
-    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; iter++ )
+    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; ++iter )
         (*iter)->OnLostDevice ();
 }
 
@@ -96,7 +96,7 @@ void CRenderItemManager::OnLostDevice ( void )
 ////////////////////////////////////////////////////////////////
 void CRenderItemManager::OnResetDevice ( void )
 {
-    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; iter++ )
+    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; ++iter )
         (*iter)->OnResetDevice ();
 
     UpdateMemoryUsage ();
@@ -419,7 +419,7 @@ void CRenderItemManager::UpdateBackBufferCopySize ( void )
     // Set what the max size requirement is for the back buffer copy
     uint uiSizeX = 0;
     uint uiSizeY = 0;
-    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; iter++ )
+    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; ++iter )
     {
         if ( CScreenSourceItem* pScreenSourceItem = DynamicCast < CScreenSourceItem > ( *iter ) )
         {
@@ -613,7 +613,7 @@ void CRenderItemManager::UpdateMemoryUsage ( void )
     m_iTextureMemoryKBUsed = 0;
     m_iRenderTargetMemoryKBUsed = 0;
     m_iFontMemoryKBUsed = 0;
-    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; iter++ )
+    for ( std::set < CRenderItem* >::iterator iter = m_CreatedItemList.begin () ; iter != m_CreatedItemList.end () ; ++iter )
     {
         CRenderItem* pRenderItem = *iter;
         int iMemoryKBUsed = pRenderItem->GetVideoMemoryKBUsed ();

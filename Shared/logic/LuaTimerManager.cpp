@@ -24,7 +24,7 @@ void LuaTimerManager::DoPulse( LuaMain& main )
 
     std::list <LuaTimer*>::iterator iter = m_list.begin();
 
-    for ( ; iter != m_list.end(); iter++ )
+    for ( ; iter != m_list.end(); ++iter )
     {
         LuaTimer *timer = *iter;
 
@@ -52,7 +52,7 @@ void LuaTimerManager::RemoveAllTimers()
     luaRefs refs;
     std::list <LuaTimer*>::const_iterator iter = m_list.begin();
 
-    for ( ; iter != m_list.end(); iter++ )
+    for ( ; iter != m_list.end(); ++iter )
     {
         // We may not delete it right away, as it clears itself from list
         (*iter)->Reference( refs );
@@ -95,7 +95,7 @@ void LuaTimerManager::GetTimers( CTickCount time, LuaMain *main )
     std::list <LuaTimer*>::const_iterator iter = m_list.begin();
     unsigned int n = 0;
 
-    for ( ; iter != m_list.end(); iter++ )
+    for ( ; iter != m_list.end(); ++iter )
     {
         // If the time left is less than the time specified, or the time specifed is 0
         if ( time.ToLongLong() != 0 && ( (*iter)->GetStartTime () + (*iter)->GetDelay () ) - curTime > time )

@@ -8,6 +8,10 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+
+#undef min
+#undef max
+
 #include <DbgHelp.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -20,6 +24,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 #include <google/dense_hash_map>
 #include <CVector.h>
 #include <CVector2D.h>

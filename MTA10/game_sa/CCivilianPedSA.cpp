@@ -6,7 +6,7 @@
 *  PURPOSE:     Civilian ped entity
 *  DEVELOPERS:  Ed Lyons <eai@opencoding.net>
 *               Christian Myhre Lundheim <>
-*               The_GTA <quiret@gmx.de>
+*               Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -17,7 +17,7 @@
 /**
  * Constructor for CCivilianPedSA
  */
-CCivilianPedSA::CCivilianPedSA( CCivilianPedSAInterface *ped, unsigned short modelID ) : CPedSA( ped )
+CCivilianPedSA::CCivilianPedSA( CCivilianPedSAInterface *ped, modelId_t modelID ) : CPedSA( ped )
 {
     DEBUG_TRACE("CCivilianPedSA::CCivilianPedSA( CCivilianPedSAInterface *ped, unsigned short modelID )");
 
@@ -28,7 +28,7 @@ CCivilianPedSA::CCivilianPedSA( CCivilianPedSAInterface *ped, unsigned short mod
     BOOL_FLAG( GetInterface()->m_entityFlags, ENTITY_NOSTREAM, true );
 }
 
-CCivilianPedSA::~CCivilianPedSA()
+CCivilianPedSA::~CCivilianPedSA( void )
 {
-    DEBUG_TRACE("CCivilianPedSA::~CCivilianPedSA()");
+    DEBUG_TRACE("CCivilianPedSA::~CCivilianPedSA( void )");
 }

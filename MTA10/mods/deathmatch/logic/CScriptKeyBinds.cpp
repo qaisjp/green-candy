@@ -149,7 +149,7 @@ bool CScriptKeyBinds::ProcessKey( const char *key, bool state, eScriptKeyBindTyp
         if ( !info )
             return false;
 
-        for ( keyBinds_t::iterator iter = m_keyBinds.begin(); iter != m_keyBinds.end(); iter++ )
+        for ( keyBinds_t::iterator iter = m_keyBinds.begin(); iter != m_keyBinds.end(); ++iter )
         {
             if ( (*iter)->m_key != info )
                 continue;
@@ -169,7 +169,7 @@ bool CScriptKeyBinds::ProcessKey( const char *key, bool state, eScriptKeyBindTyp
         if ( !info )
             return false;
 
-        for ( controlBinds_t::iterator iter = m_controlBinds.begin(); iter != m_controlBinds.end(); iter++ )
+        for ( controlBinds_t::iterator iter = m_controlBinds.begin(); iter != m_controlBinds.end(); ++iter )
         {
             if ( (*iter)->m_control != info )
                 continue;
@@ -208,7 +208,7 @@ CScriptKeyBind* CScriptKeyBinds::AddControlFunction( SScriptBindableGTAControl *
 
 CScriptKeyBind* CScriptKeyBinds::GetKeyFunction( SScriptBindableKey *key, CLuaMain *lua, eBindStateType bindType, const void *routine )
 {
-    for ( keyBinds_t::iterator iter = m_keyBinds.begin(); iter != m_keyBinds.end(); iter++ )
+    for ( keyBinds_t::iterator iter = m_keyBinds.begin(); iter != m_keyBinds.end(); ++iter )
     {
         CScriptKeyFunctionBind *bind = *iter;
 
@@ -221,7 +221,7 @@ CScriptKeyBind* CScriptKeyBinds::GetKeyFunction( SScriptBindableKey *key, CLuaMa
 
 CScriptKeyBind* CScriptKeyBinds::GetControlFunction( SScriptBindableGTAControl *control, CLuaMain *lua, eBindStateType bindType, const void *routine )
 {
-    for ( controlBinds_t::iterator iter = m_controlBinds.begin(); iter != m_controlBinds.end(); iter++ )
+    for ( controlBinds_t::iterator iter = m_controlBinds.begin(); iter != m_controlBinds.end(); ++iter )
     {
         CScriptControlFunctionBind *bind = *iter;
 

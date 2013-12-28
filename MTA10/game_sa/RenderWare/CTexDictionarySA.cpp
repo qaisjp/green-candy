@@ -67,7 +67,7 @@ bool CTexDictionarySA::IsImportedTXD( unsigned short id ) const
 {
     importList_t::const_iterator iter = m_imported.begin();
 
-    for ( ; iter != m_imported.end(); iter++ )
+    for ( ; iter != m_imported.end(); ++iter )
         if ( *iter == id )
             return true;
 
@@ -105,7 +105,7 @@ bool CTexDictionarySA::ImportTXD( unsigned short id )
 
     textureList_t::iterator iter = m_textures.begin();
 
-    for ( ; iter != m_textures.end(); iter++ )
+    for ( ; iter != m_textures.end(); ++iter )
         (*iter)->ImportTXD( id );
 
     m_imported.push_back( id );

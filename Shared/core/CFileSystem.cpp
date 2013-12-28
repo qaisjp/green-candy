@@ -649,7 +649,7 @@ void CSystemFileTranslator::_CreateDirTree( const dirTree& tree )
     dirTree::const_iterator iter;
     filePath path = m_root;
 
-    for ( iter = tree.begin(); iter != tree.end(); iter++ )
+    for ( iter = tree.begin(); iter != tree.end(); ++iter )
     {
         path += *iter;
         path += '/';

@@ -1058,7 +1058,7 @@ void CChatLine::Draw ( const CVector2D& vecPosition, unsigned char ucAlpha, bool
 {
     float fCurrentX = vecPosition.fX;
     std::vector < CChatLineSection >::iterator iter = m_Sections.begin ();
-    for ( ; iter != m_Sections.end () ; iter++ )
+    for ( ; iter != m_Sections.end () ; ++iter )
     {
         (*iter).Draw ( CVector2D ( fCurrentX, vecPosition.fY ), ucAlpha, bShadow, RenderBounds );
         fCurrentX += (*iter).GetWidth ();
@@ -1120,7 +1120,7 @@ void CChatInputLine::Draw ( CVector2D& vecPosition, unsigned char ucAlpha, bool 
         float fLineDifference = CChat::GetFontHeight ( g_pChat->m_vecScale.fY );
 
         vector < CChatLine >::iterator iter = m_ExtraLines.begin ();
-        for ( ; iter != m_ExtraLines.end () ; iter++ )
+        for ( ; iter != m_ExtraLines.end () ; ++iter )
         {
             vecPosition.fY += fLineDifference;
             (*iter).Draw ( vecPosition, g_pChat->m_InputTextColor.A, bShadow, RenderBounds );

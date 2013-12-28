@@ -30,19 +30,6 @@ public:
 protected:
     CEntity&                m_entity;
     bool                    m_system;   // System entities may not be destroyed
-
-    namespace lol
-    {
-        const NetworkDataType entityDef[] =
-        {
-            { NETWORK_VECTOR3D, "pos" },
-            { NETWORK_VECTOR3D, "velocity" }
-        };
-    }
-
-    typedef NetworkSyncStruct <CEntity, ETSIZE(entityDef)> entity_network;
-
-    entity_network          m_sync;
 };
 
 #endif //_GAME_ENTITY_

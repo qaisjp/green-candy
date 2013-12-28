@@ -771,6 +771,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRenderWareSA.lighting.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CRenderWareSA.mem.cpp"
 				>
 			</File>
@@ -780,6 +784,10 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.render.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.rtcallback.cpp"
 				>
 			</File>
 			<File
@@ -1055,6 +1063,10 @@
 			Name="RenderWare"
 			>
 			<File
+				RelativePath=".\RenderWare\RpAtomicD3D9.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RenderWare\RpGeometryStreamline.cpp"
 				>
 			</File>
@@ -1074,9 +1086,17 @@
 				RelativePath=".\RenderWare\RwTextureD3D9.cpp"
 				>
 			</File>
+			<File
+				RelativePath=".\RenderWare\RwUtilsD3D9.cpp"
+				>
+			</File>
 			<Filter
 				Name="Include"
 				>
+				<File
+					RelativePath=".\RenderWare\RpAtomicD3D9.h"
+					>
+				</File>
 				<File
 					RelativePath=".\RenderWare\RpLight.h"
 					>
@@ -1086,11 +1106,19 @@
 					>
 				</File>
 				<File
+					RelativePath=".\RenderWare\RwRenderTools.hxx"
+					>
+				</File>
+				<File
 					RelativePath=".\RenderWare\RwStream.h"
 					>
 				</File>
 				<File
 					RelativePath=".\RenderWare\RwTextureD3D9.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RwUtilsD3D9.h"
 					>
 				</File>
 			</Filter>
@@ -1616,6 +1644,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRenderWareSA.lighting.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CRenderWareSA.mem.h"
 				>
 			</File>
@@ -1625,6 +1657,10 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.render.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.rtcallback.h"
 				>
 			</File>
 			<File

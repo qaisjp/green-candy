@@ -174,7 +174,7 @@ inline const CArchiveFileTranslator::directory* CArchiveFileTranslator::GetDeriv
     const directory *curDir = &root;
     dirTree::const_iterator iter = tree.begin();
 
-    for ( ; iter != tree.end() && ( *iter == _dirBack ); iter++ )
+    for ( ; iter != tree.end() && ( *iter == _dirBack ); ++iter )
     {
         curDir = curDir->parent;
 
@@ -190,10 +190,10 @@ inline CArchiveFileTranslator::directory& CArchiveFileTranslator::MakeDeriviateD
     directory *curDir = &root;
     dirTree::const_iterator iter = tree.begin();
 
-    for ( ; iter != tree.end() && ( *iter == _dirBack ); iter++ )
+    for ( ; iter != tree.end() && ( *iter == _dirBack ); ++iter )
         curDir = curDir->parent;
 
-    for ( ; iter != tree.end(); iter++ )
+    for ( ; iter != tree.end(); ++iter )
         curDir = &curDir->GetDirectory( *iter );
 
     return *curDir;
@@ -538,7 +538,7 @@ static AINLINE void _ScanDirectory( const CArchiveFileTranslator *trans, const d
     // First scan for files.
     if ( fileCallback )
     {
-        for ( CArchiveFileTranslator::fileList::const_iterator iter = dir->files.begin(); iter != dir->files.end(); iter++ )
+        for ( CArchiveFileTranslator::fileList::const_iterator iter = dir->files.begin(); iter != dir->files.end(); ++iter )
         {
             CArchiveFileTranslator::file *item = *iter;
 
@@ -555,7 +555,7 @@ static AINLINE void _ScanDirectory( const CArchiveFileTranslator *trans, const d
     // Continue with the directories
     if ( dirCallback || recurse )
     {
-        for ( CArchiveFileTranslator::directory::subDirs::const_iterator iter = dir->children.begin(); iter != dir->children.end(); iter++ )
+        for ( CArchiveFileTranslator::directory::subDirs::const_iterator iter = dir->children.begin(); iter != dir->children.end(); ++iter )
         {
             CArchiveFileTranslator::directory *item = *iter;
 
@@ -693,7 +693,7 @@ CArchiveFileTranslator::directory& CArchiveFileTranslator::_CreateDirTree( direc
     directory *curDir = &dir;
     dirTree::const_iterator iter = tree.begin();
 
-    for ( ; iter != tree.end(); iter++ )
+    for ( ; iter != tree.end(); ++iter )
         curDir = &curDir->GetDirectory( *iter );
 
     return *curDir;
@@ -892,7 +892,7 @@ void CArchiveFileTranslator::CacheDirectory( const directory& dir )
 {
     fileList::const_iterator fileIter = dir.files.begin();
 
-    for ( ; fileIter != dir.files.end(); fileIter++ )
+    for ( ; fileIter != dir.files.end(); ++fileIter )
     {
         if ( (*fileIter)->cached || (*fileIter)->subParsed )
             continue;
@@ -912,7 +912,7 @@ void CArchiveFileTranslator::CacheDirectory( const directory& dir )
 
     directory::subDirs::const_iterator iter = dir.children.begin();
 
-    for ( ; iter != dir.children.end(); iter++ )
+    for ( ; iter != dir.children.end(); ++iter )
         CacheDirectory( **iter );
 }
 
@@ -1007,12 +1007,12 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
 {
     directory::subDirs::iterator iter = dir.children.begin();
 
-    for ( ; iter != dir.children.end(); iter++ )
+    for ( ; iter != dir.children.end(); ++iter )
         SaveDirectory( **iter, size );
 
     fileList::iterator fileIter = dir.files.begin();
 
-    for ( ; fileIter != dir.files.end(); fileIter++ )
+    for ( ; fileIter != dir.files.end(); ++fileIter )
     {
         file& info = **fileIter;
         _localHeader header;
@@ -1094,12 +1094,12 @@ unsigned int CArchiveFileTranslator::BuildCentralFileHeaders( const directory& d
     directory::subDirs::const_iterator iter = dir.children.begin();
     unsigned int cnt = 0;
 
-    for ( ; iter != dir.children.end(); iter++ )
+    for ( ; iter != dir.children.end(); ++iter )
         cnt += BuildCentralFileHeaders( **iter, size );
 
     fileList::const_iterator fileIter = dir.files.begin();
 
-    for ( ; fileIter != dir.files.end(); fileIter++ )
+    for ( ; fileIter != dir.files.end(); ++fileIter )
     {
         const file& info = **fileIter;
         _centralFile header;

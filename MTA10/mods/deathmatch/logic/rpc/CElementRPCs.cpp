@@ -228,7 +228,7 @@ void CElementRPCs::SetElementDimension ( CClientEntity* pSource, NetBitStreamInt
         {
             CClientTeam* pTeam = static_cast < CClientTeam* > ( pSource );
             list < CClientPlayer* > ::const_iterator iter = pTeam->IterBegin ();
-            for ( ; iter != pTeam->IterEnd () ; iter++ )
+            for ( ; iter != pTeam->IterEnd () ; ++iter )
             {
                 CClientPlayer* pPlayer = *iter;
                 if ( pPlayer->IsLocalPlayer () )

@@ -711,7 +711,7 @@ CAnimBlendAssociationSA* CAnimManagerSA::GetAnimBlendAssociation( CAnimBlendAsso
     if ( pInterface )
     {
         std::list <CAnimBlendAssociationSA*> ::const_iterator iter = m_Associations.begin ();
-        for ( ; iter != m_Associations.end(); iter++ )
+        for ( ; iter != m_Associations.end(); ++iter )
         {
             if ( (*iter)->GetInterface() == pInterface )
             {

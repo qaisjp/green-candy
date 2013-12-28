@@ -350,7 +350,7 @@ namespace Networking
             m_stream.Wake();
             m_stream.WriteBits( m_instructs.size(), INT2BITS(defEntryCount) );
 
-            for ( instList_t::const_iterator iter = m_instructs.begin(); iter != m_instructs.end(); iter++ )
+            for ( instList_t::const_iterator iter = m_instructs.begin(); iter != m_instructs.end(); ++iter )
             {
                 (*iter)->Write( m_stream );
                 delete *iter;

@@ -413,7 +413,7 @@ void CGUIElement_Impl::EmptyProperties ( void )
     if ( !m_Properties.empty() ) {
         CGUIPropertyIter iter = m_Properties.begin ();
         CGUIPropertyIter iterEnd = m_Properties.end ();
-        for ( ; iter != iterEnd; iter++ ) {
+        for ( ; iter != iterEnd; ++iter ) {
             if (*iter) {
                 delete (*iter)->szKey;
                 delete (*iter)->szValue;

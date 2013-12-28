@@ -37,13 +37,16 @@ enum eAnimIDs
     ANIM_ID_STEALTH_AIM = 347
 };
 
-bool __thiscall CPedSAInterface::IsPlayer( void ) const
+bool __thiscall CPedSAInterface::IsPlayer( void )
 {
-#ifndef _SINGLEPLAYER
-    return true;
-#else
-    return m_pedType == PLAYER_LOCAL || m_pedType == PLAYER_REMOTE;
-#endif
+    CPedSA *ped = Pools::GetPed( this );
+
+    if ( ped )
+    {
+        return !ped->IsManagedByGame();
+    }
+
+    return false;
 }
 
 CPadSAInterface* CPedSAInterface::GetJoypad()

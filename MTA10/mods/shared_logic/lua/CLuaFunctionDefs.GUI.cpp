@@ -1319,7 +1319,7 @@ namespace CLuaFunctionDefs
             unsigned int uiIndex = 0;
             CGUIPropertyIter iter = guiElement->GetCGUIElement ()->GetPropertiesBegin ();
             CGUIPropertyIter iterEnd = guiElement->GetCGUIElement ()->GetPropertiesEnd ();
-            for ( ; iter != iterEnd; iter++ )
+            for ( ; iter != iterEnd; ++iter )
             {
                 char * szKey = (*iter)->szKey;
                 char * szValue = (*iter)->szValue;

@@ -37,18 +37,18 @@ SBodyPartName BodyPartNames [10] =
 // HACK: saves unneccesary loading of clothes textures
 CClientPed* g_pLastRebuilt = NULL;
 
-void CClientPed::InstanceLua( bool system )
+void CClientPed::InstanceLua( lua_State *L, bool system )
 {
-    PushStack( m_lua );
-    lua_pushlightuserdata( m_lua, this );
-    lua_pushcclosure( m_lua, luaconstructor_ped, 1 );
-    luaJ_extend( m_lua, -2, 0 );
-    lua_pop( m_lua, 1 );
+    PushStack( L );
+    lua_pushlightuserdata( L, this );
+    lua_pushcclosure( L, luaconstructor_ped, 1 );
+    luaJ_extend( L, -2, 0 );
+    lua_pop( L, 1 );
 }
 
 CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system ) : CClientGameEntity( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
-    InstanceLua( system );
+    InstanceLua( L, system );
 
     SetTypeName( "ped" );
 
@@ -61,7 +61,7 @@ CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, Elem
 
 CClientPed::CClientPed( CClientManager *pManager, unsigned short ulModelID, ElementID ID, lua_State *L, bool system, bool bIsLocalPlayer ) : CClientGameEntity( pManager->GetPlayerStreamer(), ID, L, system ), CAntiCheatModule( pManager->GetAntiCheat() )
 {
-    InstanceLua( system );
+    InstanceLua( L, system );
 
     // Init
     Init( pManager, ulModelID, bIsLocalPlayer );
@@ -2604,7 +2604,6 @@ void CClientPed::StreamedInPulse ( void )
     }
 }
 
-
 float CClientPed::GetCurrentRotation ( void )
 {
     if ( m_pPlayerPed )
@@ -2614,28 +2613,21 @@ float CClientPed::GetCurrentRotation ( void )
     return m_fCurrentRotation;
 }
 
-
 void CClientPed::SetCurrentRotation ( float fRotation, bool bIncludeTarget )
 {
+    m_fCurrentRotation = fRotation;
+    if ( bIncludeTarget )
+        m_fTargetRotation = fRotation;
+
     if ( m_pPlayerPed )
     {
-        m_pPlayerPed->SetCurrentRotation ( fRotation );
-        m_fCurrentRotation = fRotation;
+        // Only update ped if ped has already loaded.
+        m_pPlayerPed->SetCurrentRotation( fRotation );
+
         if ( bIncludeTarget )
-        {
-            m_pPlayerPed->SetTargetRotation ( fRotation );
-            m_fTargetRotation = fRotation;
-        }
-    }
-    else
-    {
-        // The ped model is still not loaded
-        m_fCurrentRotation = fRotation;
-        if ( bIncludeTarget )
-            m_fTargetRotation = fRotation;
+            m_pPlayerPed->SetTargetRotation( fRotation );
     }
 }
-
 
 void CClientPed::SetTargetRotation ( float fRotation )
 {

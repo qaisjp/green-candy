@@ -273,12 +273,12 @@ public:
         {
             subDirs::iterator iter = children.begin();
 
-            for ( ; iter != children.end(); iter++ )
+            for ( ; iter != children.end(); ++iter )
                 delete *iter;
 
             fileList::iterator fileIter = files.begin();
 
-            for ( ; fileIter != files.end(); fileIter++ )
+            for ( ; fileIter != files.end(); ++fileIter )
                 delete *fileIter;
         }
 
@@ -296,7 +296,7 @@ public:
         {
             subDirs::const_iterator iter;
 
-            for ( iter = children.begin(); iter != children.end(); iter++ )
+            for ( iter = children.begin(); iter != children.end(); ++iter )
             {
                 if ( (*iter)->name == dirName )
                     return *iter;
@@ -363,7 +363,7 @@ public:
         {
             fileList::const_iterator iter = files.begin();
 
-            for ( ; iter != files.end(); iter++ )
+            for ( ; iter != files.end(); ++iter )
             {
                 if ( !(*iter)->locks.empty() )
                     return true;
@@ -376,7 +376,7 @@ public:
         {
             fileList::const_iterator iter = files.begin();
 
-            for ( ; iter != files.end(); iter++ )
+            for ( ; iter != files.end(); ++iter )
             {
                 if ( (*iter)->name == fileName )
                     return *iter;
@@ -406,7 +406,7 @@ public:
         {
             fileList::const_iterator iter = files.begin();
 
-            for ( ; iter != files.end(); iter++ )
+            for ( ; iter != files.end(); ++iter )
             {
                 if ( (*iter)->name == fileName )
                     return *iter;
@@ -430,7 +430,7 @@ public:
         {
             fileList::const_iterator iter = files.begin();
 
-            for ( ; iter != files.end(); iter++ )
+            for ( ; iter != files.end(); ++iter )
             {
                 if ( (*iter)->name == fileName )
                     return RemoveFile( **iter );
@@ -450,7 +450,7 @@ private:
     {
         const directory *curDir = &root;
 
-        for ( ; iter != end; iter++ )
+        for ( ; iter != end; ++iter )
         {
             if ( !( curDir = root.FindDirectory( *iter ) ) )
                 return NULL;

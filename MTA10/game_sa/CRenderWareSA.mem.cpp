@@ -649,7 +649,7 @@ static void __cdecl RwMemoryFree( void *ptr )
         (1.0 US): 0x008020B0
         (1.0 EU): 0x008020F0
 =========================================================*/
-static void* __cdecl RwMemoryRealloc( void *ptr, size_t size )
+static void* __cdecl RwMemoryRealloc( void *ptr, size_t size, unsigned int flags )
 {
     return realloc( ptr, size );
 }

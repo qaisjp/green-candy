@@ -32,6 +32,9 @@ public:
 
     virtual bool                    IsRendering() const = 0;
 
+    virtual void                    EnableEnvMapRendering( bool enabled ) = 0;
+    virtual bool                    IsEnvMapRenderingEnabled( void ) const = 0;
+
     virtual CColModel*              ReadCOL( CFile *file ) = 0;
 };
 

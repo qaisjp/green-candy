@@ -276,7 +276,7 @@ void LuaMain::DestroyXML( CXMLNode *root )
 {
     std::list <CXMLFile*>::iterator iter = m_XMLFiles.begin();
 
-    for ( ; iter != m_XMLFiles.end(); iter++ )
+    for ( ; iter != m_XMLFiles.end(); ++iter )
     {
         if ( (*iter)->GetRootNode() == root )
         {

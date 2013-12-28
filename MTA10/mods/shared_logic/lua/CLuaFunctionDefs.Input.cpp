@@ -306,7 +306,7 @@ namespace CLuaFunctionDefs
                 {
                     lua_newtable ( L );
                     list < CGTAControlBind * > ::iterator iter = controlBinds.begin ();
-                    for ( ; iter != controlBinds.end () ; iter++ )
+                    for ( ; iter != controlBinds.end () ; ++iter )
                     {
                         lua_pushstring ( L, (*iter)->boundKey->szKey );
                         lua_pushstring ( L, "down" );
