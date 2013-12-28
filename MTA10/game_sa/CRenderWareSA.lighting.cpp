@@ -14,6 +14,40 @@
 #include <StdInc.h>
 #include "RenderWare/RwRenderTools.hxx"
 
+struct nativeLightInfo  //size: 108 bytes
+{
+    D3DLIGHT9   native;     // 0
+    int         active;     // 104
+};
+
+// Localized variables.
+namespace D3D9Lighting
+{
+    static unsigned int countOfAvailableLightSlots = 0;             // Binary offsets: (1.0 US and 1.0 EU): 0x00C926BC
+    static unsigned int numberOfAvailableLightSlots = 0;            // Binary offsets: (1.0 US and 1.0 EU): 0x00C926B8
+
+    static int* availableLightSlots = NULL;                         // Binary offsets: (1.0 US and 1.0 EU): 0x00C926C4
+
+    static int incrementalLightIndex = 0;                           // Binary offsets: (1.0 US and 1.0 EU): 0x00C926C0
+
+    static nativeLightInfo* nativeLightArray = NULL;                // Binary offsets: (1.0 US and 1.0 EU): 0x00C98088
+
+    static int countOfNativeLightArray = 0;                         // Binary offsets: (1.0 US and 1.0 EU): 0x00C98084
+
+    static D3DLIGHT9 dirLightStruct;                                // Binary offsets: (1.0 US and 1.0 EU): 0x00C92648
+    static D3DLIGHT9 localLightStruct;                              // Binary offsets: (1.0 US and 1.0 EU): 0x00C925E0
+
+    static unsigned int maxNumberOfActiveLights = 0;                // Binary offsets: (1.0 US and 1.0 EU): 0x00C926B4
+
+    static int* activeGlobalLightsArray = NULL;                     // Binary offsets: (1.0 US and 1.0 EU): 0x00C926C8
+    static unsigned int numberOfActiveGlobalLightsArray = 0;        // Binary offsets: (1.0 US and 1.0 EU): 0x00C926CC
+    static unsigned int countOfActiveGlobalLightsArray = 0;         // Binary offsets: (1.0 US and 1.0 EU): 0x00C926D0
+
+    static int* swap_activeGlobalLightsArray = NULL;                // Binary offsets: (1.0 US and 1.0 EU): 0x00C926D4
+    static unsigned int swap_numberOfActiveGlobalLightsArray = 0;   // Binary offsets: (1.0 US and 1.0 EU): 0x00C926D8
+    static unsigned int swap_countOfActiveGlobalLightsArray = 0;    // Binary offsets: (1.0 US and 1.0 EU): 0x00C926DC
+};
+
 /*=========================================================
     RpD3D9InitializeLightingPlugin
 
@@ -40,10 +74,10 @@ RpLight* __cdecl RpD3D9LightConstructor( RpLight *light, size_t offset )
 
 inline void AddLightIndexToAvailableLightSlots( int lightIndex )
 {
-    int countOfAvailableLightSlots = *(int*)0x00C926BC;
-    int numberOfAvailableLightSlots = *(int*)0x00C926B8;
+    int countOfAvailableLightSlots = D3D9Lighting::countOfAvailableLightSlots;
+    int numberOfAvailableLightSlots = D3D9Lighting::numberOfAvailableLightSlots;
 
-    int*& availableLightSlots = *(int**)0x00C926C4;
+    int*& availableLightSlots = D3D9Lighting::availableLightSlots;
 
     if ( numberOfAvailableLightSlots >= countOfAvailableLightSlots )
     {
@@ -56,12 +90,12 @@ inline void AddLightIndexToAvailableLightSlots( int lightIndex )
         else
             availableLightSlots = (int*)pRwInterface->m_memory.m_realloc( availableLightSlots, newArraySize, 0x103050D );
 
-        *(int*)0x00C926BC = countOfAvailableLightSlots;
+        D3D9Lighting::countOfAvailableLightSlots = countOfAvailableLightSlots;
     }
 
     availableLightSlots[numberOfAvailableLightSlots++] = lightIndex;
 
-    *(int*)0x00C926B8 = numberOfAvailableLightSlots;
+    D3D9Lighting::numberOfAvailableLightSlots = numberOfAvailableLightSlots;
 }
 
 RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
@@ -71,16 +105,16 @@ RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
 
     if ( light->m_lightIndex >= 0 )
     {
-        int incrementalIndex = *(int*)0x00C926C0 - 1;
-        int numberOfAvailableLightSlots = *(int*)0x00C926B8;
+        int incrementalIndex = D3D9Lighting::incrementalLightIndex - 1;
+        int numberOfAvailableLightSlots = D3D9Lighting::numberOfAvailableLightSlots;
 
         if ( numberOfAvailableLightSlots >= incrementalIndex )
         {
-            *(int*)0x00C926B8 = 0;
-            *(int*)0x00C926BC = 0;
-            *(int*)0x00C926C0 = 0;
+            D3D9Lighting::numberOfAvailableLightSlots = 0;
+            D3D9Lighting::countOfAvailableLightSlots = 0;
+            D3D9Lighting::incrementalLightIndex = 0;
 
-            int*& availableLightSlots = *(int**)0x00C926C4;
+            int*& availableLightSlots = D3D9Lighting::availableLightSlots;
 
             if ( availableLightSlots )
             {
@@ -106,19 +140,17 @@ void __cdecl RpD3D9LightCopyConstructor( RpLight *light, const RpLight *srcObj, 
 
 int __cdecl RpD3D9InitializeLightingPlugin( void )
 {
-    d3d9lightplg = RpLightRegisterPlugin( 0x10, 0x505, (RpLightPluginConstructor)RpD3D9LightConstructor, (RpLightPluginDestructor)RpD3D9LightDestructor, (RpLightPluginCopyConstructor)RpD3D9LightCopyConstructor );
+    d3d9lightplg = RpLightRegisterPlugin( 0x10, 0x505,
+        (RpLightPluginConstructor)RpD3D9LightConstructor,
+        (RpLightPluginDestructor)RpD3D9LightDestructor,
+        (RpLightPluginCopyConstructor)RpD3D9LightCopyConstructor
+    );
     return (int)d3d9lightplg >= 0;
 }
 
-struct nativeLightInfo  //size: 108 bytes
-{
-    D3DLIGHT9   native;     // 0
-    int         active;     // 104
-};
-
 static nativeLightInfo*& GetNativeLightArray( void )
 {
-    return *(nativeLightInfo**)0x00C98088;
+    return D3D9Lighting::nativeLightArray;
 }
 
 /*=========================================================
@@ -199,7 +231,7 @@ int __cdecl RpD3D9LightsEqual( const D3DLIGHT9& left, const D3DLIGHT9& right )
 =========================================================*/
 int __cdecl RpD3D9SetLight( int lightIndex, const D3DLIGHT9& lightStruct )
 {
-    int countOfAllocatedArray = *(int*)0x00C98084;
+    int countOfAllocatedArray = D3D9Lighting::countOfNativeLightArray;
     nativeLightInfo*& lightArray = GetNativeLightArray();
     
     if ( countOfAllocatedArray <= lightIndex )
@@ -228,7 +260,7 @@ int __cdecl RpD3D9SetLight( int lightIndex, const D3DLIGHT9& lightStruct )
             info.active = false;
         }
 
-        *(int*)0x00C98084 = countOfAllocatedArray;
+        D3D9Lighting::countOfNativeLightArray = countOfAllocatedArray;
     }
     else
     {
@@ -251,19 +283,19 @@ inline void AssignLightIndex( RpLight *light )
 {
     if ( light->m_lightIndex < 0 )
     {
-        unsigned int numAvailableLightSlots = *(unsigned int*)0x00C926B8;
+        unsigned int numAvailableLightSlots = D3D9Lighting::numberOfAvailableLightSlots;
 
         int slot = -1;
 
         if ( numAvailableLightSlots != 0 )
         {
-            slot = *( *(int**)0x00C926C4 + --numAvailableLightSlots );
+            slot = *( D3D9Lighting::availableLightSlots + --numAvailableLightSlots );
 
-            *(unsigned int*)0x00C926B8 = numAvailableLightSlots;
+            D3D9Lighting::numberOfAvailableLightSlots = numAvailableLightSlots;
         }
         else
         {
-            slot = (*(int*)0x00C926C0)++;
+            slot = D3D9Lighting::incrementalLightIndex++;
         }
 
         light->m_lightIndex = slot;
@@ -272,17 +304,17 @@ inline void AssignLightIndex( RpLight *light )
 
 static D3DLIGHT9& GetDirLightStruct( void )
 {
-    return *(D3DLIGHT9*)0x00C92648;
+    return D3D9Lighting::dirLightStruct;
 }
 
 static int*& GetActiveGlobalLightsArray( void )
 {
-    return *(int**)0x00C926C8;
+    return D3D9Lighting::activeGlobalLightsArray;
 }
 
 static int*& GetSwapActiveGlobalLightsArray( void )
 {
-    return *(int**)0x00C926D4;
+    return D3D9Lighting::swap_activeGlobalLightsArray;
 }
 
 inline void AddLightToGlobalList( RpLight *light )
@@ -290,8 +322,8 @@ inline void AddLightToGlobalList( RpLight *light )
     // todo: create a template for this container management.
     // should be done once this RenderWare plugin is localized.
 
-    unsigned int countOfAllocatedArray = *(unsigned int*)0x00C926D0;
-    unsigned int numberOfActiveGlobalLights = *(unsigned int*)0x00C926CC;
+    unsigned int countOfAllocatedArray = D3D9Lighting::countOfActiveGlobalLightsArray;
+    unsigned int numberOfActiveGlobalLights = D3D9Lighting::numberOfActiveGlobalLightsArray;
 
     int*& activeLightArray = GetActiveGlobalLightsArray();
 
@@ -314,12 +346,12 @@ inline void AddLightToGlobalList( RpLight *light )
             activeLightArray[n] = 0;
         }
 
-        *(unsigned int*)0x00C926D0 = countOfAllocatedArray;
+        D3D9Lighting::countOfActiveGlobalLightsArray = countOfAllocatedArray;
     }
 
     activeLightArray[numberOfActiveGlobalLights++] = light->m_lightIndex;
 
-    *(unsigned int*)0x00C926CC = numberOfActiveGlobalLights;
+    D3D9Lighting::numberOfActiveGlobalLightsArray = numberOfActiveGlobalLights;
 }
 
 /*=========================================================
@@ -359,7 +391,7 @@ int __cdecl RpD3D9DirLightEnable( RpLight *light )
 
 static D3DLIGHT9& GetLocalLightStruct( void )
 {
-    return *(D3DLIGHT9*)0x00C925E0;
+    return D3D9Lighting::localLightStruct;
 }
 
 /*=========================================================
@@ -463,7 +495,7 @@ int __cdecl RpD3D9LocalLightEnable( RpLight *light )
 int __cdecl RpD3D9EnableLight( int lightIndex, int enable )
 {
     // Ignore invalid light indices.
-    if ( lightIndex >= *(int*)0x00C98084 )
+    if ( lightIndex >= D3D9Lighting::countOfNativeLightArray )
         return true;
 
     nativeLightInfo& lightInfo = GetNativeLightArray()[lightIndex];
@@ -514,9 +546,9 @@ void __cdecl RpD3D9EnableLights( bool enable, int unused )
 
     if ( enable )
     {
-        // Mkae sure we only activate the number of maximally supported lights on this GPU.
-        unsigned int numberOfActiveGlobalLights = *(unsigned int*)0x00C926CC;
-        unsigned int maxNumberOfActiveLights = *(unsigned int*)0x00C926B4;
+        // Make sure we only activate the number of maximally supported lights on this GPU.
+        unsigned int numberOfActiveGlobalLights = D3D9Lighting::numberOfActiveGlobalLightsArray;
+        unsigned int maxNumberOfActiveLights = D3D9Lighting::maxNumberOfActiveLights;
 
         if ( numberOfActiveGlobalLights > maxNumberOfActiveLights )
             numberOfActiveGlobalLights = maxNumberOfActiveLights;
@@ -525,7 +557,7 @@ void __cdecl RpD3D9EnableLights( bool enable, int unused )
         int*& primaryLights = GetActiveGlobalLightsArray();
         int*& swapLights = GetSwapActiveGlobalLightsArray();
 
-        unsigned int lastActiveGlobalLightsCount = *(unsigned int*)0x00C926D8;
+        unsigned int lastActiveGlobalLightsCount = D3D9Lighting::swap_numberOfActiveGlobalLightsArray;
 
         for ( unsigned int n = 0; n < lastActiveGlobalLightsCount; n++ )
         {
@@ -558,19 +590,19 @@ void __cdecl RpD3D9EnableLights( bool enable, int unused )
             swapLights = primaryLightsPtr;
             primaryLights = swapLightsPtr;
 
-            unsigned int swapCount = *(unsigned int*)0x00C926DC;
-            unsigned int primaryCount = *(unsigned int*)0x00C926D0;
+            unsigned int swapCount = D3D9Lighting::swap_countOfActiveGlobalLightsArray;
+            unsigned int primaryCount = D3D9Lighting::countOfActiveGlobalLightsArray;
 
-            *(unsigned int*)0x00C926DC = primaryCount;
-            *(unsigned int*)0x00C926D0 = swapCount;
+            D3D9Lighting::swap_countOfActiveGlobalLightsArray = primaryCount;
+            D3D9Lighting::countOfActiveGlobalLightsArray = swapCount;
 
             lastActiveGlobalLightsCount = numberOfActiveGlobalLights;
         }
         else
             lastActiveGlobalLightsCount = 0;
 
-        *(unsigned int*)0x00C926D8 = lastActiveGlobalLightsCount;
-        *(unsigned int*)0x00C926CC = 0;
+        D3D9Lighting::swap_numberOfActiveGlobalLightsArray = lastActiveGlobalLightsCount;
+        D3D9Lighting::numberOfActiveGlobalLightsArray = 0;
     }
 
     HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, enable );
@@ -744,7 +776,7 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 =========================================================*/
 void __cdecl RpD3D9ShutdownLighting( void )
 {
-    int*& availableLightSlots = *(int**)0x00C926C4;
+    int*& availableLightSlots = D3D9Lighting::availableLightSlots;
 
     if ( availableLightSlots )
     {
@@ -753,9 +785,9 @@ void __cdecl RpD3D9ShutdownLighting( void )
         availableLightSlots = NULL;
     }
     
-    *(int*)0x00C926B8 = 0;
-    *(int*)0x00C926BC = 0;
-    *(int*)0x00C926C0 = 0;
+    D3D9Lighting::numberOfAvailableLightSlots = 0;
+    D3D9Lighting::countOfAvailableLightSlots = 0;
+    D3D9Lighting::incrementalLightIndex = 0;
 
     int*& activeGlobalLightsArray = GetActiveGlobalLightsArray();
 
@@ -766,8 +798,8 @@ void __cdecl RpD3D9ShutdownLighting( void )
         activeGlobalLightsArray = NULL;
     }
 
-    *(int*)0x00C926CC = 0;
-    *(int*)0x00C926D0 = 0;
+    D3D9Lighting::numberOfActiveGlobalLightsArray = 0;
+    D3D9Lighting::countOfActiveGlobalLightsArray = 0;
 
     int*& swap_activeGlobalLightsArray = GetSwapActiveGlobalLightsArray();
 
@@ -778,8 +810,8 @@ void __cdecl RpD3D9ShutdownLighting( void )
         swap_activeGlobalLightsArray = NULL;
     }
 
-    *(int*)0x00C926D8 = 0;
-    *(int*)0x00C926DC = 0;
+    D3D9Lighting::swap_numberOfActiveGlobalLightsArray = 0;
+    D3D9Lighting::swap_countOfActiveGlobalLightsArray = 0;
 }
 
 /*=========================================================
@@ -801,7 +833,7 @@ int __cdecl RpD3D9InitializeLighting( void )
 
     unsigned int maxGPULights = pRwDeviceInfo->maxLights;
 
-    *(unsigned int*)0x00C926B4 = ( maxGPULights != 0 ) ? maxGPULights : 0xFFFFFFFF;
+    D3D9Lighting::maxNumberOfActiveLights = ( maxGPULights != 0 ) ? maxGPULights : 0xFFFFFFFF;
 
     // Set initial ambient light.
     GetAmbientColor() = RwColorFloat( 0, 0, 0, 1.0f );
