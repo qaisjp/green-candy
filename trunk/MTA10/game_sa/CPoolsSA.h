@@ -109,19 +109,30 @@ public:
 
     inline type*    Allocate( void )
     {
-        // The original code did two iterations, but it is not required
-        for ( unsigned int n = ++m_lastUsed; n < GetMax(); n++ )
+        unsigned int n = ++m_lastUsed;
+        unsigned int max = GetMax();
+
+        for ( unsigned int i = 0; i < 2; i++ )
         {
-            // If slot is used, we skip
-            if ( !( m_flags[n] & 0x80 ) )
-                continue;
+            for ( ; n < max; n++ )
+            {
+                // If slot is used, we skip
+                if ( !( m_flags[n] & 0x80 ) )
+                    continue;
 
-            // Mark slot as used
-            m_flags[n] &= ~0x80;
+                // Mark slot as used
+                m_flags[n] &= ~0x80;
 
-            // Next iteration we start from next slot
-            m_lastUsed = n;
-            return GetOffset( n );
+                // Next iteration we start from next slot
+                m_lastUsed = n;
+                return GetOffset( n );
+            }
+
+            // Try another iteration starting from the beginning.
+            // This ensures that there are no errors in the allocation system.
+            n = 0;
+            max = m_lastUsed;
+            m_lastUsed = 0xFFFFFFFF;
         }
 
         return NULL;
@@ -237,24 +248,6 @@ public:
     BYTE            m_pad[196];
 };
 
-class CEnvMapMaterialSA
-{
-public:
-    BYTE            m_pad[12];
-};
-
-class CEnvMapAtomicSA
-{
-public:
-    BYTE            m_pad[12];
-};
-
-class CSpecMapMaterialSA
-{
-public:
-    BYTE            m_pad[8];
-};
-
 #define MAX_DUMMIES     40000
 #define MAX_IPL         256
 
@@ -268,9 +261,9 @@ public:
 typedef CPool <CVehicleComponentInfoSAInterface, 500> CVehicleComponentInfoPool;
 typedef CPool <CColModelSAInterface, 20000> CColModelPool;
 
-typedef CPool <CPtrNodeSingleSA <void>, 100000> CPtrNodeSinglePool;
-typedef CPool <CPtrNodeDoubleSA <void>, 200000> CPtrNodeDoublePool;
-typedef CPool <CEntryInfoSA, 100000> CEntryInfoPool; // info for every entity in the world
+typedef CPool <CPtrNodeSingleSA <void>, 100000> CPtrNodeSinglePool; // Allocated for everything that renders on the world (using sector streaming)
+typedef CPool <CPtrNodeDoubleSA <void>, 10000> CPtrNodeDoublePool;  // Allocated for physical entities of special types
+typedef CPool <CEntryInfoSA, 100000> CEntryInfoPool; // info for every entity in the world (I think!)
 
 typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
@@ -355,9 +348,35 @@ extern CMTATaskPool *mtaTaskPool;
 extern CMTAPlayerDataPool *mtaPlayerDataPool;
 extern CMTAObjectDataPool *mtaObjectDataPool;
 
-// Export a namespace, since Visual Studio has problems with class lookup, apparently.
-// Namespaces are native and faster anyway.
-// Should be clones of the exported functionality.
+// Native memory addresses of pools.
+#define CLASS_CPool_VehicleModels           0xB4E680
+
+#define CLASS_CPool_Vehicle                 0xB74494
+#define CLASS_CPool_Ped                     0xB74490
+#define CLASS_CPool_Object                  0xB7449C
+
+#define CLASS_CBuildingPool                 0xb74498
+#define CLASS_CPedPool                      0xb74490
+#define CLASS_CObjectPool                   0xb7449c
+#define CLASS_CDummyPool                    0xb744a0
+#define CLASS_CVehiclePool                  0xb74494
+#define CLASS_CColModelPool                 0xb744a4
+#define CLASS_CTaskPool                     0xb744a8
+#define CLASS_CEventPool                    0xb744ac
+#define CLASS_CTaskAllocatorPool            0xb744bc
+#define CLASS_CPedIntelligencePool          0xb744c0
+#define CLASS_CPedAttractorPool             0xb744c4
+#define CLASS_CEntryInfoNodePool            0xb7448c
+#define CLASS_CNodeRoutePool                0xb744b8
+#define CLASS_CPatrolRoutePool              0xb744b4
+#define CLASS_CPointRoutePool               0xb744b0
+#define CLASS_CPtrNodeDoubleLinkPool        0xB74488
+#define CLASS_CPtrNodeSingleLinkPool        0xB74484
+#define CLASS_CColFilePool                  0x965560
+#define CLASS_CIPLFilePool                  0x8E3FB0
+
+// Export a namespace, since it avoids the class environment at native level (to speed up look-up).
+// I noticed that this file causes issues with Visual Studio IntelliSense, hopefully this helps solve it.
 namespace Pools
 {
     // Vehicles pool
@@ -384,8 +403,8 @@ namespace Pools
 
     // Peds pool
     CPedSA*                 AddPed                      ( modelId_t modelID );
-    CPedSA*                 AddCivilianPed              ( modelId_t modelID );
-    CPedSA*                 AddCivilianPed              ( void *ped );
+    CCivilianPedSA*         AddCivilianPed              ( modelId_t modelID );
+    CCivilianPedSA*         AddCivilianPed              ( void *ped );
     CPedSA*                 GetPed                      ( void *entity );
     CPedSA*                 GetPedFromRef               ( unsigned int index );
     void                    DeleteAllPeds               ( void );
@@ -395,7 +414,33 @@ namespace Pools
 
     // Others
     CBuildingSA*            AddBuilding                 ( modelId_t modelID );
-    void                    DeleteAllBuildings          ( void ); 
+    void                    DeleteAllBuildings          ( void );
+
+    // Pool inline functions.
+    // These should be used instead of the globals.
+    inline CPtrNodeSinglePool*&    GetPtrNodeSinglePool         ( void )        { return *(CPtrNodeSinglePool**)CLASS_CPtrNodeSingleLinkPool; }
+    inline CPtrNodeDoublePool*&    GetPtrNodeDoublePool         ( void )        { return *(CPtrNodeDoublePool**)CLASS_CPtrNodeDoubleLinkPool; }
+    inline CEntryInfoPool*&        GetEntryInfoPool             ( void )        { return *(CEntryInfoPool**)CLASS_CEntryInfoNodePool; }
+
+    inline CVehiclePool*&          GetVehiclePool               ( void )        { return *(CVehiclePool**)CLASS_CVehiclePool; }
+    inline CPedPool*&              GetPedPool                   ( void )        { return *(CPedPool**)CLASS_CPedPool; }
+    inline CBuildingPool*&         GetBuildingPool              ( void )        { return *(CBuildingPool**)CLASS_CBuildingPool; }
+    inline CObjectPool*&           GetObjectPool                ( void )        { return *(CObjectPool**)CLASS_CObjectPool; }
+
+    inline CDummyPool*&            GetDummyPool                 ( void )        { return *(CDummyPool**)CLASS_CDummyPool; }
+
+    inline CColModelPool*&         GetColModelPool              ( void )        { return *(CColModelPool**)CLASS_CColModelPool; }
+
+    inline CTaskPool*&             GetTaskPool                  ( void )        { return *(CTaskPool**)CLASS_CTaskPool; }
+    inline CEventPool*&            GetEventPool                 ( void )        { return *(CEventPool**)CLASS_CEventPool; }
+ 
+    inline CPointRoutePool*&       GetPointRoutePool            ( void )        { return *(CPointRoutePool**)CLASS_CPointRoutePool; }
+    inline CPatrolRoutePool*&      GetPatrolRoutePool           ( void )        { return *(CPatrolRoutePool**)CLASS_CPatrolRoutePool; }
+    inline CNodeRoutePool*&        GetNodeRoutePool             ( void )        { return *(CNodeRoutePool**)CLASS_CNodeRoutePool; }
+
+    inline CTaskAllocatorPool*&    GetTaskAllocatorPool         ( void )        { return *(CTaskAllocatorPool**)CLASS_CTaskAllocatorPool; }
+    inline CPedIntelligencePool*&  GetPedIntelligencePool       ( void )        { return *(CPedIntelligencePool**)CLASS_CPedIntelligencePool; }
+    inline CPedAttractorPool*&     GetPedAttractorPool          ( void )        { return *(CPedAttractorPool**)CLASS_CPedAttractorPool; }
 };
 
 class CPoolsSA : public CPools
@@ -429,8 +474,8 @@ public:
 
     // Peds pool
     CPedSA*                 AddPed                      ( modelId_t modelID )                                       { return Pools::AddPed( modelID ); }
-    CPedSA*                 AddCivilianPed              ( modelId_t modelID )                                       { return Pools::AddCivilianPed( modelID ); }
-    CPedSA*                 AddCivilianPed              ( void *ped )                                               { return Pools::AddCivilianPed( ped ); }
+    CCivilianPedSA*         AddCivilianPed              ( modelId_t modelID )                                       { return Pools::AddCivilianPed( modelID ); }
+    CCivilianPedSA*         AddCivilianPed              ( void *ped )                                               { return Pools::AddCivilianPed( ped ); }
     CPedSA*                 GetPed                      ( void *entity ) const                                      { return Pools::GetPed( entity ); }
     CPedSA*                 GetPedFromRef               ( unsigned int index ) const                                { return Pools::GetPedFromRef( index ); }
     void                    DeleteAllPeds               ( void )                                                    { Pools::DeleteAllPeds(); }
@@ -464,51 +509,6 @@ extern CObjectSA *mtaObjects[MAX_OBJECTS];
 #define FUNC_GetObject                      0x550050
 #define FUNC_GetObjectRef                   0x550020
 //#define FUNC_GetObjectCount               0x4A74D0
-
-#define CLASS_CPool_VehicleModels           0xB4E680
-
-#define CLASS_CPool_Vehicle                 0xB74494
-#define CLASS_CPool_Ped                     0xB74490
-#define CLASS_CPool_Object                  0xB7449C
-
-#define CLASS_CBuildingPool                 0xb74498
-#define CLASS_CPedPool                      0xb74490
-#define CLASS_CObjectPool                   0xb7449c
-#define CLASS_CDummyPool                    0xb744a0
-#define CLASS_CVehiclePool                  0xb74494
-#define CLASS_CColModelPool                 0xb744a4
-#define CLASS_CTaskPool                     0xb744a8
-#define CLASS_CEventPool                    0xb744ac
-#define CLASS_CTaskAllocatorPool            0xb744bc
-#define CLASS_CPedIntelligencePool          0xb744c0
-#define CLASS_CPedAttractorPool             0xb744c4
-#define CLASS_CEntryInfoNodePool            0xb7448c
-#define CLASS_CNodeRoutePool                0xb744b8
-#define CLASS_CPatrolRoutePool              0xb744b4
-#define CLASS_CPointRoutePool               0xb744b0
-#define CLASS_CPtrNodeDoubleLinkPool        0xB74488
-#define CLASS_CPtrNodeSingleLinkPool        0xB74484
-#define CLASS_CColFilePool                  0x965560
-#define CLASS_CIPLFilePool                  0x8E3FB0
-
-
-#define FUNC_CBuildingPool_GetNoOfUsedSpaces                0x550620
-#define FUNC_CPedPool_GetNoOfUsedSpaces                     0x5504A0
-#define FUNC_CObjectPool_GetNoOfUsedSpaces                  0x54F6B0
-#define FUNC_CDummyPool_GetNoOfUsedSpaces                   0x5507A0
-#define FUNC_CVehiclePool_GetNoOfUsedSpaces                 0x42CCF0
-#define FUNC_CColModelPool_GetNoOfUsedSpaces                0x550870
-#define FUNC_CTaskPool_GetNoOfUsedSpaces                    0x550940
-#define FUNC_CEventPool_GetNoOfUsedSpaces                   0x550A10
-#define FUNC_CTaskAllocatorPool_GetNoOfUsedSpaces           0x550d50
-#define FUNC_CPedIntelligencePool_GetNoOfUsedSpaces         0x550E20
-#define FUNC_CPedAttractorPool_GetNoOfUsedSpaces            0x550ef0
-#define FUNC_CEntryInfoNodePool_GetNoOfUsedSpaces           0x5503d0
-#define FUNC_CNodeRoutePool_GetNoOfUsedSpaces               0x550c80
-#define FUNC_CPatrolRoutePool_GetNoOfUsedSpaces             0x550bb0
-#define FUNC_CPointRoutePool_GetNoOfUsedSpaces              0x550ae0
-#define FUNC_CPtrNodeSingleLinkPool_GetNoOfUsedSpaces       0x550230
-#define FUNC_CPtrNodeDoubleLinkPool_GetNoOfUsedSpaces       0x550300
 
 #define FUNC_CTrain_CreateMissionTrain                      0x6F7550
 #define VAR_TrainModelArray                                 0x8D44F8

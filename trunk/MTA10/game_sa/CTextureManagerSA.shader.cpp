@@ -248,7 +248,7 @@ void CTextureManagerSA::PulseWorldTextureWatch()
             std::vector < RwTexture* > textureList;
             GetTxdTextures ( textureList, action.usTxdId );
 
-            for ( std::vector < RwTexture* > ::iterator iter = textureList.begin () ; iter != textureList.end () ; iter++ )
+            for ( std::vector < RwTexture* > ::iterator iter = textureList.begin () ; iter != textureList.end () ; ++iter )
             {
                 RwTexture* texture = *iter;
                 const char* szTextureName = texture->name;

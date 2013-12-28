@@ -480,7 +480,7 @@ RwTexture* RwTextureStreamReadEx( RwStream *stream )
         tex->flags_b = 4;
 
     // Note: MTA usually has a fxQuality hook here, but it did nothing for the texture loading.
-    if ( *(bool*)0x00C87FFC && tex->anisotropy > 0 && g_effectManager->m_fxQuality > 1 )
+    if ( *(bool*)0x00C87FFC && tex->anisotropy > 0 && g_effectManager->GetEffectQuality() > 1 )
         tex->anisotropy = pRwDeviceInfo->maxAnisotropy;
 
     return tex;

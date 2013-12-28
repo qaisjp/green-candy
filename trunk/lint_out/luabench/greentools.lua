@@ -140,6 +140,7 @@ function bundleServer(includeScenalizer)
 		"renderware",
 		"resedit",
 		"resedit_gdk",
+        "streaming_opt",
 		"[Admin]",
 		"[editor]",
 		"[gameplay]",

@@ -205,7 +205,7 @@ bool CLocalServer::Load()
 
         // Read the startup resources
         list < CXMLNode* > ::const_iterator iter = pRoot->ChildrenBegin ();
-        for ( ; iter != pRoot->ChildrenEnd (); iter++ )
+        for ( ; iter != pRoot->ChildrenEnd (); ++iter )
         {
             CXMLNode* pNode = reinterpret_cast < CXMLNode* > ( *iter );
             if ( pNode->GetTagName ().compare ( "resource" ) == 0 )
@@ -224,7 +224,7 @@ bool CLocalServer::Load()
     GetResourceNameList( resourceNameList, path );
 
     // Put resource names into the GUI
-    for ( resNameList_t::iterator iter = resourceNameList.begin(); iter != resourceNameList.end(); iter++ )
+    for ( resNameList_t::iterator iter = resourceNameList.begin(); iter != resourceNameList.end(); ++iter )
         HandleResource( (*iter).c_str() );
 
     return true;
@@ -349,7 +349,7 @@ void CLocalServer::GetResourceNameList( resNameList_t& outResourceNameList, cons
     scan.resRoot->ScanDirectory( strModPath, "*.zip", false, _resscan_dir, _resscan_file, &scan );
 
     // Print important errors
-    for ( resInfo_t::const_iterator iter = scan.map.begin(); iter != scan.map.end(); iter++ )
+    for ( resInfo_t::const_iterator iter = scan.map.begin(); iter != scan.map.end(); ++iter )
     {
         const SResInfo& info = iter->second;
 
@@ -376,7 +376,7 @@ bool CLocalServer::Save()
         // Remove old resources from the config
         CXMLNode* pRoot = m_pConfig->GetRootNode();
         list < CXMLNode* > ::const_iterator iter = pRoot->ChildrenBegin ();
-        for ( ; iter != pRoot->ChildrenEnd (); iter++ )
+        for ( ; iter != pRoot->ChildrenEnd (); ++iter )
         {
             CXMLNode* pNode = reinterpret_cast < CXMLNode* > ( *iter );
             if ( pNode->GetTagName().compare ( "resource" ) == 0 )

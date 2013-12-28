@@ -3491,7 +3491,7 @@ void CPacketHandler::Packet_EntityAdd ( NetBitStreamInterface& bitStream )
 
     // Link the entity dependant stuff
     list < SEntityDependantStuff* > ::iterator iter = newEntitiesStuff.begin ();
-    for ( ; iter != newEntitiesStuff.end () ; iter++ )
+    for ( ; iter != newEntitiesStuff.end () ; ++iter )
     {
         SEntityDependantStuff* pEntityStuff = *iter;
         CClientEntity* pTempEntity = pEntityStuff->pEntity;

@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        derived/CLuaManager.cpp
 *  PURPOSE:     Derived lua hyperstructure management
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -244,6 +244,9 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, setPedAimTarget );
     LUA_REGISTER( L, setPedOnFire );
 
+    // Civilian ped functions.
+    LUA_REGISTER( L, createCivilian );
+
     // Clothes and body functions
     LUA_REGISTER( L, getBodyPartName );
     LUA_REGISTER( L, getClothesByTypeIndex );
@@ -457,6 +460,8 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineReplaceModel );
     LUA_REGISTER( L, engineRestoreModel );
     LUA_REGISTER( L, engineSetModelLODDistance );
+    LUA_REGISTER( L, engineSetEnvMapRenderingEnabled );
+    LUA_REGISTER( L, engineIsEnvMapRenderingEnabled );
     LUA_REGISTER( L, engineSetAsynchronousLoading );
     LUA_REGISTER( L, engineApplyShaderToWorldTexture );
     LUA_REGISTER( L, engineRemoveShaderFromWorldTexture );

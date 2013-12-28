@@ -70,7 +70,7 @@ void scmThread::PushInt( int num )
 void scmThread::PushString( const std::string& string )
 {
     unsigned int n;
-    size_t len = min(8, string.size());
+    size_t len = std::min( (size_t)8, string.size() );
 
     for ( n=0; n<len; n++ )
         m_scriptBuffer[ m_cursor++ ] = string[n];

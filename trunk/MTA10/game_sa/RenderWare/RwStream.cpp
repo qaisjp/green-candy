@@ -139,7 +139,7 @@ inline unsigned int RwStreamBufferedWrite( RwBufferedStream& data, const void *b
     {
         size_t newMemSize = position + std::max( (unsigned int)RW_STREAM_WRITEBUF_SIZE, writeSize );
 
-        writeBuf = pRwInterface->m_memory.m_realloc( writeBuf, newMemSize );
+        writeBuf = pRwInterface->m_memory.m_realloc( writeBuf, newMemSize, 0 );
 
         if ( !writeBuf )
         {

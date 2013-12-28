@@ -28,19 +28,6 @@ CClientCivilianManager::~CClientCivilianManager ( void )
     DeleteAll ();
 }
 
-
-CClientCivilian* CClientCivilianManager::Create ( int iPedModel, ElementID ID )
-{
-    return new CClientCivilian ( m_pManager, ID, iPedModel );
-}
-
-
-CClientCivilian* CClientCivilianManager::Create ( CCivilianPed * pPed, ElementID ID )
-{
-    return new CClientCivilian ( m_pManager, ID, pPed );
-}
-
-
 void CClientCivilianManager::DeleteAll ( void )
 {
     // Delete all the civilians

@@ -123,7 +123,7 @@ namespace CLuaFunctionDefs
                 // Stupid filtering :P
                 std::list <CTexture*>& list = dict->GetTextures();
 
-                for ( std::list <CTexture*>::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+                for ( std::list <CTexture*>::const_iterator iter = list.begin(); iter != list.end(); ++iter )
                     (*iter)->SetFiltering( filtering );
 
                 CClientTXD *obj = new CClientTXD( L, *dict, res );
@@ -442,6 +442,33 @@ namespace CLuaFunctionDefs
         }
 
         lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineSetEnvMapRenderingEnabled )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetRenderWare()->EnableEnvMapRendering( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsEnvMapRenderingEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetRenderWare()->IsEnvMapRenderingEnabled() );
         return 1;
     }
 
@@ -785,7 +812,7 @@ namespace CLuaFunctionDefs
         
         unsigned int n = 0;
 
-        for ( CStreaming::entityList_t::iterator iter = list.begin(); iter != list.end(); iter++ )
+        for ( CStreaming::entityList_t::iterator iter = list.begin(); iter != list.end(); ++iter )
         {
             CEntity *gameEntity = *iter;
 
@@ -911,6 +938,8 @@ namespace CLuaFunctionDefs
 
         for ( unsigned int n = 0; n < MAX_POOLS; n++ )
         {
+            lua_newtable( L );
+
             lua_pushstring( L, pools->GetPoolName( (ePools)n ) );
             lua_setfield( L, -2, "name" );
 
@@ -919,6 +948,8 @@ namespace CLuaFunctionDefs
 
             lua_pushnumber( L, pools->GetPoolCapacity( (ePools)n ) );
             lua_setfield( L, -2, "maxCount" );
+
+            lua_rawseti( L, -2, n + 1 );
         }
 
         return 1;

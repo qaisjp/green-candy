@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+#include "RenderWare/RwRenderTools.hxx"
 
 // Nasty pools which limit rendering.
 CEnvMapMaterialPool **ppEnvMapMaterialPool = (CEnvMapMaterialPool**)0x00C02D28;
@@ -18,11 +19,6 @@ CEnvMapAtomicPool **ppEnvMapAtomicPool = (CEnvMapAtomicPool**)0x00C02D2C;
 CSpecMapMaterialPool **ppSpecMapMaterialPool = (CSpecMapMaterialPool**)0x00C02D30;
 
 RwRenderStateLock::_rsLockDesc RwRenderStateLock::_rsLockInfo[210];
-
-inline IDirect3DDevice9* GetRenderDevice( void )
-{
-    return core->GetGraphics()->GetDevice();
-}
 
 /*=========================================================
     RwD3D9SetRenderState
@@ -45,6 +41,12 @@ struct _renderStateDesc
 
 void __cdecl RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
 {
+    // The reason we use the native table is because a lot of calls to
+    // RwD3D9SetRenderState have been inlined by the compiler. I realized
+    // that the render state locks are flawed until we reverse all such
+    // inlined calls.
+    // * RenderWare appears to have a native inlined routine for setting render
+    //   states that always assumes they need updating (1.0 US): 0x007FE0D0
     _renderStateDesc& desc = ((_renderStateDesc*)0x00C991D0)[type];
 
     if ( desc.value == value )
@@ -79,8 +81,9 @@ struct _internalRenderStateDesc
         isForced = false;
     }
 
-    DWORD value;
-    bool isForced;
+    DWORD value;        // native GTA:SA renderstate
+    DWORD forceValue;   // value to be forced into the rendering device
+    bool isForced;      // boolean whether MTA wants only its renderstate active
 };
 static _internalRenderStateDesc _intRenderStates[210];
 
@@ -94,6 +97,9 @@ void RwD3D9ForceRenderState( D3DRENDERSTATETYPE type, DWORD value )
         desc.isForced = true;
         RwD3D9GetRenderState( type, desc.value );
     }
+
+    // Store the forced renderstate so we ensure sync with native code.
+    desc.forceValue = value;
 
     // Set the MTA RenderState
     RwD3D9SetRenderState( type, value );
@@ -114,7 +120,7 @@ void RwD3D9ForceRenderState( D3DRENDERSTATETYPE type, DWORD value )
         (1.0 US): 0x007FC2D0
         (1.0 EU): 0x007FC310
 =========================================================*/
-static void __cdecl HOOK_RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
+void __cdecl HOOK_RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
 {
     // Actual bugfix.
     __asm push edx
@@ -251,7 +257,7 @@ void __cdecl RwD3D9GetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE
         (1.0 US): 0x007FC320
         (1.0 EU): 0x007FC360
 =========================================================*/
-static void __cdecl HOOK_RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
+void __cdecl HOOK_RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
 {
     // Actual bugfix.
     __asm push edx
@@ -286,8 +292,19 @@ void RwD3D9FreeRenderState( D3DRENDERSTATETYPE type )
     // Notify we are not forcing a value anymore
     desc.isForced = false;
 
-    // Revert to the GTA:SA version
-    RwD3D9SetRenderState( type, desc.value );
+    // If a rogue renderstate change has happened, we cannot revert back.
+    // Reverting back would screw the integrity of renderstates.
+    // (rogue changes should be avoided at all cost, but happen often
+    // since we do not control the whole GTA:SA codebase yet).
+    DWORD curState = 0;
+
+    RwD3D9GetRenderState( type, curState );
+
+    if ( curState == desc.forceValue )
+    {
+        // Revert to the GTA:SA version
+        RwD3D9SetRenderState( type, desc.value );
+    }
 }
 
 /*=========================================================
@@ -364,9 +381,22 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
 
         if ( currentState != newState )
         {
-            renderDevice->SetRenderState( type, newState );
+            // Check whether native code conflicts with our implementation here.
+            // If so, fix the render state representation.
+            _internalRenderStateDesc& intInfo = _intRenderStates[type];
 
-            currentState = newState;
+            if ( intInfo.isForced && intInfo.forceValue != newState )
+            {
+                desc.value = intInfo.forceValue;
+                intInfo.value = newState;
+            }
+            else
+            {
+                // RS change is legit, apply it.
+                renderDevice->SetRenderState( type, newState );
+
+                currentState = newState;
+            }
         }
     }
 
@@ -404,83 +434,234 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
 
     Arguments:
         streamInfo - descriptor of stream to set as current
-
+        useOffset - boolean whether to use offseting into
+                    the stream buffers
     Purpose:
-        Sets up the atomic pipeline, prepares the device information
-        and initializes the material, atomic and specular material
-        custom pools.
+        Updates the Direct3D 9 device vertex stream buffers.
+        This function caches the current stream buffers so that
+        unnecessary updates to the GPU are avoided.
     Binary offsets:
         (1.0 US): 0x007FA090
         (1.0 EU): 0x007FA0D0
 =========================================================*/
-struct RwD3D9StreamInfo //size: 16 bytes
+inline RwD3D9Streams& GetStreamsInfo( unsigned int index )
 {
-    int unk;            // 0
-    void *unk2;         // 4
-    void *unk3;         // 8
-    int unk4;           // 12
-};
+    assert( index < 2 );
 
-inline RwD3D9StreamInfo& GetStreamInfo( unsigned int index )
-{
-    assert( index < 4 );
-
-    return ((RwD3D9StreamInfo*)0x00C97BD8)[index];
+    return ((RwD3D9Streams*)0x00C97BD8)[index];
 }
 
-void __cdecl RwD3D9SetStreams( RwD3D9StreamInfo *sinfo, int someBool )
+void __cdecl RwD3D9SetStreams( RwD3D9Streams& streams, int useOffset )
 {
+    IDirect3DDevice9 *renderDevice = GetRenderDevice_Native();
+
+    RwD3D9Streams& currentStreams = GetStreamsInfo( 0 );
+
+    // Loop through all stream interfaces (there can be maximally two)
     for ( unsigned int n = 0; n < 2; n++ )
     {
-        //RwD3D9StreamInfo& 
+        RwD3D9StreamInfo& info = streams.streams[n];
+        RwD3D9StreamInfo& current = currentStreams.streams[n];
+
+        // The caller decides whether we use byte offsets in this stream.
+        size_t streamOffset = ( useOffset ) ? info.m_offset : 0;
+
+        // Decide whether the stream interface needs updating at all.
+        if ( IDirect3DVertexBuffer9 *vertexBuf = info.m_vertexBuf )
+        {
+            if ( current.m_vertexBuf != vertexBuf ||
+                 current.m_offset != streamOffset ||
+                 current.m_stride != info.m_stride )
+            {
+                current.m_vertexBuf = vertexBuf;
+                current.m_offset = streamOffset;
+                current.m_stride = info.m_stride;
+
+                renderDevice->SetStreamSource( n, vertexBuf, streamOffset, info.m_stride );
+            }
+        }
+        else
+        {
+            // Clear the vertex stream if it has been unloaded in the given streams info.
+            if ( current.m_vertexBuf )
+            {
+                current.m_vertexBuf = NULL;
+                current.m_offset = 0;
+                current.m_stride = 0;
+
+                renderDevice->SetStreamSource( n, NULL, 0, 0 );
+            }
+        }
     }
 }
 
 /*=========================================================
-    HOOK_DefaultAtomicRenderingCallback
+    RwD3D9SetCurrentPixelShader
 
+    Arguments:
+        pixelShader - device fragment shader pointer
     Purpose:
-        Sets up the atomic pipeline, prepares the device information
-        and initializes the material, atomic and specular material
-        custom pools.
+        Sets the active fragment shader that is used for
+        rendering video data.
     Binary offsets:
-        (1.0 US): 0x00756DF0
-        (1.0 EU): 0x00756E40
+        (1.0 US): 0x007F9FF0
+        (1.0 EU): 0x007FA030
 =========================================================*/
-struct RwRenderCallbackTraverse
+inline IDirect3DPixelShader9*& GetCurrentPixelShader( void )
 {
-    BYTE                        m_pad[32];              // 0
-    IDirect3DIndexBuffer9*      m_indexBuffer;          // 32
-};
+    return *(IDirect3DPixelShader9**)0x008E244C;
+}
 
+void __cdecl RwD3D9SetCurrentPixelShader( IDirect3DPixelShader9 *pixelShader )
+{
+    IDirect3DPixelShader9*& currentPixelShader = GetCurrentPixelShader();
+
+    if ( pixelShader != currentPixelShader )
+    {
+        bool success = GetRenderDevice_Native()->SetPixelShader( pixelShader ) >= 0;
+
+        currentPixelShader = ( success ) ? pixelShader : (IDirect3DPixelShader9*)-1;
+    }
+}
+
+inline void __cdecl RwD3D9UnsetPixelShader( void )
+{
+    IDirect3DPixelShader9*& currentPixelShader = GetCurrentPixelShader();
+
+    if ( currentPixelShader )
+    {
+        currentPixelShader = NULL;
+
+        GetRenderDevice_Native()->SetPixelShader( NULL );
+    }
+}
+
+/*=========================================================
+    RwD3D9SetCurrentVertexShader
+
+    Arguments:
+        vertexShader - device vertex shader pointer
+    Purpose:
+        Sets the active vertex shader that is used for
+        blending video data.
+    Binary offsets:
+        (1.0 US): 0x007F9FB0
+        (1.0 EU): 0x007F9FF0
+=========================================================*/
+inline IDirect3DVertexShader9*& GetCurrentVertexShader( void )
+{
+    return *(IDirect3DVertexShader9**)0x008E2448;
+}
+
+inline void __cdecl RwD3D9SetCurrentVertexShader( IDirect3DVertexShader9 *vertexShader )
+{
+    IDirect3DVertexShader9*& currentVertexShader = GetCurrentVertexShader();
+
+    if ( currentVertexShader != vertexShader )
+    {
+        bool success = GetRenderDevice_Native()->SetVertexShader( vertexShader ) >= 0;
+
+        currentVertexShader = ( success ) ? vertexShader : (IDirect3DVertexShader9*)-1;
+    }
+}
+
+/*=========================================================
+    RwD3D9SetCurrentIndexBuffer
+
+    Arguments:
+        indexBuf - device index buffer pointer
+    Purpose:
+        Sets the index buffer that holds pointers to vertice
+        data inside of the vertex streams.
+    Binary offsets:
+        (1.0 US): 0x007FA1C0
+        (1.0 EU): 0x007FA200
+=========================================================*/
 inline IDirect3DIndexBuffer9*& GetCurrentIndexBuffer( void )
 {
     return *(IDirect3DIndexBuffer9**)0x008E2450;
 }
 
-inline void RwD3D9SetCurrentIndexBuffer( IDirect3DIndexBuffer9 *indexBuf )
+inline void __cdecl RwD3D9SetCurrentIndexBuffer( IDirect3DIndexBuffer9 *indexBuf )
 {
-    if ( indexBuf && GetCurrentIndexBuffer() != indexBuf )
-    {
-        GetCurrentIndexBuffer() = indexBuf;
+    IDirect3DIndexBuffer9*& curIndexBuf = GetCurrentIndexBuffer();
 
-        GetRenderDevice()->SetIndices( indexBuf );
+    if ( curIndexBuf != indexBuf )
+    {
+        curIndexBuf = indexBuf;
+
+        GetRenderDevice_Native()->SetIndices( indexBuf );
     }
 }
 
-void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtinfo, RwObject *renderObject, eRwType renderType, void *unk3 )
+/*=========================================================
+    RwD3D9SetCurrentVertexDeclaration
+
+    Arguments:
+        vertexDecl - device vertex declaration pointer
+    Purpose:
+        Sets the active device vertex declaration. It specifies
+        how the vertex data is formated.
+    Binary offsets:
+        (1.0 US): 0x007F9F70
+        (1.0 EU): 0x007F9FB0
+=========================================================*/
+inline IDirect3DVertexDeclaration9*& GetCurrentVertexDeclaration( void )
 {
-    IDirect3DDevice9 *renderDevice = GetRenderDevice();
+    return *(IDirect3DVertexDeclaration9**)0x008E2444;
+}
 
-    IDirect3DPixelShader9 *currentPixelShader = *(IDirect3DPixelShader9**)0x008E244C;
+inline DWORD& GetCurrentFixedVertexFunction( void )
+{
+    return *(DWORD*)0x008E2440;
+}
 
-    if ( currentPixelShader )
+inline void RwD3D9SetCurrentVertexDeclaration( IDirect3DVertexDeclaration9 *vertexDecl )
+{
+    IDirect3DVertexDeclaration9*& curVertexDecl = GetCurrentVertexDeclaration();
+
+    if ( curVertexDecl != vertexDecl )
     {
-        *(IDirect3DPixelShader9**)0x008E244C = NULL;
+        GetCurrentFixedVertexFunction() = -1;
 
-        renderDevice->SetPixelShader( currentPixelShader );
+        bool success = GetRenderDevice_Native()->SetVertexDeclaration( vertexDecl ) >= 0;
+
+        curVertexDecl = ( success ) ? vertexDecl : (IDirect3DVertexDeclaration9*)-1;
     }
+}
 
+inline void __cdecl RpD3D9DrawIndexedPrimitive( D3DPRIMITIVETYPE primitiveType, INT baseVertexIndex, UINT minVertexIndex, UINT numVertice, UINT startIndex, UINT primCount )
+{
+    // Update the render and texture states before drawing.
+    RwD3D9ApplyDeviceStates();
+
+    GetRenderDevice()->DrawIndexedPrimitive( primitiveType, baseVertexIndex, minVertexIndex, numVertice, startIndex, primCount );
+}
+
+inline void __cdecl RpD3D9DrawPrimitive( D3DPRIMITIVETYPE primitiveType, UINT startVertex, UINT numPrimitives )
+{
+    // Update the render and texture states before drawing.
+    RwD3D9ApplyDeviceStates();
+
+    GetRenderDevice()->DrawPrimitive( primitiveType, startVertex, numPrimitives );
+}
+
+/*=========================================================
+    RwD3D9EnableClippingIfNeeded
+
+    Arguments:
+        renderObject - the RenderWare object to clip
+        renderType - type of the RenderWare object
+    Purpose:
+        Decides whether the given RenderWare object can be clipped.
+        Polygons are clipped when they are outside of the screen.
+        A simple frustum check decides this.
+    Binary offsets:
+        (1.0 US): 0x007F9F70
+        (1.0 EU): 0x007F9FB0
+=========================================================*/
+inline void RwD3D9EnableClippingIfNeeded( RwObject *renderObject, eRwType renderType )
+{
     bool isObjectVisible = false;
     RwCamera *currentCam = pRwInterface->m_renderCam;
 
@@ -494,11 +675,247 @@ void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtin
         isObjectVisible = RwD3D9CameraIsBBoxFullyInsideFrustum( currentCam, ((CVector*) ((char*)renderObject + 96) ) );
     }
 
-    HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, false );
+    // Clip polygons if the object is not visible.
+    HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, !isObjectVisible );
+}
 
-    RwD3D9SetCurrentIndexBuffer( rtinfo->m_indexBuffer );
+/*=========================================================
+    HOOK_DefaultAtomicRenderingCallback
 
-    
+    Purpose:
+        Sets up the atomic pipeline, prepares the device information
+        and initializes the material, atomic and specular material
+        custom pools.
+    Binary offsets:
+        (1.0 US): 0x00756DF0
+        (1.0 EU): 0x00756E40
+=========================================================*/
+struct GenericVideoPassRender
+{
+    __forceinline GenericVideoPassRender( unsigned int& _renderFlags ) : renderFlags( _renderFlags )
+    {
+        // Store some render states.
+        HOOK_RwD3D9GetRenderState( D3DRS_DITHERENABLE, ditheringEnabled );
+        HOOK_RwD3D9GetRenderState( D3DRS_SHADEMODE, shadeMode );
+
+        // Change render states.
+        RwD3D9RenderStateSetVertexAlphaEnabled( false );
+
+        HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFF000000 );
+        HOOK_RwD3D9SetRenderState( D3DRS_DITHERENABLE, FALSE );
+        HOOK_RwD3D9SetRenderState( D3DRS_SHADEMODE, D3DSHADE_FLAT );
+
+        RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG2 );
+        RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+        RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TFACTOR );
+        RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+        RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+        RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR );
+
+        RwD3D9SetTexture( 0, NULL );
+
+        // Keep track of alpha modulation status.
+        hasAlphaModulation = false;
+    }
+
+    __forceinline ~GenericVideoPassRender( void )
+    {
+        // Restore some render states.
+        HOOK_RwD3D9SetRenderState( D3DRS_SHADEMODE, shadeMode );
+        HOOK_RwD3D9SetRenderState( D3DRS_DITHERENABLE, ditheringEnabled );
+    }
+
+    __forceinline void OnRenderPass( RwRenderPass *rtPass )
+    {
+        RpMaterial *curMat = rtPass->m_useMaterial;
+
+        if ( IS_FLAG( renderFlags, 0x84 ) && RwTextureHasAlpha( curMat->m_texture ) )
+        {
+            RwD3D9SetTexture( curMat->m_texture, 0 );
+
+            if ( !hasAlphaModulation )
+            {
+                RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+
+                hasAlphaModulation = true;
+            }
+        }
+        else
+        {
+            if ( hasAlphaModulation )
+            {
+                RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+
+                hasAlphaModulation = false;
+
+                RwD3D9SetTexture( NULL, 0 );
+            }
+        }
+    }
+
+    unsigned int& renderFlags;
+    DWORD ditheringEnabled;
+    DWORD shadeMode;
+    bool hasAlphaModulation;
+};
+
+struct AlphaTexturedVideoPassRender
+{
+    __forceinline AlphaTexturedVideoPassRender( unsigned int& _renderFlags, DWORD& _lightValue ) : renderFlags( _renderFlags ), lightValue( _lightValue )
+    {
+        // Store current vertex alpha status.
+        hasVertexAlpha = RwD3D9RenderStateIsVertexAlphaEnabled() ? true : false;
+
+        // Store the current state flags
+        // These are used for optimization purposes.
+        // The initial value should be a flag that is not used and invalid.
+        curStateFlags = 0x80000000;
+    }
+
+    __forceinline void TerminateSecondStage( void )
+    {
+        if ( curStateFlags == 0x03 )
+        {
+            RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
+            RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+        }
+    }
+
+    __forceinline ~AlphaTexturedVideoPassRender( void )
+    {
+        TerminateSecondStage();
+    }
+
+    __forceinline void OnRenderPass( RwRenderPass *rtPass )
+    {
+        RpMaterial *curMat = rtPass->m_useMaterial;
+
+        // Update device vertex alpha status.
+        // Did Rockstar even know how to fully utilize RenderWare?
+        bool needsVertexAlpha = RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat );
+
+        if ( needsVertexAlpha != hasVertexAlpha )
+        {
+            hasVertexAlpha = needsVertexAlpha;
+
+            RwD3D9RenderStateSetVertexAlphaEnabled( needsVertexAlpha );
+        }
+
+        // Update surface properties.
+        unsigned int stateFlags = 0;
+
+        if ( !RwD3D9UpdateRenderPassSurfaceProperties( rtPass, lightValue, curMat, renderFlags ) && IS_ANY_FLAG( renderFlags, 0x40 ) && curMat->m_color != 0xFFFFFFFF )
+        {
+            stateFlags |= 0x02;
+
+            HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, curMat->m_color.ToD3DColor() );
+        }
+
+        // Update texture status.
+        RwTexture *matTex = curMat->m_texture;
+
+        if ( matTex && IS_ANY_FLAG( renderFlags, 0x84 ) )
+        {
+            RwD3D9SetTexture( matTex, 0 );
+
+            stateFlags |= 0x01;
+        }
+        else
+            RwD3D9SetTexture( NULL, 0 );
+
+        // Change render states depending on the current status that we set above.
+        if ( stateFlags != curStateFlags )
+        {
+            bool requireSecondStage = false;
+
+            if ( IS_ANY_FLAG( stateFlags, 0x01 ) )
+            {
+                if ( !IS_ANY_FLAG( curStateFlags, 0x01 ) )
+                {
+                    RwD3D9SetTexturedRenderStates( true );
+                }
+
+                if ( IS_ANY_FLAG( stateFlags, 0x02 ) )
+                {
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_CURRENT );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_TFACTOR );
+
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG1, D3DTA_CURRENT );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_TFACTOR );
+
+                    requireSecondStage = true;
+                }
+            }
+            else
+            {
+                if ( IS_ANY_FLAG( stateFlags, 0x02 ) )
+                {
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TFACTOR );
+
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR );
+                }
+                else
+                {
+                    RwD3D9SetTexturedRenderStates( false );
+                }
+            }
+
+            if ( !requireSecondStage )
+                TerminateSecondStage();
+
+            // We changed state.
+            curStateFlags = stateFlags;
+        }
+    }
+
+    unsigned int& renderFlags;
+    DWORD& lightValue;
+    bool hasVertexAlpha;
+    unsigned int curStateFlags;
+};
+
+// todo: is there even a "default" rendering callback?
+// after all, every pipeline is stand-alone.
+void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags )
+{
+    RwRenderCallbackTraverseImpl *rtinfo = &rtnative->m_impl;
+
+    // Make sure we are not rendering using any pixel shader.
+    RwD3D9UnsetPixelShader();
+
+    // Set clipping status.
+    RwD3D9EnableClippingIfNeeded( renderObject, renderType );
+
+    // Update the current index buffer (only if set)
+    if ( IDirect3DIndexBuffer9 *indexBuf = rtinfo->m_indexBuffer )
+        RwD3D9SetCurrentIndexBuffer( indexBuf );
+
+    // Update the vertex streams.
+    RwD3D9SetStreams( rtinfo->m_vertexStreams, rtinfo->m_useOffsets );
+
+    // Set the vertex type.
+    RwD3D9SetCurrentVertexDeclaration( rtinfo->m_vertexDecl );
+
+    // Do we want vertex alpha?
+    // Kind of an important flag here.
+    DWORD lightValue;
+
+    bool enableAlpha = RwD3D9IsAlphaRenderingRequired( renderFlags, lightValue );
+
+    if ( enableAlpha )
+    {
+        _RenderVideoDataGeneric( rtinfo, GenericVideoPassRender( renderFlags ) );
+    }
+    else
+    {
+        _RenderVideoDataGeneric( rtinfo, AlphaTexturedVideoPassRender( renderFlags, lightValue ) );
+    }
 }
 
 /*=========================================================
@@ -564,6 +981,7 @@ void RenderWarePipeline_Init( void )
         HookInstall( 0x007FC380, (DWORD)RwD3D9SetTextureStageState, 5 );
         HookInstall( 0x007FC3E0, (DWORD)RwD3D9GetTextureStageState, 5 );
         HookInstall( 0x007FC240, (DWORD)RwD3D9ApplyDeviceStates, 5 );
+        HookInstall( 0x00756E40, (DWORD)HOOK_DefaultAtomicRenderingCallback, 5 );
         break;
     case VERSION_US_10:
         HookInstall( 0x007FC2D0, (DWORD)HOOK_RwD3D9SetRenderState, 5 );
@@ -571,6 +989,7 @@ void RenderWarePipeline_Init( void )
         HookInstall( 0x007FC340, (DWORD)RwD3D9SetTextureStageState, 5 );
         HookInstall( 0x007FC3A0, (DWORD)RwD3D9GetTextureStageState, 5 );
         HookInstall( 0x007FC200, (DWORD)RwD3D9ApplyDeviceStates, 5 );
+        HookInstall( 0x00756DF0, (DWORD)HOOK_DefaultAtomicRenderingCallback, 5 );
         break;
     }
 

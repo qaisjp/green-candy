@@ -22,7 +22,7 @@ namespace LuaFunctionDefs
         ResourceManager::resourceList_t::const_iterator iter = resManager->IterBegin();
         unsigned int n = 1;
 
-        for ( ; iter != resManager->IterEnd(); iter++, n++ )
+        for ( ; iter != resManager->IterEnd(); ++iter, n++ )
         {
             (*iter)->PushStack( L );
             lua_rawseti( L, 1, n );

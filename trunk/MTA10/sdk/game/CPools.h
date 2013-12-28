@@ -22,6 +22,7 @@
 #include "CBuilding.h"
 #include "CObject.h"
 #include "CPed.h"
+#include "CCivilianPed.h"
 
 enum ePools
 {
@@ -77,8 +78,8 @@ public:
 
     // Peds pool
     virtual CPed*                   AddPed                      ( modelId_t modelID ) = 0;
-    virtual CPed*                   AddCivilianPed              ( modelId_t modelID ) = 0;
-    virtual CPed*                   AddCivilianPed              ( void *ped ) = 0;
+    virtual CCivilianPed*           AddCivilianPed              ( modelId_t modelID ) = 0;
+    virtual CCivilianPed*           AddCivilianPed              ( void *ped ) = 0;
     virtual CPed*                   GetPed                      ( void *entity ) const = 0;
     virtual CPed*                   GetPedFromRef               ( unsigned int index ) const = 0;
     virtual void                    DeleteAllPeds               ( void ) = 0;

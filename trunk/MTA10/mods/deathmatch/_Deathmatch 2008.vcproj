@@ -821,6 +821,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\shared_logic\CClientPedBase.cpp"
+					>
+				</File>
+				<File
 					RelativePath="..\shared_logic\CClientPedManager.cpp"
 					>
 				</File>
@@ -1037,6 +1041,10 @@
 					</File>
 					<File
 						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.Camera.cpp"
+						>
+					</File>
+					<File
+						RelativePath="..\shared_logic\lua\CLuaFunctionDefs.Civilian.cpp"
 						>
 					</File>
 					<File
@@ -2476,6 +2484,10 @@
 				</File>
 				<File
 					RelativePath="..\shared_logic\CClientPed.h"
+					>
+				</File>
+				<File
+					RelativePath="..\shared_logic\CClientPedBase.h"
 					>
 				</File>
 				<File

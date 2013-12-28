@@ -262,7 +262,7 @@ void CFoo::Test ( const char* szString )
     {
         std::vector <CClientVehicle*>::const_iterator iter = pVehicleManager->IterBegin();
 
-        for ( ; iter != pVehicleManager->IterEnd(); iter++ )
+        for ( ; iter != pVehicleManager->IterEnd(); ++iter )
         {
             CVehicle *veh = (*iter)->GetGameVehicle();
 

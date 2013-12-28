@@ -1113,7 +1113,7 @@ void CGraphics::DrawQueue ( std::vector < sDrawQueueItem >& Queue )
     {
         // Loop through it
         std::vector < sDrawQueueItem >::iterator iter = Queue.begin ();
-        for ( ; iter != Queue.end (); iter++ )
+        for ( ; iter != Queue.end (); ++iter )
         {
             // Draw the item
             DrawQueueItem ( *iter );
@@ -1293,7 +1293,7 @@ ID3DXFont* CGraphics::MaybeGetBigFont ( ID3DXFont* pDXFont, float& fScaleX, floa
 //
 void CGraphics::ClearDrawQueue ( std::vector < sDrawQueueItem >& Queue )
 {
-    for ( std::vector < sDrawQueueItem >::const_iterator iter = Queue.begin () ; iter != Queue.end (); iter++ )
+    for ( std::vector < sDrawQueueItem >::const_iterator iter = Queue.begin () ; iter != Queue.end (); ++iter )
     {
         const sDrawQueueItem& item = *iter;
         if ( item.eType == QUEUE_TEXTURE || item.eType == QUEUE_SHADER )

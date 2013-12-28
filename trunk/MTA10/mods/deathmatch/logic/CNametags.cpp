@@ -211,7 +211,7 @@ void CNametags::DrawFromAim ( void )
             CClientPlayer* pPlayer;
             CClientStreamElement * pElement;
             list < CClientStreamElement* > ::const_iterator iter = m_pPlayerStreamer->ActiveElementsBegin ();
-            for ( ; iter != m_pPlayerStreamer->ActiveElementsEnd (); iter++ )
+            for ( ; iter != m_pPlayerStreamer->ActiveElementsEnd (); ++iter )
             {
                 pElement = *iter;
                 if ( !pElement->IsStreamedIn () ) continue;
@@ -348,7 +348,7 @@ void CNametags::DrawDefault ( void )
     CClientPlayer* pPlayer;
     CClientStreamElement * pElement;
     list < CClientStreamElement* > ::const_iterator iter = m_pPlayerStreamer->ActiveElementsBegin ();
-    for ( ; iter != m_pPlayerStreamer->ActiveElementsEnd (); iter++ )
+    for ( ; iter != m_pPlayerStreamer->ActiveElementsEnd (); ++iter )
     {
         pElement = *iter;
         if ( !pElement->IsStreamedIn () ) continue;

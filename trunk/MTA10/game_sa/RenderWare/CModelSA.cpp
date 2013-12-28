@@ -56,7 +56,7 @@ static void RpClumpObjectAssociation( CRwFrameSA *frame, CModelSA *model )
     {
         const CRwFrameSA::childList_t& list = frame->GetChildren();
 
-        for ( CRwFrameSA::childList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+        for ( CRwFrameSA::childList_t::const_iterator iter = list.begin(); iter != list.end(); ++iter )
             RpClumpObjectAssociation( dynamic_cast <CRwFrameSA*> ( *iter ), model );
     }
 
@@ -64,7 +64,7 @@ static void RpClumpObjectAssociation( CRwFrameSA *frame, CModelSA *model )
     {
         const CRwFrameSA::objectList_t& list = frame->GetObjects();
 
-        for ( CRwFrameSA::objectList_t::const_iterator iter = list.begin(); iter != list.end(); iter++ )
+        for ( CRwFrameSA::objectList_t::const_iterator iter = list.begin(); iter != list.end(); ++iter )
             CModelSA::RpClumpAssignObjects( dynamic_cast <CRwObjectSA*> ( *iter ), model );
     }
 }
@@ -140,7 +140,7 @@ void CModelSA::ForAllImports( importIterCallback_t cb, void *ud )
 {
     importMap_t::const_iterator iter = m_imported.begin();
 
-    for ( ; iter != m_imported.end(); iter++ )
+    for ( ; iter != m_imported.end(); ++iter )
         cb( (*iter).first, ud );
 }
 

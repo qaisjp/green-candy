@@ -15,4 +15,15 @@
 
 int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex );
 
+void __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( DWORD enabled );
+DWORD __cdecl RwD3D9RenderStateIsVertexAlphaEnabled( void );
+
+// TODO: think about improving my RenderWare definitions:
+// * plugins should not plant OOP functions into the classes.
+int __cdecl RwTextureHasAlpha( RwTexture *tex );
+
+// Module initialization.
+void RwTextureD3D9_Init( void );
+void RwTextureD3D9_Shutdown( void );
+
 #endif //_RENDERWARE_TEXTURE_PLUGIN_D3D9_

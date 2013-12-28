@@ -27,8 +27,6 @@ class CClientCivilianManager
     friend class CClientCivilian;
 
 public:
-    CClientCivilian*                Create                  ( int iPedModel, ElementID ID );
-    CClientCivilian*                Create                  ( CCivilianPed* pPed, ElementID ID );
     void                            DeleteAll               ( void );
 
     inline unsigned int             Count                   ( void )                            { return static_cast < unsigned int > ( m_Civilians.size () ); };

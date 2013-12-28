@@ -53,7 +53,7 @@ void Lua_Frame()
     lua_manager->DoPulse();
 }
 
-bool Lua_ProcessCommand( const std::string& cmdName, const std::vector <std::string>& args )
+bool Lua_ProcessCommand( const std::string& cmdName, std::vector <std::string>& args )
 {
     Command *cmd = cmds->Get( cmdName.c_str() );
 

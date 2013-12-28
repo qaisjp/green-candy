@@ -236,7 +236,7 @@ void CGUI_Impl::Draw()
     if ( !m_RedrawQueue.empty() )
     {
         list < CGUIElement* > ::const_iterator iter = m_RedrawQueue.begin ();
-        for ( ; iter != m_RedrawQueue.end (); iter++ )
+        for ( ; iter != m_RedrawQueue.end (); ++iter )
         {
             (*iter)->ForceRedraw();
         }
@@ -1082,7 +1082,7 @@ void CGUI_Impl::AddToRedrawQueue ( CGUIElement* pWindow )
     // we should not add it to the redraw queue, and if the children are queued,
     // remove them.
     list < CGUIElement* > ::const_iterator iter = m_RedrawQueue.begin ();
-    for ( ; iter != m_RedrawQueue.end (); iter++ )
+    for ( ; iter != m_RedrawQueue.end (); ++iter )
     {
         if ( pWindow->GetParent() == *iter )
         {

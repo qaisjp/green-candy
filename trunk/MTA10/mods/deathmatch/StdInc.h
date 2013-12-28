@@ -76,6 +76,7 @@
 #include <CClientVehicle.h>
 #include <CClientSpatialDatabase.h>
 #include <CClientExplosionManager.h>
+#include <CClientPedBase.h>
 #include <CClientPed.h>
 #include <CClientObject.h>
 #include <CClientPlayerClothes.h>

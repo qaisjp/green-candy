@@ -123,9 +123,6 @@
     <ClInclude Include="..\..\..\lua_interpret\luafilesystem.h" />
     <ClInclude Include="..\..\..\lua_interpret\luamd5.h" />
     <ClInclude Include="..\..\..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.h" />
-    <ClInclude Include="..\..\..\Shared\core\CFileSystem.h" />
-    <ClInclude Include="..\..\..\Shared\core\CFileSystem.Utils.hxx" />
-    <ClInclude Include="..\..\..\Shared\core\CFileSystem.zip.h" />
     <ClInclude Include="..\..\..\Shared\logic\Events.h" />
     <ClInclude Include="..\..\..\Shared\logic\include.h" />
     <ClInclude Include="..\..\..\Shared\logic\Logger.h" />
@@ -186,8 +183,6 @@
     <ClCompile Include="..\..\..\lua_interpret\luafilesystem.cpp" />
     <ClCompile Include="..\..\..\lua_interpret\luamd5.cpp" />
     <ClCompile Include="..\..\..\MTA10\mods\shared_logic\lua\CLuaFunctionParseHelpers.cpp" />
-    <ClCompile Include="..\..\..\Shared\core\CFileSystem.cpp" />
-    <ClCompile Include="..\..\..\Shared\core\CFileSystem.zip.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\Events.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\Logger.cpp" />
     <ClCompile Include="..\..\..\Shared\logic\LuaCFunctions.cpp" />

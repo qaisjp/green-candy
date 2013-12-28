@@ -39,7 +39,7 @@ void CCommandFuncs::Help ( const char* szParameters )
     list < COMMANDENTRY* > ::iterator iterEnd = CCommands::GetSingletonPtr ()->IterEnd ();
 
     char spacer[MTA_HELP_SPACING+1];
-    for ( ; iter != iterEnd ; iter++ ) {
+    for ( ; iter != iterEnd ; ++iter ) {
         const char *szCommandName = (*iter)->szCommandName;
         const char *szDescription = (*iter)->szDescription;
 

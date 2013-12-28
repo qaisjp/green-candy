@@ -76,6 +76,7 @@ struct RwColor
         *(unsigned int*)this = color;
     }
 
+    // In little endian: 0xAABBGGRR (ABGR)
     unsigned char r, g, b, a;
 
     operator unsigned int ( void ) const
@@ -86,6 +87,13 @@ struct RwColor
     operator unsigned int& ( void )
     {
         return *(unsigned int*)this;
+    }
+
+    DWORD ToD3DColor( void )
+    {
+        // Transform this color struct into something that the
+        // Direct3D 9 device understands.
+        return ( a << 24 ) | ( r << 16 ) | ( g << 8 ) | ( b );
     }
 };
 enum eRwType : unsigned char

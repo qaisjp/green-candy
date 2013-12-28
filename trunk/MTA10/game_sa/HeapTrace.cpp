@@ -83,7 +83,7 @@ void RemoveTrack ( void* pAddress )
         // Look for the address in our list
         ALLOC_INFO* pTemp;
         list < ALLOC_INFO* > ::iterator iter = pAllocList->begin ();
-        for( ; iter != pAllocList->end() ; iter++ )
+        for( ; iter != pAllocList->end() ; ++iter )
         {
             pTemp = *iter;
             if ( pTemp->pAddress == pAddress )
@@ -118,7 +118,7 @@ void DumpUnfreed ( void )
             // Dump each unfreed item to a file
             unsigned int uiTotalSize = 0;
             list < ALLOC_INFO* > ::iterator iter = pAllocList->begin ();
-            for ( ; iter != pAllocList->end (); iter++ )
+            for ( ; iter != pAllocList->end (); ++iter )
             {
                 // Grab the item and append the size to the total size
                 ALLOC_INFO* pInfo = *iter;

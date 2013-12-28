@@ -141,15 +141,15 @@ CResource::~CResource()
 
     // Clean up memory!
     fileList_t::iterator iter = m_files.begin();
-    for ( ; iter != m_files.end(); iter++ )
+    for ( ; iter != m_files.end(); ++iter )
         delete *iter;
 
     configList_t::iterator iterc = m_configFiles.begin();
-    for ( ; iterc != m_configFiles.end(); iterc++ )
+    for ( ; iterc != m_configFiles.end(); ++iterc )
         delete *iterc;
 
     exports_t::iterator iterex = m_exports.begin();
-    for ( ; iterex != m_exports.end(); iterex++ )
+    for ( ; iterex != m_exports.end(); ++iterex )
         delete *iterex;
 
     // Unbind the private resource root.
@@ -296,7 +296,7 @@ void CResource::Load()
 
     // Load the files that are queued in the list "to be loaded"
     fileList_t::iterator iter = m_files.begin();
-    for ( ; iter != m_files.end(); iter++ )
+    for ( ; iter != m_files.end(); ++iter )
     {
         CResourceFile *file = *iter;
 

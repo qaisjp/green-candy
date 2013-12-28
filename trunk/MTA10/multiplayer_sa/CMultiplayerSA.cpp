@@ -166,9 +166,6 @@ DWORD** VAR_TagInfoArray                                    = (DWORD **)0xA9A8C0
 #define HOOKPOS_CPhysical_ProcessCollisionSectorList        0x54BB93
 DWORD RETURN_CPhysical_ProcessCollisionSectorList =         0x54BB9A;
 
-#define HOOKPOS_CrashFix_Misc1                              0x5D9A6E
-DWORD RETURN_CrashFix_Misc1 =                               0x5D9A74;
-
 #define HOOKPOS_CrashFix_Misc2                              0x6B18B0
 DWORD RETURN_CrashFix_Misc2a =                              0x6B18B9;
 DWORD RETURN_CrashFix_Misc2b =                              0x6B1F6C;
@@ -384,7 +381,6 @@ void HOOK_CAnimManager_BlendAnimation ();
 void HOOK_CPed_GetWeaponSkill ();
 void HOOK_CPed_AddGogglesModel ();
 void HOOK_CPhysical_ProcessCollisionSectorList ();
-void HOOK_CrashFix_Misc1 ();
 void HOOK_CrashFix_Misc2 ();
 void HOOK_CrashFix_Misc3 ();
 void HOOK_CrashFix_Misc4 ();
@@ -526,7 +522,7 @@ void CMultiplayerSA::InitHooks()
     HookInstall(HOOKPOS_CPed_GetWeaponSkill, (DWORD)HOOK_CPed_GetWeaponSkill, 8 );
     HookInstall(HOOKPOS_CPed_AddGogglesModel, (DWORD)HOOK_CPed_AddGogglesModel, 6);
     HookInstall(HOOKPOS_CPhysical_ProcessCollisionSectorList, (DWORD)HOOK_CPhysical_ProcessCollisionSectorList, 7 );
-    HookInstall(HOOKPOS_CrashFix_Misc1, (DWORD)HOOK_CrashFix_Misc1, 6 );
+    //HookInstall(HOOKPOS_CrashFix_Misc1, (DWORD)HOOK_CrashFix_Misc1, 6 );
     HookInstall(HOOKPOS_CrashFix_Misc2, (DWORD)HOOK_CrashFix_Misc2, 9 );
     HookInstall(HOOKPOS_CrashFix_Misc3, (DWORD)HOOK_CrashFix_Misc3, 6 );
     HookInstall(HOOKPOS_CrashFix_Misc4, (DWORD)HOOK_CrashFix_Misc4, 5 );
@@ -1236,7 +1232,7 @@ void RemoveFxSystemPointer ( DWORD* pPointer )
 {
     // Look through our list for the pointer
     std::list < DWORD* > ::iterator iter = Pointers_FxSystem.begin ();
-    for ( ; iter != Pointers_FxSystem.end (); iter++ )
+    for ( ; iter != Pointers_FxSystem.end (); ++iter )
     {
         // It exists in our list?
         if ( *iter == pPointer )
@@ -4459,28 +4455,7 @@ void _cdecl CrashAverted ( DWORD id )
     _asm \
     {
 
-
-
-void _declspec(naked) HOOK_CrashFix_Misc1 ()
-{
-    _asm
-    {
-        // Hooked from 0x5D9A6E
-        mov     eax,dword ptr [esp+18h]
-        test    eax,eax 
-        je      cont
-
-        mov     eax,dword ptr ds:[008D12CCh] 
-        mov     ecx,dword ptr [eax+esi]     // If [eax+esi] is 0, it causes a crash
-        test    ecx,ecx
-        jne     cont
-        CRASH_AVERTED( 1 )
-    cont:
-        jmp     RETURN_CrashFix_Misc1   // 0x5D9A74
-    }
-}
-
-
+//todo: make sure there never is a NULL-pointer collision interface requested by the engine.
 void _declspec(naked) HOOK_CrashFix_Misc2 ()
 {
     _asm

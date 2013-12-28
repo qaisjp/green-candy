@@ -97,7 +97,7 @@ Resource* ResourceManager::Get( unsigned short id )
 {
     resourceList_t::iterator iter = m_resources.begin();
 
-    for ( ; iter != m_resources.end(); iter++ )
+    for ( ; iter != m_resources.end(); ++iter )
     {
         if ( (*iter)->GetID() == id )
             return *iter;

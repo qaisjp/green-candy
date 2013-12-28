@@ -460,7 +460,7 @@ namespace CLuaFunctionDefs
             // Add all the elements within the shape to it
             unsigned int uiIndex = 0;
             std::list <CClientEntity*>::iterator iter = colShape->CollidersBegin();
-            for ( ; iter != colShape->CollidersEnd(); iter++ )
+            for ( ; iter != colShape->CollidersEnd(); ++iter )
             {
                 if ( szType == NULL || strcmp( (*iter)->GetTypeName(), szType ) == 0 )
                 {
@@ -601,7 +601,7 @@ namespace CLuaFunctionDefs
             // Add All Attached Elements
             unsigned int uiIndex = 0;
             std::list <CClientEntity*>::const_iterator iter = entity->AttachedEntitiesBegin();
-            for ( ; iter != entity->AttachedEntitiesEnd(); iter++ )
+            for ( ; iter != entity->AttachedEntitiesEnd(); ++iter )
             {
                 CClientEntity *pAttached = *iter;
                 if ( pAttached->GetAttachedTo() == entity )

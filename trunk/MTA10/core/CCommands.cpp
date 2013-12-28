@@ -207,7 +207,7 @@ void CCommands::DeleteAll ( void )
 {
     // Delete all the commands
     list < COMMANDENTRY* > ::iterator iter = m_CommandList.begin ();
-    for ( ; iter != m_CommandList.end () ; iter++ )
+    for ( ; iter != m_CommandList.end () ; ++iter )
     {
         delete *iter;
     }
@@ -222,7 +222,7 @@ tagCOMMANDENTRY* CCommands::Get ( const char* szCommand, bool bCheckIfMod, bool 
 {
     // Find the entry we're looking for
     list < COMMANDENTRY* > ::iterator iter = m_CommandList.begin ();
-    for ( ; iter != m_CommandList.end () ; iter++ )
+    for ( ; iter != m_CommandList.end () ; ++iter )
     {
         // Check to see if this is the variable
         if ( stricmp( szCommand, (*iter)->szCommandName ) == 0 ) 

@@ -117,7 +117,7 @@ const char* CConsoleHistory::Get ( unsigned int index )
     unsigned int n = 0;
     history_t::iterator iter;
 
-    for ( iter = m_History.begin (); iter != m_History.end (); iter++ )
+    for ( iter = m_History.begin (); iter != m_History.end (); ++iter )
     {
         if ( n++ != index )
             continue;

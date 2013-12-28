@@ -467,6 +467,9 @@ void CGameSA::Reset( void )
 
     // Reset ubiqitous managers.
     Streaming::Reset();
+
+    // Reset rendering systems.
+    RenderCallbacks_Reset();
 }
 
 void CGameSA::Initialize()
@@ -705,7 +708,7 @@ bool CGameSA::ProcessCollisionHandler( CEntitySAInterface *caller, CEntitySAInte
 
         disabledColl_t::iterator iter = m_disabledColl.begin();
 
-        for ( ; iter != m_disabledColl.end(); iter++ )
+        for ( ; iter != m_disabledColl.end(); ++iter )
             m_cachedColl[iter->first->GetInterface()] = iter->first;
     }
 

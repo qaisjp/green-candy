@@ -67,7 +67,7 @@ void Events::RemoveAll( LuaMain *lua )
         // If they match, delete it null it and set the bool
         if ( (*iter)->lua != lua )
         {
-            iter++;
+            ++iter;
             continue;
         }
 
@@ -84,7 +84,7 @@ void Events::RemoveAll()
     // Delete all items
     eventList_t::const_iterator iter = m_events.begin();
 
-    for ( ; iter != m_events.end(); iter++ )
+    for ( ; iter != m_events.end(); ++iter )
         delete *iter;
 
     // Clear the list
@@ -96,7 +96,7 @@ Event* Events::Get( const char *name )
     // Find a matching name
     eventList_t::const_iterator iter = m_events.begin();
 
-    for ( ; iter != m_events.end(); iter++ )
+    for ( ; iter != m_events.end(); ++iter )
     {
         if ( (*iter)->name != name )
             continue;

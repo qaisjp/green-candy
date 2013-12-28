@@ -257,16 +257,6 @@ public:
     unsigned int bUsedForReplay : 1; // This ped is controlled by replay and should be removed when replay is done.
 };
 
-#if 0
-enum ePedType
-{
-    PLAYER_LOCAL,
-    PLAYER_REMOTE,
-    
-    FORCE_DWORD = 0xFFFFFFF
-};
-#endif
-
 enum ePedStatus : unsigned int
 {
     PED_STATUS_DRIVING_VEHICLE = 50
@@ -284,7 +274,7 @@ public:
     bool                            IsEnteringVehicle();
     inline bool                     IsDrivingVehicle( void )            { return m_pedStatus == PED_STATUS_DRIVING_VEHICLE; }
 
-    bool __thiscall                 IsPlayer( void ) const;
+    bool __thiscall                 IsPlayer( void );
     CPadSAInterface*                GetJoypad();
 
     void                            OnFrame();
@@ -362,6 +352,7 @@ public:
     void                        SetModelIndex( unsigned short id ); // override for voice update
 
     virtual CPadSAInterface&    GetJoypad();
+    virtual bool                IsManagedByGame() const                                     { return false; }
 
     unsigned int                GetPoolIndex() const                                        { return m_poolIndex; }
 

@@ -90,7 +90,7 @@ namespace LuaFunctionDefs
                     lua_newtable ( L );
                     uiIndex = 0;
                     list < CXMLNode * > ::iterator iter = pNode->ChildrenBegin ();
-                    for ( ; iter != pNode->ChildrenEnd () ; iter++ )
+                    for ( ; iter != pNode->ChildrenEnd () ; ++iter )
                     {                
                         lua_pushnumber ( L, ++uiIndex );
                         lua_pushxmlnode ( L, ( CXMLNode * ) ( *iter ) );
@@ -222,7 +222,7 @@ namespace LuaFunctionDefs
                 lua_newtable ( L );
                 unsigned int uiIndex = 0;
                 list < CXMLAttribute * > ::iterator iter = pNode->GetAttributes ().ListBegin ();
-                for ( ; iter != pNode->GetAttributes ().ListEnd () ; iter++ )
+                for ( ; iter != pNode->GetAttributes ().ListEnd () ; ++iter )
                 {
                     lua_pushstring ( L, ( *iter )->GetName ().c_str () );
                     lua_pushstring ( L, ( *iter )->GetValue ().c_str () );

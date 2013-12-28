@@ -64,7 +64,7 @@ public:
 
     void    TrimToOffset()
     {
-        m_data = (*ppRwInterface)->m_memory.m_realloc( m_data, m_offset );
+        m_data = (*ppRwInterface)->m_memory.m_realloc( m_data, m_offset, 0 );
         m_size = m_offset;
     }
 
