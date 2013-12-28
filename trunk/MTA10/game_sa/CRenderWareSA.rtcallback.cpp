@@ -491,16 +491,18 @@ struct ReflectiveVehicleRenderManager
     {
         CEnvMapMaterialSA *envMapMat = curMat->m_envMapMat;
 
-        // Gosh, we are not done yet!
+        // Decide which special effects to apply.
         bool specialEffect1 = IS_ANY_FLAG( curMat->m_shaderFlags, 0x01 ) && !m_unk2;
         bool specialEffect2 = IS_ANY_FLAG( curMat->m_shaderFlags, 0x02 ) && !m_unk2 && IS_ANY_FLAG( m_geomFlags, 0x80 );
 
+        // For specular lighting, we have to calculate things.
         specularFloat1 = 0.0f;
         specularFloat2 = 0.0f;
 
         // todo: insert crashfix here.
         CSpecMapMaterialSA *specMapMat = curMat->m_specMapMat;
 
+        // Decide whether specular lighting should be applied.
         bool doSpecularTransform = false;
 
         if ( g_effectManager->GetEffectQuality() >= 2 )
@@ -518,6 +520,7 @@ struct ReflectiveVehicleRenderManager
 
         if ( doSpecularTransform )
         {
+            // Enable the special vehicle light.
             RpD3D9SetLight( 1, *(D3DLIGHT9*)0x00C02CB0 );
             RpD3D9EnableLight( 1, 1 );
 
@@ -535,59 +538,64 @@ struct ReflectiveVehicleRenderManager
 
         RwD3D9ResetCommonColorChannels();
 
-        if ( specialEffect1 )
+        if ( envMapMat )
         {
-            RenderReflectiveEnvMap( m_atomic, envMapMat, VehAtomicReflectManager( m_unk ) );
-        }
-
-        if ( specialEffect2 && enableEnvMapRendering && envMapMat )
-        {
-            pRwInterface->m_deviceCommand( (eRwDeviceCmd)2, 1 );
-
-            float reflectParams[2] = { 0, 0 };
-
-            CEnvMapAtomicSA*& envMapAtom = m_atomic->m_envMap;
-
-            if ( !envMapAtom )
+            if ( specialEffect1 )
             {
-                envMapAtom = new CEnvMapAtomicSA( NULL, NULL, NULL );
+                // Render the reflection as seen on upgraded vehicle parts.
+                RenderReflectiveEnvMap( m_atomic, envMapMat, VehAtomicReflectManager( m_unk ) );
             }
 
-            if ( envMapAtom )
-                CalculateVehicleReflectiveMapParamsAtomic( envMapMat, envMapAtom, m_atomic, reflectParams );
+            if ( specialEffect2 && enableEnvMapRendering )
+            {
+                // Render the reflection as seen on all vehicle chasis.
+                pRwInterface->m_deviceCommand( (eRwDeviceCmd)2, 1 );
 
-            D3DMATRIX& specEffMat = *(D3DMATRIX*)0x00C02D38;
+                float reflectParams[2] = { 0, 0 };
 
-            specEffMat.m[0][0] = 1.0f;
-            specEffMat.m[1][1] = 1.0f;
-            specEffMat.m[2][2] = 1.0f;
-            specEffMat.m[3][3] = 1.0f;
+                CEnvMapAtomicSA*& envMapAtom = m_atomic->m_envMap;
 
-            specEffMat.m[2][0] = reflectParams[0];
-            specEffMat.m[2][1] = reflectParams[1];
+                if ( !envMapAtom )
+                {
+                    envMapAtom = new CEnvMapAtomicSA( NULL, NULL, NULL );
+                }
 
-            RwD3D9SetTransform( D3DTS_TEXTURE1, &specEffMat );
+                if ( envMapAtom )
+                    CalculateVehicleReflectiveMapParamsAtomic( envMapMat, envMapAtom, m_atomic, reflectParams );
 
-            RwD3D9SetTexture( envMapMat->m_envTexture, 1 );
+                D3DMATRIX& specEffMat = *(D3DMATRIX*)0x00C02D38;
 
-            unsigned char specularComponent = GetColorComponent( (int)( m_unk * 24.0f ) );
+                specEffMat.m[0][0] = 1.0f;
+                specEffMat.m[1][1] = 1.0f;
+                specEffMat.m[2][2] = 1.0f;
+                specEffMat.m[3][3] = 1.0f;
 
-            DWORD colorValue = ( 0x00FFFFFF | ( specularComponent << 24 ) );
+                specEffMat.m[2][0] = reflectParams[0];
+                specEffMat.m[2][1] = reflectParams[1];
 
-            HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, colorValue );
+                RwD3D9SetTransform( D3DTS_TEXTURE1, &specEffMat );
 
-            RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_BLENDFACTORALPHA );
-            RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
-            RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+                RwD3D9SetTexture( envMapMat->m_envTexture, 1 );
 
-            RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
-            RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-            RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+                unsigned char specularComponent = GetColorComponent( (int)( m_unk * 24.0f ) );
 
-            RwD3D9SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1 );
-            RwD3D9SetTextureStageState( 1, D3DTSS_TEXTURETRANSFORMFLAGS, 0x02 );
+                DWORD colorValue = ( 0x00FFFFFF | ( specularComponent << 24 ) );
 
-            RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE );
+                HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, colorValue );
+
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_BLENDFACTORALPHA );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                RwD3D9SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1 );
+                RwD3D9SetTextureStageState( 1, D3DTSS_TEXTURETRANSFORMFLAGS, 0x02 );
+
+                RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE );
+            }
         }
     }
 
