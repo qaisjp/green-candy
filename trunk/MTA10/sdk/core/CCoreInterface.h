@@ -119,6 +119,7 @@ public:
     virtual const char*             GetModInstallRoot( const char *szModName ) = 0;
     virtual CFileTranslator*        GetModRoot() = 0;
     virtual CFileTranslator*        GetMTARoot() = 0;
+    virtual CFileTranslator*        GetDataRoot() = 0;
 
     virtual void                    ShowServerInfo( unsigned int WindowType ) = 0;
 

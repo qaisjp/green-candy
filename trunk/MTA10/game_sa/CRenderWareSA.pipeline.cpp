@@ -635,7 +635,7 @@ inline void __cdecl RpD3D9DrawIndexedPrimitive( D3DPRIMITIVETYPE primitiveType, 
     // Update the render and texture states before drawing.
     RwD3D9ApplyDeviceStates();
 
-    GetRenderDevice()->DrawIndexedPrimitive( primitiveType, baseVertexIndex, minVertexIndex, numVertice, startIndex, primCount );
+    GetRenderDevice_Native()->DrawIndexedPrimitive( primitiveType, baseVertexIndex, minVertexIndex, numVertice, startIndex, primCount );
 }
 
 inline void __cdecl RpD3D9DrawPrimitive( D3DPRIMITIVETYPE primitiveType, UINT startVertex, UINT numPrimitives )
@@ -643,7 +643,7 @@ inline void __cdecl RpD3D9DrawPrimitive( D3DPRIMITIVETYPE primitiveType, UINT st
     // Update the render and texture states before drawing.
     RwD3D9ApplyDeviceStates();
 
-    GetRenderDevice()->DrawPrimitive( primitiveType, startVertex, numPrimitives );
+    GetRenderDevice_Native()->DrawPrimitive( primitiveType, startVertex, numPrimitives );
 }
 
 /*=========================================================

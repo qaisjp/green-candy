@@ -138,6 +138,8 @@ inline void RwD3D9DrawRenderPassPrimitive( RwRenderCallbackTraverseImpl *rtinfo,
         RpD3D9DrawPrimitive( rtinfo->m_primitiveType, rtPass->m_startVertex, rtPass->m_numPrimitives );
 }
 
+void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass );
+
 // Generic render pass loop.
 template <typename callbackType>
 __forceinline void _RenderVideoDataGeneric( RwRenderCallbackTraverseImpl *rtinfo, callbackType& cb )
@@ -147,6 +149,10 @@ __forceinline void _RenderVideoDataGeneric( RwRenderCallbackTraverseImpl *rtinfo
     {
         RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
 
+        // Enable global lighting beforehand.
+        // This should optimize things, as we avoid two render passes.
+        RpD3D9GlobalLightingPrePass();
+
         // Notify the callback template.
         cb.OnRenderPass( rtPass );
 
@@ -155,7 +161,11 @@ __forceinline void _RenderVideoDataGeneric( RwRenderCallbackTraverseImpl *rtinfo
 
         // Draw the primitive.
         RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
+
+        RpD3D9RenderLightMeshForPass( rtinfo, rtPass );
     }
+
+    RpD3D9ResetLightStatus();
 }
 
 // Helper function to set textured render states.

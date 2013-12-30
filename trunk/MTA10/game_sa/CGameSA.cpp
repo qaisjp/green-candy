@@ -482,6 +482,7 @@ void CGameSA::Initialize()
     MemPutFast < BYTE > ( CLASS_CMenuManager+0x5C, 0 );
 
     VehicleModelInfoRender_SetupDevice();
+    RenderWareLighting_InitShaders();
 }
 
 void CGameSA::OnPreFrame()
@@ -564,6 +565,7 @@ CGame::entityList_t CGameSA::GetEntitiesInRenderQueue( void )
 void CGameSA::ResetShaders()
 {
     VehicleModelInfoRender_Reset();
+    RenderWareLighting_ResetShaders();
 }
 
 eGameVersion CGameSA::GetGameVersion()

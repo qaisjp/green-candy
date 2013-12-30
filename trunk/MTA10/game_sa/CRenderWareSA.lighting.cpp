@@ -14,212 +14,227 @@
 #include <StdInc.h>
 #include "RenderWare/RwRenderTools.hxx"
 
-struct nativeLightInfo  //size: 108 bytes
-{
-    D3DLIGHT9   native;     // 0
-    int         active;     // 104
-
-    inline bool operator == ( const nativeLightInfo& right ) const
-    {
-        return RpD3D9LightsEqual( native, right.native ) != 0;
-    }
-};
-
-template <typename dataType, unsigned int pulseCount, unsigned int allocFlags, typename arrayMan, typename countType>
-struct growableArray
-{
-    inline growableArray( void )
-    {
-        data = NULL;
-        numActiveEntries = 0;
-        sizeCount = 0;
-    }
-
-    inline ~growableArray( void )
-    {
-        Shutdown();
-    }
-
-    inline void Init( void )
-    { }
-
-    inline void Shutdown( void )
-    {
-        if ( data )
-        {
-            pRwInterface->m_memory.m_free( data );
-            
-            data = NULL;
-        }
-
-        numActiveEntries = 0;
-        sizeCount = 0;
-    }
-
-    inline void SetSizeCount( countType index )
-    {
-        countType oldCount = sizeCount;
-
-        sizeCount = index;
-
-        size_t newArraySize = sizeCount * sizeof( dataType );
-
-        if ( !data )
-            data = (dataType*)pRwInterface->m_memory.m_malloc( newArraySize, allocFlags );
-        else
-            data = (dataType*)pRwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
-
-        // Fill the gap.
-        for ( countType n = oldCount; n < sizeCount; n++ )
-        {
-            manager.InitField( data[n] );
-        }
-    }
-
-    inline void SetItem( dataType dataField, countType index )
-    {
-        if ( index >= sizeCount )
-        {
-            SetSizeCount( sizeCount + pulseCount );
-        }
-
-        data[index] = dataField;
-    }
-
-    inline void AddItem( dataType data )
-    {
-        SetItem( data, numActiveEntries );
-
-        numActiveEntries++;
-    }
-
-    inline countType GetCount( void ) const
-    {
-        return numActiveEntries;
-    }
-
-    inline countType GetSizeCount( void ) const
-    {
-        return sizeCount;
-    }
-
-    inline dataType& Get( countType index )
-    {
-        return data[index];
-    }
-
-    inline bool Pop( dataType& item )
-    {
-        if ( numActiveEntries != 0 )
-        {
-            item = data[--numActiveEntries];
-            return true;
-        }
-
-        return false;
-    }
-
-    inline bool Find( const dataType& inst, countType& indexOut ) const
-    {
-        for ( countType n = 0; n < numActiveEntries; n++ )
-        {
-            if ( data[n] == inst )
-            {
-                indexOut = n;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    inline void Clear( void )
-    {
-        numActiveEntries = 0;
-    }
-
-    inline void TrimTo( countType indexTo )
-    {
-        if ( numActiveEntries > indexTo )
-            numActiveEntries = indexTo;
-    }
-
-    inline void SwapContents( growableArray& right )
-    {
-        dataType *myData = this->data;
-        dataType *swapData = right.data;
-
-        this->data = swapData;
-        right.data = myData;
-
-        countType myActiveCount = this->numActiveEntries;
-        countType swapActiveCount = right.numActiveEntries;
-
-        this->numActiveEntries = swapActiveCount;
-        right.numActiveEntries = myActiveCount;
-
-        countType mySizeCount = this->sizeCount;
-        countType swapSizeCount = right.sizeCount;
-
-        this->sizeCount = swapSizeCount;
-        right.sizeCount = mySizeCount;
-    }
-
-    dataType* data;
-    countType numActiveEntries;
-    countType sizeCount;
-    arrayMan manager;
-};
+//todo: implement a light state management so that GTA:SA light settings are seperate from MTA light settings.
+// then we can preserve the original functionality of GTA:SA -> things will still look the same by default.
+// interesting idea: engineLightingChooseMethod( "shader" ) -> will use AngerMAN's pointlighting instead of Direct3D 9
+// model lighting for GTA:SA too.
 
 // Localized variables.
 namespace D3D9Lighting
 {
-    struct lightIndexArrayManager
-    {
-        inline void InitField( int& lightIndex )
-        {
-            lightIndex = 0;
-        }
-    };
-
-    struct availableLightIndexArrayManager
-    {
-        inline void InitField( int& lightIndex )
-        {
-            return;
-        }
-    };
-
-    struct nativeLightInfoArrayManager
-    {
-        inline void InitField( nativeLightInfo& info )
-        {
-            // By default, lights get added to phase 0.
-            // Phase 0 sets them to "not rendered" for their first cycle occurance.
-            // This phase index describes on which list (primary or swap) the light
-            // resides on. Sort of like a scan-code algorithm (as seen in the
-            // entity world streaming, CEntitySAInterface::m_scanCode).
-            info.active = false;
-        }
-    };
-
-    typedef growableArray <int, 8, 0x103050D, lightIndexArrayManager, unsigned int> lightIndexArray;
-    typedef growableArray <int, 0x100, 0x103050D, availableLightIndexArrayManager, int> availableLightIndexArray;
-    typedef growableArray <nativeLightInfo, 8, 0x1030411, nativeLightInfoArrayManager, int> nativeLightInfoArray;
-
-    static int incrementalLightIndex = 0;                           // Binary offsets: (1.0 US and 1.0 EU): 0x00C926C0
-
-    static D3DLIGHT9 dirLightStruct;                                // Binary offsets: (1.0 US and 1.0 EU): 0x00C92648
-    static D3DLIGHT9 localLightStruct;                              // Binary offsets: (1.0 US and 1.0 EU): 0x00C925E0
-
     static unsigned int maxNumberOfActiveLights = 0;                // Binary offsets: (1.0 US and 1.0 EU): 0x00C926B4
 
-    static lightIndexArray activeGlobalLights;
+    static lightState curLightState;
     static lightIndexArray swap_activeGlobalLights;
 
-    static availableLightIndexArray availableLightIndice;
+    static nativeLightInfoArray deviceLightInfo;
 
-    static nativeLightInfoArray nativeLights;
+    lightState::lightState( void )
+    {
+        // Initialize members.
+        incrementalLightIndex = 0;
+
+        // Initialize light structs (so only minimal initialization will be required during runtime).
+        // Directional lights.
+        D3DLIGHT9& dirLight = dirLightStruct;
+
+        dirLight.Type = D3DLIGHT_DIRECTIONAL;
+        dirLight.Diffuse.r = 0.0f;
+        dirLight.Diffuse.g = 0.0f;
+        dirLight.Diffuse.b = 0.0f;
+        dirLight.Diffuse.a = 1.0f;
+
+        dirLight.Direction.x = 0.0f;
+        dirLight.Direction.y = 0.0f;
+        dirLight.Direction.z = 0.0f;
+
+        dirLight.Specular.r = 0.0f;
+        dirLight.Specular.g = 0.0f;
+        dirLight.Specular.b = 0.0f;
+        dirLight.Specular.a = 1.0f;
+
+        dirLight.Ambient.r = 0.0f;
+        dirLight.Ambient.g = 0.0f;
+        dirLight.Ambient.b = 0.0f;
+        dirLight.Ambient.a = 1.0f;
+
+        dirLight.Position.x = 0.0f;
+        dirLight.Position.y = 0.0f;
+        dirLight.Position.z = 0.0f;
+
+        dirLight.Range = 0.0f;
+        dirLight.Falloff = 0.0f;
+        dirLight.Attenuation0 = 0.0f;
+        dirLight.Attenuation1 = 0.0f;
+        dirLight.Attenuation2 = 0.0f;
+        dirLight.Theta = 0.0f;
+        dirLight.Phi = 0.0f;
+
+        // Local lights.
+        D3DLIGHT9& localLight = localLightStruct;
+
+        localLight.Diffuse.r = 0.0f;
+        localLight.Diffuse.g = 0.0f;
+        localLight.Diffuse.b = 0.0f;
+        localLight.Diffuse.a = 1.0f;
+
+        localLight.Specular.r = 0.0f;
+        localLight.Specular.g = 0.0f;
+        localLight.Specular.b = 0.0f;
+        localLight.Specular.a = 1.0f;
+
+        localLight.Ambient.r = 0.0f;
+        localLight.Ambient.g = 0.0f;
+        localLight.Ambient.b = 0.0f;
+        localLight.Ambient.a = 1.0f;
+
+        localLight.Attenuation1 = 1.0f;
+    }
+
+    lightState::~lightState( void )
+    {
+        Shutdown();
+    }
+    
+    void lightState::Shutdown( void )
+    {
+        activeGlobalLights.Shutdown();
+        nativeLights.Shutdown();
+
+        incrementalLightIndex = 0;
+    }
+
+    bool lightState::SetLight( int lightIndex, const D3DLIGHT9& lightStruct )
+    {
+        nativeLights.SetItem( lightStruct, lightIndex );
+        return true;
+    }
+
+    bool lightState::EnableLight( int lightIndex, bool enabled )
+    {
+        if ( enabled )
+        {
+            unsigned int foundAt = -1;
+
+            if ( !activeGlobalLights.Find( lightIndex, foundAt ) )
+            {
+                activeGlobalLights.AddItem( lightIndex );
+                return true;
+            }
+
+            return false;
+        }
+        
+        return activeGlobalLights.RemoveItem( lightIndex );
+    }
+
+    void lightState::ResetActiveLights( void )
+    {
+        activeGlobalLights.Clear();
+
+        incrementalLightIndex = 0;
+    }
+
+    bool lightState::ActivateDirLight( RpLight *light )
+    {
+        RwFrame *lightParent = light->m_parent;
+
+        if ( !lightParent )
+            return false;
+
+        int lightIndex = GetLightIndex( light );
+
+        // Fill the light struct.
+        D3DLIGHT9& dirLight = dirLightStruct;
+        dirLight.Diffuse.r = light->m_color.r;
+        dirLight.Diffuse.g = light->m_color.g;
+        dirLight.Diffuse.b = light->m_color.b;
+
+        const RwMatrix& lightPos = lightParent->GetLTM();
+
+        dirLight.Direction.x = lightPos.vUp.fX;
+        dirLight.Direction.y = lightPos.vUp.fY;
+        dirLight.Direction.z = lightPos.vUp.fZ;
+
+        SetLight( lightIndex, dirLight );
+
+        activeGlobalLights.AddItem( lightIndex );
+        return true;
+    }
+
+    bool lightState::ActivateLocalLight( RpLight *light )
+    {
+        RwFrame *lightParent = light->m_parent;
+
+        if ( !lightParent )
+            return false;
+
+        int lightIndex = GetLightIndex( light );
+
+        D3DLIGHT9& localLight = localLightStruct;
+        localLight.Diffuse.r = light->m_color.r;
+        localLight.Diffuse.g = light->m_color.g;
+        localLight.Diffuse.b = light->m_color.b;
+
+        const RwMatrix& lightPos = lightParent->GetLTM();
+
+        localLight.Position.x = lightPos.vPos.fX;
+        localLight.Position.y = lightPos.vPos.fY;
+        localLight.Position.z = lightPos.vPos.fZ;
+
+        float lightRadius = light->m_radius;
+
+        localLight.Range = lightRadius;
+
+        if ( lightRadius <= 0.0f )
+            return false;
+
+        localLight.Attenuation0 = light->m_attenuation[0];
+        localLight.Attenuation1 = light->m_attenuation[1] / lightRadius;
+        localLight.Attenuation2 = light->m_attenuation[2] / ( lightRadius * lightRadius );
+
+        switch( light->m_subtype )
+        {
+        case LIGHT_TYPE_POINT:
+            localLight.Type = D3DLIGHT_POINT;
+            localLight.Direction.x = 0;
+            localLight.Direction.y = 0;
+            localLight.Direction.z = 0;
+            localLight.Theta = 0;
+            localLight.Phi = 0;
+            break;
+        case LIGHT_TYPE_SPOT_1:
+            localLight.Type = D3DLIGHT_SPOT;
+            localLight.Direction.x = lightPos.vUp.fX;
+            localLight.Direction.y = lightPos.vUp.fY;
+            localLight.Direction.z = lightPos.vUp.fZ;
+
+            {
+                float coneAngle = RpLightGetConeAngle( light );
+                coneAngle += coneAngle;
+
+                localLight.Theta = ( coneAngle >= M_PI ) ? (float)( coneAngle - 0.001 ) : coneAngle;
+                localLight.Phi = coneAngle;
+            }
+            break;
+        case LIGHT_TYPE_SPOT_2:
+            localLight.Type = D3DLIGHT_SPOT;
+            localLight.Direction.x = lightPos.vUp.fX;
+            localLight.Direction.y = lightPos.vUp.fY;
+            localLight.Direction.z = lightPos.vUp.fZ;
+
+            localLight.Theta = 0;
+            localLight.Phi = RpLightGetConeAngle( light ) * 2;
+            break;
+        default:
+            return false;
+        }
+
+        SetLight( lightIndex, localLight );
+
+        activeGlobalLights.AddItem( lightIndex );
+        return true;
+    }
 };
 
 /*=========================================================
@@ -234,7 +249,7 @@ namespace D3D9Lighting
 =========================================================*/
 static size_t d3d9lightplg = 0xFFFFFFFF;
 
-RpLight* __cdecl RpD3D9LightConstructor( RpLight *light, size_t offset )
+static RpLight* __cdecl RpD3D9LightConstructor( RpLight *light, size_t offset )
 {
     if ( !light )
         return NULL;
@@ -246,42 +261,26 @@ RpLight* __cdecl RpD3D9LightConstructor( RpLight *light, size_t offset )
     return light;
 }
 
-inline void AddLightIndexToAvailableLightSlots( int lightIndex )
-{
-    D3D9Lighting::availableLightIndice.AddItem( lightIndex );
-}
-
-RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
+static RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
 {
     if ( !light )
         return NULL;
 
     if ( light->m_lightIndex >= 0 )
     {
-        int incrementalIndex = D3D9Lighting::incrementalLightIndex - 1;
-
-        if ( D3D9Lighting::availableLightIndice.GetCount() >= incrementalIndex )
-        {
-            D3D9Lighting::incrementalLightIndex = 0;
-
-            D3D9Lighting::availableLightIndice.Shutdown();
-        }
-        else
-        {
-            AddLightIndexToAvailableLightSlots( light->m_lightIndex );
-        }
+        light->m_lightIndex = -1;
     }
 
     return light;
 }
 
-void __cdecl RpD3D9LightCopyConstructor( RpLight *light, const RpLight *srcObj, size_t offset, unsigned int pluginId )
+static void __cdecl RpD3D9LightCopyConstructor( RpLight *light, const RpLight *srcObj, size_t offset, unsigned int pluginId )
 {
     light->m_lightIndex = srcObj->m_lightIndex;
     light->m_attenuation = srcObj->m_attenuation;
 }
 
-int __cdecl RpD3D9InitializeLightingPlugin( void )
+static int __cdecl RpD3D9InitializeLightingPlugin( void )
 {
     d3d9lightplg = RpLightRegisterPlugin( 0x10, 0x505,
         (RpLightPluginConstructor)RpD3D9LightConstructor,
@@ -353,6 +352,238 @@ int __cdecl RpD3D9LightsEqual( const D3DLIGHT9& left, const D3DLIGHT9& right )
     return equals;
 }
 
+bool _SetLightGlobal( int lightIndex, const D3DLIGHT9& lightStruct )
+{
+    if ( D3D9Lighting::deviceLightInfo.GetSizeCount() <= lightIndex )
+    {
+        D3D9Lighting::deviceLightInfo.SetSizeCount( lightIndex + 1 );
+    }
+    else
+    {
+        nativeLightInfo& info = D3D9Lighting::deviceLightInfo.Get( lightIndex );
+
+        if ( RpD3D9LightsEqual( lightStruct, info.native ) )
+            return true;
+    }
+
+    nativeLightInfo& info = D3D9Lighting::deviceLightInfo.Get( lightIndex );
+    info.native = lightStruct;
+
+    return GetRenderDevice()->SetLight( lightIndex, &lightStruct ) >= 0;
+}
+
+bool _LightEnableGlobal( int lightIndex, bool enable )
+{
+    // Ignore invalid light indice.
+    if ( lightIndex >= D3D9Lighting::deviceLightInfo.GetSizeCount() )
+        return true;
+
+    nativeLightInfo& lightInfo = D3D9Lighting::deviceLightInfo.Get( lightIndex );
+
+    DWORD status = ( enable ? 1 : 0 );
+
+    if ( lightInfo.active != status )
+    {
+        lightInfo.active = enable;
+        return GetRenderDevice()->LightEnable( lightIndex,status ) >= 0;
+    }
+    return true;
+}
+
+// Manager for rendering light states.
+struct lightPassManager
+{
+    lightPassManager( D3D9Lighting::lightState& state, CShaderItem *useShader = NULL ) : light_state( state )
+    {
+        inPhase = false;
+        lightShader = useShader;
+        inPass = false;
+    }
+
+    bool SetLight( int lightIndex, const D3DLIGHT9& lightStruct )
+    {
+        if ( !inPhase )
+            return light_state.SetLight( lightIndex, lightStruct );
+
+        return _SetLightGlobal( lightIndex, lightStruct );
+    }
+
+    bool EnableLight( int lightIndex, bool enable )
+    {
+        if ( !inPhase )
+        {
+            return light_state.EnableLight( lightIndex, enable );
+        }
+        else
+        {
+            return _LightEnableGlobal( lightIndex, enable );
+        }
+    }
+
+    void Begin( void )
+    {
+        assert( global_inPhase == false );
+        assert( inPhase == false );
+
+        inPhase = true;
+        global_inPhase = true;
+
+        // Make sure we only activate the number of maximally supported lights on this GPU.
+        unsigned int maxGPULights = D3D9Lighting::maxNumberOfActiveLights;
+
+        D3D9Lighting::swap_activeGlobalLights.TrimTo( maxGPULights );
+        
+        unsigned int lastActiveGlobalLightsCount = D3D9Lighting::swap_activeGlobalLights.GetCount();
+
+        for ( unsigned int n = 0; n < lastActiveGlobalLightsCount; n++ )
+        {
+            int lightIndex = D3D9Lighting::swap_activeGlobalLights.Get( n );
+
+            // Check whether we should disable this light.
+            // It is either disabled if it does not exist in the active lights queue
+            // or has an index that is outside of the GPUs maximum light index
+            // count.
+            unsigned int primaryIndex;
+
+            if ( !light_state.activeGlobalLights.Find( lightIndex, primaryIndex ) || primaryIndex >= maxGPULights )
+            {
+                // Disable the light.
+                EnableLight( lightIndex, false );
+            }
+        }
+
+        index = 0;
+
+        // Activate the lighting shader (if present)
+        if ( lightShader )
+        {
+            lightShader->Begin( numLightShaderPasses );
+            
+            core->GetGraphics()->GetRenderItemManager()->SetForceShader( lightShader );
+        }
+    }
+
+    void ClearPass( void )
+    {
+        if ( inPass )
+        {
+            if ( lightShader )
+                lightShader->EndPass();
+
+            inPass = false;
+        }
+    }
+
+    bool DoLightPass( void )
+    {
+        assert( inPhase == true );
+
+        ClearPass();
+
+        if ( lightShader )
+            lightShader->BeginPass( 0 );
+
+        bool wantPass = false;
+        unsigned int maxGPULights = D3D9Lighting::maxNumberOfActiveLights;
+
+        int n = 0;
+        
+        for ( ; n < (int)maxGPULights; n++ )
+        {
+            unsigned int currentIndex = index + (unsigned int)n;
+
+            if ( light_state.activeGlobalLights.GetCount() <= currentIndex )
+                break;
+
+            int lightIndex = light_state.activeGlobalLights.Get( currentIndex );
+            D3DLIGHT9& lightStruct = light_state.nativeLights.Get( lightIndex );
+
+            if ( lightShader )
+            {
+                const RwMatrix& camTransform = pRwInterface->m_renderCam->m_parent->GetLTM();
+
+                // Update light shader info.
+                CVector lightPos = camTransform.vPos - (CVector&)lightStruct.Position;
+
+                lightShader->SetValue( "gLightPosition", (float*)&lightPos, 3 );
+                lightShader->SetValue( "gLightDiffuse", (float*)&lightStruct.Diffuse, 4 );
+                lightShader->SetValue( "gLightAttenuation0", &lightStruct.Attenuation0, 1 );
+                lightShader->SetValue( "gLightAttenuation1", &lightStruct.Attenuation1, 1 );
+                lightShader->SetValue( "gLightAttenuation2", &lightStruct.Attenuation2, 1 );
+                lightShader->SetValue( "gLightRange", &lightStruct.Range, 1 );
+
+                wantPass = true;
+
+                n++;
+                break;
+            }
+            else
+            {
+                if ( SetLight( n, lightStruct ) == 0 || EnableLight( n, true ) == 0 )
+                    break;
+
+                wantPass = true;
+            }
+        }
+
+        index += n;
+
+        if ( wantPass )
+        {
+            // Disable all stray lights.
+            for ( ; n < (int)maxGPULights; n++ )
+                EnableLight( n, false );
+        }
+
+        inPass = true;
+
+        return wantPass;
+    }
+
+    bool IsInPass( void )
+    {
+        return inPass;
+    }
+
+    void End( void )
+    {
+        ClearPass();
+
+        // Terminate light shader.
+        if ( lightShader )
+        {
+            lightShader->End();
+
+            core->GetGraphics()->GetRenderItemManager()->SetForceShader( NULL );
+        }
+
+        light_state.activeGlobalLights.SetContents( D3D9Lighting::swap_activeGlobalLights );
+
+        inPhase = false;
+        global_inPhase = false;
+    }
+
+    void SetLightingShader( CShaderItem *item )
+    {
+        assert( inPhase == false );
+
+        lightShader = item;
+    }
+
+    D3D9Lighting::lightState& light_state;
+    unsigned int index;
+    bool inPhase;
+    bool inPass;
+
+    CShaderItem *lightShader;
+    unsigned int numLightShaderPasses;
+
+    static bool global_inPhase;
+};
+
+static lightPassManager globalLightPassMan( D3D9Lighting::curLightState );
+bool lightPassManager::global_inPhase = false;
+
 /*=========================================================
     RpD3D9SetLight
 
@@ -369,50 +600,7 @@ int __cdecl RpD3D9LightsEqual( const D3DLIGHT9& left, const D3DLIGHT9& right )
 =========================================================*/
 int __cdecl RpD3D9SetLight( int lightIndex, const D3DLIGHT9& lightStruct )
 {
-    if ( D3D9Lighting::nativeLights.GetSizeCount() <= lightIndex )
-    {
-        D3D9Lighting::nativeLights.SetSizeCount( lightIndex + 1 );
-    }
-    else
-    {
-        nativeLightInfo& info = D3D9Lighting::nativeLights.Get( lightIndex );
-
-        if ( RpD3D9LightsEqual( lightStruct, info.native ) )
-            return true;
-    }
-
-    nativeLightInfo& info = D3D9Lighting::nativeLights.Get( lightIndex );
-    info.native = lightStruct;
-
-    // This should not be done. Will fail if lightIndex is too big anyway.
-    // This is where the lighting bugs come from.
-    // Should be replaced by a callback-orriented lighting management.
-    return GetRenderDevice()->SetLight( lightIndex, &lightStruct ) >= 0;
-}
-
-inline void AssignLightIndex( RpLight *light )
-{
-    if ( light->m_lightIndex < 0 )
-    {
-        int slot = -1;
-
-        if ( !D3D9Lighting::availableLightIndice.Pop( slot ) )
-        {
-            slot = D3D9Lighting::incrementalLightIndex++;
-        }
-
-        light->m_lightIndex = slot;
-    }
-}
-
-static D3DLIGHT9& GetDirLightStruct( void )
-{
-    return D3D9Lighting::dirLightStruct;
-}
-
-inline void AddLightToGlobalList( RpLight *light )
-{
-    D3D9Lighting::activeGlobalLights.AddItem( light->m_lightIndex );
+    return globalLightPassMan.SetLight( lightIndex, lightStruct ) ? 1 : 0;
 }
 
 /*=========================================================
@@ -427,32 +615,12 @@ inline void AddLightToGlobalList( RpLight *light )
     Binary offsets:
         (1.0 US): 0x00756260
         (1.0 EU): 0x007562B0
+    Note:
+        Deprecated function.
 =========================================================*/
 int __cdecl RpD3D9DirLightEnable( RpLight *light )
 {
-    AssignLightIndex( light );
-
-    // Fill the light struct.
-    D3DLIGHT9& dirLight = GetDirLightStruct();
-    dirLight.Diffuse.r = light->m_color.r;
-    dirLight.Diffuse.g = light->m_color.g;
-    dirLight.Diffuse.b = light->m_color.b;
-
-    const RwMatrix& lightPos = light->m_parent->GetLTM();
-
-    dirLight.Direction.x = lightPos.vUp.fX;
-    dirLight.Direction.y = lightPos.vUp.fY;
-    dirLight.Direction.z = lightPos.vUp.fZ;
-
-    RpD3D9SetLight( light->m_lightIndex, dirLight );
-
-    AddLightToGlobalList( light );
-    return true;
-}
-
-static D3DLIGHT9& GetLocalLightStruct( void )
-{
-    return D3D9Lighting::localLightStruct;
+    return D3D9Lighting::curLightState.ActivateDirLight( light ) ? 1 : 0;
 }
 
 /*=========================================================
@@ -467,74 +635,12 @@ static D3DLIGHT9& GetLocalLightStruct( void )
     Binary offsets:
         (1.0 US): 0x00756390
         (1.0 EU): 0x007563E0
+    Note:
+        Deprecated function.
 =========================================================*/
 int __cdecl RpD3D9LocalLightEnable( RpLight *light )
 {
-    AssignLightIndex( light );
-
-    D3DLIGHT9& localLight = GetLocalLightStruct();
-    localLight.Diffuse.r = light->m_color.r;
-    localLight.Diffuse.g = light->m_color.g;
-    localLight.Diffuse.b = light->m_color.b;
-
-    const RwMatrix& lightPos = light->m_parent->GetLTM();
-
-    localLight.Position.x = lightPos.vPos.fX;
-    localLight.Position.y = lightPos.vPos.fY;
-    localLight.Position.z = lightPos.vPos.fZ;
-
-    float lightRadius = light->m_radius;
-
-    localLight.Range = lightRadius;
-
-    if ( lightRadius <= 0.0f )
-        return false;
-
-    localLight.Attenuation0 = light->m_attenuation[0];
-    localLight.Attenuation1 = light->m_attenuation[1] / lightRadius;
-    localLight.Attenuation2 = light->m_attenuation[2] / ( lightRadius * lightRadius );
-
-    switch( light->m_subtype )
-    {
-    case LIGHT_TYPE_POINT:
-        localLight.Type = D3DLIGHT_POINT;
-        localLight.Direction.x = 0;
-        localLight.Direction.y = 0;
-        localLight.Direction.z = 0;
-        localLight.Theta = 0;
-        localLight.Phi = 0;
-        break;
-    case LIGHT_TYPE_SPOT_1:
-        localLight.Type = D3DLIGHT_SPOT;
-        localLight.Direction.x = lightPos.vUp.fX;
-        localLight.Direction.y = lightPos.vUp.fY;
-        localLight.Direction.z = lightPos.vUp.fZ;
-
-        {
-            float coneAngle = RpLightGetConeAngle( light );
-            coneAngle += coneAngle;
-
-            localLight.Theta = ( coneAngle >= M_PI ) ? (float)( coneAngle - 0.001 ) : coneAngle;
-            localLight.Phi = coneAngle;
-        }
-        break;
-    case LIGHT_TYPE_SPOT_2:
-        localLight.Type = D3DLIGHT_SPOT;
-        localLight.Direction.x = lightPos.vUp.fX;
-        localLight.Direction.y = lightPos.vUp.fY;
-        localLight.Direction.z = lightPos.vUp.fZ;
-
-        localLight.Theta = 0;
-        localLight.Phi = RpLightGetConeAngle( light ) * 2;
-        break;
-    default:
-        return false;
-    }
-
-    RpD3D9SetLight( light->m_lightIndex, localLight );
-
-    AddLightToGlobalList( light );
-    return true;
+    return D3D9Lighting::curLightState.ActivateLocalLight( light ) ? 1 : 0;
 }
 
 /*=========================================================
@@ -555,18 +661,7 @@ int __cdecl RpD3D9LocalLightEnable( RpLight *light )
 =========================================================*/
 int __cdecl RpD3D9EnableLight( int lightIndex, int enable )
 {
-    // Ignore invalid light indices.
-    if ( lightIndex >= D3D9Lighting::nativeLights.GetSizeCount() )
-        return true;
-
-    nativeLightInfo& lightInfo = D3D9Lighting::nativeLights.Get( lightIndex );
-
-    if ( lightInfo.active != enable )
-    {
-        lightInfo.active = enable;
-        return GetRenderDevice()->LightEnable( lightIndex, enable ) >= 0;
-    }
-    return true;
+    return globalLightPassMan.EnableLight( lightIndex, enable != 0 ) ? 1 : 0;
 }
 
 /*=========================================================
@@ -586,6 +681,7 @@ int __cdecl RpD3D9EnableLight( int lightIndex, int enable )
 =========================================================*/
 void __cdecl RpD3D9EnableLights( bool enable, int unused )
 {
+#if 0
     // This function is part of the problem, too.
     // It trims the lights to the maximum light count as supported by the GPU.
     // This is wrong, because there is an infinite amount of lights supported,
@@ -632,6 +728,7 @@ void __cdecl RpD3D9EnableLights( bool enable, int unused )
     }
 
     HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, enable );
+#endif
 }
 
 /*=========================================================
@@ -654,9 +751,9 @@ static RwColorFloat& GetAmbientColor( void )
 }
 
 template <typename lightMan>
-int _GlobalLightsEnable( lightMan& cb )
+int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
 {
-    RwColorFloat& ambientColor = GetAmbientColor();
+    RwColorFloat& ambientColor = state.ambientLightColor;
     RwScene *curScene = pRwInterface->m_currentScene;
 
     ambientColor = RwColorFloat( 0, 0, 0, 1.0f );
@@ -671,7 +768,7 @@ int _GlobalLightsEnable( lightMan& cb )
             case LIGHT_TYPE_DIRECTIONAL:
                 if ( cb.CanProcessDirectionalLight() )
                 {
-                    if ( RpD3D9DirLightEnable( item ) != FALSE )
+                    if ( state.ActivateDirLight( item ) != FALSE )
                         isLighting = true;
                 }
                 break;
@@ -686,7 +783,7 @@ int _GlobalLightsEnable( lightMan& cb )
         }
     LIST_FOREACH_END
 
-    HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( isLighting ) ? 0xFFFFFFFF : 0 );
+    //HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( isLighting ) ? 0xFFFFFFFF : 0 );
     return isLighting;
 }
 
@@ -728,7 +825,7 @@ struct WorldGlobalLightManager
 
 int __cdecl RpD3D9GlobalLightsEnable( unsigned char flags )
 {
-    return _GlobalLightsEnable( WorldGlobalLightManager( flags ) );
+    return _GlobalLightsEnable( D3D9Lighting::curLightState, WorldGlobalLightManager( flags ) );
 }
 
 /*=========================================================
@@ -744,19 +841,37 @@ int __cdecl RpD3D9GlobalLightsEnable( unsigned char flags )
         (1.0 US): 0x00757400
         (1.0 EU): 0x00757450
 =========================================================*/
+static D3D9Lighting::lightState localLight_lightState;  // MTA extension.
+static bool hasGlobalLighting = false;
+static bool hasLocalLighting = false;
+
 void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 {
     RpGeometry *geom = atomic->m_geometry;
     RwScene *curScene = pRwInterface->m_currentScene;
 
-    bool isLighting = false;
+    RpD3D9ResetLightStatus();
+
+    // Reset light states.
+    D3D9Lighting::curLightState.ResetActiveLights();
+    localLight_lightState.ResetActiveLights();
 
     if ( IS_ANY_FLAG( geom->flags, 0x20 ) && curScene )
     {
-        isLighting = _GlobalLightsEnable( AtomicGlobalLightManager( geom ) ) != 0;
+        // Process main light-state.
+        D3D9Lighting::curLightState.ResetActiveLights();
 
+        hasGlobalLighting = _GlobalLightsEnable( D3D9Lighting::curLightState, AtomicGlobalLightManager( geom ) ) != 0;
+
+        // Set the global ambient light color to the one specified by the native light-state.
+        GetAmbientColor() = D3D9Lighting::curLightState.ambientLightColor;
+
+        // Activate all local lights on a seperate light-state.
         if ( IS_ANY_FLAG( geom->flags, 0x10 ) )
         {
+            D3D9Lighting::lightState& localLightState = localLight_lightState;
+            localLightState.ResetActiveLights();
+
             // Scancode algorithm, so lights do not get processed twice.
             pRwInterface->m_frame++;
 
@@ -768,6 +883,8 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 
                     if ( light && light->m_frame != pRwInterface->m_frame && light->IsLightActive() )
                     {
+                        light->m_frame = pRwInterface->m_frame;
+
                         const RwMatrix& lightPos = light->m_parent->GetLTM();
                         const RwSphere& atomicSphere = atomic->GetWorldBoundingSphere();
 
@@ -777,8 +894,8 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 
                         if ( ( atomicSphere.pos - lightPos.vPos ).LengthSquared() <= lightSphereActivityRange )
                         {
-                            if ( RpD3D9LocalLightEnable( light ) )
-                                isLighting = true;
+                            if ( localLightState.ActivateLocalLight( light ) )
+                                hasLocalLighting = true;
                         }
                     }
                 LIST_FOREACH_END
@@ -786,8 +903,128 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
         }
     }
 
-    // Push the lights onto the GPU.
-    RpD3D9EnableLights( isLighting, 1 );
+    bool doLighting = RpD3D9GlobalLightingPrePass();
+
+    HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( doLighting ) ? 0xFFFFFFFF : 0x00000000 );
+}
+
+bool RpD3D9GlobalLightingPrePass( void )
+{
+    bool doLighting = false;
+
+    if ( hasGlobalLighting )
+    {
+        if ( globalLightPassMan.inPhase )
+            doLighting = true;
+        else
+        {
+            // Do the first pass of the global light pass manager here.
+            globalLightPassMan.Begin();
+
+            doLighting = globalLightPassMan.DoLightPass();
+
+            if ( !doLighting )
+                globalLightPassMan.End();
+        }
+    }
+
+    HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, doLighting );
+    return doLighting;
+}
+
+/*=========================================================
+    RpD3D9RenderLightMeshForPass (MTA extension)
+
+    Arguments:
+        rtPass - the render pass to render a light mesh off
+    Purpose:
+        Renders the light mesh associated to the given render
+        pass using additive blending. Should be executed after
+        a mesh has been rendered.
+=========================================================*/
+static CShaderItem *lightingShader = NULL;  // todo: one shader for every light type.
+
+void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+{
+    bool enableLighting = ( hasLocalLighting || hasGlobalLighting );
+
+    if ( enableLighting )
+    {
+        RwRenderStateLock lightState( D3DRS_LIGHTING, true );
+        RwRenderStateLock srcBlend( D3DRS_SRCBLEND, D3DBLEND_ONE );
+        RwRenderStateLock dstBlend( D3DRS_DESTBLEND, D3DBLEND_ONE );
+        RwRenderStateLock alphaRender( D3DRS_ALPHABLENDENABLE, true );
+        RwRenderStateLock fog( D3DRS_FOGENABLE, false );
+        RwRenderStateLock zwrite( D3DRS_ZWRITEENABLE, false );
+        RwRenderStateLock zfunc( D3DRS_ZFUNC, D3DCMP_LESSEQUAL );
+        RwRenderStateLock diffusematsrc( D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1 );
+        RwRenderStateLock specular( D3DRS_SPECULARENABLE, false );
+        RwRenderStateLock ambient( D3DRS_AMBIENT, 0x00000000 );
+        {
+            // Finish the global lights render.
+            if ( globalLightPassMan.inPhase || hasGlobalLighting )
+            {
+                if ( !globalLightPassMan.inPhase )
+                    globalLightPassMan.Begin();
+
+                while ( globalLightPassMan.DoLightPass() )
+                {
+#if 0
+                    // Todo: fix white texture issues appearing because of this.
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE );
+
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+#endif
+
+                    // Render as often as we require light meshes.
+                    RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
+                }
+
+                globalLightPassMan.End();
+            }
+
+            if ( hasLocalLighting )
+            {
+                D3D9Lighting::lightState& state = localLight_lightState;
+
+                lightPassManager lightMan( state, lightingShader );
+
+                lightMan.Begin();
+
+                while ( lightMan.DoLightPass() )
+                {
+                    // Render as often as we require light meshes.
+                    RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
+                }
+
+                lightMan.End();
+            }
+        }
+    }
+}
+
+/*=========================================================
+    RpD3D9ResetLightStatus (MTA extension)
+
+    Purpose:
+        Resets the global light status.
+=========================================================*/
+void __cdecl RpD3D9ResetLightStatus( void )
+{
+    // Make sure we terminate any global pass that did not have a light mesh render.
+    if ( globalLightPassMan.inPhase )
+        globalLightPassMan.End();
+
+    hasGlobalLighting = false;
+    hasLocalLighting = false;
+
+    HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, false );
 }
 
 /*=========================================================
@@ -802,10 +1039,9 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 =========================================================*/
 void __cdecl RpD3D9ShutdownLighting( void )
 {
-    D3D9Lighting::availableLightIndice.Shutdown();
-    D3D9Lighting::incrementalLightIndex = 0;
+    D3D9Lighting::curLightState.Shutdown();
 
-    D3D9Lighting::activeGlobalLights.Shutdown();
+    D3D9Lighting::deviceLightInfo.Shutdown();
 
     D3D9Lighting::swap_activeGlobalLights.Shutdown();
 }
@@ -833,60 +1069,6 @@ int __cdecl RpD3D9InitializeLighting( void )
 
     // Set initial ambient light color.
     GetAmbientColor() = RwColorFloat( 0, 0, 0, 1.0f );
-
-    // Initialize light structs (so only minimal initialization will be required during runtime).
-    D3DLIGHT9& dirLight = GetDirLightStruct();
-
-    dirLight.Type = D3DLIGHT_DIRECTIONAL;
-    dirLight.Diffuse.r = 0.0f;
-    dirLight.Diffuse.g = 0.0f;
-    dirLight.Diffuse.b = 0.0f;
-    dirLight.Diffuse.a = 1.0f;
-
-    dirLight.Direction.x = 0.0f;
-    dirLight.Direction.y = 0.0f;
-    dirLight.Direction.z = 0.0f;
-
-    dirLight.Specular.r = 0.0f;
-    dirLight.Specular.g = 0.0f;
-    dirLight.Specular.b = 0.0f;
-    dirLight.Specular.a = 1.0f;
-
-    dirLight.Ambient.r = 0.0f;
-    dirLight.Ambient.g = 0.0f;
-    dirLight.Ambient.b = 0.0f;
-    dirLight.Ambient.a = 1.0f;
-
-    dirLight.Position.x = 0.0f;
-    dirLight.Position.y = 0.0f;
-    dirLight.Position.z = 0.0f;
-
-    dirLight.Range = 0.0f;
-    dirLight.Falloff = 0.0f;
-    dirLight.Attenuation0 = 0.0f;
-    dirLight.Attenuation1 = 0.0f;
-    dirLight.Attenuation2 = 0.0f;
-    dirLight.Theta = 0.0f;
-    dirLight.Phi = 0.0f;
-
-    D3DLIGHT9& localLight = GetLocalLightStruct();
-
-    localLight.Diffuse.r = 0.0f;
-    localLight.Diffuse.g = 0.0f;
-    localLight.Diffuse.b = 0.0f;
-    localLight.Diffuse.a = 1.0f;
-
-    localLight.Specular.r = 0.0f;
-    localLight.Specular.g = 0.0f;
-    localLight.Specular.b = 0.0f;
-    localLight.Specular.a = 1.0f;
-
-    localLight.Ambient.r = 0.0f;
-    localLight.Ambient.g = 0.0f;
-    localLight.Ambient.b = 0.0f;
-    localLight.Ambient.a = 1.0f;
-
-    localLight.Attenuation1 = 1.0f;
     return true;
 }
 
@@ -927,4 +1109,35 @@ void RenderWareLighting_Init( void )
 void RenderWareLighting_Shutdown( void )
 {
     
+}
+
+void RenderWareLighting_InitShaders( void )
+{
+    // Initialize lighting shader.
+    CFileTranslator *mtaFileRoot = core->GetDataRoot();
+
+    filePath shaderPath;
+    mtaFileRoot->GetFullPath( "/shaders/lighting.fx", true, shaderPath );
+
+    SString outStatus;
+
+    lightingShader = core->GetGraphics()->GetRenderItemManager()->CreateShader( shaderPath, shaderPath, outStatus, 1.0, 0.0, true );
+
+    if ( !lightingShader )
+        core->GetConsole()->Print( outStatus );
+}
+
+void RenderWareLighting_ResetShaders( void )
+{
+    RenderWareLighting_ShutdownShaders();
+    RenderWareLighting_InitShaders();
+}
+
+void RenderWareLighting_ShutdownShaders( void )
+{
+    // todo.
+    if ( lightingShader )
+        lightingShader->Release();
+
+    lightingShader = NULL;
 }
