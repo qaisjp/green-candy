@@ -299,6 +299,9 @@ HRESULT CDirect3DEvents9::OnDrawPrimitive ( IDirect3DDevice9 *pDevice, D3DPRIMIT
     if ( g_pDeviceState->VertexShader )
         pShaderItem = NULL;
 
+    if ( g_forceShader )
+        __asm int 3
+
     if ( !pShaderItem )
     {
         // No shader for this texture

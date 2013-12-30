@@ -84,6 +84,8 @@ bool RenderCallbacks::IsEnvMapRenderingEnabled( void )
         the world. This is an adapted rewrite of RenderWare's
         default rendering callback.
 =========================================================*/
+void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass );
+
 template <typename callbackType>
 __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags, callbackType cb )
 {
@@ -122,6 +124,10 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
     {
         RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
 
+        // Enable global lighting beforehand.
+        // This should optimize things, as we avoid two render passes.
+        RpD3D9GlobalLightingPrePass();
+
         // Notify the generic callback.
         RpMaterial *curMat = rtPass->m_useMaterial;
 
@@ -141,7 +147,11 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
         }
 
         cb.OnPostRenderPass();
+
+        RpD3D9RenderLightMeshForPass( rtinfo, rtPass );
     }
+
+    RpD3D9ResetLightStatus();
 
     // Notify the render manager that we quit.
     cb.OnRenderFinish();

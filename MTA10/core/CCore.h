@@ -163,6 +163,7 @@ public:
     const char *            GetModInstallRoot( const char * szModName );
     CFileTranslator*        GetModRoot()                                                        { return m_modRoot; }
     CFileTranslator*        GetMTARoot()                                                        { return mtaFileRoot; }
+    CFileTranslator*        GetDataRoot()                                                       { return dataFileRoot; }
 
 
     // Subsystems
