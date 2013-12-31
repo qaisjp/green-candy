@@ -207,6 +207,13 @@ CShaderItem* CRenderItemManager::CreateShader ( const SString& strFullFilePath, 
     return pShaderItem;
 }
 
+CShaderItem* CRenderItemManager::CloneShader ( CShaderItem *shader )
+{
+    // would be nice to have this.
+    // but this system is very... complex.
+    return NULL;
+}
+
 
 ////////////////////////////////////////////////////////////////
 //

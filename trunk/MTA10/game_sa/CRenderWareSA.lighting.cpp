@@ -303,14 +303,23 @@ static int __cdecl RpD3D9InitializeLightingPlugin( void )
         (1.0 US): 0x007FA8B0
         (1.0 EU): 0x007FA8F0
 =========================================================*/
-int __cdecl RpD3D9LightsEqual( const D3DLIGHT9& left, const D3DLIGHT9& right )
+struct StructComparator
 {
-    // A clever compiler optimizes this into lots of branches.
+    template <typename dataType>
+    inline bool CompareData( const dataType& left, const dataType& right )
+    {
+        return ( left == right );
+    }
+};
+
+template <typename comparatorType>
+__forceinline bool _LightsCompare( const D3DLIGHT9& left, const D3DLIGHT9& right, comparatorType& cmp )
+{
     bool equals = 
-        left.Type == right.Type &&
-        left.Diffuse.r == right.Diffuse.r &&
-        left.Diffuse.g == right.Diffuse.g &&
-        left.Diffuse.b == right.Diffuse.b;
+        cmp.CompareData( left.Type, right.Type ) &&
+        cmp.CompareData( left.Diffuse.r, right.Diffuse.r ) &&
+        cmp.CompareData( left.Diffuse.g, right.Diffuse.g ) &&
+        cmp.CompareData( left.Diffuse.b, right.Diffuse.b );
 
     if ( !equals )
         return false;
@@ -319,30 +328,30 @@ int __cdecl RpD3D9LightsEqual( const D3DLIGHT9& left, const D3DLIGHT9& right )
     {
     case D3DLIGHT_POINT:
         equals = 
-            left.Position.x == right.Position.x &&
-            left.Position.y == right.Position.y &&
-            left.Position.z == right.Position.z &&
-            left.Range == right.Range;
+            cmp.CompareData( left.Position.x, right.Position.x ) &&
+            cmp.CompareData( left.Position.y, right.Position.y ) &&
+            cmp.CompareData( left.Position.z, right.Position.z ) &&
+            cmp.CompareData( left.Range, right.Range );
 
         break;
     case D3DLIGHT_SPOT:
         equals = 
-            left.Position.x == right.Position.x &&
-            left.Position.y == right.Position.y &&
-            left.Position.z == right.Position.z &&
-            left.Direction.x == right.Direction.x &&
-            left.Direction.y == right.Direction.y &&
-            left.Direction.z == right.Direction.z &&
-            left.Range == right.Range &&
-            left.Theta == right.Theta &&
-            left.Phi == right.Phi;
+            cmp.CompareData( left.Position.x, right.Position.x ) &&
+            cmp.CompareData( left.Position.y, right.Position.y ) &&
+            cmp.CompareData( left.Position.z, right.Position.z ) &&
+            cmp.CompareData( left.Direction.x, right.Direction.x ) &&
+            cmp.CompareData( left.Direction.y, right.Direction.y ) &&
+            cmp.CompareData( left.Direction.z, right.Direction.z ) &&
+            cmp.CompareData( left.Range, right.Range ) &&
+            cmp.CompareData( left.Theta, right.Theta ) &&
+            cmp.CompareData( left.Phi, right.Phi );
 
         break;
     case D3DLIGHT_DIRECTIONAL:
         equals = 
-            left.Direction.x == right.Direction.x &&
-            left.Direction.y == right.Direction.y &&
-            left.Direction.z == right.Direction.z;
+            cmp.CompareData( left.Direction.x, right.Direction.x ) &&
+            cmp.CompareData( left.Direction.y, right.Direction.y ) &&
+            cmp.CompareData( left.Direction.z, right.Direction.z );
 
         break;
     default:
@@ -350,6 +359,63 @@ int __cdecl RpD3D9LightsEqual( const D3DLIGHT9& left, const D3DLIGHT9& right )
     }
 
     return equals;
+}
+
+int __cdecl RpD3D9LightsEqual( const D3DLIGHT9& left, const D3DLIGHT9& right )
+{
+    // A clever compiler optimizes this into lots of branches.
+    return _LightsCompare( left, right, StructComparator() );
+}
+
+/*=========================================================
+    RpD3D9LightsGetApplicance (MTA extension)
+
+    Arguments:
+        left - first light for comparison
+        right - second light for comparison
+        applicance - ptr to write applicance to if successful
+    Purpose:
+        Returns the applicance factor of a light source. It
+        tells you how different two light structs are. The more
+        different they are, the more values have to be updated
+        to the GPU.
+=========================================================*/
+struct StructApplicanceCalculator
+{
+    inline StructApplicanceCalculator( void )
+    {
+        applicance = 0;
+    }
+
+    template <typename dataType>
+    inline bool CompareData( const dataType& left, const dataType& right )
+    {
+        bool same = ( left == right );
+
+        if ( !same )
+            applicance++;
+
+        return true;
+    }
+
+    template <>
+    inline bool CompareData( const D3DLIGHTTYPE& left, const D3DLIGHTTYPE& right )
+    {
+        return ( left == right );
+    }
+
+    int applicance;
+};
+
+bool __cdecl RpD3D9LightsGetApplicance( const D3DLIGHT9& left, const D3DLIGHT9& right, int& applicance )
+{
+    StructApplicanceCalculator applCalc;
+
+    if ( !_LightsCompare( left, right, applCalc ) )
+        return false;
+
+    applicance = applCalc.applicance;
+    return true;
 }
 
 bool _SetLightGlobal( int lightIndex, const D3DLIGHT9& lightStruct )
@@ -372,6 +438,22 @@ bool _SetLightGlobal( int lightIndex, const D3DLIGHT9& lightStruct )
     return GetRenderDevice()->SetLight( lightIndex, &lightStruct ) >= 0;
 }
 
+bool _FindLightSlotGlobal( const D3DLIGHT9& lightStruct, int& lightIndex )
+{
+    for ( int n = 0; n < D3D9Lighting::deviceLightInfo.GetCount(); n++ )
+    {
+        nativeLightInfo& info = D3D9Lighting::deviceLightInfo.Get( n );
+
+        if ( !info.active && RpD3D9LightsEqual( info.native, lightStruct ) )
+        {
+            lightIndex = n;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool _LightEnableGlobal( int lightIndex, bool enable )
 {
     // Ignore invalid light indice.
@@ -390,22 +472,194 @@ bool _LightEnableGlobal( int lightIndex, bool enable )
     return true;
 }
 
+inline CShaderItem* _NewLightShaderInstance( const char *name )
+{
+    CFileTranslator *mtaFileRoot = core->GetDataRoot();
+
+    filePath shaderPath;
+    mtaFileRoot->GetFullPath( ( std::string( "/shaders/" ) + name ).c_str(), true, shaderPath );
+
+    SString outStatus;
+
+    CShaderItem *shader = core->GetGraphics()->GetRenderItemManager()->CreateShader( shaderPath, shaderPath, outStatus, 1.0, 0.0, true );
+
+    if ( !shader )
+        core->GetConsole()->Print( outStatus );
+
+    return shader;
+}
+
 // Manager for rendering light states.
 struct lightPassManager
 {
     lightPassManager( D3D9Lighting::lightState& state, CShaderItem *useShader = NULL ) : light_state( state )
     {
         inPhase = false;
-        lightShader = useShader;
         inPass = false;
+
+        activeShader = NULL;
+
+        SetLightingShader( useShader );
+    }
+
+    ~lightPassManager( void )
+    {
+        SetLightingShader( NULL );
+    }
+
+    inline bool IsFixedFunction( void )
+    {
+        return ( lightShader == NULL );
     }
 
     bool SetLight( int lightIndex, const D3DLIGHT9& lightStruct )
     {
         if ( !inPhase )
             return light_state.SetLight( lightIndex, lightStruct );
+        else
+        {
+            if ( IsFixedFunction() )
+            {
+                return _SetLightGlobal( lightIndex, lightStruct );
+            }
+            else if ( lightShader )
+            {
+                if ( lightIndex < lightShaderCache.GetSizeCount() )
+                {
+                    // Update the light sauce.
+                    shaderCacheItem& item = lightShaderCache.Get( lightIndex );
 
-        return _SetLightGlobal( lightIndex, lightStruct );
+                    // Make sure we have a shader instance.
+                    CShaderItem *cachedLightShader = item.cachedShader;
+                    bool hadLightShader = ( cachedLightShader != NULL );
+
+                    if ( !cachedLightShader )
+                    {
+                        // todo: implement efficient light shader cloning.
+                        cachedLightShader = _NewLightShaderInstance( "lighting.fx" );
+
+                        item.cachedShader = cachedLightShader;
+                    }
+
+                    // Update general stuff.
+                    item.lightStruct.Type = lightStruct.Type;
+
+                    // Update position.
+                    {
+                        const RwMatrix& camTransform = pRwInterface->m_renderCam->m_parent->GetLTM();
+
+                        CVector lightPos = camTransform.vPos - (CVector&)lightStruct.Position;
+
+                        cachedLightShader->SetValue( "gLightPosition", (float*)&lightPos, 3 );
+
+                        item.lightStruct.Position = lightStruct.Position;
+                    }
+
+                    // Update color.
+                    if ( !hadLightShader ||
+                         lightStruct.Diffuse.r != item.lightStruct.Diffuse.r ||
+                         lightStruct.Diffuse.g != item.lightStruct.Diffuse.g ||
+                         lightStruct.Diffuse.b != item.lightStruct.Diffuse.b )
+                    {
+                        cachedLightShader->SetValue( "gLightDiffuse", (float*)&lightStruct.Diffuse, 4 );
+
+                        item.lightStruct.Diffuse = lightStruct.Diffuse;
+                    }
+
+                    // Update attenuation values.
+                    if ( !hadLightShader ||
+                         lightStruct.Attenuation0 != item.lightStruct.Attenuation0 )
+                    {
+                        cachedLightShader->SetValue( "gLightAttenuation0", &lightStruct.Attenuation0, 1 );
+
+                        item.lightStruct.Attenuation0 = lightStruct.Attenuation0;
+                    }
+
+                    if ( !hadLightShader || 
+                         lightStruct.Attenuation1 != item.lightStruct.Attenuation1 )
+                    {
+                        cachedLightShader->SetValue( "gLightAttenuation1", &lightStruct.Attenuation1, 1 );
+
+                        item.lightStruct.Attenuation1 = lightStruct.Attenuation1;
+                    }
+
+                    if ( !hadLightShader ||
+                         lightStruct.Attenuation2 != item.lightStruct.Attenuation2 )
+                    {
+                        cachedLightShader->SetValue( "gLightAttenuation2", &lightStruct.Attenuation2, 1 );
+
+                        item.lightStruct.Attenuation2 = lightStruct.Attenuation2;
+                    }
+
+                    // Update light range.
+                    if ( !hadLightShader ||
+                         lightStruct.Range != item.lightStruct.Range )
+                    {
+                        cachedLightShader->SetValue( "gLightRange", &lightStruct.Range, 1 );
+
+                        item.lightStruct.Range = lightStruct.Range;
+                    }
+
+                    cachedLightShader->UpdateParams();
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool FindClosestShaderLight( const D3DLIGHT9& lightStruct, int& lightIndex )
+    {
+        // Find the non-active light slot that is closest to our needs.
+        // Closer to our needs == less values to set using SetShaderValue.
+
+        int closestLightIndex = -1;
+        int lightNumApplicance = -1;
+
+        for ( int n = 0; n < lightShaderCache.GetSizeCount(); n++ )
+        {
+            shaderCacheItem& item = lightShaderCache.Get( n );
+
+            if ( item.cachedShader )
+            {
+                int lightApplicance = 0;
+
+                if ( RpD3D9LightsGetApplicance( lightStruct, item.lightStruct, lightApplicance ) )
+                {
+                    if ( closestLightIndex == -1 || lightApplicance < lightNumApplicance )
+                    {
+                        closestLightIndex = n;
+                        lightNumApplicance = lightApplicance;
+                    }
+                }
+            }
+        }
+
+        if ( closestLightIndex != -1 )
+        {
+            lightIndex = closestLightIndex;
+            return true;
+        }
+
+        return false;
+    }
+
+    bool FindNativeIndex( const D3DLIGHT9& lightStruct, int& lightIndex )
+    {
+        assert( inPhase == true );
+
+        if ( IsFixedFunction() )
+        {
+            return _FindLightSlotGlobal( lightStruct, lightIndex );
+        }
+        else if ( lightShader )
+        {
+            return FindClosestShaderLight( lightStruct, lightIndex ) ;
+        }
+
+        // todo.
+        return false;
     }
 
     bool EnableLight( int lightIndex, bool enable )
@@ -416,8 +670,35 @@ struct lightPassManager
         }
         else
         {
-            return _LightEnableGlobal( lightIndex, enable );
+            if ( IsFixedFunction() )
+            {
+                return _LightEnableGlobal( lightIndex, enable );
+            }
+            else if ( lightShader )
+            {
+                if ( lightIndex < lightShaderCache.GetSizeCount() )
+                {
+                    CShaderItem *shader = lightShaderCache.Get( lightIndex ).cachedShader;
+
+                    if ( shader )
+                    {
+                        assert( activeShader == NULL );
+
+                        // Set current light shader.
+                        shader->Begin( numLightShaderPasses );
+                        
+                        core->GetGraphics()->GetRenderItemManager()->SetForceShader( shader );
+
+                        activeShader = shader;
+
+                        shader->BeginPass( 0 );
+                        return true;
+                    }
+                }
+            }
         }
+
+        return false;
     }
 
     void Begin( void )
@@ -428,50 +709,65 @@ struct lightPassManager
         inPhase = true;
         global_inPhase = true;
 
-        // Make sure we only activate the number of maximally supported lights on this GPU.
-        unsigned int maxGPULights = D3D9Lighting::maxNumberOfActiveLights;
-
-        D3D9Lighting::swap_activeGlobalLights.TrimTo( maxGPULights );
-        
-        unsigned int lastActiveGlobalLightsCount = D3D9Lighting::swap_activeGlobalLights.GetCount();
-
-        for ( unsigned int n = 0; n < lastActiveGlobalLightsCount; n++ )
+        // Clear up any active light states.
+        if ( IsFixedFunction() )
         {
-            int lightIndex = D3D9Lighting::swap_activeGlobalLights.Get( n );
+            // Make sure we only activate the number of maximally supported lights on this GPU.
+            unsigned int maxGPULights = D3D9Lighting::maxNumberOfActiveLights;
 
-            // Check whether we should disable this light.
-            // It is either disabled if it does not exist in the active lights queue
-            // or has an index that is outside of the GPUs maximum light index
-            // count.
-            unsigned int primaryIndex;
+            D3D9Lighting::swap_activeGlobalLights.TrimTo( maxGPULights );
+            
+            unsigned int lastActiveGlobalLightsCount = D3D9Lighting::swap_activeGlobalLights.GetCount();
 
-            if ( !light_state.activeGlobalLights.Find( lightIndex, primaryIndex ) || primaryIndex >= maxGPULights )
+            for ( unsigned int n = 0; n < lastActiveGlobalLightsCount; n++ )
             {
-                // Disable the light.
-                EnableLight( lightIndex, false );
+                int lightIndex = D3D9Lighting::swap_activeGlobalLights.Get( n );
+
+                // Check whether we should disable this light.
+                // It is either disabled if it does not exist in the active lights queue
+                // or has an index that is outside of the GPUs maximum light index
+                // count.
+                unsigned int primaryIndex;
+
+                if ( !light_state.activeGlobalLights.Find( lightIndex, primaryIndex ) || primaryIndex >= maxGPULights )
+                {
+                    // Disable the light.
+                    EnableLight( lightIndex, false );
+                }
             }
         }
 
         index = 0;
-
-        // Activate the lighting shader (if present)
-        if ( lightShader )
-        {
-            lightShader->Begin( numLightShaderPasses );
-            
-            core->GetGraphics()->GetRenderItemManager()->SetForceShader( lightShader );
-        }
     }
 
     void ClearPass( void )
     {
         if ( inPass )
         {
-            if ( lightShader )
-                lightShader->EndPass();
+            if ( activeShader )
+            {
+                activeShader->EndPass();
+                activeShader->End();
+
+                core->GetGraphics()->GetRenderItemManager()->SetForceShader( NULL );
+
+                activeShader = NULL;
+            }
 
             inPass = false;
         }
+    }
+
+    inline int GetLightPhaseCount( void )
+    {
+        if ( IsFixedFunction() )
+            return (int)D3D9Lighting::maxNumberOfActiveLights;
+        else if ( lightShader )
+        {
+            return lightShaderCache.GetSizeCount();
+        }
+
+        return 1;
     }
 
     bool DoLightPass( void )
@@ -480,15 +776,11 @@ struct lightPassManager
 
         ClearPass();
 
-        if ( lightShader )
-            lightShader->BeginPass( 0 );
-
         bool wantPass = false;
-        unsigned int maxGPULights = D3D9Lighting::maxNumberOfActiveLights;
 
         int n = 0;
         
-        for ( ; n < (int)maxGPULights; n++ )
+        for ( ; n < GetLightPhaseCount(); n++ )
         {
             unsigned int currentIndex = index + (unsigned int)n;
 
@@ -498,42 +790,27 @@ struct lightPassManager
             int lightIndex = light_state.activeGlobalLights.Get( currentIndex );
             D3DLIGHT9& lightStruct = light_state.nativeLights.Get( lightIndex );
 
+            int nativeIndex = n;
+
+            if ( !FindNativeIndex( lightStruct, nativeIndex ) || lightShader )
+            {
+                if ( !SetLight( nativeIndex, lightStruct ) )
+                    break;
+            }
+
+            if ( EnableLight( nativeIndex, true ) == 0 )
+                break;
+
+            wantPass = true;
+
             if ( lightShader )
             {
-                const RwMatrix& camTransform = pRwInterface->m_renderCam->m_parent->GetLTM();
-
-                // Update light shader info.
-                CVector lightPos = camTransform.vPos - (CVector&)lightStruct.Position;
-
-                lightShader->SetValue( "gLightPosition", (float*)&lightPos, 3 );
-                lightShader->SetValue( "gLightDiffuse", (float*)&lightStruct.Diffuse, 4 );
-                lightShader->SetValue( "gLightAttenuation0", &lightStruct.Attenuation0, 1 );
-                lightShader->SetValue( "gLightAttenuation1", &lightStruct.Attenuation1, 1 );
-                lightShader->SetValue( "gLightAttenuation2", &lightStruct.Attenuation2, 1 );
-                lightShader->SetValue( "gLightRange", &lightStruct.Range, 1 );
-
-                wantPass = true;
-
                 n++;
-                break;
-            }
-            else
-            {
-                if ( SetLight( n, lightStruct ) == 0 || EnableLight( n, true ) == 0 )
-                    break;
-
-                wantPass = true;
+                break;  // only one shader can be active at a time.
             }
         }
 
         index += n;
-
-        if ( wantPass )
-        {
-            // Disable all stray lights.
-            for ( ; n < (int)maxGPULights; n++ )
-                EnableLight( n, false );
-        }
 
         inPass = true;
 
@@ -549,14 +826,6 @@ struct lightPassManager
     {
         ClearPass();
 
-        // Terminate light shader.
-        if ( lightShader )
-        {
-            lightShader->End();
-
-            core->GetGraphics()->GetRenderItemManager()->SetForceShader( NULL );
-        }
-
         light_state.activeGlobalLights.SetContents( D3D9Lighting::swap_activeGlobalLights );
 
         inPhase = false;
@@ -567,7 +836,32 @@ struct lightPassManager
     {
         assert( inPhase == false );
 
+        if ( item == lightShader )
+            return;
+
+        if ( item == NULL )
+        {
+            // Make sure all shader instances are terminated.
+            for ( int n = 0; n < lightShaderCache.GetSizeCount(); n++ )
+            {
+                shaderCacheItem& item = lightShaderCache.Get( n );
+
+                if ( CShaderItem *shader = item.cachedShader )
+                {
+                    shader->Release();
+
+                    item.cachedShader = NULL;
+                }
+            }
+        }
+
         lightShader = item;
+
+        if ( lightShader )
+        {
+            // Initialize the shader light cache that is used to accelerate lights that are applied to multiple meshes.
+            lightShaderCache.SetSizeCount( 8 );
+        }
     }
 
     D3D9Lighting::lightState& light_state;
@@ -576,7 +870,26 @@ struct lightPassManager
     bool inPass;
 
     CShaderItem *lightShader;
+    CShaderItem *activeShader;
     unsigned int numLightShaderPasses;
+
+    struct shaderCacheItem
+    {
+        D3DLIGHT9 lightStruct;
+        CShaderItem *cachedShader;
+    };
+
+    struct shaderCacheItemArrayManager
+    {
+        inline void InitField( shaderCacheItem& item )
+        {
+            item.cachedShader = NULL;
+        }
+    };
+
+    typedef growableArray <shaderCacheItem, 8, 0x104742, shaderCacheItemArrayManager, int> shaderCacheArray;
+
+    shaderCacheArray lightShaderCache;
 
     static bool global_inPhase;
 };
@@ -783,7 +1096,6 @@ int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
         }
     LIST_FOREACH_END
 
-    //HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( isLighting ) ? 0xFFFFFFFF : 0 );
     return isLighting;
 }
 
@@ -866,6 +1178,9 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
         // Set the global ambient light color to the one specified by the native light-state.
         GetAmbientColor() = D3D9Lighting::curLightState.ambientLightColor;
 
+        // todo: optimize light sectoring.
+        // we should make sure it is quad-tree oriented (not proven for now, tho its quite fast this way)
+
         // Activate all local lights on a seperate light-state.
         if ( IS_ANY_FLAG( geom->flags, 0x10 ) )
         {
@@ -908,6 +1223,16 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
     HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( doLighting ) ? 0xFFFFFFFF : 0x00000000 );
 }
 
+/*=========================================================
+    RpD3D9GlobalLightingPrePass (MTA extension)
+
+    Purpose:
+        Activates global lighting states that are applied
+        when the game mesh is first rendered. By default, this
+        function expects that the fixed function pipeline
+        is issued. The game will set texture stage states
+        depending on how content will be rendered.
+=========================================================*/
 bool RpD3D9GlobalLightingPrePass( void )
 {
     bool doLighting = false;
@@ -943,6 +1268,7 @@ bool RpD3D9GlobalLightingPrePass( void )
         a mesh has been rendered.
 =========================================================*/
 static CShaderItem *lightingShader = NULL;  // todo: one shader for every light type.
+static lightPassManager localLightPassMan( localLight_lightState );
 
 void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
 {
@@ -960,6 +1286,7 @@ void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRende
         RwRenderStateLock diffusematsrc( D3DRS_DIFFUSEMATERIALSOURCE, D3DMCS_COLOR1 );
         RwRenderStateLock specular( D3DRS_SPECULARENABLE, false );
         RwRenderStateLock ambient( D3DRS_AMBIENT, 0x00000000 );
+        RwRenderStateLock alpharef( D3DRS_ALPHAREF, 0x01 );
         {
             // Finish the global lights render.
             if ( globalLightPassMan.inPhase || hasGlobalLighting )
@@ -991,19 +1318,18 @@ void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRende
 
             if ( hasLocalLighting )
             {
-                D3D9Lighting::lightState& state = localLight_lightState;
+                // Update light shader.
+                localLightPassMan.SetLightingShader( lightingShader );
 
-                lightPassManager lightMan( state, lightingShader );
+                localLightPassMan.Begin();
 
-                lightMan.Begin();
-
-                while ( lightMan.DoLightPass() )
+                while ( localLightPassMan.DoLightPass() )
                 {
                     // Render as often as we require light meshes.
                     RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
                 }
 
-                lightMan.End();
+                localLightPassMan.End();
             }
         }
     }
@@ -1114,17 +1440,7 @@ void RenderWareLighting_Shutdown( void )
 void RenderWareLighting_InitShaders( void )
 {
     // Initialize lighting shader.
-    CFileTranslator *mtaFileRoot = core->GetDataRoot();
-
-    filePath shaderPath;
-    mtaFileRoot->GetFullPath( "/shaders/lighting.fx", true, shaderPath );
-
-    SString outStatus;
-
-    lightingShader = core->GetGraphics()->GetRenderItemManager()->CreateShader( shaderPath, shaderPath, outStatus, 1.0, 0.0, true );
-
-    if ( !lightingShader )
-        core->GetConsole()->Print( outStatus );
+    lightingShader = _NewLightShaderInstance( "lighting.fx" );
 }
 
 void RenderWareLighting_ResetShaders( void )

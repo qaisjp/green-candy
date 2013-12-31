@@ -120,6 +120,7 @@ public:
     virtual CGuiFontItem*       CreateGuiFont                       ( const SString& strFullFilePath, const SString& strFontName, uint uiSize ) = 0;
     virtual CTextureItem*       CreateTexture                       ( const SString& strFullFilePath, const CPixels* pPixels = NULL, bool bMipMaps = true, uint uiSizeX = RDEFAULT, uint uiSizeY = RDEFAULT, ERenderFormat format = RFORMAT_UNKNOWN, ETextureAddress textureAddress = TADDRESS_WRAP, ETextureType textureType = TTYPE_TEXTURE, uint uiVolumeDepth = 1 ) = 0;
     virtual CShaderItem*        CreateShader                        ( const SString& strFullFilePath, const SString& strRootPath, SString& strOutStatus, float fPriority, float fMaxDistance, bool bDebug ) = 0;
+    virtual CShaderItem*        CloneShader                         ( CShaderItem *shader ) = 0;
     virtual CRenderTargetItem*  CreateRenderTarget                  ( uint uiSizeX, uint uiSizeY, bool bWithAlphaChannel, bool bForce = false ) = 0;
     virtual CScreenSourceItem*  CreateScreenSource                  ( uint uiSizeX, uint uiSizeY ) = 0;
     virtual bool                SetRenderTarget                     ( CRenderTargetItem* pItem, bool bClear ) = 0;
@@ -346,6 +347,8 @@ class CShaderItem : public CMaterialItem
     virtual void    EndPass                 ( void );
     virtual bool    IsComputing             ( void );
     virtual void    End                     ( void );
+
+    virtual void    UpdateParams            ( void );
 
     CEffectWrap*        m_pEffectWrap;
     float               m_fPriority;
