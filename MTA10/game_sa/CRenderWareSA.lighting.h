@@ -69,21 +69,24 @@ struct growableArray
 
     inline void SetSizeCount( countType index )
     {
-        countType oldCount = sizeCount;
-
-        sizeCount = index;
-
-        size_t newArraySize = sizeCount * sizeof( dataType );
-
-        if ( !data )
-            data = (dataType*)pRwInterface->m_memory.m_malloc( newArraySize, allocFlags );
-        else
-            data = (dataType*)pRwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
-
-        // Fill the gap.
-        for ( countType n = oldCount; n < sizeCount; n++ )
+        if ( index != sizeCount )
         {
-            manager.InitField( data[n] );
+            countType oldCount = sizeCount;
+
+            sizeCount = index;
+
+            size_t newArraySize = sizeCount * sizeof( dataType );
+
+            if ( !data )
+                data = (dataType*)pRwInterface->m_memory.m_malloc( newArraySize, allocFlags );
+            else
+                data = (dataType*)pRwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
+
+            // Fill the gap.
+            for ( countType n = oldCount; n < sizeCount; n++ )
+            {
+                manager.InitField( data[n] );
+            }
         }
     }
 

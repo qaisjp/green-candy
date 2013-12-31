@@ -420,15 +420,8 @@ draw:
             CAdditionalVertexStreamManager::GetSingleton ()->MaybeSetAdditionalVertexStream ( PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount );
         }
 
-        // Apply custom parameters
-        pShaderInstance->ApplyShaderParameters ();
-        // Apply common parameters
-        pShaderInstance->m_pEffectWrap->ApplyCommonHandles ();
-        // Apply mapped parameters
-        pShaderInstance->m_pEffectWrap->ApplyMappedHandles ();
-
         // Update the shader parameters (commit them)
-        pShaderInstance->m_pEffectWrap->m_pD3DEffect->CommitChanges();
+        //pShaderInstance->m_pEffectWrap->m_pD3DEffect->CommitChanges();
 
         DrawIndexedPrimitiveGuarded ( pDevice, PrimitiveType, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount );
 

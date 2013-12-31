@@ -95,7 +95,6 @@ void CShaderItem::CreateUnderlyingData ( const SString& strFilename, const SStri
     assert ( !m_pEffectWrap );
     assert ( !m_pShaderInstance );
 
-
     m_pEffectWrap = NewEffectWrap ( m_pManager, strFilename, strRootPath, strOutStatus, bDebug );
 
     if ( !m_pEffectWrap->IsValid () )
@@ -366,6 +365,16 @@ void CShaderItem::End( void )
         pDevice->SetVertexShader( NULL );
         pDevice->SetPixelShader( NULL );
     }
+}
+
+void CShaderItem::UpdateParams( void )
+{
+    // Apply custom parameters
+    m_pShaderInstance->ApplyShaderParameters ();
+    // Apply common parameters
+    m_pShaderInstance->m_pEffectWrap->ApplyCommonHandles ();
+    // Apply mapped parameters
+    m_pShaderInstance->m_pEffectWrap->ApplyMappedHandles ();
 }
 
 
