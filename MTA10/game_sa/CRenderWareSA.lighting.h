@@ -22,6 +22,7 @@ int __cdecl     RpD3D9LocalLightEnable      ( RpLight *light );
 int __cdecl     RpD3D9EnableLight           ( int lightIndex, int phase );
 int __cdecl     RpD3D9GlobalLightsEnable    ( unsigned char flags );
 bool            RpD3D9GlobalLightingPrePass ( void );
+void            RpD3D9CacheLighting( void );
 void __cdecl    RpD3D9ResetLightStatus      ( void );
 void __cdecl    RpD3D9EnableLights          ( bool enable, int unused );
 

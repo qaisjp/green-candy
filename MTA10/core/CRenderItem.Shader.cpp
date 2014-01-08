@@ -377,6 +377,12 @@ void CShaderItem::UpdateParams( void )
     m_pShaderInstance->m_pEffectWrap->ApplyMappedHandles ();
 }
 
+void CShaderItem::UpdatePipelineParams( void )
+{
+    // Apply mapped parameters
+    m_pShaderInstance->m_pEffectWrap->ApplyMappedHandles ();
+}
+
 
 ////////////////////////////////////////////////////////////////
 //

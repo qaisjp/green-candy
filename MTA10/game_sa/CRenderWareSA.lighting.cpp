@@ -991,17 +991,8 @@ struct lightPassManager
 
     lightIndexArray _cachedActiveLightIndice;
 
-    bool DoLightPass( void )
+    AINLINE void GenerateLightPass( lightPass& thisPass )
     {
-        assert( inPhase == true );
-
-        ClearPass();
-
-        bool wantPass = false;
-
-        // Generate a light pass.
-        lightPass thisPass;
-
         int phaseCount = GetLightPhaseCount();
 
         for ( int n = 0; n < phaseCount; n++ )
@@ -1016,6 +1007,57 @@ struct lightPassManager
 
             thisPass.AddItem( activeLightInfo( &lightStruct ) );
         }
+    }
+
+    AINLINE bool ActivateShaderLighting( int shaderIndex )
+    {
+        CShaderItem *shader = lightShaderCache.Get( shaderIndex ).cachedShader;
+
+        bool successful = false;
+
+        if ( shader )
+        {
+            assert( activeShader == NULL );
+
+            // Set current light shader.
+            shader->Begin( numLightShaderPasses );
+            
+            if ( numLightShaderPasses > 0 )
+            {
+                core->GetGraphics()->GetRenderItemManager()->SetForceShader( shader );
+
+                activeShader = shader;
+
+                shader->UpdatePipelineParams();
+
+                shader->BeginPass( 0 );
+
+                successful = true;
+            }
+            else
+                shader->End();
+        }
+
+        return successful;
+    }
+
+    struct lightingDirectApplicator
+    {
+        AINLINE bool OnShaderLightEnable( lightPassManager& lightPassMan, int shaderIndex )
+        {
+            return lightPassMan.ActivateShaderLighting( shaderIndex );
+        }
+
+        AINLINE bool OnFixedFunctionLightEnable( lightPassManager& lightPassMan, int lightIndex )
+        {
+            return lightPassMan.EnableLight( lightIndex, true );
+        }
+    };
+    
+    template <typename applicatorType>
+    AINLINE bool ProcessLightingPass( lightPass& thisPass, applicatorType& cb )
+    {
+        bool wantPass = false;
 
         // Apply this light pass.
         int passCount = thisPass.GetCount();
@@ -1070,23 +1112,7 @@ struct lightPassManager
 
                     if ( wantPass )
                     {
-                        CShaderItem *shader = lightShaderCache.Get( shaderIndex ).cachedShader;
-
-                        if ( shader )
-                        {
-                            assert( activeShader == NULL );
-
-                            // Set current light shader.
-                            shader->Begin( numLightShaderPasses );
-                            
-                            core->GetGraphics()->GetRenderItemManager()->SetForceShader( shader );
-
-                            activeShader = shader;
-
-                            shader->BeginPass( 0 );
-                        }
-                        else
-                            wantPass = false;
+                        wantPass = cb.OnShaderLightEnable( *this, shaderIndex );
                     }
                 }
             }
@@ -1104,7 +1130,7 @@ struct lightPassManager
                             break;
                     }
 
-                    if ( EnableLight( nativeIndex, true ) == 0 )
+                    if ( !cb.OnFixedFunctionLightEnable( *this, nativeIndex ) )
                         break;
 
                     wantPass = true;
@@ -1112,19 +1138,148 @@ struct lightPassManager
             }
         }
 
-        inPass = wantPass;
-
         return wantPass;
     }
 
-    bool IsInPass( void )
+    struct cachedLightingData
+    {
+        cachedLightingData( void )
+        {
+            isAvailable = false;
+            cachedTraversalIndex = 0;
+        }
+
+        D3D9Lighting::lightIndexArray cachedIndice;
+        unsigned int cachedTraversalIndex;
+        bool isAvailable;
+    };
+
+    cachedLightingData _cachedLightingData;
+
+    struct lightingDataCacheCollector
+    {
+        AINLINE lightingDataCacheCollector( cachedLightingData& cache ) : m_cache( cache )
+        { }
+
+        AINLINE bool OnShaderLightEnable( lightPassManager& lightPassMan, int shaderIndex )
+        {
+            m_cache.cachedIndice.AddItem( shaderIndex );
+            return true;
+        }
+
+        AINLINE bool OnFixedFunctionLightEnable( lightPassManager& lightPassMan, int lightIndex )
+        {
+            m_cache.cachedIndice.AddItem( lightIndex );
+            return true;
+        }
+
+        cachedLightingData& m_cache;
+    };
+
+    void CacheLightingData( void )
+    {
+        if ( _cachedLightingData.isAvailable )
+            return;
+
+        // Generate a light pass.
+        lightPass thisPass;
+
+        GenerateLightPass( thisPass );
+
+        // Collect cache information.
+        ProcessLightingPass( thisPass, lightingDataCacheCollector( _cachedLightingData ) );
+
+        _cachedLightingData.isAvailable = true;
+    }
+
+    void ResetCachePass( void )
+    {
+        _cachedLightingData.cachedTraversalIndex = 0;
+    }
+
+    void ClearCache( void )
+    {
+        ResetCachePass();
+
+        _cachedLightingData.cachedIndice.Clear();
+        _cachedLightingData.isAvailable = false;
+    }
+
+    bool DoLightPass( void )
+    {
+        assert( inPhase == true );
+
+        ClearPass();
+
+        lightingDirectApplicator applicator;
+
+        if ( _cachedLightingData.isAvailable )
+        {
+            unsigned int numLoopCount = 0;
+
+            if ( lightShader )
+            {
+                numLoopCount = 1;
+            }
+            else if ( IsFixedFunction() )
+            {
+                numLoopCount = D3D9Lighting::maxNumberOfActiveLights;
+            }
+
+            for ( unsigned int n = 0; n < numLoopCount; n++ )
+            {
+                unsigned int realIndex = _cachedLightingData.cachedTraversalIndex + n;
+
+                if ( realIndex >= _cachedLightingData.cachedIndice.GetCount() )
+                    break;
+
+                int lightIndex = _cachedLightingData.cachedIndice.Get( realIndex );
+
+                bool success = false;
+
+                if ( lightShader )
+                {
+                    success = applicator.OnShaderLightEnable( *this, lightIndex );
+                }
+                else
+                {
+                    success = applicator.OnFixedFunctionLightEnable( *this, lightIndex );
+                }
+
+                if ( success )
+                    inPass = true;
+            }
+
+            _cachedLightingData.cachedTraversalIndex += numLoopCount;
+        }
+        else
+        {
+            // Generate a light pass.
+            lightPass thisPass;
+
+            GenerateLightPass( thisPass );
+
+            // Apply lighting data directly.
+            inPass = ProcessLightingPass( thisPass, applicator );
+        }
+
+        return inPass;
+    }
+
+    bool IsInPass( void ) const
     {
         return inPass;
+    }
+
+    bool IsInPhase( void ) const
+    {
+        return inPhase;
     }
 
     void End( void )
     {
         ClearPass();
+        ResetCachePass();
 
         light_state.activeGlobalLights.SetContents( D3D9Lighting::swap_activeGlobalLights );
 
@@ -1352,6 +1507,9 @@ void __cdecl RpD3D9EnableLights( bool enable, int unused )
         (1.0 US): 0x00757400
         (1.0 EU): 0x00757450
 =========================================================*/
+static bool forceGlobalLighting = false;
+static bool forceLocalLighting = false;
+
 static RwColorFloat& GetAmbientColor( void )
 {
     return *(RwColorFloat*)0x008E2418;
@@ -1375,7 +1533,7 @@ int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
             case LIGHT_TYPE_DIRECTIONAL:
                 if ( cb.CanProcessDirectionalLight() )
                 {
-                    if ( state.ActivateDirLight( item ) != FALSE )
+                    if ( state.ActivateDirLight( item ) )
                         isLighting = true;
                 }
                 break;
@@ -1405,7 +1563,7 @@ struct AtomicGlobalLightManager
 
     inline bool CanProcessDirectionalLight( void )
     {
-        return IS_ANY_FLAG( m_geom->flags, 0x10 );
+        return IS_ANY_FLAG( m_geom->flags, 0x10 ) || forceGlobalLighting;
     }
 
     RpGeometry*& m_geom;
@@ -1447,11 +1605,12 @@ int __cdecl RpD3D9GlobalLightsEnable( unsigned char flags )
         (1.0 US): 0x00757400
         (1.0 EU): 0x00757450
 =========================================================*/
-static bool forceGlobalLighting = false;
-static bool forceLocalLighting = false;
 static D3D9Lighting::lightState localLight_lightState;  // MTA extension.
 static bool hasGlobalLighting = false;
 static bool hasLocalLighting = false;
+
+static CShaderItem *lightingShader = NULL;  // todo: one shader for every light type.
+static lightPassManager localLightPassMan( localLight_lightState );
 
 void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 {
@@ -1501,7 +1660,7 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
                 LIST_FOREACH_BEGIN( RwSector::lightNode, sector->m_localLights.root, node )
                     RpLight *light = item->data;
 
-                    if ( light && light->m_frame != pRwInterface->m_frame && light->IsLightActive() )
+                    if ( light && light->m_parent && light->m_frame != pRwInterface->m_frame && light->IsLightActive() )
                     {
                         light->m_frame = pRwInterface->m_frame;
 
@@ -1528,6 +1687,12 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
     RpD3D9GlobalLightingPrePass();
 
     HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( requiresAmbientLighting ) ? 0xFFFFFFFF : 0x00000000 );
+
+    if ( hasLocalLighting )
+    {
+        // Update light shader.
+        localLightPassMan.SetLightingShader( lightingShader );
+    }
 }
 
 /*=========================================================
@@ -1610,6 +1775,22 @@ bool RpD3D9GlobalLightingPrePass( void )
 }
 
 /*=========================================================
+    RpD3D9CacheLighting (MTA extension)
+
+    Purpose:
+        Cached lighting data so that it does not have to be
+        recalculated every pass.
+=========================================================*/
+void RpD3D9CacheLighting( void )
+{
+    // Cache lighting data.
+    if ( hasLocalLighting )
+    {
+        localLightPassMan.CacheLightingData();
+    }
+}
+
+/*=========================================================
     RpD3D9RenderLightMeshForPass (MTA extension)
 
     Arguments:
@@ -1619,9 +1800,6 @@ bool RpD3D9GlobalLightingPrePass( void )
         pass using additive blending. Should be executed after
         a mesh has been rendered.
 =========================================================*/
-static CShaderItem *lightingShader = NULL;  // todo: one shader for every light type.
-static lightPassManager localLightPassMan( localLight_lightState );
-
 void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
 {
     bool enableLighting = ( hasLocalLighting || hasGlobalLighting );
@@ -1670,9 +1848,6 @@ void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRende
 
             if ( hasLocalLighting )
             {
-                // Update light shader.
-                localLightPassMan.SetLightingShader( lightingShader );
-
                 localLightPassMan.Begin();
 
                 while ( localLightPassMan.DoLightPass() )
@@ -1698,6 +1873,10 @@ void __cdecl RpD3D9ResetLightStatus( void )
     // Make sure we terminate any global pass that did not have a light mesh render.
     if ( globalLightPassMan.inPhase )
         globalLightPassMan.End();
+
+    // Make sure we clear the cache.
+    globalLightPassMan.ClearCache();
+    localLightPassMan.ClearCache();
 
     hasGlobalLighting = false;
     hasLocalLighting = false;

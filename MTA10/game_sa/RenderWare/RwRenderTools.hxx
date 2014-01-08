@@ -145,6 +145,8 @@ struct lightRenderManager
 {
     AINLINE lightRenderManager( void )
     {
+        // Cache lighting.
+        RpD3D9CacheLighting();
     }
 
     AINLINE ~lightRenderManager( void )
