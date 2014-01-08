@@ -349,6 +349,7 @@ class CShaderItem : public CMaterialItem
     virtual void    End                     ( void );
 
     virtual void    UpdateParams            ( void );
+    virtual void    UpdatePipelineParams    ( void );
 
     CEffectWrap*        m_pEffectWrap;
     float               m_fPriority;
