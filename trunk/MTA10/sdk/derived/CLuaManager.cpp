@@ -492,6 +492,10 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineStreamingIsFiberedLoadingEnabled );
     LUA_REGISTER( L, engineStreamingSetFiberedPerfMultiplier );
     LUA_REGISTER( L, engineStreamingGetFiberedPerfMultiplier );
+    LUA_REGISTER( L, engineSetGlobalLightingAlwaysEnabled );
+    LUA_REGISTER( L, engineIsGlobalLightingAlwaysEnabled );
+    LUA_REGISTER( L, engineSetLocalLightingAlwaysEnabled );
+    LUA_REGISTER( L, engineIsLocalLightingAlwaysEnabled );
 
     // Drawing funcs (low-level)
     LUA_REGISTER( L, dxDrawLine );

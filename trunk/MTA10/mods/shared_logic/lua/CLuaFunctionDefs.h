@@ -487,6 +487,10 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineStreamingIsFiberedLoadingEnabled );
     LUA_DECLARE( engineStreamingSetFiberedPerfMultiplier );
     LUA_DECLARE( engineStreamingGetFiberedPerfMultiplier );
+    LUA_DECLARE( engineSetGlobalLightingAlwaysEnabled );
+    LUA_DECLARE( engineIsGlobalLightingAlwaysEnabled );
+    LUA_DECLARE( engineSetLocalLightingAlwaysEnabled );
+    LUA_DECLARE( engineIsLocalLightingAlwaysEnabled );
 
     // Drawing funcs (low-level)
     LUA_DECLARE( dxDrawLine );

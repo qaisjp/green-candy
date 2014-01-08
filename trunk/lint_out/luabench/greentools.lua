@@ -93,6 +93,8 @@ function bundle()
 	-- Include special directories
 	relDir.scanDirEx("mta/cgui/", "*", nil, includeFile, true);
 	relDir.scanDirEx("skins/", "*", nil, includeFile, true);
+    
+    relDir.scanDirEx("mods/deathmatch/shaders/", "*", nil, includeFile, true);
 	
 	writeFileList(impFiles, "green_alpha.zip", relDir);
 end

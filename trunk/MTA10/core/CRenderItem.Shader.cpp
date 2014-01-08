@@ -173,7 +173,7 @@ bool CShaderItem::SetValue ( const SString& strName, CTextureItem* pTextureItem 
     if ( D3DXHANDLE* phParameter = MapFind ( m_pEffectWrap->m_texureHandleMap, strName.ToUpper () ) )
     {
         // Check if value is changing
-        if ( !m_pShaderInstance->CmpTextureValue( *phParameter, pTextureItem ) )
+        //if ( !m_pShaderInstance->CmpTextureValue( *phParameter, pTextureItem ) )
         {
             // Check if we need a new shader instance
             MaybeRenewShaderInstance ();
@@ -207,7 +207,7 @@ bool CShaderItem::SetValue ( const SString& strName, bool bValue )
     if ( D3DXHANDLE* phParameter = MapFind ( m_pEffectWrap->m_valueHandleMap, strName.ToUpper () ) )
     {
         // Check if value is changing
-        if ( !m_pShaderInstance->CmpBoolValue( *phParameter, bValue ) )
+        //if ( !m_pShaderInstance->CmpBoolValue( *phParameter, bValue ) )
         {
             // Check if we need a new shader instance
             MaybeRenewShaderInstance ();
@@ -231,7 +231,7 @@ bool CShaderItem::SetValue ( const SString& strName, const float* pfValues, uint
     if ( D3DXHANDLE* phParameter = MapFind ( m_pEffectWrap->m_valueHandleMap, strName.ToUpper () ) )
     {
         // Check if value is changing
-        if ( !m_pShaderInstance->CmpFloatsValue( *phParameter, pfValues, uiCount ) )
+        //if ( !m_pShaderInstance->CmpFloatsValue( *phParameter, pfValues, uiCount ) )
         {
             // Check if we need a new shader instance
             MaybeRenewShaderInstance ();

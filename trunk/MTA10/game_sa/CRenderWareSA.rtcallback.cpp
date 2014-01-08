@@ -84,8 +84,6 @@ bool RenderCallbacks::IsEnvMapRenderingEnabled( void )
         the world. This is an adapted rewrite of RenderWare's
         default rendering callback.
 =========================================================*/
-void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass );
-
 template <typename callbackType>
 __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags, callbackType cb )
 {
@@ -118,40 +116,40 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
 
     cb.OnRenderPrepare( lightingEnabled );
 
-    // todo: implement a generic lighting system for every callback.
-
-    for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
+    // Do the rendering logic.
     {
-        RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
+        // Set up the rendering managers.
+        lightRenderManager lightMan;
 
-        // Enable global lighting beforehand.
-        // This should optimize things, as we avoid two render passes.
-        RpD3D9GlobalLightingPrePass();
-
-        // Notify the generic callback.
-        RpMaterial *curMat = rtPass->m_useMaterial;
-
-        cb.OnRenderPass( rtPass, curMat );
-
-        RwD3D9RenderStateSetVertexAlphaEnabled( RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat ) );
-
-        if ( !enableAlpha )
+        for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
         {
-            cb.OnRenderSurfacePrepare( rtPass, lightingEnabled, curMat, renderFlags );
+            RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
 
-            _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, curMat->m_texture );
+            lightMan.OnPrePass( rtinfo, rtPass );
+
+            // Notify the generic callback.
+            RpMaterial *curMat = rtPass->m_useMaterial;
+
+            cb.OnRenderPass( rtPass, curMat );
+
+            RwD3D9RenderStateSetVertexAlphaEnabled( RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat ) );
+
+            if ( !enableAlpha )
+            {
+                cb.OnRenderSurfacePrepare( rtPass, lightingEnabled, curMat, renderFlags );
+
+                _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, curMat->m_texture );
+            }
+            else
+            {
+                _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+            }
+
+            cb.OnPostRenderPass();
+
+            lightMan.OnPass( rtinfo, rtPass );
         }
-        else
-        {
-            _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
-        }
-
-        cb.OnPostRenderPass();
-
-        RpD3D9RenderLightMeshForPass( rtinfo, rtPass );
     }
-
-    RpD3D9ResetLightStatus();
 
     // Notify the render manager that we quit.
     cb.OnRenderFinish();
