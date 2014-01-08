@@ -81,7 +81,7 @@ struct RwRenderCallbackTraverseImpl
 };
 
 // padlevel: 1
-struct RwRenderCallbackTraverse //size: 24 bytes
+struct RwRenderCallbackTraverse //size: 24 bytes (+ sizeof( m_impl ))
 {
     BYTE                            m_pad[24];              // 0
     RwRenderCallbackTraverseImpl    m_impl;                 // 24
@@ -140,18 +140,46 @@ inline void RwD3D9DrawRenderPassPrimitive( RwRenderCallbackTraverseImpl *rtinfo,
 
 void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass );
 
+// Light render manager for rendering light meshes flexibly.
+struct lightRenderManager
+{
+    AINLINE lightRenderManager( void )
+    {
+    }
+
+    AINLINE ~lightRenderManager( void )
+    {
+        // Make sure no light is being used anymore.
+        RpD3D9ResetLightStatus();
+    }
+
+    AINLINE void OnPrePass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+    {
+        // Enable global lighting beforehand.
+        // This should optimize things, as we avoid two render passes.
+        RpD3D9GlobalLightingPrePass();
+    }
+
+    AINLINE void OnPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+    {
+        // Render the light geometry.
+        RpD3D9RenderLightMeshForPass( rtinfo, rtPass );
+    }
+};
+
 // Generic render pass loop.
 template <typename callbackType>
 __forceinline void _RenderVideoDataGeneric( RwRenderCallbackTraverseImpl *rtinfo, callbackType& cb )
 {
+    // Set up the managers.
+    lightRenderManager lightMan;
+
     // Draw rendering passes.
     for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
     {
         RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
 
-        // Enable global lighting beforehand.
-        // This should optimize things, as we avoid two render passes.
-        RpD3D9GlobalLightingPrePass();
+        lightMan.OnPrePass( rtinfo, rtPass );
 
         // Notify the callback template.
         cb.OnRenderPass( rtPass );
@@ -162,10 +190,8 @@ __forceinline void _RenderVideoDataGeneric( RwRenderCallbackTraverseImpl *rtinfo
         // Draw the primitive.
         RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
 
-        RpD3D9RenderLightMeshForPass( rtinfo, rtPass );
+        lightMan.OnPass( rtinfo, rtPass );
     }
-
-    RpD3D9ResetLightStatus();
 }
 
 // Helper function to set textured render states.

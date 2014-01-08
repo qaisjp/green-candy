@@ -1046,4 +1046,58 @@ namespace CLuaFunctionDefs
         lua_pushnumber( L, g_pGame->GetStreaming()->GetFiberedPerfMultiplier() );
         return 1;
     }
+
+    LUA_DECLARE( engineSetGlobalLightingAlwaysEnabled )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetRenderWare()->SetGlobalLightingAlwaysEnabled( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsGlobalLightingAlwaysEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetRenderWare()->IsGlobalLightingAlwaysEnabled() );
+        return 1;
+    }
+
+    LUA_DECLARE( engineSetLocalLightingAlwaysEnabled )
+    {
+        bool enabled;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadBool( enabled );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetRenderWare()->SetLocalLightingAlwaysEnabled( enabled );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineIsLocalLightingAlwaysEnabled )
+    {
+        lua_pushboolean( L, g_pGame->GetRenderWare()->IsLocalLightingAlwaysEnabled() );
+        return 1;
+    }
 }

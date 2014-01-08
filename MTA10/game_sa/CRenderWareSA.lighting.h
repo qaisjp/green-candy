@@ -25,6 +25,16 @@ bool            RpD3D9GlobalLightingPrePass ( void );
 void __cdecl    RpD3D9ResetLightStatus      ( void );
 void __cdecl    RpD3D9EnableLights          ( bool enable, int unused );
 
+// Utility namespace.
+namespace D3D9Lighting
+{
+    void        SetGlobalLightingAlwaysEnabled  ( bool enabled );
+    bool        IsGlobalLightingAlwaysEnabled   ( void );
+
+    void        SetLocalLightingAlwaysEnabled   ( bool enabled );
+    bool        IsLocalLightingAlwaysEnabled    ( void );
+};
+
 struct nativeLightInfo  //size: 108 bytes
 {
     D3DLIGHT9   native;     // 0
@@ -39,35 +49,31 @@ struct nativeLightInfo  //size: 108 bytes
 template <typename dataType, unsigned int pulseCount, unsigned int allocFlags, typename arrayMan, typename countType>
 struct growableArray
 {
-    inline growableArray( void )
+    AINLINE growableArray( void )
     {
         data = NULL;
         numActiveEntries = 0;
         sizeCount = 0;
     }
 
-    inline ~growableArray( void )
+    AINLINE ~growableArray( void )
     {
         Shutdown();
     }
 
-    inline void Init( void )
+    AINLINE void Init( void )
     { }
 
-    inline void Shutdown( void )
+    AINLINE void Shutdown( void )
     {
         if ( data )
-        {
-            pRwInterface->m_memory.m_free( data );
-            
-            data = NULL;
-        }
+            SetSizeCount( 0 );
 
         numActiveEntries = 0;
         sizeCount = 0;
     }
 
-    inline void SetSizeCount( countType index )
+    AINLINE void SetSizeCount( countType index )
     {
         if ( index != sizeCount )
         {
@@ -75,22 +81,51 @@ struct growableArray
 
             sizeCount = index;
 
-            size_t newArraySize = sizeCount * sizeof( dataType );
-
-            if ( !data )
-                data = (dataType*)pRwInterface->m_memory.m_malloc( newArraySize, allocFlags );
-            else
-                data = (dataType*)pRwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
-
-            // Fill the gap.
-            for ( countType n = oldCount; n < sizeCount; n++ )
+            if ( data )
             {
-                manager.InitField( data[n] );
+                // Destroy any structures that got removed.
+                for ( countType n = index; n < oldCount; n++ )
+                {
+                    data[n].~dataType();
+                }
             }
+
+            if ( index == 0 )
+            {
+                // Handle clearance requests.
+                if ( data )
+                {
+                    pRwInterface->m_memory.m_free( data );
+
+                    data = NULL;
+                }
+            }
+            else
+            {
+                size_t newArraySize = sizeCount * sizeof( dataType );
+
+                if ( !data )
+                    data = (dataType*)pRwInterface->m_memory.m_malloc( newArraySize, allocFlags );
+                else
+                    data = (dataType*)pRwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
+            }
+
+            if ( data )
+            {
+                // Fill the gap.
+                for ( countType n = oldCount; n < index; n++ )
+                {
+                    new (&data[n]) dataType;
+
+                    manager.InitField( data[n] );
+                }
+            }
+            else
+                sizeCount = 0;
         }
     }
 
-    inline void SetItem( const dataType& dataField, countType index )
+    AINLINE void SetItem( const dataType& dataField, countType index )
     {
         if ( index >= sizeCount )
         {
@@ -100,29 +135,46 @@ struct growableArray
         data[index] = dataField;
     }
 
-    inline void AddItem( const dataType& data )
+    AINLINE void AddItem( const dataType& data )
     {
         SetItem( data, numActiveEntries );
 
         numActiveEntries++;
     }
 
-    inline countType GetCount( void ) const
+    AINLINE dataType& ObtainItem( void )
+    {
+        int obtainIndex = numActiveEntries;
+
+        if ( obtainIndex >= sizeCount )
+        {
+            SetSizeCount( obtainIndex + pulseCount );
+        }
+
+        dataType& returnVal = data[obtainIndex];
+
+        numActiveEntries = obtainIndex + 1;
+        return returnVal;
+    }
+
+    AINLINE countType GetCount( void ) const
     {
         return numActiveEntries;
     }
 
-    inline countType GetSizeCount( void ) const
+    AINLINE countType GetSizeCount( void ) const
     {
         return sizeCount;
     }
 
-    inline dataType& Get( countType index )
+    AINLINE dataType& Get( countType index )
     {
+        assert( index < sizeCount );
+
         return data[index];
     }
 
-    inline bool Pop( dataType& item )
+    AINLINE bool Pop( dataType& item )
     {
         if ( numActiveEntries != 0 )
         {
@@ -133,7 +185,7 @@ struct growableArray
         return false;
     }
 
-    inline bool RemoveItem( const dataType& item )
+    AINLINE bool RemoveItem( const dataType& item )
     {
         countType foundSlot = -1;
         
@@ -149,7 +201,7 @@ struct growableArray
         return true;
     }
 
-    inline bool Find( const dataType& inst, countType& indexOut ) const
+    AINLINE bool Find( const dataType& inst, countType& indexOut ) const
     {
         for ( countType n = 0; n < numActiveEntries; n++ )
         {
@@ -163,18 +215,31 @@ struct growableArray
         return false;
     }
 
-    inline void Clear( void )
+    AINLINE unsigned int Count( const dataType& inst ) const
+    {
+        unsigned int count = 0;
+
+        for ( countType n = 0; n < numActiveEntries; n++ )
+        {
+            if ( data[n] == inst )
+                count++;
+        }
+
+        return count;
+    }
+
+    AINLINE void Clear( void )
     {
         numActiveEntries = 0;
     }
 
-    inline void TrimTo( countType indexTo )
+    AINLINE void TrimTo( countType indexTo )
     {
         if ( numActiveEntries > indexTo )
             numActiveEntries = indexTo;
     }
 
-    inline void SwapContents( growableArray& right )
+    AINLINE void SwapContents( growableArray& right )
     {
         dataType *myData = this->data;
         dataType *swapData = right.data;
@@ -195,7 +260,7 @@ struct growableArray
         right.sizeCount = mySizeCount;
     }
     
-    inline void SetContents( growableArray& right )
+    AINLINE void SetContents( growableArray& right )
     {
         right.SetSizeCount( numActiveEntries );
 
@@ -301,6 +366,8 @@ namespace D3D9Lighting
 // Module initialization.
 void RenderWareLighting_Init( void );
 void RenderWareLighting_Shutdown( void );
+
+void RenderWareLighting_Reset( void );
 
 void RenderWareLighting_InitShaders( void );
 void RenderWareLighting_ResetShaders( void );

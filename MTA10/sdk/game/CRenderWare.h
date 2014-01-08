@@ -35,6 +35,13 @@ public:
     virtual void                    EnableEnvMapRendering( bool enabled ) = 0;
     virtual bool                    IsEnvMapRenderingEnabled( void ) const = 0;
 
+    // Lighting utilities.
+    virtual void                    SetGlobalLightingAlwaysEnabled( bool enabled ) = 0;
+    virtual bool                    IsGlobalLightingAlwaysEnabled( void ) const = 0;
+
+    virtual void                    SetLocalLightingAlwaysEnabled( bool enabled ) = 0;
+    virtual bool                    IsLocalLightingAlwaysEnabled( void ) const = 0;
+
     virtual CColModel*              ReadCOL( CFile *file ) = 0;
 };
 

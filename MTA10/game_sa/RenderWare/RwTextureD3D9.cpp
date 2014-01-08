@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+#include "gamesa_renderware.h"
 
 struct d3d9RasterStage  //size: 24 bytes
 {
@@ -41,7 +42,7 @@ int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
         return 1;
     }
 #else
-    return ((int (__cdecl*)( RwTexture *tex, unsigned int stageIndex ))0x007FDE70)( texture, stageIndex );
+    return _RpD3D9SetTexture( texture, stageIndex );
 #endif
 }
 

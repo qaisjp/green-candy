@@ -470,6 +470,7 @@ void CGameSA::Reset( void )
 
     // Reset rendering systems.
     RenderCallbacks_Reset();
+    RenderWareLighting_Reset();
 }
 
 void CGameSA::Initialize()

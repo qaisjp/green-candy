@@ -38,6 +38,13 @@ public:
     void                EnableEnvMapRendering( bool enabled );
     bool                IsEnvMapRenderingEnabled( void ) const;
 
+    // Lighting utilities.
+    void                SetGlobalLightingAlwaysEnabled( bool enabled );
+    bool                IsGlobalLightingAlwaysEnabled( void ) const;
+
+    void                SetLocalLightingAlwaysEnabled( bool enabled );
+    bool                IsLocalLightingAlwaysEnabled( void ) const;
+
     // uiModelID == 0 means no collisions will be loaded
     RpClump*            ReadDFF( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
     CColModel*          ReadCOL( CFile *file );
