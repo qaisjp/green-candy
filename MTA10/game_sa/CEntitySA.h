@@ -118,6 +118,9 @@ public:
     virtual void __thiscall         RemoveLighting          ( unsigned char id ) = 0;       // 80
     virtual void __thiscall         Invalidate              ( void ) = 0;                   // 84
 
+    unsigned char __thiscall        _SetupLighting          ( void );
+    void __thiscall                 _RemoveLighting         ( unsigned char id );
+
     modelId_t                       GetModelIndex           ( void ) const          { return m_model; }
     CBaseModelInfoSAInterface*      GetModelInfo            ( void ) const          { return ppModelInfo[GetModelIndex()]; }
 

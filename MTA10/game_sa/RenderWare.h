@@ -705,6 +705,7 @@ public:
     int                     m_lightIndex;       // 84, may be 0-7
     CVector                 m_attenuation;      // 88
 
+    void                    SetLightActive( bool active )   { BOOL_FLAG( m_flags, 0x01, active ); }
     bool                    IsLightActive( void )           { return IS_ANY_FLAG( m_flags, 0x01 ); }
 
     void                    SetLightIndex( unsigned int idx );
