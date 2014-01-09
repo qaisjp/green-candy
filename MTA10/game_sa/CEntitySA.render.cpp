@@ -701,7 +701,7 @@ unsigned char CEntitySAInterface::_SetupLighting( void )
 
     float brightness = ((float (__cdecl*)( const CVector& pos, unsigned int, CEntitySAInterface* ))0x006FFBB0)( Placeable.GetPosition(), 0, this );
 
-    ((void (__cdecl*)( float brightness ))0x00735D90)( brightness * 0.5 );
+    ((void (__cdecl*)( float brightness ))0x00735D90)( (float)( brightness * 0.5f ) );
 
     return 1;
 }
@@ -863,16 +863,7 @@ struct PostProcessEntities
 
             if ( IS_ANY_FLAG( entity->GetModelInfo()->flags, RENDER_STATIC ) )
             {
-                bool useLightingFix = UseFixedWorldLighting();
-                unsigned char lightVal = -1;
-
-                if ( useLightingFix )
-                    lightVal = entity->SetupLighting();
-
                 RenderEntityNative( entity );
-
-                if ( useLightingFix )
-                    entity->RemoveLighting( lightVal );
             }
         }
 
