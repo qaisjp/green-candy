@@ -28,7 +28,6 @@ namespace D3D9Lighting
     static unsigned int maxNumberOfActiveLights = 0;                // Binary offsets: (1.0 US and 1.0 EU): 0x00C926B4
 
     static lightState curLightState;
-    static lightIndexArray swap_activeGlobalLights;
 
     static nativeLightInfoArray deviceLightInfo;
 
@@ -442,17 +441,49 @@ bool _SetLightGlobal( int lightIndex, const D3DLIGHT9& lightStruct )
     return GetRenderDevice()->SetLight( lightIndex, &lightStruct ) >= 0;
 }
 
-bool _FindLightSlotGlobal( const D3DLIGHT9& lightStruct, int& lightIndex )
+template <typename processorType>
+bool _FindLightSlotGlobal( const D3DLIGHT9& lightStruct, int& lightIndex, processorType& cb )
 {
-    for ( int n = 0; n < D3D9Lighting::deviceLightInfo.GetCount(); n++ )
+    for ( int n = 0; n < D3D9Lighting::deviceLightInfo.GetSizeCount(); n++ )
     {
         nativeLightInfo& info = D3D9Lighting::deviceLightInfo.Get( n );
 
-        if ( !info.active && RpD3D9LightsEqual( info.native, lightStruct ) )
+        if ( !cb.IsSlotTaken( n ) && RpD3D9LightsEqual( info.native, lightStruct ) )
         {
             lightIndex = n;
+
+            cb.TakeSlot( n );
             return true;
         }
+    }
+
+    return false;
+}
+
+template <typename processorType>
+bool _FindFreeLightSlotGlobal( int& lightIndex, processorType& cb )
+{
+    int i = 0;
+
+    for ( ; i < D3D9Lighting::deviceLightInfo.GetSizeCount(); i++ )
+    {
+        nativeLightInfo& info = D3D9Lighting::deviceLightInfo.Get( i );
+
+        if ( !cb.IsSlotTaken( i ) )
+        {
+            lightIndex = i;
+
+            cb.TakeSlot( i );
+            return true;
+        }
+    }
+
+    if ( i < (int)D3D9Lighting::maxNumberOfActiveLights )
+    {
+        lightIndex = i;
+
+        cb.TakeSlot( i );
+        return true;
     }
 
     return false;
@@ -536,17 +567,6 @@ struct lightPassManager
         return false;
     }
 
-    bool FindNativeIndex( const D3DLIGHT9& lightStruct, int& lightIndex )
-    {
-        if ( IsFixedFunction() )
-        {
-            return _FindLightSlotGlobal( lightStruct, lightIndex );
-        }
-
-        // todo.
-        return false;
-    }
-
     bool EnableLight( int lightIndex, bool enable )
     {
         if ( !inPhase )
@@ -571,34 +591,6 @@ struct lightPassManager
 
         inPhase = true;
         global_inPhase = true;
-
-        // Clear up any active light states.
-        if ( IsFixedFunction() )
-        {
-            // Make sure we only activate the number of maximally supported lights on this GPU.
-            unsigned int maxGPULights = D3D9Lighting::maxNumberOfActiveLights;
-
-            D3D9Lighting::swap_activeGlobalLights.TrimTo( maxGPULights );
-            
-            unsigned int lastActiveGlobalLightsCount = D3D9Lighting::swap_activeGlobalLights.GetCount();
-
-            for ( unsigned int n = 0; n < lastActiveGlobalLightsCount; n++ )
-            {
-                int lightIndex = D3D9Lighting::swap_activeGlobalLights.Get( n );
-
-                // Check whether we should disable this light.
-                // It is either disabled if it does not exist in the active lights queue
-                // or has an index that is outside of the GPUs maximum light index
-                // count.
-                unsigned int primaryIndex;
-
-                if ( !light_state.activeGlobalLights.Find( lightIndex, primaryIndex ) || primaryIndex >= maxGPULights )
-                {
-                    // Disable the light.
-                    EnableLight( lightIndex, false );
-                }
-            }
-        }
 
         index = 0;
     }
@@ -1044,6 +1036,9 @@ struct lightPassManager
 
     struct lightingDirectApplicator
     {
+        AINLINE lightingDirectApplicator( void ) : m_globLightProc( *this )
+        { }
+
         AINLINE bool OnShaderLightEnable( lightPassManager& lightPassMan, int shaderIndex )
         {
             return lightPassMan.ActivateShaderLighting( shaderIndex );
@@ -1053,6 +1048,32 @@ struct lightPassManager
         {
             return lightPassMan.EnableLight( lightIndex, true );
         }
+
+        struct globLightProcessor
+        {
+            AINLINE globLightProcessor( lightingDirectApplicator& applicator ) : m_applicator( applicator )
+            { }
+
+            AINLINE bool IsSlotTaken( int slot )
+            {
+                return D3D9Lighting::deviceLightInfo.Get( slot ).active != 0;
+            }
+
+            AINLINE void TakeSlot( int slot )
+            {
+                m_applicator.m_takenSlots.AddItem( slot );
+            }
+
+            lightingDirectApplicator& m_applicator;
+        };
+
+        AINLINE globLightProcessor& GetGlobalLightProcessor( void )
+        {
+            return m_globLightProc;
+        }
+
+        globLightProcessor m_globLightProc;
+        lightIndexArray m_takenSlots;
     };
     
     template <typename applicatorType>
@@ -1065,7 +1086,7 @@ struct lightPassManager
 
         if ( passCount > 0 )
         {
-            index += passCount;
+            int actualPassCount = 0;
 
             if ( lightShader )
             {
@@ -1116,17 +1137,25 @@ struct lightPassManager
                         wantPass = cb.OnShaderLightEnable( *this, shaderIndex );
                     }
                 }
+
+                actualPassCount = passCount;
             }
-            else
+            else if ( IsFixedFunction() )
             {
-                for ( int n = 0; n < passCount; n++ )
+                int n = 0;
+
+                for ( ; n < passCount; n++ )
                 {
-                    int nativeIndex = n;
+                    int nativeIndex = -1;
 
                     const D3DLIGHT9& lightStruct = *thisPass.Get( n ).lightStruct;
 
-                    if ( !FindNativeIndex( lightStruct, nativeIndex ) )
+                    if ( !_FindLightSlotGlobal( lightStruct, nativeIndex, cb.GetGlobalLightProcessor() ) )
                     {
+                        // Try to get any free slot.
+                        if ( !_FindFreeLightSlotGlobal( nativeIndex, cb.GetGlobalLightProcessor() ) )
+                            break;
+
                         if ( !SetLight( nativeIndex, lightStruct ) )
                             break;
                     }
@@ -1136,7 +1165,11 @@ struct lightPassManager
 
                     wantPass = true;
                 }
+
+                actualPassCount = n;
             }
+
+            index += actualPassCount;
         }
 
         return wantPass;
@@ -1159,7 +1192,7 @@ struct lightPassManager
 
     struct lightingDataCacheCollector
     {
-        AINLINE lightingDataCacheCollector( cachedLightingData& cache ) : m_cache( cache )
+        AINLINE lightingDataCacheCollector( cachedLightingData& cache ) : m_cache( cache ), m_globLightProc( m_cache )
         { }
 
         AINLINE bool OnShaderLightEnable( lightPassManager& lightPassMan, int shaderIndex )
@@ -1174,7 +1207,33 @@ struct lightPassManager
             return true;
         }
 
+        struct globLightProcessor
+        {
+            AINLINE globLightProcessor( cachedLightingData& cache ) : m_cache( cache )
+            { }
+
+            AINLINE bool IsSlotTaken( int slot )
+            {
+                unsigned int foundIndex = -1;
+
+                return m_cache.cachedIndice.Find( slot, foundIndex );
+            }
+
+            AINLINE void TakeSlot( int slot )
+            {
+                return;
+            }
+
+            cachedLightingData& m_cache;
+        };
+
+        AINLINE globLightProcessor& GetGlobalLightProcessor( void )
+        {
+            return m_globLightProc;
+        }
+
         cachedLightingData& m_cache;
+        globLightProcessor m_globLightProc;
     };
 
     void CacheLightingData( void )
@@ -1264,6 +1323,23 @@ struct lightPassManager
             inPass = ProcessLightingPass( thisPass, applicator );
         }
 
+        // Clear up any active light states.
+        if ( IsFixedFunction() )
+        {
+            // Make sure we only activate the number of maximally supported lights on this GPU.
+            unsigned int maxGPULights = D3D9Lighting::maxNumberOfActiveLights;
+
+            for ( int n = 0; n < (int)maxGPULights; n++ )
+            {
+                unsigned int foundIndex = -1;
+
+                if ( !applicator.m_takenSlots.Find( n, foundIndex ) )
+                {
+                    EnableLight( n, false );
+                }
+            }
+        }
+
         return inPass;
     }
 
@@ -1281,8 +1357,6 @@ struct lightPassManager
     {
         ClearPass();
         ResetCachePass();
-
-        light_state.activeGlobalLights.SetContents( D3D9Lighting::swap_activeGlobalLights );
 
         inPhase = false;
         global_inPhase = false;
@@ -1446,54 +1520,8 @@ int __cdecl RpD3D9EnableLight( int lightIndex, int enable )
 =========================================================*/
 void __cdecl RpD3D9EnableLights( bool enable, int unused )
 {
-#if 0
-    // This function is part of the problem, too.
-    // It trims the lights to the maximum light count as supported by the GPU.
-    // This is wrong, because there is an infinite amount of lights supported,
-    // using additive blending. Shame that Rockstar did not think of that.
-
-    if ( enable )
-    {
-        // Make sure we only activate the number of maximally supported lights on this GPU.
-        D3D9Lighting::activeGlobalLights.TrimTo( D3D9Lighting::maxNumberOfActiveLights );
-
-        unsigned int lastActiveGlobalLightsCount = D3D9Lighting::swap_activeGlobalLights.GetCount();
-
-        for ( unsigned int n = 0; n < lastActiveGlobalLightsCount; n++ )
-        {
-            int lightIndex = D3D9Lighting::swap_activeGlobalLights.Get( n );
-
-            // Check whether we should disable this light.
-            // It is either disabled if it does not exist in the active lights queue
-            // or has an index that is outside of the GPUs maximum light index
-            // count.
-            unsigned int primaryIndex;
-
-            if ( !D3D9Lighting::activeGlobalLights.Find( lightIndex, primaryIndex ) || primaryIndex >= D3D9Lighting::activeGlobalLights.GetCount() )
-            {
-                // Disable the light.
-                RpD3D9EnableLight( lightIndex, false );
-            }
-        }
-
-        // If there is anything to enable, do it.
-        if ( unsigned int activeCount = D3D9Lighting::activeGlobalLights.GetCount() )
-        {
-            for ( unsigned int n = 0; n < activeCount; n++ )
-            {
-                RpD3D9EnableLight( D3D9Lighting::activeGlobalLights.Get( n ), true );
-            }
-
-            D3D9Lighting::activeGlobalLights.SwapContents( D3D9Lighting::swap_activeGlobalLights );
-        }
-        else
-            D3D9Lighting::swap_activeGlobalLights.Clear();
-
-        D3D9Lighting::activeGlobalLights.Clear();
-    }
-
-    HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, enable );
-#endif
+    // legacy code.
+    return;
 }
 
 /*=========================================================
@@ -1527,10 +1555,13 @@ int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
     ambientColor = RwColorFloat( 0.0f, 0, 0, 1.0f );
 
     bool isLighting = false;
+    unsigned int numLights = 0;
 
     LIST_FOREACH_BEGIN( RpLight, curScene->m_globalLights.root, m_sceneLights )
         if ( cb.CanProcessLight( item ) )
         {
+            numLights++;
+
             switch( item->m_subtype )
             {
             case LIGHT_TYPE_DIRECTIONAL:
@@ -1791,6 +1822,7 @@ void RpD3D9CacheLighting( void )
     if ( hasLocalLighting )
     {
         localLightPassMan.CacheLightingData();
+        //globalLightPassMan.CacheLightingData();
     }
 }
 
@@ -1915,8 +1947,6 @@ void __cdecl RpD3D9ShutdownLighting( void )
     D3D9Lighting::curLightState.Shutdown();
 
     D3D9Lighting::deviceLightInfo.Shutdown();
-
-    D3D9Lighting::swap_activeGlobalLights.Shutdown();
 }
 
 /*=========================================================
