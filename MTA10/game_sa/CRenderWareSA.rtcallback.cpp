@@ -13,11 +13,6 @@
 #include <StdInc.h>
 #include "RenderWare/RwRenderTools.hxx"
 
-inline bool UseNativeCallbacks( void )
-{
-    return false;
-}
-
 /*=========================================================
     _GenericGamePreTexturedRenderPass
 
@@ -303,16 +298,9 @@ struct SunReflectManager
 // Binary offsets: (1.0 US and 1.0 EU): 0x005D6480
 void __cdecl HOOK_ReflectiveRenderCallback( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags )
 {
-    if ( UseNativeCallbacks() )
-    {
-        ((rxRenderCallback_t)0x005D6480)( rtnative, renderObject, renderType, renderFlags );
-    }
-    else
-    {
-        typedef ReflectiveGeneralRenderManager <SunReflectManager, RwObject> reflectMan;
+    typedef ReflectiveGeneralRenderManager <SunReflectManager, RwObject> reflectMan;
 
-        GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, reflectMan( renderObject ) );
-    }
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, reflectMan( renderObject ) );
 }
 
 struct SpecialReflectManager
@@ -336,16 +324,9 @@ struct SpecialReflectManager
 // Binary offsets: (1.0 US and 1.0 EU): 0x005D77D0
 void __cdecl HOOK_SpecialObjectRenderCallback( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags )
 {
-    if ( UseNativeCallbacks() )
-    {
-        ((rxRenderCallback_t)0x005D77D0)( rtnative, renderObject, renderType, renderFlags );
-    }
-    else
-    {
-        typedef ReflectiveGeneralRenderManager <SpecialReflectManager, RwObject> reflectMan;
+    typedef ReflectiveGeneralRenderManager <SpecialReflectManager, RwObject> reflectMan;
 
-        GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, reflectMan( renderObject ) );
-    }
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, reflectMan( renderObject ) );
 }
 
 inline float modulo_transform( float coord, float cap )
@@ -701,20 +682,13 @@ struct ReflectiveVehicleRenderManager
 // Binary offsets: (1.0 US and 1.0 EU): 0x005D9900
 void __cdecl HOOK_VehicleAtomicRenderCallback( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags )
 {
-    if ( UseNativeCallbacks() )
-    {
-        ((rxRenderCallback_t)0x005D9900)( rtnative, renderObject, renderType, renderFlags );
-    }
-    else
-    {
-        //todo.
-        // note: this callback crashes if anything else than atomics are fed into it.
-        // since atomics are the generally used meshes, this should not happen, under normal circumstances.
+    //todo.
+    // note: this callback crashes if anything else than atomics are fed into it.
+    // since atomics are the generally used meshes, this should not happen, under normal circumstances.
 
-        assume( renderType == RW_ATOMIC );
+    assume( renderType == RW_ATOMIC );
 
-        GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, ReflectiveVehicleRenderManager( (RpAtomic*&)renderObject ) );
-    }
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, ReflectiveVehicleRenderManager( (RpAtomic*&)renderObject ) );
 }
 
 void RenderCallbacks_Init( void )
@@ -728,15 +702,9 @@ void RenderCallbacks_Init( void )
     }
 
     // Hook shared routines.
-#if 1
     *(DWORD*)0x005D67F4 = (DWORD)HOOK_ReflectiveRenderCallback;
-    *(DWORD*)0x005D77D1 = (DWORD)HOOK_SpecialObjectRenderCallback;
+    *(DWORD*)0x005D7B0B = (DWORD)HOOK_SpecialObjectRenderCallback;
     *(DWORD*)0x005D9FE4 = (DWORD)HOOK_VehicleAtomicRenderCallback;
-#else
-    HookInstall( 0x005D6480, (DWORD)HOOK_ReflectiveRenderCallback, 5 );
-    HookInstall( 0x005D77D0, (DWORD)HOOK_SpecialObjectRenderCallback, 5 );
-    HookInstall( 0x005D9900, (DWORD)HOOK_VehicleAtomicRenderCallback, 5 );
-#endif
 }
 
 void RenderCallbacks_Shutdown( void )
