@@ -1524,7 +1524,7 @@ int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
     RwColorFloat& ambientColor = state.ambientLightColor;
     RwScene *curScene = pRwInterface->m_currentScene;
 
-    ambientColor = RwColorFloat( 0, 0, 0, 1.0f );
+    ambientColor = RwColorFloat( 0.0f, 0, 0, 1.0f );
 
     bool isLighting = false;
 
@@ -1696,6 +1696,8 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
         // Update light shader.
         localLightPassMan.SetLightingShader( lightingShader );
     }
+
+    HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, ( requiresAmbientLighting || hasGlobalLighting && globalLightPassMan.IsFixedFunction() ) );
 }
 
 /*=========================================================
@@ -1773,7 +1775,6 @@ bool RpD3D9GlobalLightingPrePass( void )
         }
     }
 
-    HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, doLighting );
     return doLighting;
 }
 

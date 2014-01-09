@@ -669,6 +669,54 @@ CGame::entityList_t Entity::GetEntitiesInRenderQueue( void )
     return list;
 }
 
+inline RpLight*& GetFirstLight( void )
+{
+    return *(RpLight**)0x00C886E8;
+}
+
+inline RpLight*& GetSecondLight( void )
+{
+    return *(RpLight**)0x00C886EC;
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00735C70
+void __cdecl DisableSecondLighting( void )
+{
+    GetSecondLight()->SetLightActive( false );
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00735D30
+void __cdecl SetupPostProcessLighting( void )
+{
+    GetFirstLight()->SetColor( *(RwColorFloat*)0x00C886D4 );
+    GetFirstLight()->SetLightActive( true );
+}
+
+unsigned char CEntitySAInterface::_SetupLighting( void )
+{
+    if ( !IS_ANY_FLAG( m_entityFlags, ENTITY_LIGHTING ) )
+        return 0;
+
+    GetSecondLight()->SetLightActive( true );
+
+    float brightness = ((float (__cdecl*)( const CVector& pos, unsigned int, CEntitySAInterface* ))0x006FFBB0)( Placeable.GetPosition(), 0, this );
+
+    ((void (__cdecl*)( float brightness ))0x00735D90)( brightness * 0.5 );
+
+    return 1;
+}
+
+void CEntitySAInterface::_RemoveLighting( unsigned char id )
+{
+    if ( id == 0 )
+        return;
+
+    SetupPostProcessLighting();
+    DisableSecondLighting();
+
+    ((void (__cdecl*)( void ))0x006FFFE0)();
+}
+
 // System callbacks to notify the mods about important progress.
 static gameEntityPreRenderCallback_t _preRenderCallback = NULL;
 static gameEntityRenderCallback_t _renderCallback = NULL;
@@ -803,18 +851,6 @@ inline float GetEntityCameraDistance( CEntitySAInterface *entity )
     return ( entity->Placeable.GetPosition() - *(CVector*)0x00B76870 ).Length();
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00735C70
-void __cdecl DisableSecondLighting( void )
-{
-    (*(RpLight**)0x00C886EC)->m_flags = 0;
-}
-
-// Binary offsets: (1.0 US and 1.0 EU): 0x00735D30
-void __cdecl SetupPostProcessLighting( void )
-{
-    (*(RpLight**)0x00C886E8)->SetColor( *(RwColorFloat*)0x00C886D4 );
-}
-
 struct PostProcessEntities
 {
      bool __forceinline OnEntry( unorderedEntityRenderChainInfo& info )
@@ -827,12 +863,36 @@ struct PostProcessEntities
 
             if ( IS_ANY_FLAG( entity->GetModelInfo()->flags, RENDER_STATIC ) )
             {
+                bool useLightingFix = UseFixedWorldLighting();
+                unsigned char lightVal = -1;
+
+                if ( useLightingFix )
+                    lightVal = entity->SetupLighting();
+
                 RenderEntityNative( entity );
+
+                if ( useLightingFix )
+                    entity->RemoveLighting( lightVal );
             }
         }
 
         return true;
     }
+};
+
+struct WorldLightingWrap
+{
+    inline WorldLightingWrap( void )
+    {
+        DisableSecondLighting();
+        SetupPostProcessLighting();
+    }
+
+    inline ~WorldLightingWrap( void )
+    {
+    }
+
+    bool useLightingFix;
 };
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00553A10
@@ -842,16 +902,17 @@ void __cdecl PostProcessRenderEntities( void )
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
     
-    // Configure lighting.
-    DisableSecondLighting();
-    SetupPostProcessLighting();
+    {
+        // Configure lighting.
+        WorldLightingWrap wLighting;
 
-    // Pre process the entities!
-    staticRenderEntities.ExecuteCustom( PostProcessEntities() );
+        // Pre process the entities!
+        staticRenderEntities.ExecuteCustom( PostProcessEntities() );
 
-    // Notify the modifications.
-    if ( _renderPostProcessCallback )
-        _renderPostProcessCallback();
+        // Notify the modifications.
+        if ( _renderPostProcessCallback )
+            _renderPostProcessCallback();
+    }
 }
 
 struct RenderStaticWorldEntities
@@ -969,7 +1030,11 @@ void __cdecl RenderGrassHouseEntities( void )
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
-    GetAlphaEntityRenderChain().Execute();
+    {
+        WorldLightingWrap wLighting;
+
+        GetAlphaEntityRenderChain().Execute();
+    }
 
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
 }
@@ -1180,6 +1245,9 @@ void EntityRender_Init( void )
     HookInstall( 0x007337D0, (DWORD)RenderUnderwaterEntities, 5 );
     HookInstall( 0x00733F10, (DWORD)RenderDefaultOrderedWorldEntities, 5 );
     HookInstall( 0x00734540, (DWORD)ClearEntityRenderChains, 5 );
+
+    HookInstall( 0x00553DC0, h_memFunc( &CEntitySAInterface::_SetupLighting ), 5 );
+    HookInstall( 0x00553370, h_memFunc( &CEntitySAInterface::_RemoveLighting ), 5 );
 
     // Do some optimization.
     PatchCall( 0x0053EBE9, (DWORD)ClearAllRenderChains );
