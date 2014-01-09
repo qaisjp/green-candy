@@ -81,8 +81,33 @@ namespace
         SString m_strReport;
         std::map < SString, SString > m_FileMD5Map;
 
-        CIncludeManager::CIncludeManager()
+        CFileTranslator *_localTranslator;
+
+        CIncludeManager()
         {
+            _localTranslator = NULL;
+        }
+
+        ~CIncludeManager()
+        {
+            if ( _localTranslator )
+                delete _localTranslator;
+        }
+
+        inline void SetLocalFileRoot( SString rootPath )
+        {
+            if ( _localTranslator )
+                delete _localTranslator;
+
+            _localTranslator = fileSystem->CreateTranslator( rootPath.c_str() );
+        }
+
+        inline CFileTranslator* GetEffectLocalRoot( const char *path, filePath& outPath )
+        {
+            if ( _localTranslator && _localTranslator->GetFullPathFromRoot( path, true, outPath ) )
+                return _localTranslator;
+
+            return GetEffectRoot( path, outPath );
         }
 
         STDMETHOD(Open)( D3DXINCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes )
@@ -90,7 +115,7 @@ namespace
             filePath path;
             CFileTranslator *translator;
 
-            if ( !( translator = GetEffectRoot( pFileName, path ) ) )
+            if ( !( translator = GetEffectLocalRoot( pFileName, path ) ) )
             {
                 SString msg( "[CIncludeManager: Invalid path '%s'", pFileName );
                 m_strReport += msg;
@@ -253,6 +278,8 @@ void CEffectTemplateImpl::CreateUnderlyingData ( const SString& strFilename, con
         dwFlags |= D3DXSHADER_DEBUG;
 
     CIncludeManager IncludeManager;
+    IncludeManager.SetLocalFileRoot( strRootPath ); // make sure we can address files from the effect file directory.
+
     LPD3DXBUFFER pBufferErrors = NULL;
     HRESULT hr = D3DXCreateEffectFromFile( m_pDevice, strFilename.c_str(), NULL, &IncludeManager, dwFlags, NULL, &m_pD3DEffect, &pBufferErrors );            
 

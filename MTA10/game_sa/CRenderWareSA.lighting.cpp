@@ -483,9 +483,12 @@ inline CShaderItem* _NewLightShaderInstance( const char *name )
     filePath shaderPath;
     mtaFileRoot->GetFullPath( ( std::string( "/shaders/" ) + name ).c_str(), true, shaderPath );
 
+    filePath rootPath;
+    mtaFileRoot->GetFullPath( shaderPath.c_str(), false, rootPath );
+
     SString outStatus;
 
-    CShaderItem *shader = core->GetGraphics()->GetRenderItemManager()->CreateShader( shaderPath, shaderPath, outStatus, 1.0, 0.0, true );
+    CShaderItem *shader = core->GetGraphics()->GetRenderItemManager()->CreateShader( shaderPath, rootPath, outStatus, 1.0, 0.0, true );
 
     if ( !shader )
         core->GetConsole()->Print( outStatus );
@@ -535,8 +538,6 @@ struct lightPassManager
 
     bool FindNativeIndex( const D3DLIGHT9& lightStruct, int& lightIndex )
     {
-        assert( inPhase == true );
-
         if ( IsFixedFunction() )
         {
             return _FindLightSlotGlobal( lightStruct, lightIndex );
@@ -1294,7 +1295,7 @@ struct lightPassManager
         if ( item == lightShader )
             return;
 
-        if ( item != lightShader )
+        if ( lightShader )
         {
             // Make sure all shader instances are terminated.
             for ( int n = 0; n < lightShaderCache.GetSizeCount(); n++ )
@@ -1311,6 +1312,8 @@ struct lightPassManager
         }
 
         lightShader = item;
+
+        ClearCache();
 
         if ( lightShader )
         {
@@ -1800,6 +1803,9 @@ void RpD3D9CacheLighting( void )
         pass using additive blending. Should be executed after
         a mesh has been rendered.
 =========================================================*/
+static float lightingDepthBias = -0.0000016f;
+static float lightingSlopedDepthBias = -1.0f;
+
 void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
 {
     bool enableLighting = ( hasLocalLighting || hasGlobalLighting );
@@ -1817,6 +1823,15 @@ void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRende
         RwRenderStateLock specular( D3DRS_SPECULARENABLE, false );
         RwRenderStateLock ambient( D3DRS_AMBIENT, 0x00000000 );
         RwRenderStateLock alpharef( D3DRS_ALPHAREF, 0x01 );
+
+        float _lightingDepthBias = lightingDepthBias;
+        float _lightingSlopedDepthBias = lightingSlopedDepthBias;
+
+        unsigned int depthBias = *(unsigned int*)&_lightingDepthBias;
+        unsigned int slopedDepthBias = *(unsigned int*)&_lightingSlopedDepthBias;
+
+        RwRenderStateLock depthbias( D3DRS_DEPTHBIAS, depthBias );
+        RwRenderStateLock slopeddepth( D3DRS_SLOPESCALEDEPTHBIAS, slopedDepthBias );
         {
             // Finish the global lights render.
             if ( globalLightPassMan.inPhase || hasGlobalLighting )
@@ -1977,6 +1992,15 @@ void RenderWareLighting_InitShaders( void )
 {
     // Initialize lighting shader.
     lightingShader = _NewLightShaderInstance( "shader_point_9sm3.fx" );
+
+    // Prepare device capabilities.
+    D3DCAPS9 deviceCaps;
+
+    GetRenderDevice()->GetDeviceCaps( &deviceCaps );
+
+    // Fix some render state usage.
+    RwD3D9SetRenderState( D3DRS_DEPTHBIAS, 0 );
+    RwD3D9SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, 0 );
 }
 
 void RenderWareLighting_ResetShaders( void )
