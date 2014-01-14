@@ -105,7 +105,19 @@ public:
     
     void* Allocate( void )
     {
-        return mem + (sizeof(allocType) * count++);
+        assume( count < max );
+
+        void *outMem = mem + (sizeof(allocType) * count++);
+
+        assume( outMem != NULL );
+
+        return outMem;
+    }
+
+    // Hack function; only use if performance critical code is used.
+    void Pop( void )
+    {
+        count--;
     }
 };
 

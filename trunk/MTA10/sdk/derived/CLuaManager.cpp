@@ -496,6 +496,8 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineIsGlobalLightingAlwaysEnabled );
     LUA_REGISTER( L, engineSetLocalLightingAlwaysEnabled );
     LUA_REGISTER( L, engineIsLocalLightingAlwaysEnabled );
+    LUA_REGISTER( L, engineSetWorldRenderMode );
+    LUA_REGISTER( L, engineGetWorldRenderMode );
 
     // Drawing funcs (low-level)
     LUA_REGISTER( L, dxDrawLine );

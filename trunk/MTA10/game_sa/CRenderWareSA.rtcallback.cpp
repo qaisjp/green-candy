@@ -84,6 +84,84 @@ bool RenderCallbacks::IsEnvMapRenderingEnabled( void )
         the world. This is an adapted rewrite of RenderWare's
         default rendering callback.
 =========================================================*/
+// Alpha sorting API parameters and functions.
+static bool _renderIsAlphaSortingEnabled = false;
+static bool _renderDoOpaquePrimitives = false;
+static bool _renderDoTranslucentPrimitives = false;
+static bool _renderDoDepthLayer = false;
+
+static inline bool IsAlphaSortingEnabled( void )
+{
+    return _renderIsAlphaSortingEnabled;
+}
+
+static inline bool AlphaSort_CanRenderOpaquePrimitives( void )
+{
+    return _renderDoOpaquePrimitives;
+}
+
+static inline bool AlphaSort_CanRenderTranslucentPrimitives( void )
+{
+    return _renderDoTranslucentPrimitives;
+}
+
+static inline bool AlphaSort_CanRenderDepthLayer( void )
+{
+    return _renderDoDepthLayer;
+}
+
+void RenderCallbacks::SetAlphaSortingEnabled( bool enabled )
+{
+    _renderIsAlphaSortingEnabled = enabled;
+}
+
+bool RenderCallbacks::IsAlphaSortingEnabled( void )
+{
+    return _renderIsAlphaSortingEnabled;
+}
+
+void RenderCallbacks::SetAlphaSortingParams( bool doOpaque, bool doTranslucent, bool doDepth )
+{
+    _renderDoOpaquePrimitives = doOpaque;
+    _renderDoTranslucentPrimitives = doTranslucent;
+    _renderDoDepthLayer = doDepth;
+}
+
+void RenderCallbacks::GetAlphaSortingParams( bool& doOpaque, bool& doTranslucent, bool& doDepth )
+{
+    doOpaque = _renderDoOpaquePrimitives;
+    doTranslucent = _renderDoTranslucentPrimitives;
+    doDepth = _renderDoDepthLayer;
+}
+
+template <typename callbackType>
+__forceinline void GameRenderPassGeneric( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass, bool requireAlpha, DWORD lightingEnabled, unsigned int renderFlags, bool enableAlpha, lightRenderManager& lightMan, callbackType& cb )
+{
+    lightMan.OnPrePass( rtinfo, rtPass );
+
+    // Notify the generic callback.
+    RpMaterial *curMat = rtPass->m_useMaterial;
+
+    cb.OnRenderPass( rtPass, curMat );
+
+    RwD3D9RenderStateSetVertexAlphaEnabled( requireAlpha );
+
+    if ( !enableAlpha )
+    {
+        cb.OnRenderSurfacePrepare( rtPass, lightingEnabled, curMat, renderFlags );
+
+        _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, curMat->m_texture );
+    }
+    else
+    {
+        _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+    }
+
+    cb.OnPostRenderPass();
+
+    lightMan.OnPass( rtinfo, rtPass );
+}
+
 template <typename callbackType>
 __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags, callbackType cb )
 {
@@ -121,33 +199,147 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
         // Set up the rendering managers.
         lightRenderManager lightMan;
 
-        for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
+        // Check whether we have to use improved alpha blending.
+        bool useAlphaFix = !cb.IsProperlyDepthSorted();
+        bool renderOpaque = useAlphaFix && cb.CanRenderOpaque();
+        bool renderTranslucent = useAlphaFix && cb.CanRenderTranslucent();
+        bool renderDepth = useAlphaFix && cb.CanRenderDepth();
+
         {
-            RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
+            // This way we skip heap allocations
+            StaticAllocator <RwRenderStateLock, 4> rsAlloc;
+            RwRenderStateLock *alphaRef;
 
-            lightMan.OnPrePass( rtinfo, rtPass );
+            RwRenderStateLock *alphaFunc;
+            RwRenderStateLock *alphaTestEnable;
+            RwRenderStateLock *zwriteEnable;
 
-            // Notify the generic callback.
-            RpMaterial *curMat = rtPass->m_useMaterial;
-
-            cb.OnRenderPass( rtPass, curMat );
-
-            RwD3D9RenderStateSetVertexAlphaEnabled( RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat ) );
-
-            if ( !enableAlpha )
+            if ( renderOpaque )
             {
-                cb.OnRenderSurfacePrepare( rtPass, lightingEnabled, curMat, renderFlags );
+                alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0xFF );
+                zwriteEnable = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ZWRITEENABLE, true );
 
-                _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, curMat->m_texture );
+                // Optimized pre-pre-pass rendering flags.
+                alphaTestEnable = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHATESTENABLE, false );
+
+                for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
+                {
+                    RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
+
+                    bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
+
+                    if ( passRequiresAlpha )
+                        continue;
+
+                    GameRenderPassGeneric( rtinfo, rtPass, false, lightingEnabled, renderFlags, enableAlpha, lightMan, cb );
+                }
+
+                // Destroy optimized pre-pre-pass rendering flags.
+                alphaTestEnable->~RwRenderStateLock();
+
+                // Hack: pop static allocator.
+                rsAlloc.Pop();
             }
-            else
+
+            if ( renderOpaque )
             {
-                _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+                // Opaque rendering flags.
+                alphaFunc = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAFUNC, D3DCMP_EQUAL );
+                alphaTestEnable = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHATESTENABLE, true );
             }
 
-            cb.OnPostRenderPass();
+            if ( !useAlphaFix || renderOpaque )
+            {
+                for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
+                {
+                    RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
 
-            lightMan.OnPass( rtinfo, rtPass );
+                    bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
+
+                    if ( renderOpaque && !passRequiresAlpha )
+                        continue;
+
+                    GameRenderPassGeneric( rtinfo, rtPass, passRequiresAlpha, lightingEnabled, renderFlags, enableAlpha, lightMan, cb );
+                }
+            }
+
+            if ( renderOpaque )
+            {
+                // Destroy opaque states.
+                alphaFunc->~RwRenderStateLock();
+                alphaTestEnable->~RwRenderStateLock();
+            }
+
+            if ( renderOpaque )
+            {
+                alphaRef->~RwRenderStateLock();
+                zwriteEnable->~RwRenderStateLock();
+            }
+        }
+
+        if ( renderTranslucent )
+        {
+            // Allocate translucent states.
+            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, 0xFF );
+            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
+            RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_LESS );
+            RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, false );
+
+            // Render alpha meshes.
+            for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
+            {
+                RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
+
+                bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
+
+                if ( !passRequiresAlpha )
+                    continue;
+
+                GameRenderPassGeneric( rtinfo, rtPass, true, lightingEnabled, renderFlags, enableAlpha, lightMan, cb );
+            }
+        }
+
+        if ( renderDepth )
+        {
+            // Render depth to occlude anything behind us.
+            RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
+            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
+            RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
+            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, 100 );
+            RwRenderStateLock srcBlend( D3DRS_SRCBLEND, D3DBLEND_ONE );
+            RwRenderStateLock dstBlend( D3DRS_DESTBLEND, D3DBLEND_ONE );
+            RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
+            RwRenderStateLock lightState( D3DRS_LIGHTING, false );
+            RwRenderStateLock fog( D3DRS_FOGENABLE, false );
+
+            // Do not render any color nor alpha, just the depth.
+            RwRenderStateLock tfactor( D3DRS_TEXTUREFACTOR, 0x00000000 );
+
+            RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+            RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TFACTOR );
+
+            RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
+
+            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+
+            RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+
+            for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
+            {
+                RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
+
+                // Only do it for meshes that have alpha.
+                bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
+
+                if ( !passRequiresAlpha )
+                    continue;
+
+                RwD3D9SetTexture( rtPass->m_useMaterial->m_texture, 0 );
+
+                // Render depth.
+                RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
+            }
         }
     }
 
@@ -217,13 +409,10 @@ __forceinline void RenderReflectiveEnvMap( renderObjType *renderObj, CEnvMapMate
     }
 }
 
-template <typename reflectiveManager, typename renderObjType>
-__forceinline void RenderReflectiveAlphaEnvMap( renderObjType *renderObj, RpMaterial *reflectMat, reflectiveManager& reflectMan )
+static inline bool UseDualWorldRendering( void )
 {
-    if ( enableEnvMapRendering )
-    {
-        
-    }
+    // If true, improved alpha blending is used.
+    return true;
 }
 
 template <typename reflectiveManager, typename renderObjType>
@@ -261,6 +450,31 @@ struct ReflectiveGeneralRenderManager
     __forceinline void OnRenderFinish( void )
     {
         return;
+    }
+
+    __forceinline bool IsProperlyDepthSorted( void )
+    {
+        // Since this template is used for any world model, we assume by default that they
+        // are not properly depth sorted, as seen on the GTA:SA trees. We ask the mod whether
+        // it wants to have these instances alpha fixed.
+        // todo: since this process is expensive, it'd be cool if we somehow knew which
+        // models are totally opaque using a geometry flag.
+        return !IsAlphaSortingEnabled();
+    }
+
+    __forceinline bool CanRenderOpaque( void )
+    {
+        return AlphaSort_CanRenderOpaquePrimitives();
+    }
+
+    __forceinline bool CanRenderTranslucent( void )
+    {
+        return AlphaSort_CanRenderTranslucentPrimitives();
+    }
+
+    __forceinline bool CanRenderDepth( void )
+    {
+        return AlphaSort_CanRenderDepthLayer();
     }
 
     reflectiveManager m_reflectMan;
@@ -668,6 +882,30 @@ struct ReflectiveVehicleRenderManager
         RpD3D9SetSurfaceProperties( *(RpMaterialLighting*)0x008D131C, *(RwColor*)0x008D1328, 0x20 );
     }
 
+    __forceinline bool IsProperlyDepthSorted( void )
+    {
+        // In the GTA:SA engine, the model creator is responsible for the proper depth sorting of the model.
+        // This means that he places the model atomics in a way that the ones closest to the camera have to
+        // be rendered first. Hence the implementation does not have to render these models complex under
+        // the hood.
+        return true;
+    }
+
+    __forceinline bool CanRenderOpaque( void )
+    {
+        return true;
+    }
+
+    __forceinline bool CanRenderTranslucent( void )
+    {
+        return true;
+    }
+
+    __forceinline bool CanRenderDepth( void )
+    {
+        return true;
+    }
+
     RpAtomic*& m_atomic;
     float m_unk;
     bool m_unk2;
@@ -714,4 +952,7 @@ void RenderCallbacks_Shutdown( void )
 void RenderCallbacks_Reset( void )
 {
     RenderCallbacks::SetEnvMapRenderingEnabled( true );
+
+    RenderCallbacks::SetAlphaSortingEnabled( false );
+    RenderCallbacks::SetAlphaSortingParams( true, true, true );
 }

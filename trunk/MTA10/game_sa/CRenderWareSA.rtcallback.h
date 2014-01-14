@@ -13,17 +13,17 @@
 #ifndef _ENGINE_RENDER_CALLBACKS_
 #define _ENGINE_RENDER_CALLBACKS_
 
-// temp.
-#ifndef _DEBUG
-#define assume( x ) __analysis_assume( (x) )
-#else
-#define assume( x ) assert( (x) )
-#endif
-
 namespace RenderCallbacks
 {
     void        SetEnvMapRenderingEnabled( bool enabled );
     bool        IsEnvMapRenderingEnabled( void );
+
+    // Rendering mode API.
+    void        SetAlphaSortingEnabled( bool enabled );
+    bool        IsAlphaSortingEnabled( void );
+
+    void        SetAlphaSortingParams( bool doOpaque, bool doTranslucent, bool doDepth );
+    void        GetAlphaSortingParams( bool& doOpaque, bool& doTranslucent, bool& doDepth );
 };
 
 // Module initialization routines.

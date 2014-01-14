@@ -248,6 +248,17 @@ public:
         return false;
     }
 
+    template <typename callbackType>
+    inline bool ExecuteCustomReverse( callbackType& cb )
+    {
+        for ( renderChain *iter = m_root.prev; iter != &m_rootLast; iter = iter->prev )
+        {
+            if ( cb.OnEntry( iter->m_entry ) == false )
+                return true;
+        }
+        return false;
+    }
+
     /*=========================================================
         CRenderChainInterface::Clear
 
@@ -401,6 +412,10 @@ namespace Entity
     void    SetRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback );
     void    SetRenderPostProcessCallback( gameEntityPostProcessCallback_t callback );
 
+    // Rendering mode functions.
+    void                SetWorldRenderMode( eWorldRenderMode mode );
+    eWorldRenderMode    GetWorldRenderMode( void );
+
     CGame::entityList_t GetEntitiesInRenderQueue( void );
 };
 
@@ -415,5 +430,6 @@ eRenderType __cdecl CRenderer_SetupEntityVisibility( CEntitySAInterface *entity,
 
 void EntityRender_Init( void );
 void EntityRender_Shutdown( void );
+void EntityRender_Reset( void );
 
 #endif //_ENTITY_RENDER_

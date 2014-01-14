@@ -169,6 +169,12 @@ IMPLEMENT_ENUM_BEGIN( RpLightType )
     ADD_ENUM( LIGHT_TYPE_SPOT_2,        "spot_soft" )
 IMPLEMENT_ENUM_END( "rwlight-type" )
 
+IMPLEMENT_ENUM_BEGIN( eWorldRenderMode )
+    ADD_ENUM( WORLD_RENDER_ORIGINAL,            "original" )
+    ADD_ENUM( WORLD_RENDER_MESHLOCAL_ALPHAFIX,  "meshlocal_alphafix" )
+    ADD_ENUM( WORLD_RENDER_SCENE_ALPHAFIX,      "scene_alphafix" )
+IMPLEMENT_ENUM_END( "world-render-mode" )
+
 //
 // Reading mixed types
 //

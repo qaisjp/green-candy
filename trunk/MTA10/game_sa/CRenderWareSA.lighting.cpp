@@ -357,7 +357,7 @@ __forceinline bool _LightsCompare( const D3DLIGHT9& left, const D3DLIGHT9& right
 
         break;
     default:
-        equals = true;
+        equals = true;  // Rockstar decided for this.
     }
 
     return equals;
@@ -404,7 +404,7 @@ struct StructApplicanceCalculator
     inline bool CompareData( const D3DLIGHTTYPE& left, const D3DLIGHTTYPE& right )
     {
         //return ( left == right );
-        return true;
+        return true;    // todo: what to do here?
     }
 
     int applicance;
@@ -2030,8 +2030,8 @@ void RenderWareLighting_InitShaders( void )
     GetRenderDevice()->GetDeviceCaps( &deviceCaps );
 
     // Fix some render state usage.
-    RwD3D9SetRenderState( D3DRS_DEPTHBIAS, 0 );
-    RwD3D9SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, 0 );
+    HOOK_RwD3D9SetRenderState( D3DRS_DEPTHBIAS, 0 );
+    HOOK_RwD3D9SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, 0 );
 }
 
 void RenderWareLighting_ResetShaders( void )
