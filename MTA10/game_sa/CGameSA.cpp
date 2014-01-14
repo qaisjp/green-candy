@@ -880,8 +880,11 @@ CFile* OpenGlobalStream( const char *filename, const char *mode )
     CFile *file;
 
     // Attempt to access the deathmatch directory
-    if ( file = core->GetModRoot()->Open( filename, mode ) )
-        return file;
+    if ( CFileTranslator *modRoot = core->GetModRoot() )
+    {
+        if ( file = modRoot->Open( filename, mode ) )
+            return file;
+    }
 
     // Attempt to access the MTA directory
     if ( file = core->GetMTARoot()->Open( filename, mode ) )

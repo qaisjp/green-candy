@@ -760,3 +760,13 @@ bool CRenderWareSA::IsEnvMapRenderingEnabled( void ) const
 {
     return RenderCallbacks::IsEnvMapRenderingEnabled();
 }
+
+void CRenderWareSA::SetWorldRenderMode( eWorldRenderMode mode )
+{
+    Entity::SetWorldRenderMode( mode );
+}
+
+eWorldRenderMode CRenderWareSA::GetWorldRenderMode( void ) const
+{
+    return Entity::GetWorldRenderMode();
+}

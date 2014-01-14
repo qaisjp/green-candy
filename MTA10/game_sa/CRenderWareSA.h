@@ -45,6 +45,10 @@ public:
     void                SetLocalLightingAlwaysEnabled( bool enabled );
     bool                IsLocalLightingAlwaysEnabled( void ) const;
 
+    // Rendering modes.
+    void                SetWorldRenderMode( eWorldRenderMode mode );
+    eWorldRenderMode    GetWorldRenderMode( void ) const;
+
     // uiModelID == 0 means no collisions will be loaded
     RpClump*            ReadDFF( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
     CColModel*          ReadCOL( CFile *file );

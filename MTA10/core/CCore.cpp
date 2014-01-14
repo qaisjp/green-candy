@@ -226,6 +226,7 @@ CCore::CCore()
     m_uiNewNickWaitFrames = 0;
     m_iUnminimizeFrameCounter = 0;
     m_bDidRecreateRenderTargets = false;
+    m_modRoot = NULL;
 
     // Initialize core modules
     CCore::GetSingleton ( ).CreateNetwork ( );

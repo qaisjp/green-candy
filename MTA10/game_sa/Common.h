@@ -16,6 +16,12 @@
 
 #include <game/Common.h>
 
+#ifndef _DEBUG
+#define assume( x ) __analysis_assume( (x) )
+#else
+#define assume( x ) assert( (x) )
+#endif
+
 #define DECL_ST __declspec(noalias)
 
 #define MAX_REGION          1000000

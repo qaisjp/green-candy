@@ -116,6 +116,11 @@ inline bool RwD3D9IsVertexAlphaRenderingRequired( RwRenderPass *rtPass, RpMateri
     return ( curMat->m_color.a != 0xFF || rtPass->m_vertexAlpha );
 }
 
+inline bool RwD3D9IsVertexAlphaRenderingRequiredEx( RwRenderPass *rtPass, RpMaterial *curMat )
+{
+    return RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat ) || curMat->m_texture && curMat->m_texture->raster->isAlpha;
+}
+
 // Helper function to update surface properties.
 inline bool RwD3D9UpdateRenderPassSurfaceProperties( RwRenderPass *rtPass, DWORD lightValue, RpMaterial *curMat, unsigned int renderFlags )
 {

@@ -1100,4 +1100,35 @@ namespace CLuaFunctionDefs
         lua_pushboolean( L, g_pGame->GetRenderWare()->IsLocalLightingAlwaysEnabled() );
         return 1;
     }
+
+    LUA_DECLARE( engineSetWorldRenderMode )
+    {
+        eWorldRenderMode renderMode;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadEnumString( renderMode );
+
+        if ( !argStream.HasErrors() )
+        {
+            g_pGame->GetRenderWare()->SetWorldRenderMode( renderMode );
+
+            lua_pushboolean( L, true );
+            return 1;
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
+
+    LUA_DECLARE( engineGetWorldRenderMode )
+    {
+        eWorldRenderMode renderMode = g_pGame->GetRenderWare()->GetWorldRenderMode();
+
+        SString modeString = EnumToString( renderMode );
+
+        lua_pushlstring( L, modeString.c_str(), modeString.size() );
+        return 1;
+    }
 }

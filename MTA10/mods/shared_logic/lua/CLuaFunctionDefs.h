@@ -491,6 +491,8 @@ namespace CLuaFunctionDefs
     LUA_DECLARE( engineIsGlobalLightingAlwaysEnabled );
     LUA_DECLARE( engineSetLocalLightingAlwaysEnabled );
     LUA_DECLARE( engineIsLocalLightingAlwaysEnabled );
+    LUA_DECLARE( engineSetWorldRenderMode );
+    LUA_DECLARE( engineGetWorldRenderMode );
 
     // Drawing funcs (low-level)
     LUA_DECLARE( dxDrawLine );

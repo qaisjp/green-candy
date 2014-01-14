@@ -14,6 +14,58 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
+// Variable which decides what render mode is to be used.
+static eWorldRenderMode _worldRenderMode = WORLD_RENDER_ORIGINAL;
+
+void Entity::SetWorldRenderMode( eWorldRenderMode mode )
+{
+    _worldRenderMode = mode;
+}
+
+eWorldRenderMode Entity::GetWorldRenderMode( void )
+{
+    return _worldRenderMode;
+}
+
+// Render helper for world entities.
+// Should be used for all rendering lists.
+template <typename renderCallback>
+AINLINE void RenderInstances( renderCallback& cb )
+{
+    switch( _worldRenderMode )
+    {
+    default:
+    case WORLD_RENDER_ORIGINAL:
+        cb.OnRenderStage( false, true );
+        break;
+    case WORLD_RENDER_MESHLOCAL_ALPHAFIX:
+        RenderCallbacks::SetAlphaSortingEnabled( true );
+        RenderCallbacks::SetAlphaSortingParams( true, true, true );
+
+        cb.OnRenderStage( true, true );
+
+        RenderCallbacks::SetAlphaSortingEnabled( false );
+        break;
+    case WORLD_RENDER_SCENE_ALPHAFIX:
+        RenderCallbacks::SetAlphaSortingEnabled( true );
+
+        RenderCallbacks::SetAlphaSortingParams( true, false, false );
+
+        cb.OnRenderStage( true, false );
+
+        RenderCallbacks::SetAlphaSortingParams( false, true, false );
+
+        cb.OnRenderStage( true, false );
+
+        RenderCallbacks::SetAlphaSortingParams( false, false, true );
+
+        cb.OnRenderStage( true, true );
+
+        RenderCallbacks::SetAlphaSortingEnabled( false );
+        break;
+    }
+}
+
 // Render chains used for sorted execution of instances.
 atomicRenderChain_t boatRenderChain( 50 );                          // Binary offsets: (1.0 US and 1.0 EU): 0x00C880C8; boatRenderChains, orig 20
 static entityRenderChain_t defaultEntityRenderChain( 8000 );        // Binary offsets: (1.0 US and 1.0 EU): 0x00C88120; ???, orig 200
@@ -181,10 +233,10 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     if ( alpha != 255 )
     {
         // This has to stay enabled anyway
-        RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
-        RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
-        RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
-        RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
+        HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+        HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+        HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
+        HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
 
         // Ensure the RenderStates necessary for proper alpha blending
         alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0x00 );
@@ -897,18 +949,23 @@ void __cdecl PostProcessRenderEntities( void )
         // Configure lighting.
         WorldLightingWrap wLighting;
 
-        // Pre process the entities!
+        // Post process the entities!
         staticRenderEntities.ExecuteCustom( PostProcessEntities() );
 
         // Notify the modifications.
         if ( _renderPostProcessCallback )
             _renderPostProcessCallback();
     }
+
+    RwD3D9ApplyDeviceStates();
 }
 
 struct RenderStaticWorldEntities
 {
-    bool __forceinline OnEntry( unorderedEntityRenderChainInfo& info )
+    AINLINE RenderStaticWorldEntities( bool isAlphaFix, bool directPurge ) : m_isAlphaFix( isAlphaFix ), m_directPurge( directPurge )
+    { }
+
+    AINLINE bool OnEntry( unorderedEntityRenderChainInfo& info )
     {
         CEntitySAInterface *entity = info.entity;
 
@@ -919,42 +976,48 @@ struct RenderStaticWorldEntities
 
         if ( entity->m_type == ENTITY_TYPE_VEHICLE || entity->m_type == ENTITY_TYPE_PED && ((RpClump*)entity->m_rwObject)->m_alpha != 255 )
         {
-            bool isUnderwater = false;
-
-            if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+            // MTA extension: make sure that entities are still visible behind alpha textures.
+            if ( m_isAlphaFix && !m_directPurge )
+                successfullyRendered = true;
+            else
             {
-                CVehicleSAInterface *vehicle = (CVehicleSAInterface*)entity;
+                bool isUnderwater = false;
 
-                if ( vehicle->m_vehicleType == VEHICLE_BOAT )
+                if ( entity->m_type == ENTITY_TYPE_VEHICLE )
                 {
-                    CCamSAInterface& currentCam = Camera::GetInterface().GetActiveCam();
+                    CVehicleSAInterface *vehicle = (CVehicleSAInterface*)entity;
 
-                    if ( currentCam.Mode != 14 )
+                    if ( vehicle->m_vehicleType == VEHICLE_BOAT )
                     {
-                        int dirLook = Camera::GetInterface().GetActiveCamLookDirection();
+                        CCamSAInterface& currentCam = Camera::GetInterface().GetActiveCam();
 
-                        if ( dirLook == 3 || dirLook == 0 )
+                        if ( currentCam.Mode != 14 )
                         {
-                            if ( vehicle->GetRwObject()->m_alpha == 255 )
+                            int dirLook = Camera::GetInterface().GetActiveCamLookDirection();
+
+                            if ( dirLook == 3 || dirLook == 0 )
                             {
-                                isUnderwater = true;
+                                if ( vehicle->GetRwObject()->m_alpha == 255 )
+                                {
+                                    isUnderwater = true;
+                                }
                             }
                         }
                     }
+                    else
+                        isUnderwater = IS_ANY_FLAG( vehicle->m_nodeFlags, 0x8000000 );
+                }
+
+                float camDistance = GetEntityCameraDistance( entity );
+                
+                if ( !isUnderwater )
+                {
+                    successfullyRendered = QueueEntityForRendering( entity, camDistance ) == 1;
                 }
                 else
-                    isUnderwater = IS_ANY_FLAG( vehicle->m_nodeFlags, 0x8000000 );
-            }
-
-            float camDistance = GetEntityCameraDistance( entity );
-            
-            if ( !isUnderwater )
-            {
-                successfullyRendered = QueueEntityForRendering( entity, camDistance ) == 1;
-            }
-            else
-            {
-                successfullyRendered = PushUnderwaterEntityForRendering( entity, camDistance );
+                {
+                    successfullyRendered = PushUnderwaterEntityForRendering( entity, camDistance );
+                }
             }
         }
 
@@ -963,6 +1026,9 @@ struct RenderStaticWorldEntities
 
         return true;
     }
+
+    bool m_isAlphaFix;
+    bool m_directPurge;
 };
 
 struct QuickRenderEntities
@@ -971,6 +1037,22 @@ struct QuickRenderEntities
     {
         RenderEntity( info.entity );
         return true;
+    }
+};
+
+struct StaticRenderStage
+{
+    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge )
+    {
+        staticRenderEntities.ExecuteCustom( RenderStaticWorldEntities( isAlphaFix, directPurge ) );
+    }
+};
+
+struct QuickRenderStage
+{
+    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge )
+    {
+        groundAlphaEntities.ExecuteCustom( QuickRenderEntities() );
     }
 };
 
@@ -984,7 +1066,7 @@ void __cdecl RenderWorldEntities( void )
     if ( *(unsigned int*)VAR_currArea == 0 )
         pRwInterface->m_deviceCommand( (eRwDeviceCmd)30, 140 );
 
-    staticRenderEntities.ExecuteCustom( RenderStaticWorldEntities() );
+    RenderInstances( StaticRenderStage() );
 
     // Notify our system.
     if ( _renderCallback )
@@ -1000,13 +1082,15 @@ void __cdecl RenderWorldEntities( void )
 
     gtaCamera->BeginUpdate();
 
-    groundAlphaEntities.ExecuteCustom( QuickRenderEntities() );
+    RenderInstances( QuickRenderStage() );
 
     gtaCamera->EndUpdate();
 
     gtaCamera->m_unknown2 = unk2;
 
     gtaCamera->BeginUpdate();
+
+    RwD3D9ApplyDeviceStates();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00733800
@@ -1030,14 +1114,64 @@ void __cdecl RenderGrassHouseEntities( void )
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
 }
 
+struct SpecialTranslucentPass
+{
+    AINLINE bool OnEntry( entityRenderInfo& info )
+    {
+        if ( info.entity->m_type != ENTITY_TYPE_VEHICLE )
+            info.Execute();
+
+        return true;
+    }
+};
+
+struct OrderedRenderStage
+{
+    AINLINE OrderedRenderStage( entityRenderChain_t& renderChain ) : m_renderChain( renderChain )
+    {
+    }
+
+    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge )
+    {
+        if ( isAlphaFix )
+        {
+            bool doOpaque, doTranslucent, doDepth;
+
+            RenderCallbacks::GetAlphaSortingParams( doOpaque, doTranslucent, doDepth );
+
+            if ( doOpaque && doTranslucent && doDepth )
+            {
+                m_renderChain.Execute();
+            }
+            else
+            {
+                if ( doOpaque )
+                    m_renderChain.Execute();
+
+                if ( doTranslucent )
+                    m_renderChain.ExecuteCustomReverse( SpecialTranslucentPass() );
+
+                if ( doDepth )
+                    m_renderChain.ExecuteCustom( SpecialTranslucentPass() );
+            }
+        }
+        else
+            m_renderChain.Execute();
+    }
+
+    entityRenderChain_t& m_renderChain;
+};
+
 // Binary offsets: (1.0 US and 1.0 EU): 0x007337D0
 void __cdecl RenderUnderwaterEntities( void )
 {
-    GetUnderwaterEntityRenderChain().Execute();
+    RenderInstances( OrderedRenderStage( GetUnderwaterEntityRenderChain() ) );
 
     // Notify the system.
     if ( _renderUnderwaterCallback )
         _renderUnderwaterCallback();
+
+    RwD3D9ApplyDeviceStates();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00733EC0
@@ -1048,14 +1182,18 @@ void __cdecl RenderBoatAtomics( void )
     GetBoatRenderChain().Execute();
 
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+
+    RwD3D9ApplyDeviceStates();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00733F10
 void __cdecl RenderDefaultOrderedWorldEntities( void )
 {
-    GetDefaultEntityRenderChain().Execute();
+    RenderInstances( OrderedRenderStage( GetDefaultEntityRenderChain() ) );
 
     RenderBoatAtomics();
+
+    RwD3D9ApplyDeviceStates();
 }
 
 /*=========================================================
@@ -1246,4 +1384,9 @@ void EntityRender_Init( void )
 
 void EntityRender_Shutdown( void )
 {
+}
+
+void EntityRender_Reset( void )
+{
+    Entity::SetWorldRenderMode( WORLD_RENDER_ORIGINAL );
 }
