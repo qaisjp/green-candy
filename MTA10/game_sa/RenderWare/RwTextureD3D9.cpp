@@ -12,17 +12,7 @@
 
 #include <StdInc.h>
 #include "gamesa_renderware.h"
-
-struct d3d9RasterStage  //size: 24 bytes
-{
-    RwRaster *raster;       // 0
-    BYTE pad[20];           // 4
-};
-
-inline d3d9RasterStage& GetRasterStageInfo( unsigned int index )
-{
-    return ((d3d9RasterStage*)0x00C9A508)[index];
-}
+#include "RwInternals.h"
 
 inline RwRaster*& GetCurrentRaster( void )
 {

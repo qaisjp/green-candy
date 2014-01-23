@@ -2028,10 +2028,6 @@ void RenderWareLighting_InitShaders( void )
     D3DCAPS9 deviceCaps;
 
     GetRenderDevice()->GetDeviceCaps( &deviceCaps );
-
-    // Fix some render state usage.
-    HOOK_RwD3D9SetRenderState( D3DRS_DEPTHBIAS, 0 );
-    HOOK_RwD3D9SetRenderState( D3DRS_SLOPESCALEDEPTHBIAS, 0 );
 }
 
 void RenderWareLighting_ResetShaders( void )
