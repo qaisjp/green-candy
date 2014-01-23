@@ -1102,6 +1102,10 @@
 					>
 				</File>
 				<File
+					RelativePath=".\RenderWare\RwInternals.h"
+					>
+				</File>
+				<File
 					RelativePath=".\RenderWare\RwMath.h"
 					>
 				</File>
