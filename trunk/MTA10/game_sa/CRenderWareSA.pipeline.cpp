@@ -819,7 +819,9 @@ inline void RwD3D9EnableClippingIfNeeded( RwObject *renderObject, eRwType render
     }
 
     // Clip polygons if the object is not visible.
-    HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, false );
+    // todo: fix this; it bugs for old GPUs!
+    //HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, !isObjectVisible );
+    HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, true );
 }
 
 /*=========================================================
@@ -894,6 +896,37 @@ struct GenericVideoPassRender
                 RwD3D9SetTexture( NULL, 0 );
             }
         }
+    }
+    
+    __forceinline bool IsProperlyDepthSorted( void )
+    {
+        // Since this template is used for any world model, we assume by default that they
+        // are not properly depth sorted, as seen on the GTA:SA trees. We ask the mod whether
+        // it wants to have these instances alpha fixed.
+        // todo: since this process is expensive, it'd be cool if we somehow knew which
+        // models are totally opaque using a geometry flag.
+        return !AlphaSort_IsEnabled();
+    }
+
+    __forceinline bool CanRenderOpaque( void )
+    {
+        return AlphaSort_CanRenderOpaquePrimitives();
+    }
+
+    __forceinline bool CanRenderTranslucent( void )
+    {
+        return AlphaSort_CanRenderTranslucentPrimitives();
+    }
+
+    __forceinline bool CanRenderDepth( void )
+    {
+        return AlphaSort_CanRenderDepthLayer();
+    }
+
+    __forceinline unsigned int GetRenderAlphaClamp( void )
+    {
+        // todo: allow the user to define this value.
+        return 100;
     }
 
     unsigned int& renderFlags;
@@ -1015,6 +1048,37 @@ struct AlphaTexturedVideoPassRender
             // We changed state.
             curStateFlags = stateFlags;
         }
+    }
+
+    __forceinline bool IsProperlyDepthSorted( void )
+    {
+        // Since this template is used for any world model, we assume by default that they
+        // are not properly depth sorted, as seen on the GTA:SA trees. We ask the mod whether
+        // it wants to have these instances alpha fixed.
+        // todo: since this process is expensive, it'd be cool if we somehow knew which
+        // models are totally opaque using a geometry flag.
+        return !AlphaSort_IsEnabled();
+    }
+
+    __forceinline bool CanRenderOpaque( void )
+    {
+        return AlphaSort_CanRenderOpaquePrimitives();
+    }
+
+    __forceinline bool CanRenderTranslucent( void )
+    {
+        return AlphaSort_CanRenderTranslucentPrimitives();
+    }
+
+    __forceinline bool CanRenderDepth( void )
+    {
+        return AlphaSort_CanRenderDepthLayer();
+    }
+
+    __forceinline unsigned int GetRenderAlphaClamp( void )
+    {
+        // todo: allow the user to define this value.
+        return 100;
     }
 
     unsigned int& renderFlags;
