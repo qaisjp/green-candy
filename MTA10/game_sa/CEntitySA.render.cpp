@@ -36,30 +36,35 @@ AINLINE void RenderInstances( renderCallback& cb )
     {
     default:
     case WORLD_RENDER_ORIGINAL:
-        cb.OnRenderStage( false, true );
+        // Render like usual.
+        cb.OnRenderStage( false, true, false );
         break;
     case WORLD_RENDER_MESHLOCAL_ALPHAFIX:
         RenderCallbacks::SetAlphaSortingEnabled( true );
         RenderCallbacks::SetAlphaSortingParams( true, true, true );
 
-        cb.OnRenderStage( true, true );
+        // Render opaque, translucent and depth on a per-mesh basis.
+        cb.OnRenderStage( true, true, true );
 
         RenderCallbacks::SetAlphaSortingEnabled( false );
         break;
     case WORLD_RENDER_SCENE_ALPHAFIX:
         RenderCallbacks::SetAlphaSortingEnabled( true );
 
+        // Render opaque pixels.
         RenderCallbacks::SetAlphaSortingParams( true, false, false );
 
-        cb.OnRenderStage( true, false );
+        cb.OnRenderStage( true, false, false );
 
+        // Render translucent pixels, in reverse order.
         RenderCallbacks::SetAlphaSortingParams( false, true, false );
 
-        cb.OnRenderStage( true, false );
+        cb.OnRenderStage( true, false, true );
 
+        // Render depth.
         RenderCallbacks::SetAlphaSortingParams( false, false, true );
 
-        cb.OnRenderStage( true, true );
+        cb.OnRenderStage( true, true, false );
 
         RenderCallbacks::SetAlphaSortingEnabled( false );
         break;
@@ -195,6 +200,32 @@ inline void RenderEntityNative( CEntitySAInterface *entity )
         entity->Render();
 }
 
+bool CanVehicleRenderNatively( void )
+{
+    bool globalDoAlphaFix, globalRenderOpaque, globalRenderTranslucent, globalRenderDepth;
+
+    globalDoAlphaFix = RenderCallbacks::IsAlphaSortingEnabled();
+
+    RenderCallbacks::GetAlphaSortingParams( globalRenderOpaque, globalRenderTranslucent, globalRenderDepth );
+
+    return !globalDoAlphaFix || globalRenderOpaque;
+}
+
+inline void EntityRender_Global( CEntitySAInterface *entity )
+{
+    if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+    {
+        if ( !CanVehicleRenderNatively() )
+        {
+            // Special clump rendering.
+            ((CVehicleSAInterface*)entity)->GetRwObject()->Render();
+            return;
+        }
+    }
+
+    RenderEntityNative( entity );
+}
+
 void __cdecl RenderEntity( CEntitySAInterface *entity )
 {
     // Do not render peds in the game world if they are inside a vehicle
@@ -274,7 +305,8 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
             SetupInfraRedLighting();
     }
 
-    RenderEntityNative( entity );
+    // Special fix for vehicles, since they are complex entities.
+    EntityRender_Global( entity );
 
     // Restore values and unset entity rendering status/leave frame
     if ( entity->m_type == ENTITY_TYPE_VEHICLE )
@@ -1048,19 +1080,33 @@ struct QuickRenderEntities
     }
 };
 
+template <typename processor>
+inline void ProcessRenderList( entityRenderChain_t& renderChain, processor cb, bool reverse )
+{
+    // In entityRenderChain_t, entities are ordered from back to front.
+    if ( reverse )
+        renderChain.ExecuteCustomReverse( cb );
+    else
+        renderChain.ExecuteCustom( cb );
+}
+
 struct StaticRenderStage
 {
-    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge )
+    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge, bool alphaFixReverseLoop )
     {
-        staticRenderEntities.ExecuteCustom( RenderStaticWorldEntities( isAlphaFix, directPurge ) );
+        RenderStaticWorldEntities renderSys( isAlphaFix, directPurge );
+
+        staticRenderEntities.ExecuteCustom( renderSys );
     }
 };
 
 struct QuickRenderStage
 {
-    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge )
+    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge, bool alphaFixReverseLoop )
     {
-        groundAlphaEntities.ExecuteCustom( QuickRenderEntities() );
+        QuickRenderEntities renderSys;
+
+        groundAlphaEntities.ExecuteCustom( renderSys );
     }
 };
 
@@ -1120,13 +1166,11 @@ void __cdecl RenderGrassHouseEntities( void )
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
 }
 
-struct SpecialTranslucentPass
+struct SimpleStagePass
 {
     AINLINE bool OnEntry( entityRenderInfo& info )
     {
-        if ( info.entity->m_type != ENTITY_TYPE_VEHICLE )
-            info.Execute();
-
+        info.Execute();
         return true;
     }
 };
@@ -1137,32 +1181,14 @@ struct OrderedRenderStage
     {
     }
 
-    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge )
+    AINLINE void OnRenderStage( bool isAlphaFix, bool directPurge, bool alphaFixReverseLoop )
     {
+        // If we render using alpha fix, the entityRenderChain_t, that is ordered back to front,
+        // shall be optimized to cull opaque pixels first.
         if ( isAlphaFix )
-        {
-            bool doOpaque, doTranslucent, doDepth;
+            alphaFixReverseLoop = !alphaFixReverseLoop;
 
-            RenderCallbacks::GetAlphaSortingParams( doOpaque, doTranslucent, doDepth );
-
-            if ( doOpaque && doTranslucent && doDepth )
-            {
-                m_renderChain.Execute();
-            }
-            else
-            {
-                if ( doOpaque )
-                    m_renderChain.Execute();
-
-                if ( doTranslucent )
-                    m_renderChain.ExecuteCustomReverse( SpecialTranslucentPass() );
-
-                if ( doDepth )
-                    m_renderChain.ExecuteCustom( SpecialTranslucentPass() );
-            }
-        }
-        else
-            m_renderChain.Execute();
+        ProcessRenderList( m_renderChain, SimpleStagePass(), alphaFixReverseLoop );
     }
 
     entityRenderChain_t& m_renderChain;
@@ -1194,6 +1220,14 @@ void __cdecl RenderDefaultOrderedWorldEntities( void )
     RenderInstances( OrderedRenderStage( GetDefaultEntityRenderChain() ) );
 
     RenderBoatAtomics();
+
+    // Fix some occasional RenderState screw-ups
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
+    
+    RwD3D9ApplyDeviceStates();
 }
 
 /*=========================================================

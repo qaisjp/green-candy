@@ -26,6 +26,13 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 =========================================================*/
 void CVehicleSAInterface::RenderPassengers( void )
 {
+    // We may only render passengers on a special occasion.
+    // Basically, when we render the opaque layer of the vehicle.
+    // This ensures that passengers are rendered only once.
+    if ( !CanVehicleRenderNatively() )
+        return;
+
+    // Render passengers.
     if ( m_driver && m_driver->IsDrivingVehicle() )
         m_driver->Render();
 

@@ -70,14 +70,15 @@ void __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( DWORD enabled )
 
     GetIsVertexAlphaEnabled() = enabled;
 
+#if 0
     if ( GetCurrentRaster() )
         return;
+#endif
 
     // Actually an inlined-always-change call, but we do it thisway rather.
     // If the implementation follows its own rules, everything is fine.
     // This asserts, that MTA will not set rogue render states anymore!
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, enabled );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, ( enabled ) ? GetIsAlphaTestEnabled() : FALSE );
+    RwD3D9SetAlphaEnable( enabled, GetIsAlphaTestEnabled() );
 }
 
 /*=========================================================

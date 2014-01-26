@@ -423,6 +423,7 @@ namespace Entity
 extern atomicRenderChain_t boatRenderChain;
 
 // Function exports.
+bool CanVehicleRenderNatively( void );
 void __cdecl PushEntityOnRenderQueue( CEntitySAInterface *entity, float camDistance );
 void RegisterLowPriorityRenderEntity( CEntitySAInterface *entity );
 

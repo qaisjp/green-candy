@@ -181,6 +181,13 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
             RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
             RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
 
+            // Make things compatible with our depth fix.
+            bool globalDoAlphaFix, globalRenderOpaque, globalRenderTranslucent, globalRenderDepth;
+
+            globalDoAlphaFix = RenderCallbacks::IsAlphaSortingEnabled();
+            
+            RenderCallbacks::GetAlphaSortingParams( globalRenderOpaque, globalRenderTranslucent, globalRenderDepth );
+
             if ( renderAlpha != 255 )
             {
                 RenderCallbacks::SetVehicleAlphaSortingEnabled( true );
@@ -198,6 +205,7 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
             }
 
             // Set opaque rendering flags
+            if ( !globalDoAlphaFix || globalRenderOpaque )
             {
                 RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );    // for now, instead of D3DCMP_EQUAL
                 RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
@@ -209,6 +217,7 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
                 lastRenderChain.Execute();
             }
 
+            if ( !globalDoAlphaFix || globalRenderTranslucent )
             {
                 // Now render translucent polygons
                 RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_LESS );

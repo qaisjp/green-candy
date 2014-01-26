@@ -107,22 +107,22 @@ static bool _renderDoOpaquePrimitives = false;
 static bool _renderDoTranslucentPrimitives = false;
 static bool _renderDoDepthLayer = false;
 
-static inline bool IsAlphaSortingEnabled( void )
+bool AlphaSort_IsEnabled( void )
 {
     return _renderIsAlphaSortingEnabled;
 }
 
-static inline bool AlphaSort_CanRenderOpaquePrimitives( void )
+bool AlphaSort_CanRenderOpaquePrimitives( void )
 {
     return _renderDoOpaquePrimitives;
 }
 
-static inline bool AlphaSort_CanRenderTranslucentPrimitives( void )
+bool AlphaSort_CanRenderTranslucentPrimitives( void )
 {
     return _renderDoTranslucentPrimitives;
 }
 
-static inline bool AlphaSort_CanRenderDepthLayer( void )
+bool AlphaSort_CanRenderDepthLayer( void )
 {
     return _renderDoDepthLayer;
 }
@@ -179,8 +179,41 @@ __forceinline void GameRenderPassGeneric( RwRenderCallbackTraverseImpl *rtinfo, 
     lightMan.OnPass( rtinfo, rtPass );
 }
 
+struct GameMeshRenderCallback
+{
+    // Light manager.
+    lightRenderManager& m_lightMan;
+    DWORD& m_lightingEnabled;
+    unsigned int& m_renderFlags;
+    bool& m_enableAlpha;
+
+    AINLINE GameMeshRenderCallback( lightRenderManager& lightMan, DWORD& lightingEnabled, unsigned int& renderFlags, bool& enableAlpha )
+        : m_lightMan( lightMan ), m_lightingEnabled( lightingEnabled ), m_renderFlags( renderFlags ), m_enableAlpha( enableAlpha )
+    {
+        return;
+    }
+
+    template <typename renderManager>
+    AINLINE void OnRenderMesh( renderManager& cb, RwRenderCallbackTraverseImpl *rtinfo, eRenderCallbackType renderType )
+    {
+        for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
+        {
+            RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
+
+            bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
+
+            // Check whether we can process this pass.
+            // Depends on this mesh allows alpha and the current render type.
+            if ( !CanProcessPass( passRequiresAlpha, renderType ) )
+                continue;
+
+            GameRenderPassGeneric( rtinfo, rtPass, passRequiresAlpha, m_lightingEnabled, m_renderFlags, m_enableAlpha, m_lightMan, cb );
+        }
+    }
+};
+
 template <typename callbackType>
-__forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags, callbackType cb )
+__forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags, callbackType& cb )
 {
     if ( !IsRenderingEnabled() )
         return;
@@ -219,154 +252,10 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
         // Set up the rendering managers.
         lightRenderManager lightMan;
 
-        // Check whether we have to use improved alpha blending.
-        bool useAlphaFix = !cb.IsProperlyDepthSorted();
-        bool renderOpaque = useAlphaFix && cb.CanRenderOpaque();
-        bool renderTranslucent = useAlphaFix && cb.CanRenderTranslucent();
-        bool renderDepth = useAlphaFix && cb.CanRenderDepth();
+        MeshRenderManager meshRenderMan;
+        GameMeshRenderCallback myRenderCB( lightMan, lightingEnabled, renderFlags, enableAlpha );
 
-        {
-            // This way we skip heap allocations
-            StaticAllocator <RwRenderStateLock, 4> rsAlloc;
-            RwRenderStateLock *alphaRef;
-
-            RwRenderStateLock *alphaFunc;
-            RwRenderStateLock *alphaTestEnable;
-            RwRenderStateLock *zwriteEnable;
-
-            if ( renderOpaque )
-            {
-                alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0xFF );
-                zwriteEnable = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ZWRITEENABLE, true );
-
-                // Optimized pre-pre-pass rendering flags.
-                alphaTestEnable = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHATESTENABLE, false );
-
-                for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
-                {
-                    RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
-
-                    bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
-
-                    if ( passRequiresAlpha )
-                        continue;
-
-                    GameRenderPassGeneric( rtinfo, rtPass, false, lightingEnabled, renderFlags, enableAlpha, lightMan, cb );
-                }
-
-                // Destroy optimized pre-pre-pass rendering flags.
-                alphaTestEnable->~RwRenderStateLock();
-
-                // Hack: pop static allocator.
-                rsAlloc.Pop();
-            }
-
-            if ( renderOpaque )
-            {
-                // Opaque rendering flags.
-                alphaFunc = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAFUNC, D3DCMP_EQUAL );
-                alphaTestEnable = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHATESTENABLE, true );
-            }
-
-            if ( !useAlphaFix || renderOpaque )
-            {
-                for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
-                {
-                    RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
-
-                    bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
-
-                    if ( renderOpaque && !passRequiresAlpha )
-                        continue;
-
-                    GameRenderPassGeneric( rtinfo, rtPass, passRequiresAlpha, lightingEnabled, renderFlags, enableAlpha, lightMan, cb );
-                }
-            }
-
-            if ( renderOpaque )
-            {
-                // Destroy opaque states.
-                alphaFunc->~RwRenderStateLock();
-                alphaTestEnable->~RwRenderStateLock();
-            }
-
-            if ( renderOpaque )
-            {
-                alphaRef->~RwRenderStateLock();
-                zwriteEnable->~RwRenderStateLock();
-            }
-        }
-
-        if ( renderTranslucent )
-        {
-            // Allocate translucent states.
-            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, 0xFF );
-            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
-            RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_LESS );
-            RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, false );
-
-            // Render alpha meshes.
-            for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
-            {
-                RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
-
-                bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
-
-                if ( !passRequiresAlpha )
-                    continue;
-
-                GameRenderPassGeneric( rtinfo, rtPass, true, lightingEnabled, renderFlags, enableAlpha, lightMan, cb );
-            }
-        }
-
-        if ( renderDepth )
-        {
-            // Render depth to occlude anything behind us.
-            RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
-            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
-            RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
-            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, cb.GetRenderAlphaClamp() );
-            RwRenderStateLock srcBlend( D3DRS_SRCBLEND, D3DBLEND_ZERO );
-            RwRenderStateLock dstBlend( D3DRS_DESTBLEND, D3DBLEND_ONE );
-            RwRenderStateLock separateAlphaBlend( D3DRS_SEPARATEALPHABLENDENABLE, true );
-            RwRenderStateLock srcAlphaBlend( D3DRS_SRCBLENDALPHA, D3DBLEND_ONE );
-            RwRenderStateLock dstAlphaBlend( D3DRS_DESTBLENDALPHA, D3DBLEND_ONE );
-            RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
-            RwRenderStateLock lightState( D3DRS_LIGHTING, false );
-            RwRenderStateLock fog( D3DRS_FOGENABLE, false );
-
-            // Do not render any color nor alpha, just the depth.
-            RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
-            RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_CURRENT );
-
-            RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
-
-            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
-            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR );
-
-            RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
-
-            for ( unsigned int n = 0; n < rtinfo->m_numPasses; n++ )
-            {
-                RwRenderPass *rtPass = &rtinfo->GetRenderPass( n );
-
-                // Only do it for meshes that have alpha.
-                bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
-
-                if ( !passRequiresAlpha )
-                    continue;
-
-                RpMaterial *useMat = rtPass->m_useMaterial;
-
-                RwRenderStateLock tfactor( D3DRS_TEXTUREFACTOR, useMat->m_color.ToD3DColor() );
-
-                RwD3D9SetTexture( useMat->m_texture, 0 );
-
-                // Render depth.
-                RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
-            }
-        }
+        meshRenderMan.Render( rtinfo, cb, myRenderCB );
     }
 
     // Notify the render manager that we quit.
@@ -485,7 +374,7 @@ struct ReflectiveGeneralRenderManager
         // it wants to have these instances alpha fixed.
         // todo: since this process is expensive, it'd be cool if we somehow knew which
         // models are totally opaque using a geometry flag.
-        return !IsAlphaSortingEnabled();
+        return !AlphaSort_IsEnabled();
     }
 
     __forceinline bool CanRenderOpaque( void )
