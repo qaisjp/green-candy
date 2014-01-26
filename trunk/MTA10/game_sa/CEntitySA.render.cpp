@@ -240,7 +240,6 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
 
         // Ensure the RenderStates necessary for proper alpha blending
         alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0x00 );
-        RwD3D9ApplyDeviceStates();
     }
 
     // Prepare entity for rendering/enter frame
@@ -282,8 +281,13 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     {
         BOOL_FLAG( entity->m_entityFlags, ENTITY_RENDERING, true );
 
+        // TODO: remove this.
+        RenderCallbacks::SetRenderingEnabled( true );
+
         // Render the delayed atomics
         ExecuteVehicleRenderChains( alpha );
+
+        RenderCallbacks::SetRenderingEnabled( false );
 
         BOOL_FLAG( entity->m_entityFlags, ENTITY_RENDERING, false );
 
@@ -303,7 +307,6 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     {
         // Remove the RenderState locks
         alphaRef->~RwRenderStateLock();
-        RwD3D9ApplyDeviceStates();
     }
 
     entity->RemoveLighting( id );
@@ -820,6 +823,13 @@ inline void ClearFallbackRenderChains( void )
 // Binary offsets: (1.0 US and 1.0 EU): 0x005556E0
 void __cdecl SetupWorldRender( void )
 {
+    // TODO: remove this once rendering is fixed.
+    // Look in vehicle rendering code, too.
+    RenderCallbacks::SetRenderingEnabled( false );
+
+    // DEBUG
+    RwD3D9ValidateDeviceStates();
+
     CCameraSAInterface& camera = Camera::GetInterface();
 
     const CVector& camPos = camera.Placeable.GetPosition();
@@ -956,8 +966,6 @@ void __cdecl PostProcessRenderEntities( void )
         if ( _renderPostProcessCallback )
             _renderPostProcessCallback();
     }
-
-    RwD3D9ApplyDeviceStates();
 }
 
 struct RenderStaticWorldEntities
@@ -1089,8 +1097,6 @@ void __cdecl RenderWorldEntities( void )
     gtaCamera->m_unknown2 = unk2;
 
     gtaCamera->BeginUpdate();
-
-    RwD3D9ApplyDeviceStates();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00733800
@@ -1170,8 +1176,6 @@ void __cdecl RenderUnderwaterEntities( void )
     // Notify the system.
     if ( _renderUnderwaterCallback )
         _renderUnderwaterCallback();
-
-    RwD3D9ApplyDeviceStates();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00733EC0
@@ -1182,8 +1186,6 @@ void __cdecl RenderBoatAtomics( void )
     GetBoatRenderChain().Execute();
 
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
-
-    RwD3D9ApplyDeviceStates();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00733F10
@@ -1192,8 +1194,6 @@ void __cdecl RenderDefaultOrderedWorldEntities( void )
     RenderInstances( OrderedRenderStage( GetDefaultEntityRenderChain() ) );
 
     RenderBoatAtomics();
-
-    RwD3D9ApplyDeviceStates();
 }
 
 /*=========================================================

@@ -113,3 +113,14 @@ function fileCopy(filePath, copyToFilePath, overwrite)
     return fileRoot.copy(filePath, copyToFilePath);
 end
 registerDebugProxy("fileCopy", "string", "string", { "opt", "boolean" });
+
+function fileCreateTranslator(filePath)
+    local resFilePath = fileRoot.absPath(filePath);
+    
+    if not (resFilePath) then
+        return false;
+    end
+    
+    return file.createTranslator( resFilePath );
+end
+registerDebugProxy("fileCreateTranslator", "string");

@@ -1000,6 +1000,8 @@ typedef int                 (__cdecl*RwReadTexture_t) ( RwStream *stream, RwText
 
 enum eRwDeviceCmd : unsigned int
 {
+    RWSTATE_FOGENABLE = 14,
+    RWSTATE_FOGCOLOR
 };
 
 typedef void*               (__cdecl*RwMemAlloc_t) ( size_t size, unsigned int flags );
@@ -1154,6 +1156,7 @@ private:
 
 // Include plugins.
 #include "RenderWare/RwStream.h"
+#include "RenderWare/RwRenderStates.h"
 #include "RenderWare/RwTextureD3D9.h"
 #include "RenderWare/RwUtilsD3D9.h"
 #include "RenderWare/RpAtomicD3D9.h"
