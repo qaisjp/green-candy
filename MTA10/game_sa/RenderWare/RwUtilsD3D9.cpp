@@ -32,7 +32,7 @@ static D3DMATRIX** GetTransformationCache( void )
     return (D3DMATRIX**)0x00C97C70;
 }
 
-static float identityMatrix[] =
+static const float identityMatrix[] =
 {
     1, 0, 0, 0,
     0, 1, 0, 0,
@@ -45,7 +45,7 @@ int __cdecl RwD3D9SetTransform( D3DTRANSFORMSTATETYPE state, const D3DMATRIX *ma
 {
     D3DMATRIX **transCache = GetTransformationCache();
 
-    const D3DMATRIX *setToMatrix = ( matrix ) ? matrix : (D3DMATRIX*)identityMatrix;
+    const D3DMATRIX *setToMatrix = ( matrix ) ? matrix : (const D3DMATRIX*)identityMatrix;
 
     D3DMATRIX*& prevMatrix = transCache[state];
 

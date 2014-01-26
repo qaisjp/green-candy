@@ -1079,6 +1079,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RenderWare\RwRenderStates.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RenderWare\RwStream.cpp"
 				>
 			</File>
@@ -1107,6 +1111,10 @@
 				</File>
 				<File
 					RelativePath=".\RenderWare\RwMath.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RwRenderStates.h"
 					>
 				</File>
 				<File

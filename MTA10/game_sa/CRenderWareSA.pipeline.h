@@ -17,6 +17,9 @@
 void __cdecl RwD3D9SetRenderState       ( D3DRENDERSTATETYPE type, DWORD value );
 void __cdecl RwD3D9GetRenderState       ( D3DRENDERSTATETYPE type, DWORD& value );
 void __cdecl RwD3D9ApplyDeviceStates    ( void );
+void __cdecl RwD3D9ValidateDeviceStates ( void );
+
+void __cdecl RwD3D9SetSamplerState      ( DWORD samplerId, D3DSAMPLERSTATETYPE stateType, DWORD value );
 
 void __cdecl RwD3D9SetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD value );
 void __cdecl RwD3D9GetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD& value );
@@ -29,6 +32,8 @@ void __cdecl HOOK_RwD3D9GetRenderState  ( D3DRENDERSTATETYPE type, DWORD& value 
 void RwD3D9ForceRenderState             ( D3DRENDERSTATETYPE type, DWORD value );
 void RwD3D9FreeRenderState              ( D3DRENDERSTATETYPE type );
 void RwD3D9FreeRenderStates             ( void );
+
+void RwD3D9InitializeCurrentStates      ( void );
 
 // Stack-based anonymous RenderState management
 //todo: fix this (removed inlined RS changes from native code)
@@ -62,7 +67,7 @@ struct RwRenderStateLock
         if ( ++_rsLockInfo[type].refCount > 1 )
         {
             // Only have to store the previous RenderState value now
-            RwD3D9GetRenderState( type, m_prevValue );
+            HOOK_RwD3D9GetRenderState( type, m_prevValue );
         }
 
         // Apply our RenderState and save the original GTA:SA one.

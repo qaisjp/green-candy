@@ -84,6 +84,23 @@ bool RenderCallbacks::IsEnvMapRenderingEnabled( void )
         the world. This is an adapted rewrite of RenderWare's
         default rendering callback.
 =========================================================*/
+static bool _renderEnableCallbacks = true;
+
+static inline bool IsRenderingEnabled( void )
+{
+    return _renderEnableCallbacks;
+}
+
+void RenderCallbacks::SetRenderingEnabled( bool enabled )
+{
+    //_renderEnableCallbacks = enabled;
+}
+
+bool RenderCallbacks::IsRenderingEnabled( void )
+{
+    return _renderEnableCallbacks;
+}
+
 // Alpha sorting API parameters and functions.
 static bool _renderIsAlphaSortingEnabled = false;
 static bool _renderDoOpaquePrimitives = false;
@@ -165,6 +182,9 @@ __forceinline void GameRenderPassGeneric( RwRenderCallbackTraverseImpl *rtinfo, 
 template <typename callbackType>
 __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags, callbackType cb )
 {
+    if ( !IsRenderingEnabled() )
+        return;
+
     RwRenderCallbackTraverseImpl *rtinfo = &rtnative->m_impl;
 
     DWORD lightingEnabled = FALSE;
@@ -305,23 +325,25 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
             RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, true );
             RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
             RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_GREATEREQUAL );
-            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, 100 );
-            RwRenderStateLock srcBlend( D3DRS_SRCBLEND, D3DBLEND_ONE );
+            RwRenderStateLock alphaRef( D3DRS_ALPHAREF, cb.GetRenderAlphaClamp() );
+            RwRenderStateLock srcBlend( D3DRS_SRCBLEND, D3DBLEND_ZERO );
             RwRenderStateLock dstBlend( D3DRS_DESTBLEND, D3DBLEND_ONE );
+            RwRenderStateLock separateAlphaBlend( D3DRS_SEPARATEALPHABLENDENABLE, true );
+            RwRenderStateLock srcAlphaBlend( D3DRS_SRCBLENDALPHA, D3DBLEND_ONE );
+            RwRenderStateLock dstAlphaBlend( D3DRS_DESTBLENDALPHA, D3DBLEND_ONE );
             RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
             RwRenderStateLock lightState( D3DRS_LIGHTING, false );
             RwRenderStateLock fog( D3DRS_FOGENABLE, false );
 
             // Do not render any color nor alpha, just the depth.
-            RwRenderStateLock tfactor( D3DRS_TEXTUREFACTOR, 0x00000000 );
-
             RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
-            RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TFACTOR );
+            RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_CURRENT );
 
             RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
 
-            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
             RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+            RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_TFACTOR );
 
             RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
 
@@ -335,7 +357,11 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
                 if ( !passRequiresAlpha )
                     continue;
 
-                RwD3D9SetTexture( rtPass->m_useMaterial->m_texture, 0 );
+                RpMaterial *useMat = rtPass->m_useMaterial;
+
+                RwRenderStateLock tfactor( D3DRS_TEXTUREFACTOR, useMat->m_color.ToD3DColor() );
+
+                RwD3D9SetTexture( useMat->m_texture, 0 );
 
                 // Render depth.
                 RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
@@ -475,6 +501,12 @@ struct ReflectiveGeneralRenderManager
     __forceinline bool CanRenderDepth( void )
     {
         return AlphaSort_CanRenderDepthLayer();
+    }
+
+    __forceinline unsigned int GetRenderAlphaClamp( void )
+    {
+        // todo: allow the user to define this value.
+        return 100;
     }
 
     reflectiveManager m_reflectMan;
@@ -695,6 +727,42 @@ struct VehAtomicReflectManager
     float& m_specular;
 };
 
+// Vehicle rendering parameters.
+static bool _vehicleRenderIsAlphaSortingEnabled = false;
+static bool _vehicleRenderDoOpaquePrimitives = false;
+static bool _vehicleRenderDoTranslucentPrimitives = false;
+static bool _vehicleRenderDoDepthLayer = false;
+static unsigned int _vehicleRenderAlphaClamp = 0;
+
+void RenderCallbacks::SetVehicleAlphaSortingEnabled( bool enabled )
+{
+    _vehicleRenderIsAlphaSortingEnabled = enabled;
+}
+
+bool RenderCallbacks::IsVehicleAlphaSortingEnabled( void )
+{
+    return _vehicleRenderIsAlphaSortingEnabled;
+}
+
+void RenderCallbacks::SetVehicleAlphaSortingParams( bool doOpaque, bool doTranslucent, bool doDepth )
+{
+    _vehicleRenderDoOpaquePrimitives = doOpaque;
+    _vehicleRenderDoTranslucentPrimitives = doTranslucent;
+    _vehicleRenderDoDepthLayer = doDepth;
+}
+
+void RenderCallbacks::GetVehicleAlphaSortingParams( bool& doOpaque, bool& doTranslucent, bool& doDepth )
+{
+    doOpaque = _vehicleRenderDoOpaquePrimitives;
+    doTranslucent = _vehicleRenderDoTranslucentPrimitives;
+    doDepth = _vehicleRenderDoDepthLayer;
+}
+
+void RenderCallbacks::SetVehicleAlphaClamp( unsigned int clamp )
+{
+    _vehicleRenderAlphaClamp = clamp;
+}
+
 struct ReflectiveVehicleRenderManager
 {
     __forceinline ReflectiveVehicleRenderManager( RpAtomic*& atom ) : m_atomic( atom )
@@ -888,22 +956,27 @@ struct ReflectiveVehicleRenderManager
         // This means that he places the model atomics in a way that the ones closest to the camera have to
         // be rendered first. Hence the implementation does not have to render these models complex under
         // the hood.
-        return true;
+        return !RenderCallbacks::IsVehicleAlphaSortingEnabled();
     }
 
     __forceinline bool CanRenderOpaque( void )
     {
-        return true;
+        return _vehicleRenderDoOpaquePrimitives;
     }
 
     __forceinline bool CanRenderTranslucent( void )
     {
-        return true;
+        return _vehicleRenderDoTranslucentPrimitives;
     }
 
     __forceinline bool CanRenderDepth( void )
     {
-        return true;
+        return _vehicleRenderDoDepthLayer;
+    }
+
+    __forceinline unsigned int GetRenderAlphaClamp( void )
+    {
+        return _vehicleRenderAlphaClamp;
     }
 
     RpAtomic*& m_atomic;
@@ -951,8 +1024,13 @@ void RenderCallbacks_Shutdown( void )
 
 void RenderCallbacks_Reset( void )
 {
+    RenderCallbacks::SetRenderingEnabled( true );
+
     RenderCallbacks::SetEnvMapRenderingEnabled( true );
 
     RenderCallbacks::SetAlphaSortingEnabled( false );
     RenderCallbacks::SetAlphaSortingParams( true, true, true );
+
+    RenderCallbacks::SetVehicleAlphaSortingEnabled( false );
+    RenderCallbacks::SetVehicleAlphaSortingParams( true, true, true );
 }

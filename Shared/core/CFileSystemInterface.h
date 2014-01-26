@@ -213,6 +213,14 @@ public:
         return f;
     }
 
+    virtual double          ReadDouble( void )
+    {
+        double d;
+
+        Read( &d, sizeof(double), 1 );
+        return d;
+    }
+
     virtual	size_t          WriteInt( int iInt )
     {
         return Write( &iInt, sizeof(int), 1 );
@@ -231,6 +239,11 @@ public:
     virtual size_t          WriteFloat( float fFloat )
     {
         return Write( &fFloat, sizeof(float), 1 );
+    }
+
+    virtual size_t          WriteDouble( double dDouble )
+    {
+        return Write( &dDouble, sizeof(double), 1 );
     }
 
     /*===================================================

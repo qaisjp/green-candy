@@ -176,9 +176,26 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
     if ( g_effectManager->GetEffectQuality() > 1 )
     {
         {
-            RwRenderStateLock zfunc( D3DRS_ZFUNC, D3DCMP_LESS );
+            RwRenderStateLock zfunc( D3DRS_ZFUNC, D3DCMP_LESSEQUAL );
             RwRenderStateLock alphaRef( D3DRS_ALPHAREF, renderAlpha );
             RwRenderStateLock alphaBlendEnable( D3DRS_ALPHABLENDENABLE, true );
+            RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, true );
+
+            if ( renderAlpha != 255 )
+            {
+                RenderCallbacks::SetVehicleAlphaSortingEnabled( true );
+                RenderCallbacks::SetVehicleAlphaSortingParams( false, false, true );
+                
+                // Make sure we only render depth of opaque pixels.
+                RenderCallbacks::SetVehicleAlphaClamp( renderAlpha );
+
+                // Render depth components.
+                opaqueRenderChain.Execute();
+                vehicleRenderChains.ExecuteReverse();
+                lastRenderChain.Execute();
+
+                RenderCallbacks::SetVehicleAlphaSortingEnabled( false );
+            }
 
             // Set opaque rendering flags
             {
@@ -194,7 +211,6 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
 
             {
                 // Now render translucent polygons
-                RwRenderStateLock alphaTestEnable( D3DRS_ALPHATESTENABLE, false );
                 RwRenderStateLock alphaFunc( D3DRS_ALPHAFUNC, D3DCMP_LESS );
                 RwRenderStateLock zwriteEnable( D3DRS_ZWRITEENABLE, false );
                 RwRenderStateLock cullMode( D3DRS_CULLMODE, D3DCULL_NONE );

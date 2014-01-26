@@ -18,12 +18,23 @@ namespace RenderCallbacks
     void        SetEnvMapRenderingEnabled( bool enabled );
     bool        IsEnvMapRenderingEnabled( void );
 
+    // Basic rendering API.
+    void        SetRenderingEnabled( bool enabled );
+    bool        IsRenderingEnabled( void );
+
     // Rendering mode API.
     void        SetAlphaSortingEnabled( bool enabled );
     bool        IsAlphaSortingEnabled( void );
 
     void        SetAlphaSortingParams( bool doOpaque, bool doTranslucent, bool doDepth );
     void        GetAlphaSortingParams( bool& doOpaque, bool& doTranslucent, bool& doDepth );
+
+    void        SetVehicleAlphaSortingEnabled( bool enabled );
+    bool        IsVehicleAlphaSortingEnabled( void );
+
+    void        SetVehicleAlphaSortingParams( bool doOpaque, bool doTranslucent, bool doDepth );
+    void        GetVehicleAlphaSortingParams( bool& doOpaque, bool& doTranslucent, bool& doDepth );
+    void        SetVehicleAlphaClamp( unsigned int clamp );
 };
 
 // Module initialization routines.
