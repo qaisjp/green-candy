@@ -34,6 +34,7 @@ public:
                                             ~CClientGUIManager();
 
     void                                    Begin();
+    bool                                    RemoveActivityLock( CClientGUIElement *element );
     void                                    End();
 
     bool                                    Exists( CClientGUIElement *element ) const;

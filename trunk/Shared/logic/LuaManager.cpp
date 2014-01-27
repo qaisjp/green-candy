@@ -117,10 +117,20 @@ static int lua_obj_dealloc_fail_event( lua_State *L )
     {
         ILuaClass *j = lua_refclass( L, 1 );
 
-        int topTransmit = j->GetTransmit();
+        // Notify the manager.
+        bool success = lua_readmanager( L )->OnLuaClassDeallocationFail( L, j );
 
-        // We definately cannot continue.
-        __asm int 3
+        // Success means that it has been properly handled by the manager.
+        if ( !success )
+        {
+            int topTransmit = j->GetTransmit();
+
+            if ( topTransmit != -1 )
+            {
+                // We definately cannot continue.
+                __asm int 3
+            }
+        }
     }
     return 0;
 }

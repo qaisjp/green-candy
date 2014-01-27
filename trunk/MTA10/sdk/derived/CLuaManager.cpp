@@ -30,6 +30,25 @@ void CLuaManager::GarbageCollect( lua_State *L )
     LuaManager::GarbageCollect( L );
 }
 
+bool CLuaManager::OnLuaClassDeallocationFail( lua_State *L, ILuaClass *j )
+{
+    union
+    {
+        CClientGUIElement *guiElem;
+    };
+
+    if ( j->GetTransmit( LUACLASS_GUIELEMENT, (void*&)guiElem ) )
+    {
+        // HACK: try to remove the activity lock of this GUI element because the
+        // runtime really wants us to. Otherwise we would crash due to a fatal
+        // breakpoint exception. I hope CEGUI is clever enough to deal with the
+        // destruction of runtime elements properly.
+        return g_pClientGame->GetGUIManager()->RemoveActivityLock( guiElem );
+    }
+
+    return false;
+}
+
 static void LoadCFunctions( lua_State *L )
 {
     using namespace CLuaFunctionDefs;

@@ -22,6 +22,7 @@ using std::map;
 
 CClientGUIManager::CClientGUIManager()
 {
+    m_safeKeep = NULL;
 }
 
 CClientGUIManager::~CClientGUIManager()
@@ -37,9 +38,27 @@ void CClientGUIManager::Begin()
         (*iter)->Reference( *m_safeKeep );
 }
 
+bool CClientGUIManager::RemoveActivityLock( CClientGUIElement *element )
+{
+    if ( !m_safeKeep )
+        return true;
+
+    luaRefs::const_iterator elemIter;
+
+    if ( m_safeKeep->FindClass( element->GetClass(), elemIter ) )
+    {
+        m_safeKeep->RemoveClass( elemIter );
+        return true;
+    }
+
+    return false;
+}
+
 void CClientGUIManager::End()
 {
     delete m_safeKeep;
+
+    m_safeKeep = NULL;
 }
 
 bool CClientGUIManager::Exists( CClientGUIElement *element ) const
