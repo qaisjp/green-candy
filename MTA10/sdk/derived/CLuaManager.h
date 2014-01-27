@@ -20,6 +20,7 @@ public:
                                     ~CLuaManager();
 
     void                            GarbageCollect( lua_State *L );
+    bool                            OnLuaClassDeallocationFail( lua_State *L, ILuaClass *j );
 
     CLuaMain*                       Create( const std::string& name, CFileTranslator& fileRoot );
     bool                            Remove( LuaMain *lua );

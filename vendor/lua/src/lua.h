@@ -471,12 +471,33 @@ private:
 class luaRefs : public std::list <lua_class_reference*>
 {
 public:
-    ~luaRefs()
+    ~luaRefs( void )
     {
         luaRefs::const_iterator iter = begin();
 
         for ( ; iter != end(); iter++ )
             delete *iter;
+    }
+
+    bool FindClass( ILuaClass *j, luaRefs::const_iterator& out_iter )
+    {
+        for ( luaRefs::const_iterator iter = begin(); iter != end(); iter++ )
+        {
+            if ( (*iter)->GetClass() == j )
+            {
+                out_iter = iter;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    void RemoveClass( luaRefs::const_iterator& remIter )
+    {
+        delete *remIter;
+
+        this->erase( remIter );
     }
 };
 
