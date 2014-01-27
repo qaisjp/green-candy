@@ -608,7 +608,7 @@ bool CLocalGUI::ProcessMessage ( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         public:
             protectGUI()
             {
-                mod = g_pCore->GetModManager()->GetCurrentMod();
+                CClientBase *mod = g_pCore->GetModManager()->GetCurrentMod();
 
                 if ( !mod )
                     return;
@@ -618,13 +618,13 @@ bool CLocalGUI::ProcessMessage ( HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
             ~protectGUI()
             {
+                CClientBase *mod = g_pCore->GetModManager()->GetCurrentMod();
+
                 if ( !mod )
                     return;
 
                 mod->EndGUI();
             }
-
-            CClientBase *mod;
         };
 
         protectGUI prot;
