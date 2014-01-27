@@ -1244,7 +1244,7 @@ namespace CLuaFunctionDefs
 
         argStream.ReadClass( entity, LUACLASS_ENTITY );
         argStream.ReadNumber( interior );
-        bool setPos = argStream.ReadVector( pos );
+        bool setPos = argStream.ReadVector( pos, CVector( 0, 0, 0 ) );
 
         if ( !argStream.HasErrors() )
         {
