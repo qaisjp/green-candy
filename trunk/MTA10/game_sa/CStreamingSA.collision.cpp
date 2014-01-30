@@ -75,7 +75,7 @@ static bool __cdecl ReadCOLLibraryGeneral( const char *buf, size_t size, unsigne
 
         // Collisions may come with a cached model id.
         // Valid ids skip the need for name-checking.
-        if ( modelId < DATA_TEXTURE_BLOCK )
+        if ( modelId < MAX_MODELS )
             info = ppModelInfo[modelId];
 
         unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( header.name );
@@ -167,7 +167,7 @@ static bool __cdecl ReadCOLLibraryBounds( const char *buf, size_t size, unsigned
 
         modelId_t modelId = header.modelId;
 
-        if ( modelId < DATA_TEXTURE_BLOCK )
+        if ( modelId < MAX_MODELS )
             info = ppModelInfo[modelId];
 
         unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( header.name );

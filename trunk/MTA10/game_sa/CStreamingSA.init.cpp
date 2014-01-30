@@ -256,141 +256,147 @@ success:
 
         assert( checksum == '2REV' );
             
-        unsigned int numFiles = file->ReadInt();
+        int numFiles;
+        
+        bool successful = file->ReadInt( numFiles );
 
-        // Load all files one by one
-        while ( numFiles )
+        // Bugfix: make sure we read the file entry count properly.
+        if ( successful )
         {
-            numFiles--;
-
-            resourceFileHeader header;
-
-            file->Read( &header, 1, sizeof(header) );
-
-            if ( header.primaryBlockOffset > biggestResourceBlockCount )
-                biggestResourceBlockCount = header.primaryBlockOffset;
-
-            // Zero terminated for safety
-            header.name[ sizeof(header.name) - 1 ] = '\0';
-
-            char *dot = strchr( header.name, '.' );
-
-            if ( !dot || (size_t)( dot - header.name ) > 20 )
+            // Load all files one by one
+            while ( numFiles )
             {
+                numFiles--;
+
+                resourceFileHeader header;
+
+                file->Read( &header, 1, sizeof(header) );
+
+                if ( header.primaryBlockOffset > biggestResourceBlockCount )
+                    biggestResourceBlockCount = header.primaryBlockOffset;
+
+                // Zero terminated for safety
                 header.name[ sizeof(header.name) - 1 ] = '\0';
-                goto failureAdd;
-            }
 
-            const char *ext = dot + 1;
+                char *dot = strchr( header.name, '.' );
 
-            *dot = '\0';
-
-            modelId_t id;
-
-            if ( strnicmp( ext, "DFF", 3 ) == 0 )
-            {
-                if ( !GetModelByName( header.name, &id ) )
+                if ( !dot || (size_t)( dot - header.name ) > 20 )
                 {
-                    // We found a structure that has no representation in the game configuration files.
-                    // Native GTA:SA supports about 550 of such models.
-                    // We can still load such data through .SCM there (RequestSpecialModel).
-                    // That is done by storing the resourceFileHeader in a special stack.
-                    header.offset = Streaming::GetFileHandle( imgID, header.offset );
-
-                    // Some sort of debug container
-                    (*VAR_MissingModelInfo)->Add( header );
-                    
+                    header.name[ sizeof(header.name) - 1 ] = '\0';
                     goto failureAdd;
                 }
-            }
-            else if ( strnicmp( ext, "TXD", 3 ) == 0 )
-            {
-                int txdId = pGame->GetTextureManager()->FindTxdEntry( header.name );
 
-                if ( txdId == -1 )
+                const char *ext = dot + 1;
+
+                *dot = '\0';
+
+                modelId_t id;
+
+                if ( strnicmp( ext, "DFF", 3 ) == 0 )
                 {
-                    txdId = pGame->GetTextureManager()->CreateTxdEntry( header.name );
+                    if ( !GetModelByName( header.name, &id ) )
+                    {
+                        // We found a structure that has no representation in the game configuration files.
+                        // Native GTA:SA supports about 550 of such models.
+                        // We can still load such data through .SCM there (RequestSpecialModel).
+                        // That is done by storing the resourceFileHeader in a special stack.
+                        header.offset = Streaming::GetFileHandle( imgID, header.offset );
 
-                    // Assign the txd to a vehicle if found a valid one
-                    TxdAssignVehiclePaintjob( header.name, txdId );
+                        // Some sort of debug container
+                        (*VAR_MissingModelInfo)->Add( header );
+                        
+                        goto failureAdd;
+                    }
                 }
-
-                id = (modelId_t)( txdId + DATA_TEXTURE_BLOCK );
-            }
-            else if ( strnicmp( ext, "COL", 3 ) == 0 )
-            {
-                id = DATA_COLL_BLOCK + RegisterCollision( header.name );
-            }
-            else if ( strnicmp( ext, "IPL", 3 ) == 0 )
-            {
-                unsigned int iplIndex = FindIPLFile( header.name );
-
-                if ( iplIndex == 0xFFFFFFFF )
+                else if ( strnicmp( ext, "TXD", 3 ) == 0 )
                 {
-                    iplIndex = GetIPLEnvironment().RegisterInstance( header.name );
-                }
+                    int txdId = pGame->GetTextureManager()->FindTxdEntry( header.name );
 
-                id = iplIndex + DATA_IPL_BLOCK;
-            }
-            else if ( strnicmp( ext, "DAT", 3 ) == 0 )
-            {
-                sscanf( header.name + 5, "%d", &id );
-                
-                id += DATA_PATHFIND_BLOCK;
-            }
-            else if ( strnicmp( ext, "IFP", 3 ) == 0 )
-            {
-                id = DATA_ANIM_BLOCK + pGame->GetAnimManager()->RegisterAnimBlock( header.name );
-            }
-            else if ( strnicmp( ext, "RRR", 3 ) == 0 )
-            {
-                id = DATA_RECORD_BLOCK + pGame->GetRecordings()->Register( header.name );
-            }
-            else if ( strnicmp( ext, "SCM", 3 ) == 0 )
-            {
-                // For now we do not need these script files.
-                // If we ever need them, contact midnightStar/Martin.
+                    if ( txdId == -1 )
+                    {
+                        txdId = pGame->GetTextureManager()->CreateTxdEntry( header.name );
+
+                        // Assign the txd to a vehicle if found a valid one
+                        TxdAssignVehiclePaintjob( header.name, txdId );
+                    }
+
+                    id = (modelId_t)( txdId + DATA_TEXTURE_BLOCK );
+                }
+                else if ( strnicmp( ext, "COL", 3 ) == 0 )
+                {
+                    id = DATA_COLL_BLOCK + RegisterCollision( header.name );
+                }
+                else if ( strnicmp( ext, "IPL", 3 ) == 0 )
+                {
+                    unsigned int iplIndex = FindIPLFile( header.name );
+
+                    if ( iplIndex == 0xFFFFFFFF )
+                    {
+                        iplIndex = GetIPLEnvironment().RegisterInstance( header.name );
+                    }
+
+                    id = iplIndex + DATA_IPL_BLOCK;
+                }
+                else if ( strnicmp( ext, "DAT", 3 ) == 0 )
+                {
+                    sscanf( header.name + 5, "%d", &id );
+                    
+                    id += DATA_PATHFIND_BLOCK;
+                }
+                else if ( strnicmp( ext, "IFP", 3 ) == 0 )
+                {
+                    id = DATA_ANIM_BLOCK + pGame->GetAnimManager()->RegisterAnimBlock( header.name );
+                }
+                else if ( strnicmp( ext, "RRR", 3 ) == 0 )
+                {
+                    id = DATA_RECORD_BLOCK + pGame->GetRecordings()->Register( header.name );
+                }
+                else if ( strnicmp( ext, "SCM", 3 ) == 0 )
+                {
+                    // For now we do not need these script files.
+                    // If we ever need them, contact midnightStar/Martin.
 #ifdef _DEBUG
-                OutputDebugString( "found unsupported SCM file: " );
-                OutputDebugString( header.name );
-                OutputDebugString( "\n" );
+                    OutputDebugString( "found unsupported SCM file: " );
+                    OutputDebugString( header.name );
+                    OutputDebugString( "\n" );
 #endif //_DEBUG
-                goto failureAdd;
-            }
-            else
-            {
-                *dot = '.';
-                goto failureAdd;
-            }
+                    goto failureAdd;
+                }
+                else
+                {
+                    *dot = '.';
+                    goto failureAdd;
+                }
 
-            // Prepare the loading of this resource by storing its offset and IMG archive index
-            unsigned int offset, count;
+                // Prepare the loading of this resource by storing its offset and IMG archive index
+                unsigned int offset, count;
 
-            // If this ID slot is already occupied, skip preparing this resource.
-            CModelLoadInfoSA& info = Streaming::GetModelLoadInfo( id );
+                // If this ID slot is already occupied, skip preparing this resource.
+                CModelLoadInfoSA& info = Streaming::GetModelLoadInfo( id );
 
-            if ( info.GetOffset( offset, count ) )
-                goto failureAdd;
+                if ( info.GetOffset( offset, count ) )
+                    goto failureAdd;
 
-            info.m_imgID = imgID;
+                info.m_imgID = imgID;
 
-            if ( header.secondaryBlockOffset != 0 )
-                header.primaryBlockOffset = header.secondaryBlockOffset;
+                if ( header.secondaryBlockOffset != 0 )
+                    header.primaryBlockOffset = header.secondaryBlockOffset;
 
-            info.SetOffset( header.offset, header.primaryBlockOffset );
-            info.m_flags = 0;
+                info.SetOffset( header.offset, header.primaryBlockOffset );
+                info.m_flags = 0;
 
-            // This id is used to optimize loading from disk.
-            // The streaming system knows which data is next to each other.
-            // It can be loaded in a swipe.
-            if ( lastID != 0xFFFFFFFF )
-                Streaming::GetModelLoadInfo( lastID ).m_lastID = id;
+                // This id is used to optimize loading from disk.
+                // The streaming system knows which data is next to each other.
+                // It can be loaded in a swipe.
+                if ( lastID != 0xFFFFFFFF )
+                    Streaming::GetModelLoadInfo( lastID ).m_lastID = id;
 
-            lastID = id;
-            continue;
+                lastID = id;
+                continue;
 
 failureAdd:
-            lastID = 0xFFFFFFFF;
+                lastID = 0xFFFFFFFF;
+            }
         }
 
         delete file;
