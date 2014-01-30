@@ -186,12 +186,14 @@ public:
     virtual	bool            ReadByte( char& out_b )         { return ReadStruct( out_b ); }
     virtual	bool            ReadFloat( float& out_f )       { return ReadStruct( out_f ); }
     virtual bool            ReadDouble( double& out_d )     { return ReadStruct( out_d ); }
+    virtual bool            ReadBool( bool& out_b )         { return ReadStruct( out_b ); }
 
     virtual	size_t          WriteInt( int iInt )            { return WriteStruct( iInt ); }
     virtual size_t          WriteShort( short iShort )      { return WriteStruct( iShort ); }
     virtual size_t          WriteByte( char cByte )         { return WriteStruct( cByte ); }
     virtual size_t          WriteFloat( float fFloat )      { return WriteStruct( fFloat ); }
     virtual size_t          WriteDouble( double dDouble )   { return WriteStruct( dDouble ); }
+    virtual size_t          WriteBool( bool bBool )         { return WriteStruct( bBool ); }
 
     /*===================================================
         CFile::Printf
