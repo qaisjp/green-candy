@@ -191,7 +191,7 @@ void CClientPacketRecorder::RecordLocalData( CClientPlayer* pLocalPlayer )
 //  fwrite ( &ulTimeStamp, sizeof ( unsigned long ), 1, pFile );
 
     // Write the packet ID
-    file->WriteByte( 0xFE );
+    file->WriteByte( (unsigned char)0xFE );
 
     // Grab the vehicle
     CClientVehicle *pVehicle = pLocalPlayer->GetOccupiedVehicle();
@@ -255,7 +255,10 @@ void CClientPacketRecorder::ReadLocalData( CFile *file )
     file->Read( &speed, sizeof(float), 3 );
     file->Read( &turnSpeed, sizeof(float), 3 );
 
-    pVehicle->SetHealth( file->ReadFloat() );
+    float fHealth;
+    file->ReadFloat( fHealth );
+
+    pVehicle->SetHealth( fHealth );
 
     CControllerState cs;
     file->Read( &cs, sizeof(cs), 1 );
@@ -296,7 +299,8 @@ void CClientPacketRecorder::DoPulse()
         // Seek to our current offset + the bytes occupied by the time?
         file->Seek( m_ulCurrentOffset, SEEK_SET );
 
-        unsigned long ulTimeStamp = file->ReadInt();
+        unsigned long ulTimeStamp;
+        file->ReadStruct( ulTimeStamp );
 
         // Reached end of file?
         if ( file->IsEOF() )
@@ -308,7 +312,8 @@ void CClientPacketRecorder::DoPulse()
         }
 
         // Read out the packet id
-        unsigned char id = file->ReadByte();
+        unsigned char id;
+        file->ReadByte( id );
 
         // Is it 0xFE (local player data) or 0xFF (local keys)?
         switch( id )
@@ -325,7 +330,8 @@ void CClientPacketRecorder::DoPulse()
 
         default:
             // Read out number of bytes in the packet
-            unsigned long ulSize = file->ReadInt();
+            unsigned long ulSize;
+            file->ReadStruct( ulSize );
 
             // Create a bitstream
             NetBitStreamInterface *pBitStream = g_pNet->AllocateNetBitStream();
@@ -335,7 +341,12 @@ void CClientPacketRecorder::DoPulse()
 
             // Write the filedata to the bitstream
             for ( unsigned long i = 0; i < ulSize; i++ )
-                pBitStream->Write( file->ReadByte() );
+            {
+                unsigned char byte;
+                file->ReadByte( byte );
+
+                pBitStream->Write( byte );
+            }
 
             // Send it to the packethandler
             //g_pCore->GetConsole()->Printf("(time: %u, current: %u) %u\n",ulTimeStamp,lCurTime,ucPacketID);
@@ -348,8 +359,8 @@ void CClientPacketRecorder::DoPulse()
 
         // Remember the new offset and read out the time for the next packet
         m_ulCurrentOffset = file->Tell();
-        m_lNextPacketTime = file->ReadInt();
-        m_ucNextPacketID = file->ReadByte();
+        file->ReadStruct( m_lNextPacketTime );
+        file->ReadStruct( m_ucNextPacketID );
         //g_pCore->GetConsole()->Printf("next time: %u\n",m_lNextPacketTime);
 
         // Reached end of file?

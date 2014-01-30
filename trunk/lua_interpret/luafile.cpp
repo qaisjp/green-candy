@@ -48,7 +48,7 @@ static int luafile_read( lua_State *L )
 
     if ( bytesRead == 0 )
     {
-        lua_pushlstring( lua, "", 0 );
+        lua_pushlstring( L, "", 0 );
         return 1;
     }
 
@@ -59,7 +59,7 @@ static int luafile_read( lua_State *L )
 
     if ( bytesRead == 0 )
     {
-        lua_pushlstring( lua, "", 0 );
+        lua_pushlstring( L, "", 0 );
         return 1;
     }
 #else
@@ -70,65 +70,65 @@ static int luafile_read( lua_State *L )
     return 1;
 }
 
-static int luafile_readShort( lua_State *lua )
+static int luafile_readShort( lua_State *L )
 {
     short out_s;
 
     LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( lua ))->ReadShort( out_s )
+        ((CFile*)lua_getmethodtrans( L ))->ReadShort( out_s )
     );
 
-    lua_pushnumber( lua, out_s );
+    lua_pushnumber( L, out_s );
     return 1;
 }
 
-static int luafile_readInt( lua_State *lua )
+static int luafile_readInt( lua_State *L )
 {
     int out_i;
 
     LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( lua ))->ReadInt( out_i )
+        ((CFile*)lua_getmethodtrans( L ))->ReadInt( out_i )
     );
 
-    lua_pushnumber( lua, out_i );
+    lua_pushnumber( L, out_i );
     return 1;
 }
 
-static int luafile_readFloat( lua_State *lua )
+static int luafile_readFloat( lua_State *L )
 {
     float out_f;
 
     LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( lua ))->ReadFloat( out_f )
+        ((CFile*)lua_getmethodtrans( L ))->ReadFloat( out_f )
     );
 
-    lua_pushnumber( lua, out_f );
+    lua_pushnumber( L, out_f );
     return 1;
 }
 
-static int luafile_readDouble( lua_State *lua )
+static int luafile_readDouble( lua_State *L )
 {
     double out_d;
 
     LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( lua ))->ReadDouble( out_d )
+        ((CFile*)lua_getmethodtrans( L ))->ReadDouble( out_d )
     );
 
-    lua_pushnumber( lua, out_d );
+    lua_pushnumber( L, out_d );
     return 1;
 }
 
-static int luafile_readBoolean( lua_State *lua )
+static int luafile_readBoolean( lua_State *L )
 {
     bool out_b;
 
     bool successful =
-        ((CFile*)lua_getmethodtrans( lua ))->ReadBool( out_b );
+        ((CFile*)lua_getmethodtrans( L ))->ReadBool( out_b );
 
     if ( !successful )
-        lua_pushnil( lua );
+        lua_pushnil( L );
     else
-        lua_pushboolean( lua, out_b );
+        lua_pushboolean( L, out_b );
 
     return 1;
 }
@@ -267,7 +267,7 @@ static int luafile_isWritable( lua_State *L )
 
 static int luafile_isReadable( lua_State *L )
 {
-    lua_pushboolean( L, ((CFile*)lua_getmethodtrans( L ))->IsReadahle() );
+    lua_pushboolean( L, ((CFile*)lua_getmethodtrans( L ))->IsReadable() );
     return 1;
 }
 

@@ -46,7 +46,7 @@ bool CLuaManager::OnLuaClassDeallocationFail( lua_State *L, ILuaClass *j )
         return g_pClientGame->GetGUIManager()->RemoveActivityLock( guiElem );
     }
 
-    return false;
+    return LuaManager::OnLuaClassDeallocationFail( L, j );
 }
 
 static void LoadCFunctions( lua_State *L )

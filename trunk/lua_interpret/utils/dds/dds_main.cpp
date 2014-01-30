@@ -92,7 +92,9 @@ static LUA_DECLARE( load )
     LUA_ARGS_END;
 
     // Check that we are really reading a DDS file.
-    LUA_CHECK( file->ReadInt() == ' SDD' );
+    int checksum;
+
+    LUA_CHECK( file->ReadInt( checksum ) && checksum == ' SDD' );
 
     DDS_HEADER header;
 

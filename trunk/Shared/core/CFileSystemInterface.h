@@ -181,19 +181,25 @@ public:
     virtual bool            IsWriteable( void ) const = 0;
 
     // Utility definitions, mostly self-explanatory
-    virtual	bool            ReadInt( int& out_i )           { return ReadStruct( out_i ); }
-    virtual	bool            ReadShort( short& out_s )       { return ReadStruct( out_s ); }
-    virtual	bool            ReadByte( char& out_b )         { return ReadStruct( out_b ); }
-    virtual	bool            ReadFloat( float& out_f )       { return ReadStruct( out_f ); }
-    virtual bool            ReadDouble( double& out_d )     { return ReadStruct( out_d ); }
-    virtual bool            ReadBool( bool& out_b )         { return ReadStruct( out_b ); }
+    virtual	bool            ReadInt( int& out_i )               { return ReadStruct( out_i ); }
+    virtual bool            ReadUInt( unsigned int& out_ui )    { return ReadStruct( out_ui ); }
+    virtual	bool            ReadShort( short& out_s )           { return ReadStruct( out_s ); }
+    virtual bool            ReadUShort( unsigned short& out_us ){ return ReadStruct( out_us ); }
+    virtual	bool            ReadByte( char& out_b )             { return ReadStruct( out_b ); }
+    virtual bool            ReadByte( unsigned char& out_b )    { return ReadStruct( out_b ); }
+    virtual	bool            ReadFloat( float& out_f )           { return ReadStruct( out_f ); }
+    virtual bool            ReadDouble( double& out_d )         { return ReadStruct( out_d ); }
+    virtual bool            ReadBool( bool& out_b )             { return ReadStruct( out_b ); }
 
-    virtual	size_t          WriteInt( int iInt )            { return WriteStruct( iInt ); }
-    virtual size_t          WriteShort( short iShort )      { return WriteStruct( iShort ); }
-    virtual size_t          WriteByte( char cByte )         { return WriteStruct( cByte ); }
-    virtual size_t          WriteFloat( float fFloat )      { return WriteStruct( fFloat ); }
-    virtual size_t          WriteDouble( double dDouble )   { return WriteStruct( dDouble ); }
-    virtual size_t          WriteBool( bool bBool )         { return WriteStruct( bBool ); }
+    virtual	size_t          WriteInt( int iInt )                { return WriteStruct( iInt ); }
+    virtual size_t          WriteUInt( unsigned int uiInt )     { return WriteStruct( uiInt ); }
+    virtual size_t          WriteShort( short iShort )          { return WriteStruct( iShort ); }
+    virtual size_t          WriteUShort( unsigned short uShort ){ return WriteStruct( uShort ); }
+    virtual size_t          WriteByte( char cByte )             { return WriteStruct( cByte ); }
+    virtual size_t          WriteByte( unsigned char ucByte )   { return WriteStruct( ucByte ); }
+    virtual size_t          WriteFloat( float fFloat )          { return WriteStruct( fFloat ); }
+    virtual size_t          WriteDouble( double dDouble )       { return WriteStruct( dDouble ); }
+    virtual size_t          WriteBool( bool bBool )             { return WriteStruct( bBool ); }
 
     /*===================================================
         CFile::Printf
