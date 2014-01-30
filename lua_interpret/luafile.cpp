@@ -237,6 +237,18 @@ static int luafile_flush( lua_State *L )
     return 1;
 }
 
+static int luafile_isWritable( lua_State *L )
+{
+    lua_pushboolean( L, ((CFile*)lua_getmethodtrans( L ))->IsWriteable() );
+    return 1;
+}
+
+static int luafile_isReadable( lua_State *L )
+{
+    lua_pushboolean( L, ((CFile*)lua_getmethodtrans( L ))->IsReadahle() );
+    return 1;
+}
+
 static int luafile_destroy( lua_State *lua )
 {
     delete (CFile*)lua_touserdata( lua, lua_upvalueindex( 1 ) );
@@ -271,6 +283,8 @@ static const luaL_Reg fileInterface[] =
     { "seek", luafile_seek },
     { "eof", luafile_eof },
     { "flush", luafile_flush },
+    { "isWritable", luafile_isWritable },
+    { "isReadable", luafile_isReadable },
     { NULL, NULL }
 };
 

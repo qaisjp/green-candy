@@ -237,9 +237,11 @@ public:
 
         do
         {
-            unsigned char c = ReadByte();
+            char c;
 
-            if ( !c || c == '\n' )
+            bool successful = ReadByte( c );
+
+            if ( !successful || !c || c == '\n' )
                 return true;
 
             output += c;
@@ -269,9 +271,11 @@ public:
 
         do
         {
-            unsigned char c = ReadByte();
+            char c;
 
-            if ( !c || c == '\n' )
+            bool successful = ReadByte( c );
+
+            if ( !successful || !c || c == '\n' )
                 goto finish;
 
             buf[n++] = c;
