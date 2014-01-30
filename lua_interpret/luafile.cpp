@@ -34,13 +34,13 @@ static int luafile_onNewindex( lua_State *lua )
     return 0;
 }
 
-static int luafile_read( lua_State *lua )
+static int luafile_read( lua_State *L )
 {
-    luaL_checktype( lua, 1, LUA_TNUMBER );
+    luaL_checktype( L, 1, LUA_TNUMBER );
 
-    CFile *file = (CFile*)lua_getmethodtrans( lua );
+    CFile *file = (CFile*)lua_getmethodtrans( L );
 
-    long byteCount = (long)lua_tonumber( lua, 1 );
+    long byteCount = (long)lua_tonumber( L, 1 );
 
     LUA_CHECK( byteCount > 0 );
 
@@ -66,7 +66,7 @@ static int luafile_read( lua_State *lua )
     bytesRead = file->Read( &buf[0], 1, bytesRead );
 #endif
 
-    lua_pushlstring( lua, &buf[0], bytesRead );
+    lua_pushlstring( L, &buf[0], bytesRead );
     return 1;
 }
 
@@ -99,7 +99,7 @@ static int luafile_readFloat( lua_State *lua )
     float out_f;
 
     LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( L ))->ReadFloat( out_f )
+        ((CFile*)lua_getmethodtrans( lua ))->ReadFloat( out_f )
     );
 
     lua_pushnumber( lua, out_f );
@@ -111,10 +111,25 @@ static int luafile_readDouble( lua_State *lua )
     double out_d;
 
     LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( L ))->ReadDouble( out_d )
+        ((CFile*)lua_getmethodtrans( lua ))->ReadDouble( out_d )
     );
 
     lua_pushnumber( lua, out_d );
+    return 1;
+}
+
+static int luafile_readBoolean( lua_State *lua )
+{
+    bool out_b;
+
+    bool successful =
+        ((CFile*)lua_getmethodtrans( lua ))->ReadBool( out_b );
+
+    if ( !successful )
+        lua_pushnil( lua );
+    else
+        lua_pushboolean( lua, out_b );
+
     return 1;
 }
 
@@ -154,6 +169,13 @@ static int luafile_writeDouble( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TNUMBER );
     lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteDouble( (double)lua_tonumber( L, 1 ) ) );
+    return 1;
+}
+
+static int luafile_writeBoolean( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TBOOLEAN );
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteBool( (bool)lua_toboolean( L, 1 ) ) );
     return 1;
 }
 
@@ -272,11 +294,13 @@ static const luaL_Reg fileInterface[] =
     { "readInt", luafile_readInt },
     { "readFloat", luafile_readFloat },
     { "readDouble", luafile_readDouble },
+    { "readBoolean", luafile_readBoolean },
     { "write", luafile_write },
     { "writeShort", luafile_writeShort },
     { "writeInt", luafile_writeInt },
     { "writeFloat", luafile_writeFloat },
     { "writeDouble", luafile_writeDouble },
+    { "writeBoolean", luafile_writeBoolean },
     { "size", luafile_size },
     { "stat", luafile_stat },
     { "tell", luafile_tell },
