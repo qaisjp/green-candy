@@ -104,6 +104,12 @@ void LuaManager::GarbageCollect( lua_State *L )
     LIST_FOREACH_END
 }
 
+bool LuaManager::OnLuaClassDeallocationFail( lua_State *L, ILuaClass *j )
+{
+    // cannot do anything here.
+    return false;
+}
+
 static int lua_gcextend_event( lua_State *L )
 {
     lua_readmanager( L )->GarbageCollect( L );

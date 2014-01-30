@@ -13,7 +13,8 @@
 #ifndef _LUA_OPENGL_PRIVATE_
 #define _LUA_OPENGL_PRIVATE_
 
-#include <gl.h>
+#include <gl/gl.h>
+#include <gl/glu.h>
 #include <gl/glext.h>
 #include "gl_func.h"
 #include "gl_class.h"

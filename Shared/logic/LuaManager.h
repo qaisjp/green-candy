@@ -53,7 +53,7 @@ public:
     virtual void                    GarbageCollect( lua_State *L );
 
     // Special MTA:Lua events
-    virtual bool                    OnLuaClassDeallocationFail( lua_State *L, ILuaClass *j ) = 0;
+    virtual bool                    OnLuaClassDeallocationFail( lua_State *L, ILuaClass *j );
 
     lua_State*                      GetVirtualMachine() const   { return m_lua; }
 
