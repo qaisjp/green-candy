@@ -126,7 +126,7 @@ namespace CLuaFunctionDefs
     //      [ bool checkBuildings = true, bool checkVehicles = true, bool checkPlayers = true, bool checkObjects = true, bool checkDummies = true,
     //        bool seeThroughStuff = false, bool ignoreSomeObjectsForCamera = false, bool shootThroughStuff = false, element ignoredElement = nil, bool returnBuildingInfo = false ] )
         CVector vecStart; CVector vecEnd;
-        SLineOfSightFlags flags; CEntity* pIgnoredEntity; bool bIncludeBuildingInfo;
+        SLineOfSightFlags flags; CClientEntity* pIgnoredEntity; bool bIncludeBuildingInfo;
 
         CScriptArgReader argStream ( L );
         argStream.ReadNumber ( vecStart.fX );
@@ -150,9 +150,10 @@ namespace CLuaFunctionDefs
         {
             CColPoint* pColPoint = NULL;
             CClientEntity* pColEntity = NULL;
+            CEntity *ignoredGameEntity = ( pIgnoredEntity ) ? pIgnoredEntity->GetGameEntity() : NULL;
             bool bCollision;
             SLineOfSightBuildingResult buildingResult;
-            if ( CStaticFunctionDefinitions::ProcessLineOfSight ( vecStart, vecEnd, bCollision, &pColPoint, &pColEntity, flags, pIgnoredEntity, bIncludeBuildingInfo ? &buildingResult : NULL ) )
+            if ( CStaticFunctionDefinitions::ProcessLineOfSight ( vecStart, vecEnd, bCollision, &pColPoint, &pColEntity, flags, ignoredGameEntity, bIncludeBuildingInfo ? &buildingResult : NULL ) )
             {    
                 // Got a collision?
                 CVector vecColPosition;

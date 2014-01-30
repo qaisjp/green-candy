@@ -16,6 +16,14 @@
 #define LUA_DECLARE(x) int x( lua_State *L )
 #define LUA_REGISTER( L, x ) lua_register( L, #x, x )
 
+static LUA_DECLARE( fopen )
+{
+    int numArgs = lua_gettop( L );
+
+    lua_pushboolean( L, false );
+    return 1;
+}
+
 static inline const char* lua_getclassdesc( int ctype )
 {
     switch( ctype )

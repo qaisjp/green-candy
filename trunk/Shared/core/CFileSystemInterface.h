@@ -181,70 +181,17 @@ public:
     virtual bool            IsWriteable( void ) const = 0;
 
     // Utility definitions, mostly self-explanatory
-    virtual	int             ReadInt( void )
-    {
-        int i;
+    virtual	bool            ReadInt( int& out_i )           { return ReadStruct( out_i ); }
+    virtual	bool            ReadShort( short& out_s )       { return ReadStruct( out_s ); }
+    virtual	bool            ReadByte( char& out_b )         { return ReadStruct( out_b ); }
+    virtual	bool            ReadFloat( float& out_f )       { return ReadStruct( out_f ); }
+    virtual bool            ReadDouble( double& out_d )     { return ReadStruct( out_d ); }
 
-        Read( &i, sizeof(int), 1 );
-        return i;
-    }
-
-    virtual	short           ReadShort( void )
-    {
-        short i;
-
-        Read( &i, sizeof(short), 1 );
-        return i;
-    }
-
-    virtual	char            ReadByte( void )
-    {
-        char i;
-
-        Read( &i, sizeof(char), 1 );
-        return i;
-    }
-
-    virtual	float           ReadFloat( void )
-    {
-        float f;
-
-        Read( &f, sizeof(float), 1 );
-        return f;
-    }
-
-    virtual double          ReadDouble( void )
-    {
-        double d;
-
-        Read( &d, sizeof(double), 1 );
-        return d;
-    }
-
-    virtual	size_t          WriteInt( int iInt )
-    {
-        return Write( &iInt, sizeof(int), 1 );
-    }
-
-    virtual size_t          WriteShort( unsigned short iShort )
-    {
-        return Write( &iShort, sizeof(short), 1 );
-    }
-
-    virtual size_t          WriteByte( unsigned char cByte )
-    {
-        return Write( &cByte, sizeof(char), 1 );
-    }
-
-    virtual size_t          WriteFloat( float fFloat )
-    {
-        return Write( &fFloat, sizeof(float), 1 );
-    }
-
-    virtual size_t          WriteDouble( double dDouble )
-    {
-        return Write( &dDouble, sizeof(double), 1 );
-    }
+    virtual	size_t          WriteInt( int iInt )            { return WriteStruct( iInt ); }
+    virtual size_t          WriteShort( short iShort )      { return WriteStruct( iShort ); }
+    virtual size_t          WriteByte( char cByte )         { return WriteStruct( cByte ); }
+    virtual size_t          WriteFloat( float fFloat )      { return WriteStruct( fFloat ); }
+    virtual size_t          WriteDouble( double dDouble )   { return WriteStruct( dDouble ); }
 
     /*===================================================
         CFile::Printf
