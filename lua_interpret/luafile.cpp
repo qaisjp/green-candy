@@ -40,7 +40,11 @@ static int luafile_read( lua_State *lua )
 
     CFile *file = (CFile*)lua_getmethodtrans( lua );
 
-    size_t bytesRead = (size_t)lua_tonumber( lua, 1 );
+    long byteCount = (long)lua_tonumber( lua, 1 );
+
+    LUA_CHECK( byteCount > 0 );
+
+    size_t bytesRead = (size_t)byteCount;
 
     if ( bytesRead == 0 )
     {
@@ -68,25 +72,49 @@ static int luafile_read( lua_State *lua )
 
 static int luafile_readShort( lua_State *lua )
 {
-    lua_pushnumber( lua, ((CFile*)lua_getmethodtrans( lua ))->ReadShort() );
+    short out_s;
+
+    LUA_CHECK(
+        ((CFile*)lua_getmethodtrans( lua ))->ReadShort( out_s )
+    );
+
+    lua_pushnumber( lua, out_s );
     return 1;
 }
 
 static int luafile_readInt( lua_State *lua )
 {
-    lua_pushnumber( lua, ((CFile*)lua_getmethodtrans( lua ))->ReadInt() );
+    int out_i;
+
+    LUA_CHECK(
+        ((CFile*)lua_getmethodtrans( lua ))->ReadInt( out_i )
+    );
+
+    lua_pushnumber( lua, out_i );
     return 1;
 }
 
 static int luafile_readFloat( lua_State *lua )
 {
-    lua_pushnumber( lua, ((CFile*)lua_getmethodtrans( lua ))->ReadFloat() );
+    float out_f;
+
+    LUA_CHECK(
+        ((CFile*)lua_getmethodtrans( L ))->ReadFloat( out_f )
+    );
+
+    lua_pushnumber( lua, out_f );
     return 1;
 }
 
 static int luafile_readDouble( lua_State *lua )
 {
-    lua_pushnumber( lua, ((CFile*)lua_getmethodtrans( lua ))->ReadDouble() );
+    double out_d;
+
+    LUA_CHECK(
+        ((CFile*)lua_getmethodtrans( L ))->ReadDouble( out_d )
+    );
+
+    lua_pushnumber( lua, out_d );
     return 1;
 }
 
