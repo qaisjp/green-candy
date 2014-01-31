@@ -141,7 +141,9 @@ AINLINE int _writeFileNumber( lua_State *L, const char *methodName )
         }
     }
 
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteShort( number ) );
+    numberType realNum = (numberType)number;
+
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteStruct( realNum ) );
     return 1;
 }
 
