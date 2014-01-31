@@ -19,7 +19,26 @@
 // TODO!
 CPedModelInfoSAInterface::CPedModelInfoSAInterface( void )
 {
-    pColModel = (CColModelSAInterface*)VAR_CTempColModels_ModelPed1;
+    // TEMP HACK <3
+    *(DWORD*)this = VAR_CPedModelInfo_VTBL;
+
+    // Initialize according to constructor.
+    pHitColModel = NULL;
+
+    // Initialize according to static rules.
+    // Apparently we crash if we do not set proper values ;)
+    motionAnimGroup = 0;
+    pedType = 0;
+    pedStats = NULL;
+    bCanDriveCars = true;
+    pedFlags = 0;
+    bFirstRadioStation = 0;
+    bSecondRadioStation = 0;
+    bIsInRace = false;
+    sVoiceType = -1;
+    sFirstVoice = -1;
+    sLastVoice = -1;
+    sNextVoice = -1;
 
     Init();
 }
@@ -64,6 +83,9 @@ int CPedModelInfoSAInterface::GetAnimFileIndex( void )
 CPedModelInfoSA::CPedModelInfoSA( void ) : CModelInfoSA ()
 {
     m_pPedModelInterface = new CPedModelInfoSAInterface;
+
+    // Set a collision model.
+    m_pPedModelInterface->SetColModel( (CColModelSAInterface*)VAR_CTempColModels_ModelPed1, false );
 }
 
 CPedModelInfoSA::~CPedModelInfoSA( void )

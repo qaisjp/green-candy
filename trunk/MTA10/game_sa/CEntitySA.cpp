@@ -152,13 +152,17 @@ bool CEntitySAInterface::IsOnScreen( void ) const
     CColModelSAInterface *col = GetColModel();
     CVector pos;
 
-    GetOffset( pos, col->m_bounds.vecBoundOffset );
+    // Bugfix: no col -> not visible
+    if ( col )
+    {
+        GetOffset( pos, col->m_bounds.vecBoundOffset );
 
-    if ( pGame->GetCamera()->GetInterface()->IsSphereVisible( pos, col->m_bounds.fRadius, (void*)0x00B6FA74 ) )
-        return true;
+        if ( pGame->GetCamera()->GetInterface()->IsSphereVisible( pos, col->m_bounds.fRadius, (void*)0x00B6FA74 ) )
+            return true;
 
-    if ( *(unsigned char*)0x00B6F998 )
-        return pGame->GetCamera()->GetInterface()->IsSphereVisible( pos, col->m_bounds.fRadius, (void*)0x00B6FABC );
+        if ( *(unsigned char*)0x00B6F998 )
+            return pGame->GetCamera()->GetInterface()->IsSphereVisible( pos, col->m_bounds.fRadius, (void*)0x00B6FABC );
+    }
 
     return false;
 }

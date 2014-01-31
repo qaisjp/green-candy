@@ -166,6 +166,8 @@ void CPedSA::SetModelIndex( unsigned short id )
 
     if ( !info || info->GetModelType() != MODEL_PED )
         return;
+
+    CPedModelInfoSAInterface *pedInfo = (CPedModelInfoSAInterface*)info;
     
     m_pInterface->SetModelIndex( id );
 
