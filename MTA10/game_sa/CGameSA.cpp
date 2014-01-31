@@ -787,7 +787,6 @@ bool CGameSA::IsASyncLoadingEnabled ( bool bIgnoreSuspend )
 
 void CGameSA::SetupSpecialCharacters ( void )
 {
-#if 0
     ModelInfo[1].MakePedModel ( "TRUTH" );
     ModelInfo[2].MakePedModel ( "MACCER" );
     //ModelInfo[190].MakePedModel ( "BARBARA" );
@@ -834,7 +833,6 @@ void CGameSA::SetupSpecialCharacters ( void )
     ModelInfo[316].MakePedModel ( "COPGRL2" );
     ModelInfo[317].MakePedModel ( "NURGRL2" );
     */
-#endif
 }
 
 // Well, has it?
