@@ -70,53 +70,44 @@ static int luafile_read( lua_State *L )
     return 1;
 }
 
-static int luafile_readShort( lua_State *L )
+inline bool IsUnsigned( unsigned char )     { return true; }
+inline bool IsUnsigned( char )              { return false; }
+inline bool IsUnsigned( unsigned short )    { return true; }
+inline bool IsUnsigned( short )             { return false; }
+inline bool IsUnsigned( unsigned int )      { return true; }
+inline bool IsUnsigned( int )               { return false; }
+
+struct _CheckDefaultValidity
 {
-    short out_s;
+    template <typename numberType>
+    AINLINE bool IsNumberValid( lua_Number number )
+    {
+        return true;
+    }
+};
+
+template <typename numberType>
+AINLINE int _fileReadNumber( lua_State *L )
+{
+    numberType out_num;
 
     LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( L ))->ReadShort( out_s )
+        ((CFile*)lua_getmethodtrans( L ))->ReadStruct( out_num )
     );
 
-    lua_pushnumber( L, out_s );
+    lua_pushnumber( L, (lua_Number)out_num );
     return 1;
 }
 
-static int luafile_readInt( lua_State *L )
-{
-    int out_i;
+static int luafile_readByte( lua_State *L )         { return _fileReadNumber <char> ( L ); }
+static int luafile_readUByte( lua_State *L )        { return _fileReadNumber <unsigned char> ( L ); }
+static int luafile_readShort( lua_State *L )        { return _fileReadNumber <short> ( L ); }
+static int luafile_readUShort( lua_State *L )       { return _fileReadNumber <unsigned short> ( L ); }
+static int luafile_readInt( lua_State *L )          { return _fileReadNumber <int> ( L ); }
+static int luafile_readUInt( lua_State *L )         { return _fileReadNumber <unsigned int> ( L ); }
 
-    LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( L ))->ReadInt( out_i )
-    );
-
-    lua_pushnumber( L, out_i );
-    return 1;
-}
-
-static int luafile_readFloat( lua_State *L )
-{
-    float out_f;
-
-    LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( L ))->ReadFloat( out_f )
-    );
-
-    lua_pushnumber( L, out_f );
-    return 1;
-}
-
-static int luafile_readDouble( lua_State *L )
-{
-    double out_d;
-
-    LUA_CHECK(
-        ((CFile*)lua_getmethodtrans( L ))->ReadDouble( out_d )
-    );
-
-    lua_pushnumber( L, out_d );
-    return 1;
-}
+static int luafile_readFloat( lua_State *L )        { return _fileReadNumber <float> ( L ); }
+static int luafile_readDouble( lua_State *L )       { return _fileReadNumber <double> ( L ); }
 
 static int luafile_readBoolean( lua_State *L )
 {
@@ -133,6 +124,27 @@ static int luafile_readBoolean( lua_State *L )
     return 1;
 }
 
+template <typename numberType, typename validityChecker>
+AINLINE int _writeFileNumber( lua_State *L, const char *methodName )
+{
+    luaL_checktype( L, 1, LUA_TNUMBER );
+
+    lua_Number number = lua_tonumber( L, 1 );
+
+    // Check validity of number.
+    {
+        validityChecker checker;
+
+        if ( !checker.IsNumberValid <numberType> ( number ) )
+        {
+            // todo: print a warning.
+        }
+    }
+
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteShort( number ) );
+    return 1;
+}
+
 static int luafile_write( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
@@ -144,33 +156,15 @@ static int luafile_write( lua_State *L )
     return 1;
 }
 
-static int luafile_writeShort( lua_State *L )
-{
-    luaL_checktype( L, 1, LUA_TNUMBER );
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteShort( (int)lua_tonumber( L, 1 ) ) );
-    return 1;
-}
+static int luafile_writeByte( lua_State *L )            { return _writeFileNumber <char, _CheckDefaultValidity> ( L, "writeByte" ); }
+static int luafile_writeUByte( lua_State *L )           { return _writeFileNumber <unsigned char, _CheckDefaultValidity> ( L, "writeUByte" ); }
+static int luafile_writeShort( lua_State *L )           { return _writeFileNumber <short, _CheckDefaultValidity> ( L, "writeShort" ); }
+static int luafile_writeUShort( lua_State *L )          { return _writeFileNumber <unsigned short, _CheckDefaultValidity> ( L, "writeUShort" ); }
+static int luafile_writeInt( lua_State *L )             { return _writeFileNumber <int, _CheckDefaultValidity> ( L, "writeInt" ); }
+static int luafile_writeUInt( lua_State *L )            { return _writeFileNumber <unsigned int, _CheckDefaultValidity> ( L, "writeUInt" ); }
 
-static int luafile_writeInt( lua_State *L )
-{
-    luaL_checktype( L, 1, LUA_TNUMBER );
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteInt( (int)lua_tonumber( L, 1 ) ) );
-    return 1;
-}
-
-static int luafile_writeFloat( lua_State *L )
-{
-    luaL_checktype( L, 1, LUA_TNUMBER );
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteFloat( (float)lua_tonumber( L, 1 ) ) );
-    return 1;
-}
-
-static int luafile_writeDouble( lua_State *L )
-{
-    luaL_checktype( L, 1, LUA_TNUMBER );
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteDouble( (double)lua_tonumber( L, 1 ) ) );
-    return 1;
-}
+static int luafile_writeFloat( lua_State *L )           { return _writeFileNumber <float, _CheckDefaultValidity> ( L, "writeFloat" ); }
+static int luafile_writeDouble( lua_State *L )          { return _writeFileNumber <double, _CheckDefaultValidity> ( L, "writeDouble" ); }
 
 static int luafile_writeBoolean( lua_State *L )
 {
@@ -290,14 +284,22 @@ static const luaL_Reg fileInterface[] =
 {
 #endif
     { "read", luafile_read },
+    { "readByte", luafile_readByte },
+    { "readUByte", luafile_readUByte },
     { "readShort", luafile_readShort },
+    { "readUShort", luafile_readUShort },
     { "readInt", luafile_readInt },
+    { "readUInt", luafile_readUInt },
     { "readFloat", luafile_readFloat },
     { "readDouble", luafile_readDouble },
     { "readBoolean", luafile_readBoolean },
     { "write", luafile_write },
+    { "writeByte", luafile_writeByte },
+    { "writeUByte", luafile_writeUByte },
     { "writeShort", luafile_writeShort },
+    { "writeUShort", luafile_writeUShort },
     { "writeInt", luafile_writeInt },
+    { "writeUInt", luafile_writeUInt },
     { "writeFloat", luafile_writeFloat },
     { "writeDouble", luafile_writeDouble },
     { "writeBoolean", luafile_writeBoolean },
