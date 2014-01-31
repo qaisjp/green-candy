@@ -42,7 +42,7 @@ static int luafile_read( lua_State *L )
 
     long byteCount = (long)lua_tonumber( L, 1 );
 
-    LUA_CHECK( byteCount > 0 );
+    LUA_CHECK( byteCount >= 0 );
 
     size_t bytesRead = (size_t)byteCount;
 
