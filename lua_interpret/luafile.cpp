@@ -6,6 +6,8 @@
 *  PURPOSE:     Test environment for the filesystem
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  For documentation visit http://wiki.mtasa.com/wiki/MTA:Eir/FileSystem/
+*
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
@@ -276,7 +278,9 @@ static int luafile_destroy( lua_State *lua )
 
 static const luaL_Reg fileInterface_sys[] =
 {
+#ifndef FU_CLASS
     { "__newindex", luafile_onNewindex },
+#endif
     { "destroy", luafile_destroy },
 #ifndef FU_CLASS
     { NULL, NULL }

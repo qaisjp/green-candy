@@ -6,6 +6,8 @@
 *  PURPOSE:     Lua filesystem access
 *  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
+*  For documentation visit http://wiki.mtasa.com/wiki/MTA:Eir/FileSystem/
+*
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
@@ -385,13 +387,11 @@ int luafsys_createTranslator( lua_State *L )
 #ifndef FU_CLASS
 static int archive_save( lua_State *L )
 {
-    lua_getfield( L, lua_upvalueindex( 1 ), "ioptr" );
+    ILuaClass *j = lua_refclass( L, lua_upvalueindex( 1 ) );
 
-    if ( !((CFile*)lua_touserdata( L, lua_gettop( L ) ))->IsWriteable() )
-    {
-        lua_pushboolean( L, false );
-        return 1;
-    }
+    CFile *file;
+
+    LUA_CHECK( j->GetTransmit( LUACLASS_FILE, (void*&)file ) && file->IsWriteable() );
 
     ((CArchiveTranslator*)lua_touserdata( L, lua_upvalueindex( 2 ) ))->Save();
     lua_pushboolean( L, true );
@@ -423,28 +423,27 @@ static int archive_constructor( lua_State *L )
     return 0;
 }
 
-int luafsys_createArchiveTranslator( lua_State *L )
+template <typename archiveHandler>
+static AINLINE int _archiveTranslatorFunctor( lua_State *L, archiveHandler& cb )
 {
     luaL_checktype( L, 1, LUA_TCLASS );
 
     ILuaClass *j = lua_refclass( L, 1 );
 
-    if ( !j->IsTransmit( LUACLASS_FILE ) )
+    // Grab the file interface
+    CFile *file;
+
+    if ( !j->GetTransmit( LUACLASS_FILE, (void*&)file ) )
         throw lua_exception( L, LUA_ERRRUN, "expected file at archive creation" );
+
+    // Attempt to read an archive.
+    CArchiveTranslator *root = cb.CreateTranslator( file );
+
+    // Check that we actually suceeded in creating the archive
+    LUA_CHECK( root );
 
     // Keep the file alive during archive business
     j->IncrementMethodStack( L );
-
-    // Grab the file interface
-    lua_getfield( L, 1, "ioptr" );
-
-    CArchiveTranslator *root = fileSystem->OpenArchive( *(CFile*)lua_touserdata( L, 2 ) );
-
-    if ( !root )
-    {
-        lua_pushboolean( L, false );
-        return 1;
-    }
 
     luafsys_pushroot( L, root );
 
@@ -452,41 +451,34 @@ int luafsys_createArchiveTranslator( lua_State *L )
     lua_pushvalue( L, 1 );
     lua_pushlightuserdata( L, root );
     lua_pushcclosure( L, archive_constructor, 2 );
-    luaJ_extend( L, 3, 0 );
+    luaJ_extend( L, 2, 0 );
     return 1;
 }
 
+struct archiveTranslatorOpener
+{
+    AINLINE CArchiveTranslator* CreateTranslator( CFile *file )
+    {
+        return fileSystem->OpenArchive( *file );
+    }
+};
+
+int luafsys_createArchiveTranslator( lua_State *L )
+{
+    return _archiveTranslatorFunctor( L, archiveTranslatorOpener() );
+}
+
+struct zipArchiveTranslatorCreator
+{
+    AINLINE CArchiveTranslator* CreateTranslator( CFile *file )
+    {
+        return fileSystem->CreateZIPArchive( *file );
+    }
+};
+
 int luafsys_createZIPArchive( lua_State *L )
 {
-    luaL_checktype( L, 1, LUA_TCLASS );
-
-    ILuaClass *j = lua_refclass( L, 1 );
-
-    if ( !j->IsTransmit( LUACLASS_FILE ) )
-        throw lua_exception( L, LUA_ERRRUN, "expected file at archive creation" );
-
-    // Keep the file alive during archive business
-    j->IncrementMethodStack( L );
-
-    // Grab the file interface
-    lua_getfield( L, 1, "ioptr" );
-
-    CArchiveTranslator *root = fileSystem->CreateZIPArchive( *(CFile*)lua_touserdata( L, 2 ) );
-
-    if ( !root )
-    {
-        lua_pushboolean( L, false );
-        return 1;
-    }
-
-    luafsys_pushroot( L, root );
-
-    // Extend the fileTranslator class
-    lua_pushvalue( L, 1 );
-    lua_pushlightuserdata( L, root );
-    lua_pushcclosure( L, archive_constructor, 2 );
-    luaJ_extend( L, 3, 0 );
-    return 1;
+    return _archiveTranslatorFunctor( L, zipArchiveTranslatorCreator() );
 }
 #endif //FU_CLASS
 
