@@ -133,7 +133,7 @@ public:
         // for a platform independent translator root basing.
         // 'textfile.txt' will address 'textfile.txt' in the translator root, ignoring
         // the current directory setting.
-        return character == '';
+        return character == '' || character == '@';
     }
 
 protected:
