@@ -474,6 +474,8 @@ static SString GetReportLogHeaderText ( void )
 
 void SharedUtil::AddReportLog ( uint uiId, const SString& strText )
 {
+    return;
+
     std::fstream log;
     
     log.open( GetMTADataPath() + "report.log", std::fstream::out | std::fstream::app );
@@ -490,6 +492,8 @@ void SharedUtil::AddReportLog ( uint uiId, const SString& strText )
 
 void SharedUtil::SetReportLogContents( const SString& strText )
 {
+    return;
+
     std::ofstream log;
     
     log.open( GetMTADataPath() + "report.log", std::ofstream::app | std::ofstream::out );
@@ -503,6 +507,8 @@ void SharedUtil::SetReportLogContents( const SString& strText )
 
 SString SharedUtil::GetReportLogContents()
 {
+    return "";
+
     std::ifstream log;
 
     log.open( GetMTADataPath() + "report.log" );

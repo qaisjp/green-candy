@@ -25,12 +25,12 @@
 
 #define NOMINMAX
 
-#include "..\..\Shared\core\Common.h"
+#include "../../Shared/core/Common.h"
 #include "Common.h"
-#include "CFileSystem.h"
+#include <CFileSystem.h>
 #include "luaclass.h"
-#include "..\..\lua_interpret\luafile.h"
-#include "..\..\lua_interpret\luafilesystem.h"
+#include "../../lua_interpret/luafile.h"
+#include "../../lua_interpret/luafilesystem.h"
 #include "CFunctions.h"
 #include "include/ILuaModuleManager.h"
 

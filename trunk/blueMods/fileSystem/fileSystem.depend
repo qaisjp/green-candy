@@ -1,0 +1,170 @@
+# depslib dependency file v1.0
+1391354830 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/CFunctions.cpp
+	"CFunctions.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/CFunctions.h
+	<stdio.h>
+	"include/ILuaModuleManager.h"
+
+1391354826 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/include/ILuaModuleManager.h
+	<lua.h>
+	<lualib.h>
+	<lauxlib.h>
+	<string>
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lua.h
+	<stdarg.h>
+	<stddef.h>
+	"luaconf.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/luaconf.h
+	<limits.h>
+	<stddef.h>
+	<unistd.h>
+	<io.h>
+	<stdio.h>
+	<stdio.h>
+	<readline/readline.h>
+	<readline/history.h>
+	<assert.h>
+	<math.h>
+	<unistd.h>
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lualib.h
+	"lua.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lauxlib.h
+	<stddef.h>
+	<stdio.h>
+	"lua.h"
+
+1391364469 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/luaclass.cpp
+	"StdInc.h"
+
+1391360286 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/StdInc.h
+	"../../Shared/core/Common.h"
+	"Common.h"
+	<CFileSystem.h>
+	"luaclass.h"
+	"../../lua_interpret/luafile.h"
+	"../../lua_interpret/luafilesystem.h"
+	"CFunctions.h"
+	"include/ILuaModuleManager.h"
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/Common.h
+	<windows.h>
+	<DbgHelp.h>
+	<sys/stat.h>
+	<SharedUtil.h>
+	"interface.h"
+	"CFileSystem.h"
+	"CDynamicLibrary.h"
+
+1391357755 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.h
+	"SharedUtil.Defines.h"
+	"SharedUtil.AllocTracking.h"
+	<list>
+	<vector>
+	<map>
+	<set>
+	<deque>
+	<algorithm>
+	<limits>
+	<assert.h>
+	<stdio.h>
+	<string.h>
+	<string>
+	<stdarg.h>
+	<assert.h>
+	"SString.h"
+	"SharedUtil.Map.h"
+	"SharedUtil.Misc.h"
+	"SharedUtil.File.h"
+	"SharedUtil.Time.h"
+	"SharedUtil.Buffer.h"
+	"SharedUtil.Game.h"
+	"SharedUtil.Math.h"
+	"SharedUtil.ClassIdent.h"
+	"SharedUtil.Hash.h"
+	"SharedUtil.SysInfo.h"
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Defines.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.AllocTracking.h
+	<cstdlib>
+	<exception>
+	<new>
+	<xutility>
+	<list>
+	<vector>
+	<map>
+	<deque>
+	<algorithm>
+	<limits>
+	<assert.h>
+
+1366058222 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SString.h
+	<stdarg.h>
+
+1356456037 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Map.h
+
+1375398014 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Misc.h
+	<cmath>
+
+1375401373 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.File.h
+
+1366058222 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Time.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Buffer.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Game.h
+
+1353704903 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Math.h
+
+1353704903 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.ClassIdent.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.Hash.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.SysInfo.h
+
+1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/interface.h
+	"CFileSystemInterface.h"
+
+1391110512 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystemInterface.h
+	<sys/stat.h>
+
+1391354827 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.h
+	<direct.h>
+	<unistd.h>
+	<dirent.h>
+	"CFileSystem.zip.h"
+
+1387123468 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.h
+	<time.h>
+
+1366058224 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CDynamicLibrary.h
+
+1391354830 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/Common.h
+	<lua.h>
+	<lualib.h>
+	<lauxlib.h>
+
+1391354830 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/luaclass.h
+
+1353704917 /media/root/OS/Users/The_GTA/Desktop/mta_green/lua_interpret/luafile.h
+
+1356456038 /media/root/OS/Users/The_GTA/Desktop/mta_green/lua_interpret/luafilesystem.h
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/fileSystem/ml_base.cpp
+	"StdInc.h"
+
+1391361367 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/lua_interpret/luafile.cpp
+	<StdInc.h>
+	"luafile.Utils.hxx"
+
+1353704917 /media/root/OS/Users/The_GTA/Desktop/mta_green/lua_interpret/luafile.Utils.hxx
+
+1391368855 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/lua_interpret/luafilesystem.cpp
+	<StdInc.h>
+	"luafile.Utils.hxx"
+

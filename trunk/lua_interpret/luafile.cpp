@@ -137,7 +137,7 @@ AINLINE int _writeFileNumber( lua_State *L, const char *methodName )
     {
         validityChecker checker;
 
-        if ( !checker.IsNumberValid <numberType> ( number ) )
+        if ( !checker.template IsNumberValid <numberType> ( number ) )
         {
             // todo: print a warning.
         }
@@ -186,7 +186,7 @@ static int luafile_size( lua_State *L )
 static int luafile_stat( lua_State *L )
 {
     struct stat stats;
-    
+
     if ( !((CFile*)lua_getmethodtrans( L ))->Stat( &stats ) )
         return 0;
 

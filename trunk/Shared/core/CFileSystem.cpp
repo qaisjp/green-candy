@@ -1341,9 +1341,6 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
     dirTree tree;
     bool bFile;
 
-    if ( !*path )
-        return NULL;
-
 #ifdef _WIN32
     // We have to handle absolute path, too
     if ( _File_IsAbsolutePath( path ) )

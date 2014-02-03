@@ -1,0 +1,439 @@
+# depslib dependency file v1.0
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lapi.c
+	<assert.h>
+	<math.h>
+	<stdarg.h>
+	<string.h>
+	"lua.h"
+	"lapi.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"lgc.h"
+	"lmem.h"
+	"lobject.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"ltm.h"
+	"lundump.h"
+	"lvm.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lua.h
+	<stdarg.h>
+	<stddef.h>
+	"luaconf.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/luaconf.h
+	<limits.h>
+	<stddef.h>
+	<unistd.h>
+	<io.h>
+	<stdio.h>
+	<stdio.h>
+	<readline/readline.h>
+	<readline/history.h>
+	<assert.h>
+	<math.h>
+	<unistd.h>
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lapi.h
+	"lobject.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lobject.h
+	<stdarg.h>
+	"llimits.h"
+	"lua.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/llimits.h
+	<limits.h>
+	<stddef.h>
+	"lua.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ldebug.h
+	"lstate.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lstate.h
+	"lua.h"
+	"lobject.h"
+	"ltm.h"
+	"lzio.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ltm.h
+	"lobject.h"
+
+1391354826 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lzio.h
+	"lua.h"
+	"lmem.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lmem.h
+	<stddef.h>
+	"llimits.h"
+	"lua.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ldo.h
+	"lobject.h"
+	"lstate.h"
+	"lzio.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lfunc.h
+	"lobject.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lgc.h
+	"lobject.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lstring.h
+	"lgc.h"
+	"lobject.h"
+	"lstate.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ltable.h
+	"lobject.h"
+
+1391354826 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lundump.h
+	"lobject.h"
+	"lzio.h"
+
+1391354826 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lvm.h
+	"ldo.h"
+	"lobject.h"
+	"ltm.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lauxlib.c
+	<ctype.h>
+	<errno.h>
+	<stdarg.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"lauxlib.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lauxlib.h
+	<stddef.h>
+	<stdio.h>
+	"lua.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lbaselib.c
+	<ctype.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lualib.h
+	"lua.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lcode.c
+	<stdlib.h>
+	"lua.h"
+	"lcode.h"
+	"ldebug.h"
+	"ldo.h"
+	"lgc.h"
+	"llex.h"
+	"lmem.h"
+	"lobject.h"
+	"lopcodes.h"
+	"lparser.h"
+	"ltable.h"
+
+1391354826 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lcode.h
+	"llex.h"
+	"lobject.h"
+	"lopcodes.h"
+	"lparser.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/llex.h
+	"lobject.h"
+	"lzio.h"
+
+1391354826 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lopcodes.h
+	"llimits.h"
+
+1391354829 /media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lparser.h
+	"llimits.h"
+	"lobject.h"
+	"lzio.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ldblib.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ldebug.c
+	<stdarg.h>
+	<stddef.h>
+	<string.h>
+	"lua.h"
+	"lapi.h"
+	"lcode.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"lobject.h"
+	"lopcodes.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"ltm.h"
+	"lvm.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ldo.c
+	<setjmp.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"lgc.h"
+	"lmem.h"
+	"lobject.h"
+	"lopcodes.h"
+	"lparser.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"ltm.h"
+	"lundump.h"
+	"lvm.h"
+	"lzio.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ldump.c
+	<stddef.h>
+	"lua.h"
+	"lobject.h"
+	"lstate.h"
+	"lundump.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lfunc.c
+	<stddef.h>
+	"lua.h"
+	"lfunc.h"
+	"lgc.h"
+	"lmem.h"
+	"lobject.h"
+	"lstate.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lgc.c
+	<string.h>
+	"lua.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"lgc.h"
+	"lmem.h"
+	"lobject.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"ltm.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/linit.c
+	"lua.h"
+	"lualib.h"
+	"lauxlib.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/liolib.c
+	<errno.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/llex.c
+	<ctype.h>
+	<locale.h>
+	<string.h>
+	"lua.h"
+	"ldo.h"
+	"llex.h"
+	"lobject.h"
+	"lparser.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"lzio.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lmathlib.c
+	<stdlib.h>
+	<math.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lmem.c
+	<stddef.h>
+	"lua.h"
+	"ldebug.h"
+	"ldo.h"
+	"lmem.h"
+	"lobject.h"
+	"lstate.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/loadlib.c
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+	<dlfcn.h>
+	<windows.h>
+	<mach-o/dyld.h>
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lobject.c
+	<ctype.h>
+	<stdarg.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"ldo.h"
+	"lmem.h"
+	"lobject.h"
+	"lstate.h"
+	"lstring.h"
+	"lvm.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lopcodes.c
+	"lopcodes.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/loslib.c
+	<errno.h>
+	<locale.h>
+	<stdlib.h>
+	<string.h>
+	<time.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lparser.c
+	<string.h>
+	"lua.h"
+	"lcode.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"llex.h"
+	"lmem.h"
+	"lobject.h"
+	"lopcodes.h"
+	"lparser.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lstate.c
+	<stddef.h>
+	"lua.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"lgc.h"
+	"llex.h"
+	"lmem.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"ltm.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lstring.c
+	<string.h>
+	"lua.h"
+	"lmem.h"
+	"lobject.h"
+	"lstate.h"
+	"lstring.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lstrlib.c
+	<ctype.h>
+	<stddef.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ltable.c
+	<math.h>
+	<string.h>
+	"lua.h"
+	"ldebug.h"
+	"ldo.h"
+	"lgc.h"
+	"lmem.h"
+	"lobject.h"
+	"lstate.h"
+	"ltable.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ltablib.c
+	<stddef.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/ltm.c
+	<string.h>
+	"lua.h"
+	"lobject.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"ltm.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lua.c
+	<signal.h>
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"lauxlib.h"
+	"lualib.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lundump.c
+	<string.h>
+	"lua.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"lmem.h"
+	"lobject.h"
+	"lstring.h"
+	"lundump.h"
+	"lzio.h"
+
+1391354829 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lvm.c
+	<stdio.h>
+	<stdlib.h>
+	<string.h>
+	"lua.h"
+	"ldebug.h"
+	"ldo.h"
+	"lfunc.h"
+	"lgc.h"
+	"lobject.h"
+	"lopcodes.h"
+	"lstate.h"
+	"lstring.h"
+	"ltable.h"
+	"ltm.h"
+	"lvm.h"
+
+1391354826 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/blueMods/depend/lua/src/lzio.c
+	<string.h>
+	"lua.h"
+	"llimits.h"
+	"lmem.h"
+	"lstate.h"
+	"lzio.h"
+

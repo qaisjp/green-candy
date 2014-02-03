@@ -1,18 +1,20 @@
 # depslib dependency file v1.0
-1375703907 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.cpp
+1391368632 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.cpp
 	<StdInc.h>
+	<sys/stat.h>
 	<utime.h>
 	<fcntl.h>
 	<sys/sendfile.h>
 	"CFileSystem.Utils.hxx"
 
-1375687634 /media/root/OS/Users/The_GTA/Desktop/mta_green/FileSystem/StdInc.h
+1375714707 /media/root/OS/Users/The_GTA/Desktop/mta_green/FileSystem/StdInc.h
+	<windows.h>
 	<SharedUtil.h>
 	<CFileSystemInterface.h>
 	<CFileSystem.h>
 	<sys/errno.h>
 
-1375401401 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.h
+1391357755 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.h
 	"SharedUtil.Defines.h"
 	"SharedUtil.AllocTracking.h"
 	<list>
@@ -79,21 +81,21 @@
 
 1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.SysInfo.h
 
-1375399947 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystemInterface.h
+1391110512 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystemInterface.h
 	<sys/stat.h>
 
-1375693781 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.h
+1391354827 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.h
 	<direct.h>
 	<unistd.h>
 	<dirent.h>
 	"CFileSystem.zip.h"
 
-1375688230 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.h
+1387123468 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.h
 	<time.h>
 
-1375702364 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.Utils.hxx
+1391357777 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.Utils.hxx
 
-1375698519 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.cpp
+1391358071 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.cpp
 	<StdInc.h>
 	<zlib.h>
 	<sstream>

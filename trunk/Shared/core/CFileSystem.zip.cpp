@@ -533,7 +533,7 @@ bool CArchiveFileTranslator::ChangeDirectory( const char *path )
     return true;
 }
 
-static AINLINE void _ScanDirectory( const CArchiveFileTranslator *trans, const dirTree& tree, CArchiveFileTranslator::directory *dir, filePattern_t *pattern, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata )
+static void inline _ScanDirectory( const CArchiveFileTranslator *trans, const dirTree& tree, CArchiveFileTranslator::directory *dir, filePattern_t *pattern, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata )
 {
     // First scan for files.
     if ( fileCallback )
@@ -593,7 +593,7 @@ void CArchiveFileTranslator::ScanDirectory( const char *dirPath, const char *wil
 
     if ( !dir )
         return;
-    
+
     // Create a cached file pattern.
     filePattern_t *pattern = _File_CreatePattern( wildcard );
 

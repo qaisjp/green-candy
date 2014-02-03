@@ -81,7 +81,7 @@ static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, boo
 
 // Output a path tree into a filePath output.
 // This is the reverse of _File_ParseRelativePath.
-static AINLINE void _File_OutputPathTree( const dirTree& tree, bool file, filePath& output )
+static void AINLINE _File_OutputPathTree( const dirTree& tree, bool file, filePath& output )
 {
     if ( file )
     {
