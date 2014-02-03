@@ -31,7 +31,7 @@ static int lua_iunkcollect( lua_State *L )
 static int lua_destrPre( lua_State *L )
 {
     _class_internal *inter = (_class_internal*)lua_touserdata( L, lua_upvalueindex( 2 ) );
-    
+
     if ( inter->destroyed )
         return 0;
 
@@ -58,6 +58,7 @@ static int lua_grk( lua_State *L )
 
 void lua_newclass( lua_State *L, unk *inter )
 {
+    // Create a function metatable for the constructor.
     lua_newtable( L );
     lua_pushvalue( L, -1 );
     lua_newtable( L );
@@ -68,13 +69,20 @@ void lua_newclass( lua_State *L, unk *inter )
     lua_pushboolean( L, false );
     lua_setfield( L, -2, "__metatable" );
 
+    // Set the metatable.
     lua_setmetatable( L, -2 );
 
+    // Apply the metatable to the constructor.
     lua_setfenv( L, -3 );
 
+    // Now only the table is on the stack, that is the constructor's environment.
+
+    // Switch positions of constructor with environment.
     lua_insert( L, -2 );
 
     lua_call( L, 0, 0 );
+
+    // Only thing on top: class environment.
 
     _class_internal *it = (_class_internal*)lua_newuserdata( L, sizeof(_class_internal) );
     it->inter = inter;

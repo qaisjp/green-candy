@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="fileSystem" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="output/fileSystem_d" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="0" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="../../FileSystem/lib/libfs_d.a" />
+					<Add library="../depend/lua/lib/lua5.1.a" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="output/fileSystem" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="0" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createDefFile="1" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-fomit-frame-pointer" />
+					<Add option="-fexpensive-optimizations" />
+					<Add option="-O3" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="../depend/lua/lib/lua5.1.a" />
+					<Add library="../../FileSystem/lib/libfs.a" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-Wno-narrowing" />
+			<Add option="-Wno-sign-compare" />
+			<Add option="-Wno-unknown-pragmas" />
+			<Add option="-Wno-unused-result" />
+			<Add option="--param large-stack-frame-growth=40000" />
+			<Add directory="../depend/lua/src" />
+			<Add directory="../../Shared/core" />
+			<Add directory="../../Shared/sdk" />
+			<Add directory="." />
+		</Compiler>
+		<Linker>
+			<Add directory="../depend/lua/lib" />
+			<Add directory="../../FileSystem/lib" />
+		</Linker>
+		<Unit filename="../../lua_interpret/luafile.Utils.hxx" />
+		<Unit filename="../../lua_interpret/luafile.cpp" />
+		<Unit filename="../../lua_interpret/luafile.h" />
+		<Unit filename="../../lua_interpret/luafilesystem.cpp" />
+		<Unit filename="../../lua_interpret/luafilesystem.h" />
+		<Unit filename="CFunctions.cpp" />
+		<Unit filename="CFunctions.h" />
+		<Unit filename="Common.h" />
+		<Unit filename="StdInc.h" />
+		<Unit filename="include/ILuaModuleManager.h" />
+		<Unit filename="luaclass.cpp" />
+		<Unit filename="luaclass.h" />
+		<Unit filename="ml_base.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

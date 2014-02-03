@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Workspace">
+		<Project filename="../depend/lua/lua5.1_lib_Linux/lua5.1_lib_Linux.cbp" />
+		<Project filename="../../FileSystem/FileSystem.cbp" />
+		<Project filename="fileSystem.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>

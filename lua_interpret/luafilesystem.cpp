@@ -15,8 +15,6 @@
 #include <StdInc.h>
 #include "luafile.Utils.hxx"
 
-static int rootIdx;
-
 static int filesystem_open( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TSTRING );
@@ -193,7 +191,7 @@ static void lua_findScanCallback( const filePath& path, void *ud )
 static int filesystem_scanDir( lua_State *lua )
 {
     luaL_checktype( lua, 1, LUA_TSTRING );
-    
+
     const char *path = lua_tostring( lua, 1 );
     const char *wildcard;
     bool recursive;
@@ -224,7 +222,7 @@ static int filesystem_scanDir( lua_State *lua )
 static int filesystem_getFiles( lua_State *lua )
 {
     luaL_checktype( lua, 1, LUA_TSTRING );
-    
+
     const char *path = lua_tostring( lua, 1 );
     const char *wildcard;
     bool recursive;
@@ -255,7 +253,7 @@ static int filesystem_getFiles( lua_State *lua )
 static int filesystem_getDirs( lua_State *lua )
 {
     luaL_checktype( lua, 1, LUA_TSTRING );
-    
+
     const char *path = lua_tostring( lua, 1 );
     bool recursive;
 
@@ -291,11 +289,11 @@ static int filesystem_scanDirEx( lua_State *lua )
     luaL_checktype( lua, 1, LUA_TSTRING );
     luaL_checktype( lua, 2, LUA_TSTRING );
 
-    ((CFileTranslator*)lua_getmethodtrans( lua ))->ScanDirectory( 
-        lua_tostring( lua, 1 ), 
-        lua_tostring( lua, 2 ), 
-        lua_toboolean( lua, 5 ), 
-        lua_type( lua, 3 ) == LUA_TFUNCTION ? filesystem_exdircb : NULL, 
+    ((CFileTranslator*)lua_getmethodtrans( lua ))->ScanDirectory(
+        lua_tostring( lua, 1 ),
+        lua_tostring( lua, 2 ),
+        lua_toboolean( lua, 5 ),
+        lua_type( lua, 3 ) == LUA_TFUNCTION ? filesystem_exdircb : NULL,
         lua_type( lua, 4 ) == LUA_TFUNCTION ? filesystem_exfilecb : NULL, lua );
 
     return 0;
@@ -311,11 +309,13 @@ static int filesystem_destroy( lua_State *L )
 static const luaL_Reg fsys_methods[] =
 {
     { "destroy", filesystem_destroy },
+#ifndef FU_CLASS
     { NULL, NULL }
 };
 
 static const luaL_Reg fsys_methods_trans[] =
 {
+#endif //FU_CLASS
     { "open", filesystem_open },
     { "exists", filesystem_exists },
     { "createDir", filesystem_createDir },
@@ -345,7 +345,7 @@ int luafsys_constructor( lua_State *L )
     j->SetTransmit( LUACLASS_FILETRANSLATOR, trans );
 
     j->RegisterInterfaceTrans( L, fsys_methods_trans, 0, LUACLASS_FILETRANSLATOR );
-#endif
+#endif //FU_CLASS
 
     lua_pushvalue( L, LUA_ENVIRONINDEX );
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -501,7 +501,14 @@ static const luaL_Reg fsysLib[] =
 int luafsys_init( lua_State *L )
 {
     // Specify the root fileTranslator
-    luafsys_pushroot( L, fileSystem->CreateTranslator( "/" ) );
+    CFileTranslator *rootTranslator = fileSystem->CreateTranslator( "" ); // use the current directory.
+
+    // We could fail to obtain the handle to the translator if the directory is handle-locked.
+    // In that case, return false.
+    LUA_CHECK( rootTranslator != NULL );
+
+    // Return the Lua representation of the root translator.
+    luafsys_pushroot( L, rootTranslator );
     return 1;
 }
 
