@@ -75,7 +75,12 @@ TValue* index2adr( lua_State *L, int idx )
         api_check(L, idx <= L->ci->top - L->base);
 
         if ( o >= L->top )
-            return cast(TValue *, luaO_nilobject);  // This really is a graceful quit.
+        {
+            // We must not return the nil object, as it cannot be written to.
+            // Since we want a graceful quit, we return the thread env as nil.
+            setnilvalue( &L->env );
+            return &L->env;
+        }
         else
             return o;
     }

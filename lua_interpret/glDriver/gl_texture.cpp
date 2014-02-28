@@ -56,7 +56,7 @@ static LUA_DECLARE( tex_constructor )
 
 glTexture::glTexture( lua_State *L, glDriver *gl, GLuint texIndex, unsigned int width, unsigned int height ) : glClass( L, gl ), m_texIndex( texIndex ), m_width( width ), m_height( height )
 {
-    // Create the Lua representation of a OpenGL texture.
+    // Create the Lua representation of an OpenGL texture.
     Extend( L, tex_constructor );
 }
 

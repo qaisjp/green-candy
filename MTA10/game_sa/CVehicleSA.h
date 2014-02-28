@@ -344,51 +344,53 @@ public:
                                     CVehicleSAInterface( unsigned char createdBy );
                                     ~CVehicleSAInterface();
 
+    inline CVehicleModelInfoSAInterface*    GetModelInfo()                              { return (CVehicleModelInfoSAInterface*)CEntitySAInterface::GetModelInfo(); }
+
     void                            HandlePopulation( bool create );
 
-    virtual void __thiscall         ProcessControlCollisionCheck() = 0;
-    virtual void __thiscall         ProcessControlInputs() = 0;
-    virtual void __thiscall         GetComponentWorldPosition() const = 0;
-    virtual bool __thiscall         IsComponentPresent() const = 0;
-    virtual void __thiscall         OpenDoor( bool closed, unsigned int node, unsigned int door, float ratio, bool makeNoise ) = 0;
-    virtual void __thiscall         ProcessDoorOpen() = 0;
-    virtual float __thiscall        GetDoorAngleOpenRatio( unsigned int id ) const = 0;
-    virtual float __thiscall        GetDoorAngleOpenRatioInternal( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorReady( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorReadyInternal( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorFullyOpen( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorFullyOpenInternal( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorClosed( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorClosedInternal( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorMissing( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsDoorMissingInternal( unsigned int id ) const = 0;
-    virtual bool __thiscall         IsRoofPresent() const = 0;
-    virtual void __thiscall         RemoveVehicleReferences() = 0;
-    virtual void __thiscall         Blow( CEntitySAInterface *cause, unsigned long unk ) = 0;
-    virtual void __thiscall         BlowWithCutscene( unsigned long unk, unsigned long unk2, unsigned long unk3, unsigned long unk4 ) = 0;
-    virtual bool __thiscall         InitWheels() = 0;
-    virtual bool __thiscall         BurstTyre( unsigned char tyre, unsigned int unk ) = 0;
-    virtual bool __thiscall         CanPedLeaveCar() const = 0;
-    virtual void __thiscall         ProcessDrivingAnims() = 0;
-    virtual void* __thiscall        GetRideAnimData() = 0;
-    virtual void __thiscall         SetupSuspension() = 0;
-    virtual void __thiscall         GetMovingCollisionSpeed( CVector& vec ) const = 0;
-    virtual void __thiscall         Fix() = 0;
-    virtual void __thiscall         SetupDamageAfterLoad() = 0;
-    virtual void __thiscall         DoBurstAndSoftGroundRatios() = 0;
-    virtual float __thiscall        GetModelOffset() const = 0;
-    virtual void __thiscall         PlayHorn() = 0;
-    virtual unsigned int __thiscall GetNumContactWheels() const = 0;
-    virtual void __thiscall         Damage() = 0;
-    virtual bool __thiscall         CanPedStepOut( bool unk ) const = 0;
-    virtual bool __thiscall         CanPedJumpOut( CPedSAInterface *passenger ) const = 0;
-    virtual bool __thiscall         GetTowHitchPosition( CVector& pos, unsigned int unk, unsigned int unk2 ) const = 0;
-    virtual bool __thiscall         GetTowbarPosition( CVector& pos, unsigned int unk, unsigned int unk2 ) const = 0;
-    virtual bool __thiscall         SetTowLink( CVehicleSAInterface *towVehicle, unsigned int unk ) = 0;
-    virtual bool __thiscall         BreakTowLink() = 0;
-    virtual float __thiscall        GetWheelWidth() const = 0;
-    virtual void __thiscall         Save() = 0;
-    virtual void __thiscall         Load() = 0;
+    virtual void __thiscall         ProcessControlCollisionCheck        () = 0;
+    virtual void __thiscall         ProcessControlInputs                () = 0;
+    virtual void __thiscall         GetComponentWorldPosition           () const = 0;
+    virtual bool __thiscall         IsComponentPresent                  () const = 0;
+    virtual void __thiscall         OpenDoor                            ( bool closed, unsigned int node, unsigned int door, float ratio, bool makeNoise ) = 0;
+    virtual void __thiscall         ProcessDoorOpen                     () = 0;
+    virtual float __thiscall        GetDoorAngleOpenRatio               ( unsigned int id ) const = 0;
+    virtual float __thiscall        GetDoorAngleOpenRatioInternal       ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorReady                         ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorReadyInternal                 ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorFullyOpen                     ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorFullyOpenInternal             ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorClosed                        ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorClosedInternal                ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorMissing                       ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsDoorMissingInternal               ( unsigned int id ) const = 0;
+    virtual bool __thiscall         IsRoofPresent                       () const = 0;
+    virtual void __thiscall         RemoveVehicleReferences             () = 0;
+    virtual void __thiscall         Blow                                ( CEntitySAInterface *cause, unsigned long unk ) = 0;
+    virtual void __thiscall         BlowWithCutscene                    ( unsigned long unk, unsigned long unk2, unsigned long unk3, unsigned long unk4 ) = 0;
+    virtual bool __thiscall         InitWheels                          () = 0;
+    virtual bool __thiscall         BurstTyre                           ( unsigned char tyre, unsigned int unk ) = 0;
+    virtual bool __thiscall         CanPedLeaveCar                      () const = 0;
+    virtual void __thiscall         ProcessDrivingAnims                 () = 0;
+    virtual void* __thiscall        GetRideAnimData                     () = 0;
+    virtual void __thiscall         SetupSuspension                     () = 0;
+    virtual void __thiscall         GetMovingCollisionSpeed             ( CVector& vec ) const = 0;
+    virtual void __thiscall         Fix                                 () = 0;
+    virtual void __thiscall         SetupDamageAfterLoad                () = 0;
+    virtual void __thiscall         DoBurstAndSoftGroundRatios          () = 0;
+    virtual float __thiscall        GetModelOffset                      () const = 0;
+    virtual void __thiscall         PlayHorn                            () = 0;
+    virtual unsigned int __thiscall GetNumContactWheels                 () const = 0;
+    virtual void __thiscall         Damage                              () = 0;
+    virtual bool __thiscall         CanPedStepOut                       ( bool unk ) const = 0;
+    virtual bool __thiscall         CanPedJumpOut                       ( CPedSAInterface *passenger ) const = 0;
+    virtual bool __thiscall         GetTowHitchPosition                 ( CVector& pos, unsigned int unk, unsigned int unk2 ) const = 0;
+    virtual bool __thiscall         GetTowbarPosition                   ( CVector& pos, unsigned int unk, unsigned int unk2 ) const = 0;
+    virtual bool __thiscall         SetTowLink                          ( CVehicleSAInterface *towVehicle, unsigned int unk ) = 0;
+    virtual bool __thiscall         BreakTowLink                        () = 0;
+    virtual float __thiscall        GetWheelWidth                       () const = 0;
+    virtual void __thiscall         Save                                () = 0;
+    virtual void __thiscall         Load                                () = 0;
 
     void*   operator new( size_t );
     void    operator delete( void *ptr );
@@ -438,7 +440,7 @@ public:
     inline void                 SetHornActive( bool enable )                { BOOL_FLAG( m_genericFlags, VEHGENERIC_ALARM, enable ); }
     inline void                 SetFadingOut( bool enable )
     {
-        //BOOL_FLAG( m_entityFlags, ENTITY_FADE, enable );      // this flag is for objects only,, mainly
+        //BOOL_FLAG( m_entityFlags, ENTITY_FADE, enable );      // this flag is for objects only, mainly
         BOOL_FLAG( m_vehicleFlags, VEHICLE_FADEOUT, enable );
     }
 

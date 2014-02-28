@@ -690,7 +690,7 @@ CColModel* CRenderWareSA::ReadCOL( CFile *file )
 bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID )
 {
     // get the modelinfo array (+5Ch contains a pointer to vehicle specific dummy data)
-    CVehicleComponentInfoSAInterface *seats = ((CVehicleModelInfoSAInterface*)ppModelInfo[usModelID])->m_componentInfo;
+    CVehicleComponentInfoSAInterface *seats = ((CVehicleModelInfoSAInterface*)ppModelInfo[usModelID])->componentInfo;
 
     // read out the 'ped_frontseat' frame
     RwFrame *pPedFrontSeat = pClump->m_parent->FindChildByName( "ped_frontseat" );

@@ -1157,13 +1157,14 @@ void CStreamingSA::FreeModel( modelId_t id )
 
     Arguments:
         onlyPriority - appears to favour prioritized models if true
+        debugLoc - string containing debugging information
     Purpose:
         Cycles through the streaming loading system to process
         loader queues (load and termination requests).
     Binary offsets:
         (1.0 US and 1.0 EU): 0x0040EA10
 =========================================================*/
-void CStreamingSA::LoadAllRequestedModels( bool onlyPriority )
+void CStreamingSA::LoadAllRequestedModels( bool onlyPriority, const char *debugLoc )
 {
     Streaming::LoadAllRequestedModels( onlyPriority );
 }

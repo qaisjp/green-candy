@@ -267,20 +267,20 @@ CVehicleSAInterface::~CVehicleSAInterface()
 
 void CVehicleSAInterface::HandlePopulation( bool create )
 {
-    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[m_model];
+    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)GetModelInfo();
 
     if ( create )
     {
         switch( m_createdBy )
         {
         case 1:
-            if ( info->m_vehicleType & VEHICLE_POLICE )
+            if ( info->GetVehicleType() & VEHICLE_POLICE )
                 *((unsigned int*)VAR_PoliceVehicleCount) += 1;
 
             *((unsigned int*)VAR_VehicleCount) += 1;
             return;
         case 2:
-            if ( info->m_vehicleType & VEHICLE_POLICE )
+            if ( info->GetVehicleType() & VEHICLE_POLICE )
                 *((unsigned int*)VAR_PoliceVehicleCount) += 1;
 
             *((unsigned int*)0x0096909C) += 1;
@@ -299,7 +299,7 @@ void CVehicleSAInterface::HandlePopulation( bool create )
     switch( m_createdBy )
     {
     case 1:
-        if ( info->m_vehicleType & VEHICLE_POLICE )
+        if ( info->GetVehicleType() & VEHICLE_POLICE )
             *((unsigned int*)VAR_PoliceVehicleCount) -= 1;
 
         *((unsigned int*)VAR_VehicleCount) -= 1;
@@ -768,7 +768,7 @@ void CVehicleSA::SetRemap( int iRemap )
     else if ( iRemap >= 5 ) // Crashfix?
         return;
 
-    SetRemapTexDictionary( ((CVehicleModelInfoSAInterface*)ppModelInfo[GetInterface()->m_model])->m_paintjobTypes[iRemap] );
+    SetRemapTexDictionary( GetInterface()->GetModelInfo()->paintjobTypes[iRemap] );
 }
 
 int CVehicleSA::GetRemapIndex() const
@@ -778,7 +778,7 @@ int CVehicleSA::GetRemapIndex() const
     unsigned short num = info->GetNumberOfValidPaintjobs();
 
     for ( unsigned short n = 0; n < num; n++ )
-        if ( (unsigned short)GetInterface()->m_paintjobTxd == info->m_paintjobTypes[n] )
+        if ( (unsigned short)GetInterface()->m_paintjobTxd == info->paintjobTypes[n] )
             return n;
 
     return -1;

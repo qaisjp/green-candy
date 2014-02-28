@@ -55,7 +55,7 @@ CModelInfoSA::CModelInfoSA( unsigned short id )
 
 eVehicleType CModelInfoSA::GetVehicleType() const
 {
-    return ((CVehicleModelInfoSAInterface*)ppModelInfo[m_modelID])->m_vehicleType;
+    return ((CVehicleModelInfoSAInterface*)ppModelInfo[m_modelID])->GetVehicleType();
 }
 
 bool CModelInfoSA::IsBoat() const
@@ -63,7 +63,7 @@ bool CModelInfoSA::IsBoat() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_BOAT;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_BOAT;
 }
 
 bool CModelInfoSA::IsCar() const
@@ -71,7 +71,7 @@ bool CModelInfoSA::IsCar() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_CAR;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_CAR;
 }
 
 bool CModelInfoSA::IsTrain() const
@@ -79,7 +79,7 @@ bool CModelInfoSA::IsTrain() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_TRAIN;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_TRAIN;
 }   
 
 bool CModelInfoSA::IsHeli() const
@@ -87,7 +87,7 @@ bool CModelInfoSA::IsHeli() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_HELI;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_HELI;
 }   
 
 bool CModelInfoSA::IsPlane() const
@@ -95,7 +95,7 @@ bool CModelInfoSA::IsPlane() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_PLANE;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_PLANE;
 }   
 
 bool CModelInfoSA::IsBike() const
@@ -103,7 +103,7 @@ bool CModelInfoSA::IsBike() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_BIKE;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_BIKE;
 }
 
 bool CModelInfoSA::IsBmx() const
@@ -111,7 +111,7 @@ bool CModelInfoSA::IsBmx() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_BICYCLE;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_BICYCLE;
 }   
 
 bool CModelInfoSA::IsTrailer() const
@@ -119,7 +119,7 @@ bool CModelInfoSA::IsTrailer() const
     if ( !IsVehicle() )
         return false;
 
-    return ((CVehicleModelInfoSAInterface*)m_pInterface)->m_vehicleType == VEHICLE_AUTOMOBILETRAILER;
+    return ((CVehicleModelInfoSAInterface*)m_pInterface)->GetVehicleType() == VEHICLE_AUTOMOBILETRAILER;
 }   
 
 bool CModelInfoSA::IsVehicle() const
@@ -612,7 +612,7 @@ void CModelInfoSA::SetCustomCarPlateText( const char *szText )
     if ( !IsVehicle() )
         return;
 
-    char *szStoredText = ((CVehicleModelInfoSAInterface*)GetInterface())->m_plateText;
+    char *szStoredText = ((CVehicleModelInfoSAInterface*)GetInterface())->plateText;
 
     if ( szText ) 
         strncpy ( szStoredText, szText, 8 );

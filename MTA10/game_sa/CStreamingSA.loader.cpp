@@ -1638,6 +1638,9 @@ void Streaming::LeaveFiberMode( void )
             }
         }
 
+        // Store the performance multiplier (in case it changed)
+        loaderPerfMultiplier = fiberGroup->perfMultiplier;
+
         delete fiberGroup;
 
         fiberGroup = NULL;
@@ -1655,6 +1658,7 @@ void Streaming::EnterFiberMode( void )
     // Set up the new runtime.
     if ( enableFiberedLoading )
     {
+        // Allocate the global execution group.
         fiberGroup = fiberMan->CreateGroup();
         fiberGroup->SetPerfMultiplier( loaderPerfMultiplier );
 
@@ -1719,10 +1723,7 @@ void Streaming::SetLoaderPerfMultiplier( double multiplier )
 
 double Streaming::GetLoaderPerfMultiplier( void )
 {
-    if ( fiberGroup )
-        return fiberGroup->perfMultiplier;
-
-    return loaderPerfMultiplier;
+    return ( fiberGroup ) ? fiberGroup->perfMultiplier : loaderPerfMultiplier;
 }
 
 void CStreamingSA::SetFiberedPerfMultiplier( double mult )      { Streaming::SetLoaderPerfMultiplier( mult ); }
