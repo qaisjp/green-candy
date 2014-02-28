@@ -30,8 +30,8 @@ CAutomobileSAInterface::CAutomobileSAInterface( bool unk, unsigned short model, 
 
     for ( unsigned int n = 0; n < 6; n++ )
         m_unk3[n] = 0;
-
-    handling = ((CVehicleModelInfoSAInterface*)ppModelInfo[model])->m_handlingID;
+    
+    handling = ((CVehicleModelInfoSAInterface*)ppModelInfo[model])->handlingID;
 
     m_unk39 = 0;
     m_vehicleType = VEHICLE_CAR;

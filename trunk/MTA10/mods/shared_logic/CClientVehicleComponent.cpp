@@ -188,7 +188,7 @@ CClientVehicleComponent::CClientVehicleComponent( CClientVehicle *veh, CVehicleC
     m_component = comp;
 
     // Link to vehicle
-    veh->m_compContainer[comp->GetName()] = this;
+    veh->m_compContainer[ comp->GetName() ] = this;
 }
 
 CClientVehicleComponent::~CClientVehicleComponent()

@@ -149,7 +149,7 @@ static RwTexture *_originalPlateTexture = NULL;
 
 void CVehicleSAInterface::SetPlateTextureForRendering( CVehicleModelInfoSAInterface *info )
 {
-    RpMaterial *plateMaterial = info->m_plateMaterial;
+    RpMaterial *plateMaterial = info->pPlateMaterial;
 
     if ( !plateMaterial )
         return;
@@ -178,7 +178,7 @@ void CVehicleSAInterface::SetPlateTextureForRendering( CVehicleModelInfoSAInterf
 =========================================================*/
 void CVehicleSAInterface::RestoreLicensePlate( CVehicleModelInfoSAInterface *info )
 {
-    RpMaterial *plateMaterial = info->m_plateMaterial;
+    RpMaterial *plateMaterial = info->pPlateMaterial;
 
     if ( !plateMaterial )
         return;

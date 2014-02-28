@@ -85,20 +85,11 @@ static int matrix_index( lua_State *L )
 
     switch( lua_tointeger( L, 2 ) )
     {
-    case 1:
-        lua_pushvector3D( L, mat->vRight );
-        break;
-    case 2:
-        lua_pushvector3D( L, mat->vFront );
-        break;
-    case 3:
-        lua_pushvector3D( L, mat->vUp );
-        break;
-    case 4:
-        lua_pushvector3D( L, mat->vPos );
-        break;
-    default:
-        return 0;
+    case 1:     lua_pushvector3D( L, mat->vRight ); break;
+    case 2:     lua_pushvector3D( L, mat->vFront ); break;
+    case 3:     lua_pushvector3D( L, mat->vUp ); break;
+    case 4:     lua_pushvector3D( L, mat->vPos ); break;
+    default:    return 0;
     }
 
     return 1;

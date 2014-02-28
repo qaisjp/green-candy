@@ -60,6 +60,7 @@ public:
                                     CVehicleModelInfoSAInterface    ( void );
                                     ~CVehicleModelInfoSAInterface   ( void );
 
+    // Virtual exports.
     eModelType                      GetModelType                    ( void );
     void                            Init                            ( void );
     void                            DeleteRwObject                  ( void );
@@ -69,6 +70,7 @@ public:
     int                             GetAnimFileIndex                ( void );
     void                            SetClump                        ( RpClump *clump );
 
+    // Utility functions.
     void __thiscall                 RegisterRenderCallbacks         ( void );
     void __thiscall                 Setup                           ( void );
     void                            SetComponentFlags               ( RwFrame *frame, unsigned int flags );
@@ -81,34 +83,36 @@ public:
 
     void __thiscall                 SetRenderColor                  ( unsigned char color1, unsigned char color2, unsigned char color3, unsigned char color4 );
 
-    RpMaterial*                     m_plateMaterial;        // 36
-    char                            m_plateText[8];         // 40
-    BYTE                            m_pad3;                 // 48
-    unsigned char                   m_plateDesign;          // 49
-    char                            m_name[10];             // 50
-    eVehicleType                    m_vehicleType;          // 60
-    float                           m_frontWheelScale;      // 64
-    float                           m_rearWheelScale;       // 68
-    unsigned short                  m_wheelModel;           // 72
-    unsigned short                  m_handlingID;           // 74
-    unsigned char                   m_numberOfDoors;        // 76
-    unsigned char                   m_vehicleList;          // 77
-    unsigned char                   m_flags;                // 78
-    unsigned char                   m_wheelUpgrade;         // 79
-    unsigned short                  m_usageCounter;         // 80
-    unsigned short                  m_frequency;            // 82
-    unsigned int                    m_componentFlags;       // 84
-    float                           m_steerAngle;           // 88
-    CVehicleComponentInfoSAInterface*   m_componentInfo;    // 92
-    BYTE                            m_pad4[84];             // 96
-    BYTE                            m_padUpgrade[380];      // 180
-    RpMaterial*                     m_bodyMaterials[16];    // 560
-    BYTE                            m_pad6[96];             // 624
-    unsigned short                  m_numberOfColors;       // 720
-    unsigned char   m_color1, m_color2, m_color3, m_color4; // 722
-    unsigned short                  m_upgradeTypes[18];     // 726
-    unsigned short                  m_paintjobTypes[5];     // 762, http://www.gtaforums.com/index.php?showtopic=209878
-    int                             m_animFileIndex;        // 772
+    eVehicleType                    GetVehicleType                  ( void )        { return vehicleType; }
+
+    RpMaterial*                     pPlateMaterial;         // 36
+    char                            plateText[8];           // 40
+    BYTE                            pad3;                   // 48
+    unsigned char                   plateDesign;            // 49
+    char                            name[10];               // 50
+    eVehicleType                    vehicleType;            // 60
+    float                           frontWheelScale;        // 64
+    float                           rearWheelScale;         // 68
+    unsigned short                  wheelModel;             // 72
+    unsigned short                  handlingID;             // 74
+    unsigned char                   numberOfDoors;          // 76
+    unsigned char                   vehicleList;            // 77
+    unsigned char                   flags;                  // 78
+    unsigned char                   wheelUpgrade;           // 79
+    unsigned short                  usageCounter;           // 80
+    unsigned short                  frequency;              // 82
+    unsigned int                    componentFlags;         // 84
+    float                           steerAngle;             // 88
+    CVehicleComponentInfoSAInterface*   componentInfo;      // 92
+    BYTE                            pad4[84];               // 96
+    BYTE                            padUpgrade[380];        // 180
+    RpMaterial*                     bodyMaterials[16];      // 560
+    BYTE                            pad6[96];               // 624
+    unsigned short                  numberOfColors;         // 720
+    unsigned char   color1, color2, color3, color4;         // 722
+    unsigned short                  upgradeTypes[18];       // 726
+    unsigned short                  paintjobTypes[5];       // 762, http://www.gtaforums.com/index.php?showtopic=209878
+    int                             animFileIndex;          // 772
 };
 
 #endif

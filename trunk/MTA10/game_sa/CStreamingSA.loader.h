@@ -37,6 +37,9 @@ namespace Streaming
     extern volatile bool insideLoadAllRequestedModels;
     extern unsigned int activeStreamingThread;
 
+    // MTA extension: global that contains all execution environments of the
+    // MTA:Eir Streaming system. Can be NULL if the fibered loader is not
+    // used/active.
     extern CExecutiveGroupSA *fiberGroup;
 
     // Allocated dynamically in the streaming initialization

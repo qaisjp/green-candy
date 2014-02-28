@@ -129,7 +129,7 @@ public:
     // Resource management exports.
     void            RequestModel                    ( modelId_t id, unsigned int flags );
     void            FreeModel                       ( modelId_t id );
-    void            LoadAllRequestedModels          ( bool onlyPriority = false );
+    void            LoadAllRequestedModels          ( bool onlyPriority = false, const char *debugLoc = NULL );
     bool            HasModelLoaded                  ( modelId_t id );
     bool            IsModelLoading                  ( modelId_t id );
     void            WaitForModel                    ( modelId_t id );

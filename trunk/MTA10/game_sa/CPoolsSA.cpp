@@ -186,7 +186,7 @@ CBicycleSA* Pools::AddBicycle( modelId_t modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_BICYCLE )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_BICYCLE )
         return NULL;
 
     return new CBicycleSA( (CBicycleSAInterface*)CreateVehicle( modelID ) );
@@ -208,7 +208,7 @@ CBikeSA* Pools::AddBike( modelId_t modelID )
     if ( !info || info->GetModelType() != MODEL_VEHICLE )
         return NULL;
 
-    switch( info->m_vehicleType )
+    switch( info->GetVehicleType() )
     {
     case VEHICLE_BIKE:
         return new CBikeSA( (CBikeSAInterface*)CreateVehicle( modelID ) );
@@ -232,7 +232,7 @@ CHeliSA* Pools::AddHeli( modelId_t modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_HELI )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_HELI )
         return NULL;
 
     return new CHeliSA( (CHeliSAInterface*)CreateVehicle( modelID ) );
@@ -251,7 +251,7 @@ CPlaneSA* Pools::AddPlane( modelId_t modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_PLANE )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_PLANE )
         return NULL;
 
     return new CPlaneSA( (CPlaneSAInterface*)CreateVehicle( modelID ) );
@@ -270,7 +270,7 @@ CTrainSA* Pools::AddTrain( modelId_t modelID, const CVector& pos, bool direction
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_TRAIN )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_TRAIN )
         return NULL;
 
     // clean the existing array
@@ -339,7 +339,7 @@ CAutomobileTrailerSA* Pools::AddTrailer( modelId_t modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_AUTOMOBILETRAILER )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_AUTOMOBILETRAILER )
         return NULL;
 
     return new CAutomobileTrailerSA( (CAutomobileTrailerSAInterface*)CreateVehicle( modelID ) );
@@ -358,7 +358,7 @@ CQuadBikeSA* Pools::AddQuadBike( modelId_t modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_QUADBIKE )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_QUADBIKE )
         return NULL;
 
     return new CQuadBikeSA( (CQuadBikeSAInterface*)CreateVehicle( modelID ) );
@@ -377,7 +377,7 @@ CMonsterTruckSA* Pools::AddMonsterTruck( modelId_t modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_MONSTERTRUCK )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_MONSTERTRUCK )
         return NULL;
 
     return new CMonsterTruckSA( (CMonsterTruckSAInterface*)CreateVehicle( modelID ) );
@@ -399,7 +399,7 @@ CAutomobileSA* Pools::AddAutomobile( modelId_t modelID )
     if ( !info || info->GetModelType() != MODEL_VEHICLE )
         return NULL;
 
-    switch( info->m_vehicleType )
+    switch( info->GetVehicleType() )
     {
     case VEHICLE_PLANE:
         return AddPlane( modelID );
@@ -431,7 +431,7 @@ CBoatSA* Pools::AddBoat( modelId_t modelID )
 
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[modelID];
 
-    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->m_vehicleType != VEHICLE_BOAT )
+    if ( !info || info->GetModelType() != MODEL_VEHICLE || info->GetVehicleType() != VEHICLE_BOAT )
         return NULL;
 
     return new CBoatSA( (CBoatSAInterface*)CreateVehicle( modelID ) );
@@ -449,7 +449,7 @@ CVehicleSA* Pools::AddVehicle( modelId_t modelID )
     if ( !info || info->GetModelType() != MODEL_VEHICLE )
         return NULL;
 
-    switch( info->m_vehicleType )
+    switch( info->GetVehicleType() )
     {
     case VEHICLE_TRAIN:
         return AddTrain( modelID, CVector( 0, 0, 0 ), true );

@@ -353,7 +353,7 @@ bool __cdecl LoadClumpFilePersistent( RwStream *stream, modelId_t id )
 
     // Game fix??? R*
     if ( id == VT_JOURNEY )
-        ((CVehicleModelInfoSAInterface*)info)->m_numberOfDoors &= 0x02;
+        ((CVehicleModelInfoSAInterface*)info)->numberOfDoors &= 0x02;
 
     return true;
 }
