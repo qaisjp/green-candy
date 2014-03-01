@@ -608,7 +608,7 @@ namespace Streamer
 
             switch( EntityRender::SetupEntityVisibility( entity, camDistance ) )
             {
-            case 3:
+            case ENTITY_RENDER_REQUEST_MODEL:
                 if ( *(bool*)0x009654B0 || !entity->IsOnScreen() || *(bool*)0x00B76851 )
                     return;
 
@@ -627,10 +627,10 @@ namespace Streamer
 
                 Streaming::RequestModel( entity->m_model, 0 );
                 break;
-            case 1:
+            case ENTITY_RENDER_DEFAULT:
                 EntityRender::PushEntityOnRenderQueue( entity, camDistance );
                 break;
-            case 0:
+            case ENTITY_RENDER_CROSS_ZONES:
                 if ( entity->m_type != ENTITY_TYPE_OBJECT )
                     return;
 
@@ -644,7 +644,7 @@ namespace Streamer
                         return;
                 }
 
-            case 2:
+            case ENTITY_RENDER_CONTROVERIAL:
                 entity->m_entityFlags |= ENTITY_OFFSCREEN;
 
                 if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_PRERENDERED ) )

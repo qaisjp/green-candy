@@ -192,13 +192,8 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     {
         BOOL_FLAG( entity->m_entityFlags, ENTITY_RENDERING, true );
 
-        // TODO: remove this.
-        RenderCallbacks::SetRenderingEnabled( true );
-
         // Render the delayed atomics
         ExecuteVehicleRenderChains( alpha );
-
-        RenderCallbacks::SetRenderingEnabled( false );
 
         BOOL_FLAG( entity->m_entityFlags, ENTITY_RENDERING, false );
 
@@ -437,10 +432,6 @@ void __cdecl PreRender( void )
 void __cdecl SetupWorldRender( void )
 {
     using namespace EntityRender;
-
-    // TODO: remove this once rendering is fixed.
-    // Look in vehicle rendering code, too.
-    RenderCallbacks::SetRenderingEnabled( false );
 
     // DEBUG
     RwD3D9ValidateDeviceStates();

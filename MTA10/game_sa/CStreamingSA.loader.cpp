@@ -1055,7 +1055,7 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
     if ( unsigned int status = GetSyncSemaphoreStatus( Streaming::GetStreamingRequestSyncSemaphoreIndex( id ) ) )
     {
         if ( status == 0xFF || status == 0xFA )
-            return false;
+            return false;   // the data request has not finished yet (safe).
 
         // Make our initial status
         requester.returnCode = status;
@@ -1453,7 +1453,7 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
     // a performance improvement based on investigation. After all, reading
     // the exactly next offset in a file should be faster than jumping all
     // over the place!
-    // This optimization could be disabled on SSD.
+    // This optimization could be disabled on SSD or RAM caching.
     unsigned int offset = GetStreamNextReadOffset();
     unsigned int blockCount = 0;
 
@@ -1506,9 +1506,10 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
         }
     }
 
+    // Attempt to perform loading on multiple resources in one go.
     streamingRequest& requester = GetStreamingRequest( reqId );
 
-    unsigned char n = 0;
+    int n = 0;
 
     for ( ; n < MAX_STREAMING_REQUESTS; n++ )
     {
@@ -1539,9 +1540,9 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
         threadBufferOffset += blockCount;
 
         // If the request overshoots the thread allocation buffer at its offset...
-        if ( threadBufferOffset + blockCount > (unsigned int)Streaming::biggestResourceBlockCount )
+        if ( threadBufferOffset > (unsigned int)Streaming::biggestResourceBlockCount )
         {
-            if ( n != 0 )
+            if ( n > 0 )
             {
                 threadBufferOffset -= blockCount;
                 goto abortedLoading;
