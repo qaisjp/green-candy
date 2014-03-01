@@ -531,7 +531,7 @@ static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
         level.atomic = atomic;
         level.distance = camDistanceSq;
 
-        if ( boatRenderChain.PushRender( &level ) )
+        if ( EntityRender::GetBoatRenderChain().PushRender( &level ) )
             return atomic;
     }
     

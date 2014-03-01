@@ -491,6 +491,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CEntitySA.rendersetup.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CEntitySA.renderutils.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CEntryInfoSA.cpp"
 				>
 			</File>
@@ -1433,6 +1441,18 @@
 			</File>
 			<File
 				RelativePath=".\CEntitySA.render.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CEntitySA.render.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CEntitySA.rendersetup.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CEntitySA.renderutils.h"
 				>
 			</File>
 			<File

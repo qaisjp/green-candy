@@ -287,7 +287,8 @@ public:
     CPlayerPedDataSAInterface*      m_playerData;               // 1152
     BYTE                            m_pad4[80];                 // 1156
     int                             m_moveAnimGroup;            // 1236
-    BYTE                            m_pad5[36];                 // 1240
+    BYTE                            m_pad5[32];                 // 1240
+    RwFrame*                        m_unkFrame;                 // 1272
     RwFrame*                        m_goggles;                  // 1276
     BYTE                            m_pad5g[12];                // 1280
     CPedIKSAInterface               m_pedIK;                    // 1292 (length 32 bytes)

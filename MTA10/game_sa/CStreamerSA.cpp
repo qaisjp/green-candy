@@ -606,7 +606,7 @@ namespace Streamer
 
             float camDistance;
 
-            switch( CRenderer_SetupEntityVisibility( entity, camDistance ) )
+            switch( EntityRender::SetupEntityVisibility( entity, camDistance ) )
             {
             case 3:
                 if ( *(bool*)0x009654B0 || !entity->IsOnScreen() || *(bool*)0x00B76851 )
@@ -628,7 +628,7 @@ namespace Streamer
                 Streaming::RequestModel( entity->m_model, 0 );
                 break;
             case 1:
-                PushEntityOnRenderQueue( entity, camDistance );
+                EntityRender::PushEntityOnRenderQueue( entity, camDistance );
                 break;
             case 0:
                 if ( entity->m_type != ENTITY_TYPE_OBJECT )
@@ -661,7 +661,7 @@ namespace Streamer
                 if ( CBounds2D( unkDist, -unkDist, -unkDist, unkDist ).IsInside( CVector2D( camDist.fX - entityPos.fX, camDist.fY - entityPos.fY ) ) )
                     return;
 
-                RegisterLowPriorityRenderEntity( entity );
+                EntityRender::RegisterLowPriorityRenderEntity( entity );
                 break;
             }
         }

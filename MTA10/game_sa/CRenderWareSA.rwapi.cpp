@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CRenderWareSA.rwapi.cpp
 *  PURPOSE:     RenderWare native function implementations
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *  RenderWare is © Criterion Software
@@ -23,6 +23,9 @@
 *   They are C++ representations of internal GTA:SA logic. I suggest you analyze
 *   the internals first before you touch the RenderWare interfaces. Any change
 *   might break the compatibility with the engine, so be careful.
+*
+*   The definitions for each RenderWare struct are in their own files now.
+*   You can locate them inside the "RenderWare/" folder.
 *
 *****************************************************************************/
 

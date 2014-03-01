@@ -70,4 +70,6 @@ struct RpGeometry : public RwObject
     void                    UnlinkFX( void );
 };
 
+typedef RpGeometry RwGeometry;
+
 #endif //_RENDERWARE_GEOMETRY_
