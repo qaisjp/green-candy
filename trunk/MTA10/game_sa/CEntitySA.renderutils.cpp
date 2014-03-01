@@ -61,7 +61,20 @@ void __cdecl EntityRender::RestoreDayNight( void )
     *(float*)0x008D12C0 = _tempDayNightBalance;
 }
 
-// based on 0x0055458A (1.0 US and 1.0 EU)
+/*=========================================================
+    EntityRender::GetComplexCameraEntityDistance
+
+    Arguments:
+        entity - the entity to push into the rendering system
+                 for rendering on this frame
+        camDistance - distance from the camera to the entity
+    Purpose:
+        This routine returns the actual camera distance of
+        the given entity. It returns a normal distance up to
+        300 game units. If further away, it optimizes the distance.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x0055458A (derived from)
+=========================================================*/
 float EntityRender::GetComplexCameraEntityDistance( const CEntitySAInterface *entity, const CVector& camPos )
 {
     CCameraSAInterface& camera = Camera::GetInterface();;
@@ -72,7 +85,7 @@ float EntityRender::GetComplexCameraEntityDistance( const CEntitySAInterface *en
 
     if ( camDistance > 300.0f )
     {
-        CBaseModelInfoSAInterface *info = ppModelInfo[entity->m_model];
+        CBaseModelInfoSAInterface *info = entity->GetModelInfo();
         float scaledLODDistance = info->fLodDistanceUnscaled * camera.LODDistMultiplier;
 
         if ( 300.0f < scaledLODDistance && ( scaledLODDistance + 20.0f ) > camDistance )
@@ -84,6 +97,23 @@ float EntityRender::GetComplexCameraEntityDistance( const CEntitySAInterface *en
     return camDistance;
 }
 
+/*=========================================================
+    EntityRender::CalculateFadingAlpha
+
+    Arguments:
+        info - the model info associated with the given entity
+        entity - the entity to get the fading alpha of
+        camDistance - camera distance of the given entity
+        camFarClip - draw distance to use for this calculation
+    Purpose:
+        Returns the alpha value that should be used to fade
+        GTA:SA entities over a distance. The alpha value depends
+        on the model LOD distance, the farclip, the camera distance,
+        the model bounding radius and whether the model is declared
+        "big".
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00732500 (based on)
+=========================================================*/
 float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip )
 {
     float sectorDivide = 20.0f;
@@ -126,6 +156,15 @@ float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const
     return useDist * info->ucAlpha;
 }
 
+/*=========================================================
+    CEntitySAInterface::GetFadingAlpha (MTA extension)
+
+    Purpose:
+        Returns the fading alpha value that is used for this
+        entity under normal circumstances. Using the return value
+        the runtime can determine whether this entity is visible
+        for the player or not.
+=========================================================*/
 float CEntitySAInterface::GetFadingAlpha( void ) const
 {
     using namespace EntityRender;
@@ -173,6 +212,18 @@ void CEntitySAInterface::_RemoveLighting( unsigned char id )
     ((void (__cdecl*)( void ))0x006FFFE0)();
 }
 
+/*=========================================================
+    EntityRender::GetEntityCameraDistance
+
+    Arguments:
+        entity - the entity to get the camera distance of
+    Purpose:
+        Returns the general-purpose camera distance of the given entity.
+    Note:
+        This function has been inlined into several places in the
+        GTA:SA engine. Basically, it is used whenever the actual camera
+        distance is required during the rendering process.
+=========================================================*/
 float EntityRender::GetEntityCameraDistance( CEntitySAInterface *entity )
 {
     return ( entity->Placeable.GetPosition() - *(CVector*)0x00B76870 ).Length();
