@@ -14,7 +14,17 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
-void RpClump::Render()
+/*=========================================================
+    RpClump::Render
+
+    Purpose:
+        Renders all atomics of this clump that are flagged
+        visible.
+    Binary offsets:
+        (1.0 US): 0x00749B20
+        (1.0 EU): 0x00749B70
+=========================================================*/
+void RpClump::Render( void )
 {
     LIST_FOREACH_BEGIN( RpAtomic, atomics.root, atomics )
         if ( item->IsVisible() )
@@ -22,6 +32,18 @@ void RpClump::Render()
     LIST_FOREACH_END
 }
 
+/*=========================================================
+    RpClump::InitStaticSkeleton (GTA:SA extension)
+
+    Purpose:
+        Applies static skeletal information for this clump if it
+        lacks animation information. It then caches all bone
+        offsets.
+    Note:
+        This function is used in CClumpModelInfoSAInterface.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004D6720
+=========================================================*/
 static bool RwAssignRenderLink( RwFrame *child, RwRenderLink **link )
 {
     (*link)->context = child;
@@ -47,7 +69,7 @@ static void RwAnimatedRenderLinkInit( RwRenderLink *link, int )
     link->flags = 0;
 }
 
-void RpClump::InitStaticSkeleton()
+void RpClump::InitStaticSkeleton( void )
 {
     RpAtomic *atomic = GetFirstAtomic();
     RwStaticGeometry *geom = CreateStaticGeometry();
@@ -109,12 +131,30 @@ void RpClump::InitStaticSkeleton()
     geom->link->flags |= BONE_ROOT;
 }
 
-RwStaticGeometry* RpClump::CreateStaticGeometry()
+/*=========================================================
+    RpClump::CreateStaticGeometry
+
+    Purpose:
+        Assigns a new static geometry instance to this clump
+        and returns it.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004D5F50
+=========================================================*/
+RwStaticGeometry* RpClump::CreateStaticGeometry( void )
 {
     return pStatic = new RwStaticGeometry();
 }
 
-RpAnimHierarchy* RpClump::GetAtomicAnimHierarchy()
+/*=========================================================
+    RpClump::GetAtomicAnimHierarchy
+
+    Purpose:
+        Returns the anim hierarchy of the first atomic in this
+        clump.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734A40
+=========================================================*/
+RpAnimHierarchy* RpClump::GetAtomicAnimHierarchy( void )
 {
     RpAtomic *atomic = GetFirstAtomic();
 
@@ -124,11 +164,32 @@ RpAnimHierarchy* RpClump::GetAtomicAnimHierarchy()
     return atomic->anim;
 }
 
-RpAnimHierarchy* RpClump::GetAnimHierarchy()
+/*=========================================================
+    RpClump::GetAnimHierarchy
+
+    Purpose:
+        Returns the anim hierarchy of the container frame.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734B10
+=========================================================*/
+RpAnimHierarchy* RpClump::GetAnimHierarchy( void )
 {
     return parent->GetAnimHierarchy();
 }
 
+/*=========================================================
+    RpClump::ScanFrameHierarchy
+
+    Arguments:
+        atomic - array which shall hold all found frames
+        max - number of frames te array may hold
+    Purpose:
+        Puts all construction hierarchy frames into an array.
+        The hierarchyId was assigned when CClumpModelInfoSAInterface
+        constructed a model using an atomic information structure.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C5440
+=========================================================*/
 struct _rwFrameScanHierarchy
 {
     RwFrame **output;
@@ -153,7 +214,15 @@ void RpClump::ScanAtomicHierarchy( RwFrame **atomics, size_t max )
     parent->ForAllChildren( RwFrameGetAssignedHierarchy, &info );
 }
 
-RpAtomic* RpClump::GetFirstAtomic()
+/*=========================================================
+    RpClump::GetFirstAtomic
+
+    Purpose:
+        Returns the first registered atomic of this clump.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734820
+=========================================================*/
+RpAtomic* RpClump::GetFirstAtomic( void )
 {
     if ( LIST_EMPTY( atomics.root ) )
         return NULL;
@@ -161,7 +230,13 @@ RpAtomic* RpClump::GetFirstAtomic()
     return LIST_GETITEM( RpAtomic, atomics.root.next, atomics );
 }
 
-RpAtomic* RpClump::GetLastAtomic()
+/*=========================================================
+    RpClump::GetLastAtomic
+
+    Purpose:
+        Returns the last atomic registered at this clump.
+=========================================================*/
+RpAtomic* RpClump::GetLastAtomic( void )
 {
     if ( LIST_EMPTY( atomics.root ) )
         return NULL;
@@ -169,6 +244,16 @@ RpAtomic* RpClump::GetLastAtomic()
     return LIST_GETITEM( RpAtomic, atomics.root.prev, atomics );
 }
 
+/*=========================================================
+    RpClump::FindNamedAtomic
+
+    Arguments:
+        name - case-insensitive name to check the frame names against
+    Purpose:
+        Scans through the clump and returns the first atomic
+        whose parent frame matches the name. If not found it returns
+        NULL.
+=========================================================*/
 RpAtomic* RpClump::FindNamedAtomic( const char *name )
 {
     LIST_FOREACH_BEGIN( RpAtomic, atomics.root, atomics )
@@ -179,6 +264,16 @@ RpAtomic* RpClump::FindNamedAtomic( const char *name )
     return NULL;
 }
 
+/*=========================================================
+    RpClump::Find2dfx
+
+    Purpose:
+        Returns the first atomic whose geometry has valid 2dfx
+        data. Valid == at least one effect type allocated to the
+        2dfx container. If not found, it returns NULL.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734880
+=========================================================*/
 static bool RwAtomicGet2dfx( RpAtomic *child, RpAtomic **atomic )
 {
     // Crashfix, invalid geometry
@@ -192,7 +287,7 @@ static bool RwAtomicGet2dfx( RpAtomic *child, RpAtomic **atomic )
     return false;
 }
 
-RpAtomic* RpClump::Find2dfx()
+RpAtomic* RpClump::Find2dfx( void )
 {
     RpAtomic *atomic;
 
@@ -202,6 +297,16 @@ RpAtomic* RpClump::Find2dfx()
     return atomic;
 }
 
+/*=========================================================
+    RpClump::SetupAtomicRender (GTA:SA extension)
+
+    Purpose:
+        Sets up the rendering logic for all atomics in this
+        clump. This decides whether they are rendered with object
+        or with vehicle techniques.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C4F30
+=========================================================*/
 static bool RwAtomicSetupPipeline( RpAtomic *child, int )
 {
     if ( child->IsNight() )
@@ -212,11 +317,20 @@ static bool RwAtomicSetupPipeline( RpAtomic *child, int )
     return true;
 }
 
-void RpClump::SetupAtomicRender()
+void RpClump::SetupAtomicRender( void )
 {
     ForAllAtomics( RwAtomicSetupPipeline, 0 );
 }
 
+/*=========================================================
+    RpClump::RemoveAtomicComponentFlags
+
+    Arguments:
+        flags - the flags you wish to remove from all atomics
+    Purpose:
+        Loops through all atomics of this clump and removes the
+        specified component flags.
+=========================================================*/
 static bool RwAtomicRemoveComponentFlags( RpAtomic *child, unsigned short flags )
 {
     child->componentFlags &= ~flags;
@@ -228,6 +342,15 @@ void RpClump::RemoveAtomicComponentFlags( unsigned short flags )
     ForAllAtomics( RwAtomicRemoveComponentFlags, flags );
 }
 
+/*=========================================================
+    RpClump::FetchMateria
+
+    Arguments:
+        mats - container to store all materials at
+    Purpose:
+        Lists the materials of all atomics registered in this clump.
+        Be sure to allocate a big RpMaterials container for this.
+=========================================================*/
 static bool RwAtomicFetchMateria( RpAtomic *child, RpMaterials *mats )
 {
     child->FetchMateria( *mats );
@@ -239,6 +362,19 @@ void RpClump::FetchMateria( RpMaterials& mats )
     ForAllAtomics( RwAtomicFetchMateria, &mats );
 }
 
+/*=========================================================
+    RpClump::GetBoneTransform
+
+    Arguments:
+        offset - array of vectors allocated times the number of bones
+    Purpose:
+        Calculates the bone offsets for all bones in this model. This
+        function is used in CPedModelInfoSAInterface::SetClump.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00735360
+    Note:
+        This function is untested (yet).
+=========================================================*/
 void RpClump::GetBoneTransform( CVector *offset )
 {
     RpAtomic *atomic;
@@ -297,12 +433,22 @@ void RpClump::GetBoneTransform( CVector *offset )
     }
 }
 
+/*=========================================================
+    RpClumpCreate
+
+    Purpose:
+        Creates a new RpClump plugin instance and registers it
+        into the system.
+    Binary offsets:
+        (1.0 US): 0x0074A290
+        (1.0 EU): 0x0074A2E0
+=========================================================*/
 static RpClump* _clumpCallback( RpClump *clump, void *data )
 {
     return clump;
 }
 
-RpClump* RpClumpCreate()
+RpClump* RpClumpCreate( void )
 {
     RpClump *clump = (RpClump*)pRwInterface->m_allocStruct( pRwInterface->m_clumpInfo, 0x30010 );
 

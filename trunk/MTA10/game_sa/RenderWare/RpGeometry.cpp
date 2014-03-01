@@ -13,16 +13,35 @@
 
 #include <StdInc.h>
 
+/*=========================================================
+    RpGeometry::IsAlpha
+
+    Purpose:
+        Returns whether the geometry requires alpha blending.
+        If it returns false, it may still require alpha blending
+        since the texture might have an alpha channel.
+=========================================================*/
 bool RwMaterialAlphaCheck( RpMaterial *mat, int )
 {
     return mat->color.a == 0xFF;
 }
 
-bool RpGeometry::IsAlpha()
+bool RpGeometry::IsAlpha( void )
 {
     return !ForAllMateria( RwMaterialAlphaCheck, 0 );
 }
 
+/*=========================================================
+    RpGeometry::UnlinkFX (MTA extension)
+
+    Purpose:
+        Scans through all assgined textures and effects of this 
+        geometry and un-gracefully removes the references to them.
+    Note:
+        This function is outdated and hacky. Do not use it.
+        It was used to debug the RenderWare texture system.
+        We have since then developed much better ways.
+=========================================================*/
 bool RpMaterialTextureUnlink( RpMaterial *mat, int )
 {
     if ( RwTexture *tex = mat->texture )
@@ -31,7 +50,7 @@ bool RpMaterialTextureUnlink( RpMaterial *mat, int )
     return true;
 }
 
-void RpGeometry::UnlinkFX()
+void RpGeometry::UnlinkFX( void )
 {
     // Clean all texture links
     ForAllMateria( RpMaterialTextureUnlink, 0 );
