@@ -51,9 +51,9 @@ void CClumpModelInfoSAInterface::DeleteRwObject( void )
     if ( atomic )
     {
         // Update the 2dfx count
-        Rw2dfx *eff = atomic->m_geometry->m_2dfx;
+        Rw2dfx *eff = atomic->geometry->_2dfx;
 
-        ucNumOf2DEffects = eff ? eff->m_count : 0;
+        ucNumOf2DEffects = eff ? eff->count : 0;
     }
 
     RpClumpDestroy( infoClump );
@@ -102,7 +102,7 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObjectEx( RwMatrix& mat )
 
     RwObject *obj = CreateRwObject();
     
-    obj->m_parent->m_modelling = mat;
+    obj->parent->modelling = mat;
     return obj;
 }
 
@@ -118,7 +118,7 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObjectEx( RwMatrix& mat )
 =========================================================*/
 bool RpSetAtomicAnimHierarchy( RpAtomic *child, RpAnimHierarchy *anim )
 {
-    child->m_anim = anim;
+    child->anim = anim;
     return false;
 }
 
@@ -136,16 +136,16 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObject( void )
 
     if ( atomic && !( renderFlags & RENDER_NOSKELETON ) )
     {
-        if ( atomic->m_geometry->m_skeleton )
+        if ( atomic->geometry->skeleton )
         {
             RpAnimHierarchy *anim = clump->GetAnimHierarchy();
 
             clump->ForAllAtomics( RpSetAtomicAnimHierarchy, anim );
 
             // Set up the animation
-            RwAnimationInit( anim->m_anim, pGame->GetAnimManager()->CreateAnimation( anim ) );
+            RwAnimationInit( anim->anim, pGame->GetAnimManager()->CreateAnimation( anim ) );
 
-            anim->m_flags = 0x3000;
+            anim->flags = 0x3000;
         }
     }
 
@@ -255,11 +255,11 @@ bool RwAtomicSetupAnimHierarchy( RpAtomic *child, RpAnimHierarchy *anim )
 {
     if ( anim )
     {
-        child->m_anim = anim;
+        child->anim = anim;
         return false;
     }
 
-    child->m_anim = child->m_parent->GetAnimHierarchy();
+    child->anim = child->parent->GetAnimHierarchy();
     return true;
 }
 
@@ -274,9 +274,9 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
         // Decrease effect count
         if ( effAtomic )
         {
-            Rw2dfx *effect = effAtomic->m_geometry->m_2dfx;
+            Rw2dfx *effect = effAtomic->geometry->_2dfx;
 
-            ucNumOf2DEffects -= effect ? effect->m_count : 0;
+            ucNumOf2DEffects -= effect ? effect->count : 0;
         }
     }
 
@@ -289,9 +289,9 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
         // Increase it with the new clump
         if ( effAtomic )
         {
-            Rw2dfx *effect = effAtomic->m_geometry->m_2dfx;
+            Rw2dfx *effect = effAtomic->geometry->_2dfx;
 
-            ucNumOf2DEffects += effect ? effect->m_count : 0;
+            ucNumOf2DEffects += effect ? effect->count : 0;
         }
     }
 
@@ -312,7 +312,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     if ( !atomic )
         return;
 
-    RpSkeleton *skel = atomic->m_geometry->m_skeleton;
+    RpSkeleton *skel = atomic->geometry->skeleton;
 
     if ( !skel )
         return;
@@ -323,16 +323,16 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
         return;
     }
 
-    atomic->m_geometry->m_meshes[0].m_bounds.radius *= 1.2f;
+    atomic->geometry->meshes[0].bounds.radius *= 1.2f;
 
     // Get the animation
     RpAnimHierarchy *hier = clump->GetAnimHierarchy();
 
     clump->ForAllAtomics( RwAtomicSetupAnimHierarchy, hier );
 
-    for ( unsigned int n = 0; n < atomic->m_geometry->m_verticeSize; n++ )
+    for ( unsigned int n = 0; n < atomic->geometry->verticeSize; n++ )
     {
-        RwV4d& info = skel->m_vertexInfo[n];
+        RwV4d& info = skel->vertexInfo[n];
         float sum = info[0] + info[1] + info[2] + info[3];
 
         //sum /= 1.0;
@@ -344,7 +344,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
     }
 
     // Set flag
-    hier->m_flags = 0x3000;
+    hier->flags = 0x3000;
 }
 
 /*=========================================================
@@ -360,7 +360,7 @@ void CClumpModelInfoSAInterface::SetClump( RpClump *clump )
 =========================================================*/
 void CClumpModelInfoSAInterface::AssignAtomics( CComponentHierarchySAInterface *comps )
 {
-    RwFrame *frame = GetRwObject()->m_parent;
+    RwFrame *frame = GetRwObject()->parent;
 
     for ( ; comps->m_name; comps++ )
     {
@@ -372,6 +372,6 @@ void CClumpModelInfoSAInterface::AssignAtomics( CComponentHierarchySAInterface *
         if ( !component )
             continue;
 
-        component->m_hierarchyId = comps->m_frameHierarchy;
+        component->hierarchyId = comps->m_frameHierarchy;
     }
 }

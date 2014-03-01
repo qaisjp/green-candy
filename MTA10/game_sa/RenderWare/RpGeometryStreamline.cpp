@@ -16,15 +16,15 @@
 // MTA streamline extensions for multi-threaded calculations
 static RpGeometry* RpGeometryStreamlineConstructor( RpGeometry *geom, size_t )
 {
-    geom->m_streamline.m_tasks = 0;
-    LIST_INITNODE( geom->m_streamline.m_managerNode );
+    geom->streamline.m_tasks = 0;
+    LIST_INITNODE( geom->streamline.m_managerNode );
     return geom;
 }
 
 static void RpGeometryStreamlineDestructor( RpGeometry *geom, size_t )
 {
-    if ( geom->m_streamline.m_tasks )
-        LIST_REMOVE( geom->m_streamline.m_managerNode );
+    if ( geom->streamline.m_tasks )
+        LIST_REMOVE( geom->streamline.m_managerNode );
 }
 
 static RpGeometry *RpGeometryStreamlineCopyConstructor( RpGeometry *dst, const RpGeometry *src, size_t, unsigned int )

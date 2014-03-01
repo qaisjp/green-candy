@@ -254,11 +254,11 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
         else if ( entity->m_type == ENTITY_TYPE_PED )
             alpha = ((CPedSA*)mtaEntity)->GetAlpha();
     }
-    else if ( entity->m_rwObject && entity->m_rwObject->m_type == RW_CLUMP )    // the entity may not have a RenderWare object?!
+    else if ( entity->m_rwObject && entity->m_rwObject->type == RW_CLUMP )    // the entity may not have a RenderWare object?!
     {
         // This value will be used for internal GTA:SA vehicles.
         // We might aswell use this alpha value of the clump.
-        alpha = (unsigned char)((RpClump*)entity->m_rwObject)->m_alpha;
+        alpha = (unsigned char)((RpClump*)entity->m_rwObject)->alpha;
     }
 
     if ( alpha != 255 )
@@ -441,7 +441,7 @@ static void __cdecl RenderClumpWithAlpha( CBaseModelInfoSAInterface *info, RpClu
 {
     InitModelRendering( info );
 
-    LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
+    LIST_FOREACH_BEGIN( RpAtomic, clump->atomics.root, atomics )
         if ( item->IsVisible() )
             RpAtomicRenderAlpha( item, alpha );
     LIST_FOREACH_END
@@ -481,7 +481,7 @@ static void __cdecl DefaultRenderEntityHandler( CEntitySAInterface *entity, floa
 
         unsigned char lightIndex = entity->SetupLighting();
 
-        if ( rwobj->m_type == RW_ATOMIC )
+        if ( rwobj->type == RW_ATOMIC )
             RenderAtomicWithAlpha( info, (RpAtomic*)rwobj, alpha );
         else
             RenderClumpWithAlpha( info, (RpClump*)rwobj, alpha );
@@ -919,7 +919,7 @@ void __cdecl SetupWorldRender( void )
     *(CVector*)0x00B76870 = camPos;
     *(float*)0x00B7684C = camera.Placeable.GetHeading();
 
-    *(float*)0x00B76848 = camera.m_pRwCamera->m_farplane;
+    *(float*)0x00B76848 = camera.m_pRwCamera->farplane;
 
     *(void**)0x00B745D0 = (void*)0x00C8E0E0;
     *(void**)0x00B745CC = (void*)0x00C900C8;
@@ -1014,7 +1014,7 @@ struct RenderStaticWorldEntities
 
         bool successfullyRendered = false;
 
-        if ( entity->m_type == ENTITY_TYPE_VEHICLE || entity->m_type == ENTITY_TYPE_PED && ((RpClump*)entity->m_rwObject)->m_alpha != 255 )
+        if ( entity->m_type == ENTITY_TYPE_VEHICLE || entity->m_type == ENTITY_TYPE_PED && ((RpClump*)entity->m_rwObject)->alpha != 255 )
         {
             // MTA extension: make sure that entities are still visible behind alpha textures.
             if ( m_isAlphaFix && !m_directPurge )
@@ -1037,7 +1037,7 @@ struct RenderStaticWorldEntities
 
                             if ( dirLook == 3 || dirLook == 0 )
                             {
-                                if ( vehicle->GetRwObject()->m_alpha == 255 )
+                                if ( vehicle->GetRwObject()->alpha == 255 )
                                 {
                                     isUnderwater = true;
                                 }
@@ -1130,9 +1130,9 @@ void __cdecl RenderWorldEntities( void )
 
     gtaCamera->EndUpdate();
 
-    float unk2 = gtaCamera->m_unknown2;
+    float unk2 = gtaCamera->unknown2;
 
-    gtaCamera->m_unknown2 += *(float*)0x008CD814;
+    gtaCamera->unknown2 += *(float*)0x008CD814;
 
     gtaCamera->BeginUpdate();
 
@@ -1140,7 +1140,7 @@ void __cdecl RenderWorldEntities( void )
 
     gtaCamera->EndUpdate();
 
-    gtaCamera->m_unknown2 = unk2;
+    gtaCamera->unknown2 = unk2;
 
     gtaCamera->BeginUpdate();
 }

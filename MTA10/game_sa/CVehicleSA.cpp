@@ -403,7 +403,7 @@ CVehicleComponent* CVehicleSA::GetComponent( const char *name )
         return iter->second;
 
     RpClump *clump = (RpClump*)GetInterface()->m_rwObject;
-    RwFrame *frame = clump->m_parent->FindChildByName( name );
+    RwFrame *frame = clump->parent->FindChildByName( name );
 
     if ( !frame )
         return NULL;
@@ -415,13 +415,13 @@ static bool RwFrameListNames( RwFrame *child, std::vector <std::string> *list )
 {
     child->ForAllChildren( RwFrameListNames, list );
 
-    list->push_back( child->m_nodeName );
+    list->push_back( child->szName );
     return true;
 }
 
 void CVehicleSA::GetComponentNameList( std::vector <std::string>& list )
 {
-    GetInterface()->m_rwObject->m_parent->ForAllChildren( RwFrameListNames, &list );
+    GetInterface()->m_rwObject->parent->ForAllChildren( RwFrameListNames, &list );
 }
 
 void CVehicleSA::SetHealth( float health )

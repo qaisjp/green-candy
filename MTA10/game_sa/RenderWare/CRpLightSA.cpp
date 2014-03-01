@@ -75,7 +75,7 @@ void CRpLightSA::SetConeAngle( float radians )
     if ( radians < 0 || radians > M_PI_2 )
         return;
 
-    GetObject()->m_coneAngle = -cos( radians );
+    GetObject()->coneAngle = -cos( radians );
 }
 
 float CRpLightSA::GetConeAngle() const
@@ -87,7 +87,7 @@ void CRpLightSA::AddToScene( void )
 {
     RpLight *obj = GetObject();
 
-    if ( obj->m_scene )
+    if ( obj->scene )
         return;
 
     obj->AddToScene( *p_gtaScene );
@@ -95,7 +95,7 @@ void CRpLightSA::AddToScene( void )
 
 bool CRpLightSA::IsAddedToScene( void ) const
 {
-    return GetObject()->m_scene != NULL;
+    return GetObject()->scene != NULL;
 }
 
 void CRpLightSA::RemoveFromScene( void )

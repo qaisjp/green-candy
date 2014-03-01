@@ -43,26 +43,26 @@ static unsigned int *m_pNumRwExtensions = (unsigned int*)0x00C97900;
 void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
 {
     // Fix to overcome material limit of 152 (yes, we actually reached that in GTA:United)
-    RpGeometry *geom = atom->m_geometry;
+    RpGeometry *geom = atom->geometry;
     unsigned int _flags = geom->flags;
     unsigned int n;
 
     // Apply rendering flags. My guess is alpha blending?
     geom->flags |= 0x40;
 
-    RpMaterials& mats = geom->m_materials;
-    char *alphaVals = new char [mats.m_entries];
+    RpMaterials& mats = geom->materials;
+    char *alphaVals = new char [mats.entries];
 
     // Store the atomic alpha values
-    for ( n = 0; n < mats.m_entries; n++ )
+    for ( n = 0; n < mats.entries; n++ )
     {
-        RpMaterial& mat = *mats.m_data[n];
-        unsigned char a = mat.m_color.a;
+        RpMaterial& mat = *mats.data[n];
+        unsigned char a = mat.color.a;
 
         alphaVals[n] = a;
 
         if ( a > alpha )
-            mat.m_color.a = alpha;
+            mat.color.a = alpha;
     }
 
     // Render it
@@ -70,7 +70,7 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
 
     // Restore values
     while ( n )
-        mats.m_data[n]->m_color.a = alphaVals[--n];
+        mats.data[n]->color.a = alphaVals[--n];
 
     delete [] alphaVals;
 
@@ -95,7 +95,7 @@ void RpAtomicRenderAlpha( RpAtomic *atom, unsigned int alpha )
 =========================================================*/
 static RpAtomic* __cdecl _worldAtomicSceneCopyConstructor( RpAtomic *atom, RpAtomic *src )
 {
-    atom->m_scene = src->m_scene;
+    atom->scene = src->scene;
     return atom;
 }
 
@@ -242,7 +242,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
 
     for ( n = 0; n < m_numRwExtensions; n++ )
     {
-        if ((ext = &pExtInterface[n])->m_id == rwId)
+        if ((ext = &pExtInterface[n])->id == rwId)
             break;
     }
 
@@ -252,23 +252,23 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
         return NULL;
     }
 
-    inst = (RwExtension*)pRwInterface->m_memory.m_malloc( sizeof(RwExtension) + ext->m_structSize * count + ext->m_internalSize, 0 );
+    inst = (RwExtension*)pRwInterface->m_memory.m_malloc( sizeof(RwExtension) + ext->structSize * count + ext->internalSize, 0 );
 
-    inst->m_size = size;
-    inst->m_count = count;
-    inst->m_unknown = unk;
+    inst->size = size;
+    inst->count = count;
+    inst->unknown = unk;
 
-    inst->m_extension = ext;
+    inst->extension = ext;
 
-    inst->m_data = (void*)(inst + 1);
+    inst->data = (void*)(inst + 1);
 
-    if ( ext->m_internalSize == 0 )
+    if ( ext->internalSize == 0 )
     {
-        inst->m_internal = NULL;
+        inst->pInternal = NULL;
         return inst;
     }
 
-    inst->m_internal = (void*)((unsigned int)inst->m_data + ext->m_structSize * count);
+    inst->pInternal = (void*)((unsigned int)inst->data + ext->structSize * count);
     return inst;
 }
 

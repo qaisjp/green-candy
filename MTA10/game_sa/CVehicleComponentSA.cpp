@@ -18,12 +18,12 @@ CVehicleComponentSA::CVehicleComponentSA( vehComponents_t& container, RpClump *c
     m_clump = clump;
     m_frame = item;
 
-    container[item->m_nodeName] = this;
+    container[ item->szName ] = this;
 }
 
 static bool RwObjectDestroyAll( RwObject *obj, int )
 {
-    if ( obj->m_type == RW_ATOMIC )
+    if ( obj->type == RW_ATOMIC )
     {
         ((RpAtomic*)obj)->RemoveFromClump();
         RpAtomicDestroy( (RpAtomic*)obj );
@@ -39,12 +39,12 @@ CVehicleComponentSA::~CVehicleComponentSA()
 
     // Clear all objects
     m_frame->ForAllObjects( RwObjectDestroyAll, 0 );
-    LIST_CLEAR( m_frame->m_objects.root );
+    LIST_CLEAR( m_frame->objects.root );
 }
 
 const char* CVehicleComponentSA::GetName() const
 {
-    return m_frame->m_nodeName;
+    return m_frame->szName;
 }
 
 void CVehicleComponentSA::SetMatrix( const RwMatrix& mat )
@@ -117,7 +117,7 @@ CRpAtomic* CVehicleComponentSA::CloneAtomic( unsigned int idx ) const
 
     // Copy important credentials
     RwFrame *frame = RwFrameCreate();
-    memcpy( frame->m_nodeName, m_frame->m_nodeName, 0x10 );
+    memcpy( frame->szName, m_frame->szName, 0x10 );
 
     RpAtomicSetFrame( inst, frame );
 

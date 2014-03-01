@@ -167,7 +167,7 @@ __forceinline void GameRenderPassGeneric( RwRenderCallbackTraverseImpl *rtinfo, 
     {
         cb.OnRenderSurfacePrepare( rtPass, lightingEnabled, curMat, renderFlags );
 
-        _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, curMat->m_texture );
+        _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, curMat->texture );
     }
     else
     {
@@ -294,10 +294,10 @@ __forceinline void RenderReflectiveEnvMap( renderObjType *renderObj, CEnvMapMate
         // Notify the reflective manager.
         reflectMan.OnMaterialEnvMapRender( renderObj, envMapMat );
 
-        RwD3D9SetTexture( envMapMat->m_envTexture, 1 );
+        RwD3D9SetTexture( envMapMat->envTexture, 1 );
 
         // Calculate the brightness of the environment map texture.
-        int colorMod = (int)( (double)envMapMat->m_envMapBrightness / 255.0f * reflectMan.GetColorMultiplier() * 254.0f );
+        int colorMod = (int)( (double)envMapMat->envMapBrightness / 255.0f * reflectMan.GetColorMultiplier() * 254.0f );
 
         unsigned char colorComponent = GetColorComponent( colorMod );
 
@@ -346,9 +346,9 @@ struct ReflectiveGeneralRenderManager
     {
         RwD3D9ResetCommonColorChannels();
 
-        if ( IS_ANY_FLAG( curMat->m_shaderFlags, 0x01 ) )
+        if ( IS_ANY_FLAG( curMat->shaderFlags, 0x01 ) )
         {
-            RenderReflectiveEnvMap( renderObject, curMat->m_envMapMat, m_reflectMan );
+            RenderReflectiveEnvMap( renderObject, curMat->envMapMat, m_reflectMan );
         }
     }
 
@@ -404,8 +404,8 @@ struct ReflectiveGeneralRenderManager
 
 inline void ConstructTextureReflectiveIdentity( D3DMATRIX& matrix, CEnvMapMaterialSA *envMapMat )
 {
-    matrix.m[0][0] = (float)envMapMat->m_envMod / 8;
-    matrix.m[1][1] = (float)envMapMat->m_envMod2 / 8;
+    matrix.m[0][0] = (float)envMapMat->envMod / 8;
+    matrix.m[1][1] = (float)envMapMat->envMod2 / 8;
     matrix.m[2][2] = 1.0f;
     matrix.m[3][3] = 1.0f;
 }
@@ -471,10 +471,10 @@ inline float modulo_transform( float coord, float cap )
 
 inline RwFrame* GetAtomicReflectionRootFrame( RpAtomic *atomic )
 {
-    if ( RpClump *clump = atomic->m_clump )
-        return clump->m_parent;
+    if ( RpClump *clump = atomic->clump )
+        return clump->parent;
     
-    return atomic->m_parent;
+    return atomic->parent;
 }
 
 //todo: set proper exception routines for fibers.
@@ -484,8 +484,8 @@ inline RwFrame* GetAtomicReflectionRootFrame( RpAtomic *atomic )
 // Binary offsets: (1.0 US and 1.0 EU): 0x005D84C0
 int __fastcall CalculateVehicleReflectiveMapParams( CEnvMapMaterialSA *envMapMat, RpAtomic *renderObj, float paramOut[] )
 {
-    float x_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->m_envMod3 );
-    float y_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->m_envMod4 );
+    float x_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->envMod3 );
+    float y_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->envMod4 );
 
     const RwMatrix& reflectMatrix = GetAtomicReflectionRootFrame( renderObj )->GetLTM();
 
@@ -528,16 +528,16 @@ int __fastcall CalculateVehicleReflectiveMapParamsAtomic( CEnvMapMaterialSA *env
 {
     const RwMatrix& reflectMatrix = GetAtomicReflectionRootFrame( renderObj )->GetLTM();
 
-    float x_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->m_envMod3 );
-    float y_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->m_envMod4 );
+    float x_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->envMod3 );
+    float y_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->envMod4 );
 
     unsigned short frame = pRwInterface->m_renderScanCode;
 
     float unkFloat = envMapAtom->m_unk1;
 
-    if ( envMapMat->m_updateFrame != frame )
+    if ( envMapMat->updateFrame != frame )
     {
-        envMapMat->m_updateFrame = frame;
+        envMapMat->updateFrame = frame;
 
         float addedCalcVals1 = reflect_calculate( reflectMatrix.vPos.fX, reflectMatrix.vPos.fY, x_trans, y_trans );
         float addedCalcVals2 = reflect_calculate( envMapAtom->m_xMod, envMapAtom->m_yMod, x_trans, y_trans );
@@ -657,8 +657,8 @@ struct ReflectiveVehicleRenderManager
     __forceinline ReflectiveVehicleRenderManager( RpAtomic*& atom ) : m_atomic( atom )
     {
         m_unk = *(float*)0x008D12D0 * 1.85f;
-        m_unk2 = IS_ANY_FLAG( atom->m_componentFlags, 0x6000 );
-        m_geomFlags = atom->m_geometry->flags;
+        m_unk2 = IS_ANY_FLAG( atom->componentFlags, 0x6000 );
+        m_geomFlags = atom->geometry->flags;
     }
 
     __forceinline void OnRenderPrepare( DWORD _lightValue )
@@ -668,31 +668,31 @@ struct ReflectiveVehicleRenderManager
 
     __forceinline void OnRenderPass( RwRenderPass *rtPass, RpMaterial *curMat )
     {
-        CEnvMapMaterialSA *envMapMat = curMat->m_envMapMat;
+        CEnvMapMaterialSA *envMapMat = curMat->envMapMat;
 
         // Decide which special effects to apply.
-        bool specialEffect1 = IS_ANY_FLAG( curMat->m_shaderFlags, 0x01 ) && !m_unk2;
-        bool specialEffect2 = IS_ANY_FLAG( curMat->m_shaderFlags, 0x02 ) && !m_unk2 && IS_ANY_FLAG( m_geomFlags, 0x80 );
+        bool specialEffect1 = IS_ANY_FLAG( curMat->shaderFlags, 0x01 ) && !m_unk2;
+        bool specialEffect2 = IS_ANY_FLAG( curMat->shaderFlags, 0x02 ) && !m_unk2 && IS_ANY_FLAG( m_geomFlags, 0x80 );
 
         // For specular lighting, we have to calculate things.
         specularFloat1 = 0.0f;
         specularFloat2 = 0.0f;
 
         // todo: insert crashfix here.
-        CSpecMapMaterialSA *specMapMat = curMat->m_specMapMat;
+        CSpecMapMaterialSA *specMapMat = curMat->specMapMat;
 
         // Decide whether specular lighting should be applied.
         bool doSpecularTransform = false;
 
         if ( g_effectManager->GetEffectQuality() >= 2 )
         {
-            m_unk3 = IS_ANY_FLAG( curMat->m_shaderFlags, 0x04 );
+            m_unk3 = IS_ANY_FLAG( curMat->shaderFlags, 0x04 );
 
             doSpecularTransform = ( m_unk3 && lightValue );
         }
         else
         {
-            m_unk3 = ( IS_ANY_FLAG( curMat->m_shaderFlags, 0x04 ) && !m_unk2 );
+            m_unk3 = ( IS_ANY_FLAG( curMat->shaderFlags, 0x04 ) && !m_unk2 );
 
             doSpecularTransform = m_unk3;
         }
@@ -703,8 +703,8 @@ struct ReflectiveVehicleRenderManager
             RpD3D9SetLight( 7, *(D3DLIGHT9*)0x00C02CB0 );
             RpD3D9EnableLight( 7, 1 );
 
-            specularFloat1 = std::min( m_unk * specMapMat->m_specular * 2, 1.0f );
-            specularFloat2 = specMapMat->m_specular * 100.0f;
+            specularFloat1 = std::min( m_unk * specMapMat->specular * 2, 1.0f );
+            specularFloat2 = specMapMat->specular * 100.0f;
         }
 
         HOOK_RwD3D9SetRenderState( D3DRS_SPECULARENABLE, doSpecularTransform );
@@ -732,7 +732,7 @@ struct ReflectiveVehicleRenderManager
 
                 float reflectParams[2] = { 0, 0 };
 
-                CEnvMapAtomicSA*& envMapAtom = m_atomic->m_envMap;
+                CEnvMapAtomicSA*& envMapAtom = m_atomic->envMap;
 
                 if ( !envMapAtom )
                 {
@@ -754,7 +754,7 @@ struct ReflectiveVehicleRenderManager
 
                 RwD3D9SetTransform( D3DTS_TEXTURE1, &specEffMat );
 
-                RwD3D9SetTexture( envMapMat->m_envTexture, 1 );
+                RwD3D9SetTexture( envMapMat->envTexture, 1 );
 
                 unsigned char specularComponent = GetColorComponent( (int)( m_unk * 24.0f ) );
 
@@ -782,7 +782,7 @@ struct ReflectiveVehicleRenderManager
     {
         if ( lightValue )
         {
-            RwColor surfColor = curMat->m_color;
+            RwColor surfColor = curMat->color;
 
             unsigned int colorValue = surfColor & 0x00FFFFFF;
 
@@ -817,7 +817,7 @@ struct ReflectiveVehicleRenderManager
             // Reverse this at some point.
             // It is not required for now.
             ((void (__cdecl*)( RpMaterialLighting& matLight, RwColor& matColor, unsigned int renderFlags, float f1, float f2 ))0x005DA790)
-                ( curMat->m_lighting, surfColor, renderFlags, specularFloat1, specularFloat2 );
+                ( curMat->lighting, surfColor, renderFlags, specularFloat1, specularFloat2 );
         }
 
         return true;

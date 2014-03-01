@@ -36,7 +36,7 @@ public:
         x = y = z = w = 0;
     }
 
-    CQuat( RwMatrix& m )
+    CQuat( const RwMatrix& m )
     {
         w = sqrt( SharedUtil::Max( (float)0, 1.0f + m.vRight.fX + m.vFront.fY + m.vUp.fZ ) ) * 0.5f;
         x = sqrt( SharedUtil::Max( (float)0, 1.0f + m.vRight.fX - m.vFront.fY - m.vUp.fZ ) ) * 0.5f;

@@ -155,7 +155,7 @@ void CVehicleSAInterface::SetPlateTextureForRendering( CVehicleModelInfoSAInterf
         return;
 
     // Store the original texture in a global temporarily
-    RwTexture *original = plateMaterial->m_texture;
+    RwTexture *original = plateMaterial->texture;
 
     // Crashfix: we do not require an original plate texture
     if ( original )

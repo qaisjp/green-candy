@@ -32,7 +32,7 @@ void __cdecl World::AddEntity( CEntitySAInterface *entity )
 {
     if ( RwObject *rwobj = entity->m_rwObject )
     {
-        entity->Placeable.GetMatrix( rwobj->m_parent->m_modelling );
+        entity->Placeable.GetMatrix( rwobj->parent->modelling );
     }
 
     entity->UpdateRwFrame();

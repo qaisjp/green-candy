@@ -17,8 +17,8 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CRpAtomicSA::CRpAtomicSA( RpAtomic *atom ) : CRwObjectSA( atom )
 {
-    atom->m_geometry->flags |= RW_GEOMETRY_GLOBALLIGHT;
-    atom->m_scene = *p_gtaScene;
+    atom->geometry->flags |= RW_GEOMETRY_GLOBALLIGHT;
+    atom->scene = *p_gtaScene;
     m_model = NULL;
 
     _initAtomicNormals( atom );
@@ -51,7 +51,7 @@ RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
 
     RpAtomicSetFrame( atom, RwFrameCreate() );
     
-    atom->m_modelId = id;
+    atom->modelId = id;
     return atom;
 }
 
@@ -62,7 +62,7 @@ void CRpAtomicSA::Render()
 
     RpAtomic *atom = GetObject();
 
-    atom->m_renderCallback( atom );
+    atom->renderCallback( atom );
 }
 
 void CRpAtomicSA::GetWorldSphere( RwSphere& out )

@@ -59,15 +59,15 @@ namespace RwRemapScan
     // Binary offsets: (1.0 US and 1.0 EU): 0x004C75A0
     void Apply( void )
     {
-        prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
-        pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
+        prevStackScan = pRwInterface->m_textureManager.findInstanceRef;
+        pRwInterface->m_textureManager.findInstanceRef = scanMethod;
     }
 
     // Restores the previous texture scanner
     // Binary offsets: (1.0 US and 1.0 EU): 0x004C75C0
     void Unapply( void )
     {
-        pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
+        pRwInterface->m_textureManager.findInstanceRef = prevStackScan;
         prevStackScan = NULL;
     }
 };
@@ -123,8 +123,8 @@ namespace RwImportedScan
         // Performance improvement: only apply this handler if we actually have imported textures.
         if ( !g_dictImports[id].empty() )
         {
-            prevStackScan = pRwInterface->m_textureManager.m_findInstanceRef;
-            pRwInterface->m_textureManager.m_findInstanceRef = scanMethod;
+            prevStackScan = pRwInterface->m_textureManager.findInstanceRef;
+            pRwInterface->m_textureManager.findInstanceRef = scanMethod;
 
             txdId = id;
             applied = true;
@@ -137,7 +137,7 @@ namespace RwImportedScan
     {
         if ( applied )
         {
-            pRwInterface->m_textureManager.m_findInstanceRef = prevStackScan;
+            pRwInterface->m_textureManager.findInstanceRef = prevStackScan;
             prevStackScan = NULL;
         }
     }

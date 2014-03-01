@@ -61,7 +61,7 @@ inline static float GetObjectDistanceToCameraSq( RpAtomic *obj )
 =========================================================*/
 inline static float GetObjectOffsetRotation( RwObject *obj )
 {
-    CVector dist = **(CVector**)0x00C88050 - obj->m_parent->GetModelling().vPos;
+    CVector dist = **(CVector**)0x00C88050 - obj->parent->GetModelling().vPos;
     return atan2( dist.fZ, sqrt( dist.fX * dist.fX + dist.fY + dist.fY ) );
 }
 
@@ -88,10 +88,10 @@ void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *ob
 
     if ( !highQualityRender )
     {
-        if ( obj->m_type != RW_CLUMP )
+        if ( obj->type != RW_CLUMP )
             return;
       
-        cameraRenderDistanceSq = GetVectorDistanceToCameraSq( obj->m_parent->GetLTM().vPos );
+        cameraRenderDistanceSq = GetVectorDistanceToCameraSq( obj->parent->GetLTM().vPos );
         cameraRenderAngleRadians = GetObjectOffsetRotation( obj );
     }
 }
@@ -277,7 +277,7 @@ static void __cdecl _renderAtomicCommon( RpAtomic *atom )
 =========================================================*/
 inline static float RwAtomicGetVisibilityCalculation( RpAtomic *atomic )
 {
-    return RwMatrixUnknown( atomic->m_parent->GetLTM(), atomic->m_clump->m_parent->GetLTM(), atomic->m_componentFlags );
+    return RwMatrixUnknown( atomic->parent->GetLTM(), atomic->clump->parent->GetLTM(), atomic->componentFlags );
 }
 
 /*=========================================================
@@ -292,7 +292,7 @@ inline static float RwAtomicGetVisibilityCalculation( RpAtomic *atomic )
 =========================================================*/
 inline static bool RwAtomicIsVisibleBasic( RpAtomic *atomic, float calc )
 {
-    return !( atomic->m_componentFlags & 0x0400 ) || GetRenderObjectOffsetRotation( atomic ) < 0.2f || calc > 0.0f;
+    return !( atomic->componentFlags & 0x0400 ) || GetRenderObjectOffsetRotation( atomic ) < 0.2f || calc > 0.0f;
 }
 
 /*=========================================================
@@ -307,7 +307,7 @@ inline static bool RwAtomicIsVisibleBasic( RpAtomic *atomic, float calc )
 =========================================================*/
 inline static bool RwAtomicIsVisible( RpAtomic *atomic, float calc, float camDistanceSq )
 {
-    return RwAtomicIsVisibleBasic( atomic, calc ) || !( atomic->m_componentFlags & 0x80 ) && ( calc * calc ) >= camDistanceSq * 0.1f;
+    return RwAtomicIsVisibleBasic( atomic, calc ) || !( atomic->componentFlags & 0x80 ) && ( calc * calc ) >= camDistanceSq * 0.1f;
 }
 
 /*=========================================================
@@ -323,9 +323,9 @@ inline static bool RwAtomicIsVisible( RpAtomic *atomic, float calc, float camDis
 inline static void RwAtomicHandleHighDetail( RpAtomic *atomic, float camDistanceSq )
 {
     if ( camDistanceSq < highDetailDistance )
-        atomic->m_componentFlags &= ~0x2000;
+        atomic->componentFlags &= ~0x2000;
     else
-        atomic->m_componentFlags |= 0x2000;
+        atomic->componentFlags |= 0x2000;
 }
 
 /*=========================================================
@@ -420,7 +420,7 @@ static RpAtomic* RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
     if ( !( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, calc, camDistanceSq ) ) )
         return atomic;
 
-    if ( !highQualityRender && !(atomic->m_componentFlags & 0x40) )
+    if ( !highQualityRender && !(atomic->componentFlags & 0x40) )
     {
         camDistanceSq += calc;
     }
@@ -524,7 +524,7 @@ static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
-    if ( atomic->m_componentFlags & 0x40 )
+    if ( atomic->componentFlags & 0x40 )
     {
         vehicleRenderChain_t::depthLevel level;
         level.callback = _renderAtomicCommon;
@@ -611,7 +611,7 @@ inline static void RwAtomicRenderTranslucentCommon( RpAtomic *atomic, float camD
     // Perform special sorting
     if ( !highQualityRender )
     {
-        if ( atomic->m_componentFlags & 0x40 )
+        if ( atomic->componentFlags & 0x40 )
             camDistanceSq -= 0.0001f;
         else
             camDistanceSq += calc;
@@ -660,7 +660,7 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor( RpAtomic *atomic )
     if ( renderLOD && camDistanceSq >= heliRotorRenderDistance )
         return atomic;
 
-    const RwMatrix& ltm = atomic->m_parent->GetLTM();
+    const RwMatrix& ltm = atomic->parent->GetLTM();
     CVector vecRotor = ltm.vPos - **(CVector**)VAR_CameraPositionVector;
 
     // Calculate rotor details
@@ -687,7 +687,7 @@ static RpAtomic* RwAtomicRenderHeliMovingRotor2( RpAtomic *atomic )
     if ( renderLOD && camDistanceSq >= heliRotorRenderDistance )
         return atomic;
 
-    const RwMatrix& ltm = atomic->m_parent->GetLTM();
+    const RwMatrix& ltm = atomic->parent->GetLTM();
     CVector vecRotor = ltm.vPos - **(CVector**)VAR_CameraPositionVector;
 
     // Lulz, heavy math, much assembly, small C++ code
@@ -775,7 +775,7 @@ static RpAtomic* RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
 
     if ( !highQualityRender )
     {
-        if ( atomic->m_componentFlags & 0x40 )
+        if ( atomic->componentFlags & 0x40 )
             camDistanceSq -= 0.0001f;
         else
             camDistanceSq += calc;
@@ -898,17 +898,17 @@ static RpAtomic* RwAtomicRenderDefaultVehicleLast( RpAtomic *atomic )
 =========================================================*/
 static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
 {
-    if ( strstr(child->m_parent->m_nodeName, "_dam") )
+    if ( strstr( child->parent->szName, "_dam" ) )
     {
-        child->m_flags = 0;
+        child->flags = 0;
 
-        child->m_componentFlags = 2;
+        child->componentFlags = 2;
         return true;
     }
 
-    if ( strstr(child->m_parent->m_nodeName, "_ok") )
+    if ( strstr( child->parent->szName, "_ok" ) )
     {
-        child->m_componentFlags = 1;
+        child->componentFlags = 1;
         return true;
     }
 
@@ -928,12 +928,12 @@ static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
 =========================================================*/
 static bool RwAtomicRegisterTrain( RpAtomic *child, int )
 {
-    if ( strstr( child->m_parent->m_nodeName, "_vlo" ) )
+    if ( strstr( child->parent->szName, "_vlo" ) )
     {
         child->SetRenderCallback( RwAtomicRenderTrainLOD );
         return true;
     }
-    else if ( child->m_geometry->IsAlpha() )
+    else if ( child->geometry->IsAlpha() )
         child->SetRenderCallback( RwAtomicRenderTranslucentTrain ); // translucent polys need second render pass
     else
         child->SetRenderCallback( RwAtomicRenderTrain );
@@ -955,11 +955,11 @@ static bool RwAtomicRegisterTrain( RpAtomic *child, int )
 =========================================================*/
 static bool RwAtomicRegisterBoat( RpAtomic *child, int )
 {
-    if ( strcmp( child->m_parent->m_nodeName, "boat_hi" ) == 0 )
+    if ( strcmp( child->parent->szName, "boat_hi" ) == 0 )
         child->SetRenderCallback( RwAtomicRenderBoat );         // boat_hi does not support alpha?
-    else if ( strstr( child->m_parent->m_nodeName, "_vlo" ) )
+    else if ( strstr( child->parent->szName, "_vlo" ) )
         child->SetRenderCallback( RwAtomicRenderBoatLOD );
-    else if ( child->m_geometry->IsAlpha() )
+    else if ( child->geometry->IsAlpha() )
         child->SetRenderCallback( RwAtomicRenderTranslucentBoat );
     else
         child->SetRenderCallback( RwAtomicRenderBoat );
@@ -981,13 +981,13 @@ static bool RwAtomicRegisterBoat( RpAtomic *child, int )
 =========================================================*/
 static bool RwAtomicRegisterHeli( RpAtomic *child, int )
 {
-    if ( strcmp( child->m_parent->m_nodeName, "moving_rotor" ) == 0 )
+    if ( strcmp( child->parent->szName, "moving_rotor" ) == 0 )
         child->SetRenderCallback( RwAtomicRenderHeliMovingRotor );
-    else if ( strcmp( child->m_parent->m_nodeName, "moving_rotor2" ) == 0 )
+    else if ( strcmp( child->parent->szName, "moving_rotor2" ) == 0 )
         child->SetRenderCallback( RwAtomicRenderHeliMovingRotor2 );
-    else if ( strstr( child->m_parent->m_nodeName, "_vlo" ) )
+    else if ( strstr( child->parent->szName, "_vlo" ) )
         child->SetRenderCallback( RwAtomicRenderHeliLOD );
-    else if ( child->m_geometry->IsAlpha() || strncmp( child->m_parent->m_nodeName, "windscreen", 10) == 0 )
+    else if ( child->geometry->IsAlpha() || strncmp( child->parent->szName, "windscreen", 10) == 0 )
         child->SetRenderCallback( RwAtomicRenderTranslucentHeli );
     else
         child->SetRenderCallback( RwAtomicRenderHeli );
@@ -1009,12 +1009,12 @@ static bool RwAtomicRegisterHeli( RpAtomic *child, int )
 =========================================================*/
 static bool RwAtomicRegisterPlane( RpAtomic *child, int )
 {
-    if ( strstr( child->m_parent->m_nodeName, "_vlo" ) )
+    if ( strstr( child->parent->szName, "_vlo" ) )
     {
         child->SetRenderCallback( RwAtomicRenderPlaneLOD );
         return true;
     }
-    else if ( child->m_geometry->IsAlpha() )
+    else if ( child->geometry->IsAlpha() )
         child->SetRenderCallback( RwAtomicRenderTranslucentPlane );
     else
         child->SetRenderCallback( RwAtomicRenderPlane );
@@ -1036,11 +1036,11 @@ static bool RwAtomicRegisterPlane( RpAtomic *child, int )
 =========================================================*/
 static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, int )
 {
-    if ( strstr( child->m_parent->m_nodeName, "_vlo" ) )
+    if ( strstr( child->parent->szName, "_vlo" ) )
         child->SetRenderCallback( RwAtomicRenderDefaultVehicleLOD );
-    else if ( child->m_geometry->IsAlpha() || strnicmp( child->m_parent->m_nodeName, "windscreen", 10 ) == 0 )
+    else if ( child->geometry->IsAlpha() || strnicmp( child->parent->szName, "windscreen", 10 ) == 0 )
         child->SetRenderCallback( RwAtomicRenderTranslucentDefaultVehicle );
-    else if ( strstr( child->m_parent->m_nodeName, "wheel" ) )  // MTA extension: render wheels last.
+    else if ( strstr( child->parent->szName, "wheel" ) )  // MTA extension: render wheels last.
         child->SetRenderCallback( RwAtomicRenderDefaultVehicleLast );
     else
         child->SetRenderCallback( RwAtomicRenderDefaultVehicle );
@@ -1184,36 +1184,36 @@ static inline void _StoreColorInfo( _colorTextureStorage **storage, RpMaterial *
 {
     // Store the color information
     _colorTextureStorage *entry = (*storage)++;
-    entry->matColor = &mat->m_color;
-    entry->color = mat->m_color;
+    entry->matColor = &mat->color;
+    entry->color = mat->color;
 }
 
 static inline void _StoreTextureInfo( _colorTextureStorage **storage, RpMaterial *mat )
 {
     // Store the original texture information
     _colorTextureStorage *entry = (*storage)++;
-    entry->matTexture = &mat->m_texture;
-    entry->texture = mat->m_texture;
+    entry->matTexture = &mat->texture;
+    entry->texture = mat->texture;
 }
 
 static inline void _StoreAmbientInfo( _colorTextureStorage **storage, RpMaterial *mat )
 {
     // Store the ambient information
     _colorTextureStorage *entry = (*storage)++;
-    entry->matAmbient = &mat->m_lighting.ambient;
-    entry->ambient = mat->m_lighting.ambient;
+    entry->matAmbient = &mat->lighting.ambient;
+    entry->ambient = mat->lighting.ambient;
 }
 
 static bool RpGeometryMaterialSetupColor( RpMaterial *mat, _colorTextureStorage **storage )
 {
-    if ( mat->m_color.a == 255 )
+    if ( mat->color.a == 255 )
         return true;
 
     // Pop an entry from the array
     _StoreColorInfo( storage, mat );
 
     // Make this invisible and black
-    mat->m_color = 0;
+    mat->color = 0;
     return true;
 }
 
@@ -1235,10 +1235,10 @@ static MaterialContainer vehMats;
 
 static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureStorage **storage )
 {
-    unsigned int color = mat->m_color & 0x00FFFFFF;
-    RwColor& colorRef = mat->m_color;
+    unsigned int color = mat->color & 0x00FFFFFF;
+    RwColor& colorRef = mat->color;
     
-    RwTexture *matTex = mat->m_texture;
+    RwTexture *matTex = mat->texture;
 
     if ( RwTexture *bodyTex = *(RwTexture**)0x00B4E47C )
     {
@@ -1251,7 +1251,7 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             _StoreTextureInfo( storage, mat );
 
             // Set it to the paintjob texture
-            mat->m_texture = bodyTex;
+            mat->texture = bodyTex;
         }
     }
 
@@ -1272,7 +1272,7 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
         _StoreColorInfo( storage, mat );
 
         // Make it white (keep alpha)
-        mat->m_color |= 0xFFFFFF;
+        mat->color |= 0xFFFFFF;
         
         if ( id != 0xFFFFFFFF && vehLightFlags[id] )
         {
@@ -1280,10 +1280,10 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             _StoreTextureInfo( storage, mat );
             _StoreAmbientInfo( storage, mat );
 
-            mat->m_texture = *(RwTexture**)0x00B4E690;
-            mat->m_lighting.ambient = 16;
-            mat->m_lighting.specular = 0;
-            mat->m_lighting.diffuse = 0;
+            mat->texture = *(RwTexture**)0x00B4E690;
+            mat->lighting.ambient = 16;
+            mat->lighting.specular = 0;
+            mat->lighting.diffuse = 0;
         }
     }
     else
@@ -1311,9 +1311,9 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
             _StoreColorInfo( storage, mat );
 
             // MTA extension: apply our custom vehicle color
-            mat->m_color.r = useColor.R;
-            mat->m_color.g = useColor.G;
-            mat->m_color.b = useColor.B;
+            mat->color.r = useColor.R;
+            mat->color.g = useColor.G;
+            mat->color.b = useColor.B;
         }
         else
         {
@@ -1336,9 +1336,9 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
 
             // Default logic; choose a palette color
             RwColor& paletteColor = ((RwColor*)0x00B4E480)[id];
-            mat->m_color.r = paletteColor.r;
-            mat->m_color.g = paletteColor.g;
-            mat->m_color.b = paletteColor.b;
+            mat->color.r = paletteColor.r;
+            mat->color.g = paletteColor.g;
+            mat->color.b = paletteColor.b;
         }
     }
 
@@ -1364,15 +1364,15 @@ static bool RpClumpAtomicSetupVehicleMaterials( RpAtomic *atomic, _colorTextureS
         return true;
 
     // The_GTA: the procedure of this function has changed from the GTA:SA version.
-    RpMaterials& mats = atomic->m_geometry->m_materials;
+    RpMaterials& mats = atomic->geometry->materials;
 
     // Accelerate things by using only one loop
-    bool blankOut = ( atomic->m_componentFlags & 0x1000 ) != 0;
+    bool blankOut = ( atomic->componentFlags & 0x1000 ) != 0;
     unsigned char alpha = vehAlpha;
 
-    for ( unsigned int n = 0; n < mats.m_entries; n++ )
+    for ( unsigned int n = 0; n < mats.entries; n++ )
     {
-        RpMaterial *mat = mats.m_data[n];
+        RpMaterial *mat = mats.data[n];
 
         if ( blankOut )
             RpGeometryMaterialSetupColor( mat, storage );
@@ -1385,7 +1385,7 @@ static bool RpClumpAtomicSetupVehicleMaterials( RpAtomic *atomic, _colorTextureS
                 _StoreColorInfo( storage, mat );
 
             // Modify the alpha value
-            mat->m_color.a = (unsigned char)( (float)mat->m_color.a * (float)alpha / 255.0f );
+            mat->color.a = (unsigned char)( (float)mat->color.a * (float)alpha / 255.0f );
         }
         else    // It does not seem to break things
             RpGeometryMaterialApplyVehicleColor( mat, storage );

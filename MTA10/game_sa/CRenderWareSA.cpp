@@ -693,13 +693,13 @@ bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID
     CVehicleComponentInfoSAInterface *seats = ((CVehicleModelInfoSAInterface*)ppModelInfo[usModelID])->componentInfo;
 
     // read out the 'ped_frontseat' frame
-    RwFrame *pPedFrontSeat = pClump->m_parent->FindChildByName( "ped_frontseat" );
+    RwFrame *pPedFrontSeat = pClump->parent->FindChildByName( "ped_frontseat" );
 
     if ( pPedFrontSeat == NULL )
         return false;
 
     // in the vehicle specific dummy data, +30h contains the front seat vector
-    seats->m_seatOffset[4] = pPedFrontSeat->m_modelling.vPos;
+    seats->m_seatOffset[4] = pPedFrontSeat->modelling.vPos;
     return true;
 }
 
@@ -741,7 +741,7 @@ CModel* CRenderWareSA::CreateClump( void )
 {
     RpClump *clump = RpClumpCreate();
     RwFrame *frame = RwFrameCreate();
-    clump->m_parent = frame;
+    clump->parent = frame;
 
     return new CModelSA( clump, NULL );
 }

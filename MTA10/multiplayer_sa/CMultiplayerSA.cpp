@@ -2444,20 +2444,20 @@ static void SetEntityAlphaHooked ( DWORD dwEntity, DWORD dwCallback, DWORD dwAlp
 
 static RpMaterial* HOOK_GetAlphaValues ( RpMaterial* pMaterial, unsigned char ucAlpha )
 {
-    *pCurAlpha = pMaterial->m_color.a;
+    *pCurAlpha = pMaterial->color.a;
     pCurAlpha++;
 
     return pMaterial;
 }
 static RpMaterial* HOOK_SetAlphaValues ( RpMaterial* pMaterial, unsigned char ucAlpha )
 {
-    pMaterial->m_color.a = static_cast < unsigned char > ( (float)(pMaterial->m_color.a) * (float)ucAlpha / 255.0f );
+    pMaterial->color.a = static_cast < unsigned char > ( (float)(pMaterial->color.a) * (float)ucAlpha / 255.0f );
 
     return pMaterial;
 }
 static RpMaterial* HOOK_RestoreAlphaValues ( RpMaterial* pMaterial, unsigned char ucAlpha )
 {
-    pMaterial->m_color.a = *pCurAlpha;
+    pMaterial->color.a = *pCurAlpha;
     pCurAlpha++;
 
     return pMaterial;

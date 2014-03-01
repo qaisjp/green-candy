@@ -568,7 +568,7 @@ float CCameraSA::GetCameraRotation( void ) const
 
 const RwMatrix& CCameraSA::GetLTM( void ) const
 {
-    return m_interface->m_pRwCamera->m_parent->m_ltm;
+    return m_interface->m_pRwCamera->parent->GetLTM();
 }
 
 CEntity* CCameraSA::GetTargetEntity() const

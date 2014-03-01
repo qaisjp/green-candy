@@ -25,8 +25,8 @@
 __forceinline void RwFrameSyncObjects( RwFrame *frame )
 {
     // Call synchronization callbacks for all objects.
-    LIST_FOREACH_BEGIN( RwObjectFrame, frame->m_objects.root, m_lFrame )
-        item->m_callback( item );
+    LIST_FOREACH_BEGIN( RwObjectFrame, frame->objects.root, lFrame )
+        item->callback( item );
     LIST_FOREACH_END
 }
 
@@ -46,19 +46,19 @@ __forceinline void RwFrameSyncObjects( RwFrame *frame )
 =========================================================*/
 __forceinline void RwFrameSyncChildren( RwFrame *child, unsigned int parentFlags )
 {
-    for ( ; child != NULL; child = child->m_next )
+    for ( ; child != NULL; child = child->next )
     {
-        unsigned int flags = child->m_privateFlags | parentFlags;
+        unsigned int flags = child->privateFlags | parentFlags;
 
         if ( flags & RW_FRAME_UPDATEMATRIX )
-            child->m_modelling.Multiply( child->m_parent->m_ltm, child->m_ltm );
+            child->modelling.Multiply( child->parent->ltm, child->ltm );
             //((void (__cdecl*)( RwMatrix&, const RwMatrix&, const RwMatrix& ))0x007F18F0)( child->m_ltm, child->m_modelling, child->m_parent->m_ltm );
 
         RwFrameSyncObjects( child );
 
-        child->m_privateFlags &= ~0x0C;
+        child->privateFlags &= ~0x0C;
 
-        RwFrameSyncChildren( child->m_child, flags );
+        RwFrameSyncChildren( child->child, flags );
     }
 }
 
@@ -77,13 +77,13 @@ __forceinline void RwFrameSyncChildren( RwFrame *child, unsigned int parentFlags
 =========================================================*/
 __forceinline void RwFrameSyncChildrenOnlyObjects( RwFrame *child )
 {
-    for ( ; child != NULL; child = child->m_next )
+    for ( ; child != NULL; child = child->next )
     {
         RwFrameSyncObjects( child );
 
-        child->m_privateFlags &= ~0x08;
+        child->privateFlags &= ~0x08;
 
-        RwFrameSyncChildrenOnlyObjects( child->m_child );
+        RwFrameSyncChildrenOnlyObjects( child->child );
     }
 }
 
@@ -98,28 +98,28 @@ __forceinline void RwFrameSyncChildrenOnlyObjects( RwFrame *child )
 =========================================================*/
 __forceinline void RwFrameSyncDirtyList( RwList <RwFrame>& frameRoot )
 {
-    LIST_FOREACH_BEGIN( RwFrame, frameRoot.root, m_nodeRoot )
-        unsigned int flags = item->m_privateFlags;
+    LIST_FOREACH_BEGIN( RwFrame, frameRoot.root, nodeRoot )
+        unsigned int flags = item->privateFlags;
 
         if ( flags & RW_FRAME_DIRTY )
         {
             unsigned int dirtFlags = flags & RW_FRAME_UPDATEMATRIX;
 
             if ( dirtFlags )
-                item->m_ltm = item->m_modelling;
+                item->ltm = item->modelling;
 
             RwFrameSyncObjects( item );
 
-            RwFrameSyncChildren( item->m_child, dirtFlags );
+            RwFrameSyncChildren( item->child, dirtFlags );
         }
         else
         {
             RwFrameSyncObjects( item );
 
-            RwFrameSyncChildrenOnlyObjects( item->m_child );
+            RwFrameSyncChildrenOnlyObjects( item->child );
         }
 
-        item->m_privateFlags = flags & ~0x0F;
+        item->privateFlags = flags & ~0x0F;
     LIST_FOREACH_END
 
     // We have no more dirty frames.

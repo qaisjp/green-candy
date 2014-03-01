@@ -64,13 +64,13 @@ float CEntitySAInterface::GetBasingDistance( void ) const
 
 static bool RpMaterialSetAlpha( RpMaterial *mat, unsigned char alpha )
 {
-    mat->m_color.a = alpha;
+    mat->color.a = alpha;
     return true;
 }
 
 static bool RpAtomicMaterialSetAlpha( RpAtomic *atom, unsigned char alpha )
 {
-    atom->m_geometry->ForAllMateria( RpMaterialSetAlpha, alpha );
+    atom->geometry->ForAllMateria( RpMaterialSetAlpha, alpha );
     return true;
 }
 
@@ -79,11 +79,11 @@ void CEntitySAInterface::SetAlpha( unsigned char alpha )
     if ( !m_rwObject )
         return;
 
-    if ( m_rwObject->m_type == RW_ATOMIC )
+    if ( m_rwObject->type == RW_ATOMIC )
     {
         RpAtomicMaterialSetAlpha( (RpAtomic*)m_rwObject, alpha );
     }
-    else if ( m_rwObject->m_type == RW_CLUMP )
+    else if ( m_rwObject->type == RW_CLUMP )
     {
         ((RpClump*)m_rwObject)->ForAllAtomics( RpAtomicMaterialSetAlpha, alpha );
     }
@@ -186,7 +186,7 @@ void CEntitySAInterface::UpdateRwMatrix( void )
     if ( !m_rwObject )
         return;
 
-    Placeable.GetMatrix( m_rwObject->m_parent->m_modelling );
+    Placeable.GetMatrix( m_rwObject->parent->modelling );
 }
 
 void CEntitySAInterface::UpdateRwFrame( void )
@@ -194,7 +194,7 @@ void CEntitySAInterface::UpdateRwFrame( void )
     if ( !m_rwObject )
         return;
 
-    m_rwObject->m_parent->Update();
+    m_rwObject->parent->Update();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00407000

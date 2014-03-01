@@ -80,7 +80,7 @@ struct GarbageCollectStreamingEntities
         CPlayerPedSAInterface *player = GetPlayerPed( 0xFFFFFFFF );
 
         RwCamera *rwcam = camera.m_pRwCamera;
-        float farplane = rwcam->m_farplane;
+        float farplane = rwcam->farplane;
 
         // Calculate the fading distance.
         CBaseModelInfoSAInterface *model = entity->GetModelInfo();

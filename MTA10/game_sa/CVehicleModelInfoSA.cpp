@@ -248,7 +248,7 @@ CVehicleComponentInfoSAInterface::~CVehicleComponentInfoSAInterface( void )
     for ( unsigned char n = 0; n < m_atomicCount; n++ )
     {
         RpAtomic *atomic = m_atomics[n];
-        RwFrame *frame = atomic->m_parent;
+        RwFrame *frame = atomic->parent;
 
         RpAtomicDestroy( atomic );
         RwFrameDestroy( frame );
@@ -305,7 +305,7 @@ static bool RwFrameChildBaseHierarchy( RwFrame *child, RwFrame *root )
     child->ForAllChildren( RwFrameChildBaseHierarchy, root );
 
     // Add all objects to the root
-    LIST_FOREACH_BEGIN( RwObjectFrame, child->m_objects.root, m_lFrame )
+    LIST_FOREACH_BEGIN( RwObjectFrame, child->objects.root, lFrame )
         item->AddToFrame( root );
     LIST_FOREACH_END
     return true;
@@ -334,14 +334,14 @@ static bool RwFrameChildBaseHierarchy( RwFrame *child, RwFrame *root )
 =========================================================*/
 inline static void RwFrameGetAbsoluteTransformationBaseOffset( CVector& out, RwFrame *frame )
 {
-    out = frame->m_modelling.vPos;
+    out = frame->modelling.vPos;
 
-    RwFrame *prevParent = frame->m_parent;
+    RwFrame *prevParent = frame->parent;
 
     // Transform until base frame is reached
     while ( prevParent )
     {
-        RwFrame *parent = prevParent->m_parent;
+        RwFrame *parent = prevParent->parent;
 
         if ( !parent )
             break;
@@ -380,7 +380,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
     {
         RwFrame *hier;
 
-        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) && ( hier = GetRwObject()->m_parent->FindFreeChildByName( info->m_name ) ) )
+        if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) && ( hier = GetRwObject()->parent->FindFreeChildByName( info->m_name ) ) )
         {
             if ( info->m_flags & ATOMIC_HIER_FRONTSEAT )
             {
@@ -397,9 +397,9 @@ void CVehicleModelInfoSAInterface::Setup( void )
                  seat.m_offset = hier->GetPosition();
 
                  // Calculate the quat for rotation
-                 seat.m_quat = CQuat( hier->m_modelling );
+                 seat.m_quat = CQuat( hier->GetModelling() );
 
-                 seat.m_id = hier->m_parent->m_hierarchyId;
+                 seat.m_id = hier->parent->hierarchyId;
             }
             else
             {
@@ -417,7 +417,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
             }
         }
 
-        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | ATOMIC_HIER_UNKNOWN5) && ( hier = GetRwObject()->m_parent->FindChildByHierarchy( info->m_frameHierarchy ) ) )
+        if ( info->m_flags & (ATOMIC_HIER_UNKNOWN4 | ATOMIC_HIER_UNKNOWN5) && ( hier = GetRwObject()->parent->FindChildByHierarchy( info->m_frameHierarchy ) ) )
         {
             for ( hier; hier; hier = hier->GetFirstChild() )
             {
@@ -443,7 +443,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
         if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) )
             continue;
 
-        RwFrame *hier = GetRwObject()->m_parent->FindChildByHierarchy( info->m_frameHierarchy );
+        RwFrame *hier = GetRwObject()->parent->FindChildByHierarchy( info->m_frameHierarchy );
 
         if ( !hier )
             continue;
@@ -465,7 +465,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
 
             if ( primary && secondary )
             {
-                secondary->SetRenderCallback( primary->m_renderCallback );
+                secondary->SetRenderCallback( primary->renderCallback );
 
                 componentInfo->m_usageFlags |= 1 << info->m_frameHierarchy;
             }
@@ -491,8 +491,8 @@ void CVehicleModelInfoSAInterface::Setup( void )
                 
                 clone = RpAtomicCloneInherit( obj1, GetRwObject(), frame );
 
-                frame->m_modelling.Identity();
-                frame->m_modelling.vPos[0] = (float)(1.15 * -0.25);
+                frame->modelling.Identity();
+                frame->modelling.vPos[0] = (float)(1.15 * -0.25);
             }
             else
             {
@@ -707,16 +707,16 @@ HandleVehicleBackNameplate_t    HandleVehicleBackNameplate          = ( HandleVe
 
 static bool RwMaterialSetLicensePlate( RpMaterial *mat, _licensePlate *plate )
 {
-    if ( !mat->m_texture )
+    if ( !mat->texture )
         return true;
 
-    if ( strcmp( mat->m_texture->name, "carplate" ) == 0 )
+    if ( strcmp( mat->texture->name, "carplate" ) == 0 )
     {
         plate->plate = mat;
 
         HandleVehicleFrontNameplate( mat, plate, *(unsigned char*)0x00C3EF80 );
     }
-    else if ( strcmp( mat->m_texture->name, "carpback" ) == 0 )
+    else if ( strcmp( mat->texture->name, "carpback" ) == 0 )
         HandleVehicleBackNameplate( mat, *(unsigned char*)0x00C3EF80 );
 
     return true;
@@ -736,7 +736,7 @@ static bool RwMaterialSetLicensePlate( RpMaterial *mat, _licensePlate *plate )
 =========================================================*/
 static bool RwAtomicSetLicensePlate( RpAtomic *child, _licensePlate *plate )
 {
-    child->m_geometry->ForAllMateria( RwMaterialSetLicensePlate, plate );
+    child->geometry->ForAllMateria( RwMaterialSetLicensePlate, plate );
     return true;
 }
 

@@ -17,7 +17,7 @@ bool CRwFrameSA::RwFrameObjectAssign( RwObject *obj, CRwFrameSA *parent )
 {
     CRwObjectSA *inst;
 
-    switch( obj->m_type )
+    switch( obj->type )
     {
     case RW_ATOMIC:
         inst = new CRpAtomicSA( (RpAtomic*)obj );
@@ -71,7 +71,7 @@ CRwFrameSA::~CRwFrameSA()
 
 unsigned int CRwFrameSA::GetHash() const
 {
-    return pGame->GetKeyGen()->GetKey( GetObject()->m_nodeName );
+    return pGame->GetKeyGen()->GetKey( GetObject()->szName );
 }
 
 void CRwFrameSA::Link( CRwFrame *child )
