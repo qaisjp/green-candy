@@ -93,7 +93,7 @@ static inline bool IsRenderingEnabled( void )
 
 void RenderCallbacks::SetRenderingEnabled( bool enabled )
 {
-    //_renderEnableCallbacks = enabled;
+    _renderEnableCallbacks = enabled;
 }
 
 bool RenderCallbacks::IsRenderingEnabled( void )

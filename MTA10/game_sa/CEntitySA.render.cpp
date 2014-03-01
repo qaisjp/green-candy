@@ -23,6 +23,15 @@ namespace EntityRender
     entityRenderChain_t alphaEntityRenderChain( 50 );                   // Binary offsets: (1.0 US and 1.0 EU): 0x00C881D0; ???, orig 50, used for "grasshouse" model
 }
 
+/*=========================================================
+    HOOK_InitRenderChains
+
+    Purpose:
+        Sets up native rendering chains that are used to sort
+        the entities that should be displayed on the game world.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00733A20
+=========================================================*/
 void __cdecl HOOK_InitRenderChains( void )
 {
     // Removed chain initializations that we localized (see above).
@@ -32,6 +41,23 @@ void __cdecl HOOK_InitRenderChains( void )
 // Include internal definitions.
 #include "CEntitySA.render.hxx"
 
+/*=========================================================
+    RenderEntity
+
+    Arguments:
+        entity - the entity to render on the scene right now
+    Purpose:
+        Renders the given entity on the game world. This
+        function is being called by GTA:SA to render
+        non-fading entities. Vehicles are handled specially by
+        temporarily modifying their materials to the vehicle's
+        properties (color, etc).
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00553260
+    Note:
+        MTA fixes have been added to this function. It now
+        properly handles vehicle alpha rendering.
+=========================================================*/
 inline void RenderEntityNative( CEntitySAInterface *entity )
 {
     using namespace EntityRender;
@@ -197,6 +223,19 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     entity->RemoveLighting( id );
 }
 
+/*=========================================================
+    RenderAtomicWithAlpha
+
+    Arguments:
+        info - the model info associated with the atomic
+        atom - the RenderWare atomic to render with alpha
+        alpha - the alpha value to render the atomic with
+    Purpose:
+        Renders an atomic with a specific alpha value. This
+        effect is used to give atomics fading effects.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00732610
+=========================================================*/
 inline void InitModelRendering( CBaseModelInfoSAInterface *info )
 {
     if ( info->renderFlags & RENDER_ADDITIVE )
@@ -218,6 +257,19 @@ static void __cdecl RenderAtomicWithAlpha( CBaseModelInfoSAInterface *info, RpAt
     ShutdownModelRendering( info );
 }
 
+/*=========================================================
+    RenderClumpWithAlpha
+
+    Arguments:
+        info - the model info associated with the atomic
+        atom - the RenderWare atomic to render with alpha
+        alpha - the alpha value to render the atomic with
+    Purpose:
+        Renders a clump with a specific alpha value. This
+        effect is used to give atomics fading effects.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00732680
+=========================================================*/
 static void __cdecl RenderClumpWithAlpha( CBaseModelInfoSAInterface *info, RpClump *clump, unsigned int alpha )
 {
     InitModelRendering( info );
@@ -230,6 +282,18 @@ static void __cdecl RenderClumpWithAlpha( CBaseModelInfoSAInterface *info, RpClu
     ShutdownModelRendering( info );
 }
 
+/*=========================================================
+    EntityRender::DefaultRenderEntityHandler
+
+    Arguments:
+        entity - the entity to render right now
+        camDistance - camera distance of the given entity
+    Purpose:
+        Processes a sorted rendering request of an entity. The
+        given entity is expected to be sorted from back to front.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00732B40
+=========================================================*/
 void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entity, float camDistance )
 {
     RwObject *rwobj = entity->m_rwObject;
@@ -302,6 +366,16 @@ void Entity::SetRenderCallback( gameEntityRenderCallback_t callback )           
 void Entity::SetRenderUnderwaterCallback( gameEntityRenderUnderwaterCallback_t callback )   { _renderUnderwaterCallback = callback; }
 void Entity::SetRenderPostProcessCallback( gameEntityPostProcessCallback_t callback )       { _renderPostProcessCallback = callback; }
 
+/*=========================================================
+    PreRender
+
+    Purpose:
+        Prepares all entities which are added to the rendering
+        queues for rendering by calling their "PreRender"
+        method.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00553910
+=========================================================*/
 struct SetupDefaultEntitiesForRender
 {
     bool __forceinline OnEntry( unorderedEntityRenderChainInfo& info )
@@ -348,7 +422,18 @@ void __cdecl PreRender( void )
     ((void (__cdecl*)( void ))0x00707FA0)();
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x005556E0
+/*=========================================================
+    SetupWorldRender
+
+    Purpose:
+        Called before any entity rendering has taken place.
+        This function sets up properties like rendering
+        farclip and entity specific LOD distance. It clears
+        all rendering queues so they can be filled with new
+        sorted entities.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005556E0
+=========================================================*/
 void __cdecl SetupWorldRender( void )
 {
     using namespace EntityRender;
@@ -430,6 +515,16 @@ void __cdecl SetupWorldRender( void )
     Streaming::InitRecentGCNode();
 }
 
+/*=========================================================
+    PostProcessRenderEntitites
+
+    Purpose:
+        Called after rendering the main entities. In this routine
+        distance objects are rendered that do not require
+        alpha blending.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00553A10
+=========================================================*/
 struct PostProcessEntities
 {
      bool __forceinline OnEntry( unorderedEntityRenderChainInfo& info )
@@ -465,7 +560,6 @@ struct WorldLightingWrap
     bool useLightingFix;
 };
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00553A10
 void __cdecl PostProcessRenderEntities( void )
 {
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
@@ -485,6 +579,15 @@ void __cdecl PostProcessRenderEntities( void )
     }
 }
 
+/*=========================================================
+    RenderWorldEntities
+
+    Purpose:
+        This is the main entity rendering routine.
+        Most of the world is rendered here.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005556E0
+=========================================================*/
 struct RenderStaticWorldEntities
 {
     AINLINE RenderStaticWorldEntities( bool isAlphaFix, bool directPurge ) : m_isAlphaFix( isAlphaFix ), m_directPurge( directPurge )
@@ -597,7 +700,6 @@ struct QuickRenderStage
     }
 };
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x005556E0
 void __cdecl RenderWorldEntities( void )
 {
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
@@ -632,7 +734,15 @@ void __cdecl RenderWorldEntities( void )
     gtaCamera->BeginUpdate();
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00733800
+/*=========================================================
+    RenderGrassHouseEntities
+
+    Purpose:
+        This function renders special "grasshouse" model
+        entities in a seperate render pass.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00733800
+=========================================================*/
 void __cdecl RenderGrassHouseEntities( void )
 {
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)1, 0 );
@@ -653,6 +763,15 @@ void __cdecl RenderGrassHouseEntities( void )
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
 }
 
+/*=========================================================
+    RenderUnderwaterEntities
+
+    Purpose:
+        Renders entities that have the underwater property
+        assigned to them.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x007337D0
+=========================================================*/
 struct SimpleStagePass
 {
     AINLINE bool OnEntry( entityRenderInfo& info )
@@ -681,7 +800,6 @@ struct OrderedRenderStage
     entityRenderChain_t& m_renderChain;
 };
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x007337D0
 void __cdecl RenderUnderwaterEntities( void )
 {
     RenderInstances( OrderedRenderStage( EntityRender::GetUnderwaterEntityRenderChain() ) );
@@ -691,7 +809,15 @@ void __cdecl RenderUnderwaterEntities( void )
         _renderUnderwaterCallback();
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00733EC0
+/*=========================================================
+    RenderBoatAtomics
+
+    Purpose:
+        Renders boat atomics that have been picked out by
+        the vehicle atomic rendering system.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00733EC0
+=========================================================*/
 void __cdecl RenderBoatAtomics( void )
 {
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
@@ -701,7 +827,16 @@ void __cdecl RenderBoatAtomics( void )
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00733F10
+/*=========================================================
+    RenderDefaultOrderedWorldEntities
+
+    Purpose:
+        Renders entities that require alpha blending. By default,
+        these entities are rendered from back to front to
+        account for alpha blending.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00733F10
+=========================================================*/
 void __cdecl RenderDefaultOrderedWorldEntities( void )
 {
     RenderInstances( OrderedRenderStage( EntityRender::GetDefaultEntityRenderChain() ) );
@@ -714,6 +849,8 @@ void __cdecl RenderDefaultOrderedWorldEntities( void )
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
     
+    // Lets apply the render states for safety.
+    // Who knows whether R* produced clean logic? So let us play safe.
     RwD3D9ApplyDeviceStates();
 }
 

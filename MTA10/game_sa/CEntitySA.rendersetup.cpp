@@ -13,6 +13,39 @@
 #include <StdInc.h>
 #include "CEntitySA.render.hxx"
 
+/*
+    Entity Render Mode System description:
+
+    The Entity Render Mode System allows the runtime to set the way how things
+    should be rendered inside of the GTA:SA engine. It has been introduced to
+    allow extension of the engine without throwing away old principles.
+    - Users that things to behave the old way can specify the original render mode.
+    - Users that want to make use of engine-specific rendering fixes can specify
+      one of many world rendering modes (meshlocal_alphafix, scene_alphafix, ...).
+
+    AVAILABLE MODES:
+    - WORLD_RENDER_ORIGINAL
+        This mode promises least infringement with the old way of rendering things.
+        It is the way R* has intended things to render inside GTA:SA.
+    - WORLD_RENDER_MESHLOCAL_ALPHAFIX
+        This mode keeps the sorting of entities like in the original render mode.
+        Each atomic geometry consists of multiple meshes. In each rendering callback,
+        those meshes are sorted according to opaque and alpha layers. Like this, it
+        aims to improve alpha blending on a per-atomic basis.
+    - WORLD_RENDER_SCENE_ALPHAFIX
+        This mode takes the concept of meshlocal_alphafix and applies it to the whole
+        GTA:SA world. Entities are still sorted from back-to-front, but they are now
+        in three phases:
+            OPAQUE first
+            TRANSLUCENT second
+            DEPTH last
+        This way, sorted entities are least frequent to have alpha issues. In the context
+        of each sorted queue, the alpha-lookthrough bug has been fixed.
+
+    For more information, see...
+        http://wiki.mtasa.com/wiki/MTA:Eir/functions/engineSetWorldRenderMode
+*/
+
 // Variable which decides what render mode is to be used.
 static eWorldRenderMode _worldRenderMode = WORLD_RENDER_ORIGINAL;
 
@@ -26,7 +59,19 @@ eWorldRenderMode Entity::GetWorldRenderMode( void )
     return _worldRenderMode;
 }
 
-// Entity referencing system for render guarding.
+/*=========================================================
+    EntityRender::ReferenceEntityForRendering (MTA extension)
+
+    Arguments:
+        entity - the entity to guard during the rendering
+                 process
+    Purpose:
+        Called for each entity that has been requested to
+        render during an engine frame. The entity is referenced
+        so that its destruction is avoided while it is inside
+        of internal rendering lists. This prevents crashes when
+        the destructor is called during engine render management.
+=========================================================*/
 static mainEntityRenderChain_t renderReferenceList( 1000 );
 
 void EntityRender::ReferenceEntityForRendering( CEntitySAInterface *entity )
@@ -48,7 +93,20 @@ void EntityRender::ReferenceEntityForRendering( CEntitySAInterface *entity )
     }
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00733D90
+/*=========================================================
+    EntityRender::PushUnderwaterEntityForRendering
+
+    Arguments:
+        entity - the entity that should be rendered on the
+                 underwater sorted list
+        distance - the distance of the entity to the camera
+    Purpose:
+        Pushes the given entity on the underwater rendering
+        chain and returns whether it could be successfully
+        queued on the chain.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00733D90
+=========================================================*/
 bool __cdecl EntityRender::PushUnderwaterEntityForRendering( CEntitySAInterface *entity, float distance )
 {
     entityRenderInfo chainInfo;
@@ -64,6 +122,19 @@ bool __cdecl EntityRender::PushUnderwaterEntityForRendering( CEntitySAInterface 
     return node != NULL;
 }
 
+/*=========================================================
+    EntityRender::QueueEntityForRendering
+
+    Arguments:
+        entity - the entity to queue inside of the rendering system
+        camDistance - distance of the given entity to the camera
+    Purpose:
+        Queues the given entity into the GTA:SA rendering system.
+        This function is called for entities that require alpha
+        blending for their meshes.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734570
+=========================================================*/
 int __cdecl EntityRender::QueueEntityForRendering( CEntitySAInterface *entity, float camDistance )
 {
     // This function has been optimized a little.
@@ -106,6 +177,19 @@ mainEntityRenderChain_t groundAlphaEntities( 1000 );     // Note that 1000 is al
 mainEntityRenderChain_t staticRenderEntities( 1000 );
 mainEntityRenderChain_t lowPriorityRenderEntities( 1000 );
 
+/*=========================================================
+    AllocateEntityRenderSlot (MTA extension)
+
+    Arguments:
+        chain - an internal render chain to allocate the entity on
+        entity - the entity to put into the render chain
+    Purpose:
+        Pushes the given entity onto an unsorted internal
+        rendering chain. If the rendering chain has reached
+        maximum capacity, a new slot is allocated for the
+        entity. If allocation has failed, this function
+        returns false.
+=========================================================*/
 inline bool AllocateEntityRenderSlot( mainEntityRenderChain_t& chain, CEntitySAInterface *entity )
 {
     unorderedEntityRenderChainInfo chainInfo;
@@ -129,6 +213,19 @@ inline bool AllocateEntityRenderSlot( mainEntityRenderChain_t& chain, CEntitySAI
     return node != NULL;
 }
 
+/*=========================================================
+    ClearUnorderedRenderChain (MTA extension)
+
+    Arguments:
+        chain - an unsorted internal rendering chain that
+                should be cleared of its entries
+    Purpose:
+        Clears an unsorted internal rendering chain. For
+        every entity that resides on it, each is dereferenced.
+        When the entity rendering reference count reaches zero,
+        it should not be used by the GTA:SA rendering system
+        anymore.
+=========================================================*/
 void __forceinline ClearUnorderedRenderChain( mainEntityRenderChain_t& chain )
 {
     while ( mainEntityRenderChain_t::renderChain *iter = chain.GetFirstUsed() )
@@ -143,6 +240,16 @@ void __forceinline ClearUnorderedRenderChain( mainEntityRenderChain_t& chain )
     }
 }
 
+/*=========================================================
+    ClearEntityRenderChain (MTA extension)
+
+    Arguments:
+        chain - the sorted entity rendering chain to clear
+    Purpose:
+        Clears a given sorted rendering chain. Each entity that
+        resides on it is dereferenced, so that it is free to be
+        destroyed once the rendering reference count reaches zero.
+=========================================================*/
 inline void ClearEntityRenderChain( entityRenderChain_t& chain )
 {
     while ( entityRenderChain_t::renderChain *iter = chain.GetFirstUsed() )
@@ -157,7 +264,16 @@ inline void ClearEntityRenderChain( entityRenderChain_t& chain )
     }
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00734540
+/*=========================================================
+    EntityRender::ClearEntityRenderChains
+
+    Purpose:
+        Clears all entries from the engine rendering chains.
+        After that the rendering chains can be filled with
+        new entities that should be rendered each game frame.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734540
+=========================================================*/
 void __cdecl EntityRender::ClearEntityRenderChains( void )
 {
     // Clear entity references that were cast when calling RenderEntity.
@@ -170,6 +286,14 @@ void __cdecl EntityRender::ClearEntityRenderChains( void )
     ClearEntityRenderChain( GetAlphaEntityRenderChain() );
 }
 
+/*=========================================================
+    EntityRender::ClearFallbackRenderChains
+
+    Purpose:
+        Clears native entity rendering chains of their entities.
+    Note:
+        This function has been inlined into SetupWorldRender.
+=========================================================*/
 void EntityRender::ClearFallbackRenderChains( void )
 {
     // Clear all our infinite chains.
@@ -178,6 +302,19 @@ void EntityRender::ClearFallbackRenderChains( void )
     ClearUnorderedRenderChain( lowPriorityRenderEntities );
 }
 
+/*=========================================================
+    EntityRender::ClearAllRenderChains
+
+    Purpose:
+       This function is used to remove references from any
+       entity that has been used by the GTA:SA rendering
+       system. This way modifications are allowed to destroy
+       entities in their frame callback. Previously entity
+       pointers were still held active inside of rendering
+       chains, so deleting entities was risky.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734540
+=========================================================*/
 // MTA extension hook to optimize render chain management
 // Fixes some bugs when entities are referenced and Lua wants to quit.
 void __cdecl EntityRender::ClearAllRenderChains( void )
@@ -186,7 +323,21 @@ void __cdecl EntityRender::ClearAllRenderChains( void )
     ClearFallbackRenderChains();
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x005534B0
+/*=========================================================
+    EntityRender::PushEntityOnRenderQueue
+
+    Arguments:
+        entity - the entity to push into the rendering system
+                 for rendering on this frame
+        camDistance - distance from the camera to the entity
+    Purpose:
+        Pushes a world entity for rendering during this frame.
+        According to its properties, it can be sorted or not.
+        There are several rendering chains that the entity can
+        be put on.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005534B0
+=========================================================*/
 void __cdecl EntityRender::PushEntityOnRenderQueue( CEntitySAInterface *entity, float camDistance )
 {
     CBaseModelInfoSAInterface *model = entity->GetModelInfo();
@@ -233,6 +384,16 @@ void EntityRender::RegisterLowPriorityRenderEntity( CEntitySAInterface *entity )
     AllocateEntityRenderSlot( lowPriorityRenderEntities, entity );
 }
 
+/*=========================================================
+    Entity::GetEntitiesInRenderQueue (MTA utility)
+
+    Purpose:
+        Returns a list of all MTA entities that are queued
+        inside of the GTA:SA rendering system this frame.
+        This function only returns valid values of called
+        within the engine rendering management (i.e. through
+        the rendering callbacks).
+=========================================================*/
 inline void AddMTAEntityToList( CEntitySAInterface *entity, CGame::entityList_t& list )
 {
     CEntitySA *mtaEntity = Pools::GetEntity( entity );
