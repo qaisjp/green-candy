@@ -127,7 +127,7 @@ public:
     unsigned char   privateFlags;
     RwFrame*        parent;                 // should be RwFrame if obj -> RpClump
 
-    inline bool         IsVisible()                     { return IS_FLAG( flags, RW_OBJ_VISIBLE ); }
+    inline bool         IsVisible( void )               { return IS_FLAG( flags, RW_OBJ_VISIBLE ); }
     inline void         SetVisible( bool vis )          { BOOL_FLAG( flags, RW_OBJ_VISIBLE, vis ); }
 };
 struct RwVertex
@@ -263,7 +263,7 @@ struct RwObjectFrame : public RwObject
     syncCallback_t                  callback;
 
     void                    AddToFrame( RwFrame *frame );
-    void                    RemoveFromFrame();
+    void                    RemoveFromFrame( void );
 };
 
 #include "RenderWare/RwFrame.h"
@@ -621,7 +621,7 @@ public:
         (*ppRwInterface)->m_textureManager.current = txd;
     }
 
-    ~RwTxdStack()
+    ~RwTxdStack( void )
     {
         (*ppRwInterface)->m_textureManager.current = m_txd;
     }

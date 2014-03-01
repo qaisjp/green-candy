@@ -38,17 +38,18 @@ struct RwFrame : public RwObject
     BYTE                    pad3[8];            // 188
     unsigned int            hierarchyId;        // 196
 
-    void                    SetModelling( const RwMatrix& mat );
-    const RwMatrix&         GetModelling() const        { return modelling; }
-    void                    SetPosition( const CVector& pos );
-    const CVector&          GetPosition() const         { return modelling.vPos; }
+    // Methods.
+    void                    SetModelling            ( const RwMatrix& mat );
+    const RwMatrix&         GetModelling            ( void ) const          { return modelling; }
+    void                    SetPosition             ( const CVector& pos );
+    const CVector&          GetPosition             ( void ) const          { return modelling.vPos; }
 
-    const RwMatrix&         GetLTM();
+    const RwMatrix&         GetLTM                  ( void );
 
-    void                    Link( RwFrame *frame );
-    void                    Unlink();
-    void                    SetRootForHierarchy( RwFrame *root );
-    unsigned int            CountChildren();
+    void                    Link                    ( RwFrame *frame );
+    void                    Unlink                  ( void );
+    void                    SetRootForHierarchy     ( RwFrame *root );
+    unsigned int            CountChildren           ( void );
     template <class type>
     bool                    ForAllChildren( bool (*callback)( RwFrame *frame, type *data ), type *data )
     {
@@ -60,12 +61,12 @@ struct RwFrame : public RwObject
 
         return true;
     }
-    RwFrame*                GetFirstChild();
-    RwFrame*                FindFreeChildByName( const char *name );
-    RwFrame*                FindChildByName( const char *name );
-    RwFrame*                FindChildByHierarchy( unsigned int id );
+    RwFrame*                GetFirstChild           ( void );
+    RwFrame*                FindFreeChildByName     ( const char *name );
+    RwFrame*                FindChildByName         ( const char *name );
+    RwFrame*                FindChildByHierarchy    ( unsigned int id );
 
-    RwFrame*                CloneRecursive() const;
+    RwFrame*                CloneRecursive          ( void ) const;
 
     template <class type>
     bool                    ForAllObjects( bool (*callback)( RwObject *object, type data ), type data )
@@ -77,12 +78,12 @@ struct RwFrame : public RwObject
 
         return true;
     }
-    RwObject*               GetFirstObject();
-    RwObject*               GetFirstObject( unsigned char type );
-    RwObject*               GetObjectByIndex( unsigned char type, unsigned int idx );
-    unsigned int            CountObjectsByType( unsigned char type );
-    RwObject*               GetLastVisibleObject();
-    RwObject*               GetLastObject();
+    RwObject*               GetFirstObject          ( void );
+    RwObject*               GetFirstObject          ( unsigned char type );
+    RwObject*               GetObjectByIndex        ( unsigned char type, unsigned int idx );
+    unsigned int            CountObjectsByType      ( unsigned char type );
+    RwObject*               GetLastVisibleObject    ( void );
+    RwObject*               GetLastObject           ( void );
 
     template <class type>
     struct _rwObjectGetAtomic
@@ -111,18 +112,18 @@ struct RwFrame : public RwObject
 
         return ForAllObjects( RwObjectDoAtomic <type>, &info );
     }
-    RpAtomic*               GetFirstAtomic();
-    void                    SetAtomicComponentFlags( unsigned short flags );
-    void                    FindComponentAtomics( RpAtomic **okay, RpAtomic **damaged );
+    RpAtomic*               GetFirstAtomic          ( void );
+    void                    SetAtomicComponentFlags ( unsigned short flags );
+    void                    FindComponentAtomics    ( RpAtomic **okay, RpAtomic **damaged );
 
-    bool                    IsWaitingForUpdate( void ) const                { return IS_ANY_FLAG( privateFlags, RW_FRAME_UPDATEFLAG ); }
-    void                    SetUpdating( bool flag )                        { BOOL_FLAG( privateFlags, RW_FRAME_UPDATEFLAG, flag ); }
+    bool                    IsWaitingForUpdate      ( void ) const          { return IS_ANY_FLAG( privateFlags, RW_FRAME_UPDATEFLAG ); }
+    void                    SetUpdating             ( bool flag )           { BOOL_FLAG( privateFlags, RW_FRAME_UPDATEFLAG, flag ); }
 
-    RpAnimHierarchy*        GetAnimHierarchy();
-    void                    _Update( RwList <RwFrame>& list );
-    void                    Update();
-    void                    UpdateMTA();
-    void                    ThrowUpdate();
+    RpAnimHierarchy*        GetAnimHierarchy        ( void );
+    void                    _Update                 ( RwList <RwFrame>& list );
+    void                    Update                  ( void );
+    void                    UpdateMTA               ( void );
+    void                    ThrowUpdate             ( void );
 };
 
 #endif //_RENDERWARE_FRAME_

@@ -66,8 +66,8 @@ struct RpGeometry : public RwObject
 
         return true;
     }
-    bool                    IsAlpha();
-    void                    UnlinkFX();
+    bool                    IsAlpha( void );
+    void                    UnlinkFX( void );
 };
 
 #endif //_RENDERWARE_GEOMETRY_

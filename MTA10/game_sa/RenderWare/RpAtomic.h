@@ -83,16 +83,17 @@ struct RpAtomic : public RwObjectFrame
     CEnvMapAtomicSA*        envMap;             // 132, atomic environment map plugin, allocated from pool (on demand)
     unsigned int            pipeline;           // 136
 
-    const RwSphere&         GetWorldBoundingSphere();
+    // Methods.
+    const RwSphere&         GetWorldBoundingSphere      ( void );
 
-    bool                    IsNight();
+    bool                    IsNight                     ( void );
 
-    void                    AddToClump( RpClump *clump );
-    void                    RemoveFromClump();
+    void                    AddToClump                  ( RpClump *clump );
+    void                    RemoveFromClump             ( void );
 
-    void                    SetRenderCallback( RpAtomicCallback callback );
+    void                    SetRenderCallback           ( RpAtomicCallback callback );
 
-    void                    FetchMateria( RpMaterials& mats );
+    void                    FetchMateria                ( RpMaterials& mats );
 };
 
 struct RpAtomicContainer
