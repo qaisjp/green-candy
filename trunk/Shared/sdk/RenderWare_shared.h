@@ -147,6 +147,26 @@ public:
         w = 1.0f;
     }
 
+#if 0
+    RwMatrix( const CMatrix& mat )
+    {
+        vRight = mat.vRight;
+        vFront = mat.vFront;
+        vUp = mat.vUp;
+        vPos = mat.vPos;
+    }
+
+    operator CMatrix( void ) const
+    {
+        CMatrix mat;
+        mat.vRight = vRight;
+        mat.vFront = vFront;
+        mat.vUp = vUp;
+        mat.vPos = vPos;
+        return mat;
+    }
+#endif
+
     inline void assign( const RwMatrix& mat )
     {
         vRight = mat.vRight;

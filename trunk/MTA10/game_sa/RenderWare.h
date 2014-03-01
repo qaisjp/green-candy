@@ -118,7 +118,7 @@ enum RwRasterType : unsigned int
 #define RW_OBJ_HIERARCHY_CACHED     0x08
 
 // RenderWare/plugin base types
-class RwObject
+struct RwObject
 {
 public:
     eRwType         type;

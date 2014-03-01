@@ -3,7 +3,7 @@
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CEntitySA.render.cpp
-*  PURPOSE:     Entity render utilities
+*  PURPOSE:     Entity render framework
 *  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
@@ -14,73 +14,14 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-// Variable which decides what render mode is to be used.
-static eWorldRenderMode _worldRenderMode = WORLD_RENDER_ORIGINAL;
-
-void Entity::SetWorldRenderMode( eWorldRenderMode mode )
+namespace EntityRender
 {
-    _worldRenderMode = mode;
+    // Render chains used for sorted execution of instances.
+    atomicRenderChain_t boatRenderChain( 50 );                          // Binary offsets: (1.0 US and 1.0 EU): 0x00C880C8; boatRenderChains, orig 20
+    entityRenderChain_t defaultEntityRenderChain( 8000 );               // Binary offsets: (1.0 US and 1.0 EU): 0x00C88120; ???, orig 200
+    entityRenderChain_t underwaterEntityRenderChain( 4000 );            // Binary offsets: (1.0 US and 1.0 EU): 0x00C88178; ???, orig 100, used to render underwater entities
+    entityRenderChain_t alphaEntityRenderChain( 50 );                   // Binary offsets: (1.0 US and 1.0 EU): 0x00C881D0; ???, orig 50, used for "grasshouse" model
 }
-
-eWorldRenderMode Entity::GetWorldRenderMode( void )
-{
-    return _worldRenderMode;
-}
-
-// Render helper for world entities.
-// Should be used for all rendering lists.
-template <typename renderCallback>
-AINLINE void RenderInstances( renderCallback& cb )
-{
-    switch( _worldRenderMode )
-    {
-    default:
-    case WORLD_RENDER_ORIGINAL:
-        // Render like usual.
-        cb.OnRenderStage( false, true, false );
-        break;
-    case WORLD_RENDER_MESHLOCAL_ALPHAFIX:
-        RenderCallbacks::SetAlphaSortingEnabled( true );
-        RenderCallbacks::SetAlphaSortingParams( true, true, true );
-
-        // Render opaque, translucent and depth on a per-mesh basis.
-        cb.OnRenderStage( true, true, true );
-
-        RenderCallbacks::SetAlphaSortingEnabled( false );
-        break;
-    case WORLD_RENDER_SCENE_ALPHAFIX:
-        RenderCallbacks::SetAlphaSortingEnabled( true );
-
-        // Render opaque pixels.
-        RenderCallbacks::SetAlphaSortingParams( true, false, false );
-
-        cb.OnRenderStage( true, false, false );
-
-        // Render translucent pixels, in reverse order.
-        RenderCallbacks::SetAlphaSortingParams( false, true, false );
-
-        cb.OnRenderStage( true, false, true );
-
-        // Render depth.
-        RenderCallbacks::SetAlphaSortingParams( false, false, true );
-
-        cb.OnRenderStage( true, true, false );
-
-        RenderCallbacks::SetAlphaSortingEnabled( false );
-        break;
-    }
-}
-
-// Render chains used for sorted execution of instances.
-atomicRenderChain_t boatRenderChain( 50 );                          // Binary offsets: (1.0 US and 1.0 EU): 0x00C880C8; boatRenderChains, orig 20
-static entityRenderChain_t defaultEntityRenderChain( 8000 );        // Binary offsets: (1.0 US and 1.0 EU): 0x00C88120; ???, orig 200
-static entityRenderChain_t underwaterEntityRenderChain( 4000 );     // Binary offsets: (1.0 US and 1.0 EU): 0x00C88178; ???, orig 100, used to render underwater entities
-static entityRenderChain_t alphaEntityRenderChain( 50 );            // Binary offsets: (1.0 US and 1.0 EU): 0x00C881D0; ???, orig 50, used for "grasshouse" model
-
-entityRenderChain_t& GetDefaultEntityRenderChain( void )    { return defaultEntityRenderChain; }
-entityRenderChain_t& GetUnderwaterEntityRenderChain( void ) { return underwaterEntityRenderChain; }
-entityRenderChain_t& GetAlphaEntityRenderChain( void )      { return alphaEntityRenderChain; }
-atomicRenderChain_t& GetBoatRenderChain( void )             { return boatRenderChain; }
 
 void __cdecl HOOK_InitRenderChains( void )
 {
@@ -88,105 +29,15 @@ void __cdecl HOOK_InitRenderChains( void )
     new ((void*)0x00C88224) pedRenderChain_t( 8000 );                   // ???, orig 100
 }
 
-static bool __cdecl AreScreenEffectsEnabled( void )
-{
-    return !*(bool*)0x00C402B7 && ( *(bool*)0x00C402B8 || *(bool*)0x00C402B9 );
-}
-
-static void __cdecl SetupNightVisionLighting( void )
-{
-    // Check whether effects and night vision are enabled
-    if ( !*(bool*)0x00C402B8 || *(bool*)0x00C402B7 )
-        return;
-
-    RwColorFloat color( 0, 1.0f, 0, 1.0f );
-
-    (*(RpLight**)0x00C886E8)->SetColor( color );    // first light
-    (*(RpLight**)0x00C886EC)->SetColor( color );    // second light
-}
-
-static void __cdecl SetupInfraRedLighting( void )
-{
-    // Check if effects and infra red are enabled
-    if ( !*(bool*)0x00C402B9 || *(bool*)0x00C402B7 )
-        return;
-
-    RwColorFloat color( 0, 0, 1.0f, 1.0f );
-
-    (*(RpLight**)0x00C886E8)->SetColor( color );    // first light
-    (*(RpLight**)0x00C886EC)->SetColor( color );    // second light
-}
-
-float _tempDayNightBalance = 0;
-
-static void __cdecl NormalizeDayNight( void )
-{
-    if ( *(bool*)0x00C402B9 )
-        return;
-
-    _tempDayNightBalance = *(float*)0x008D12C0;
-    *(float*)0x008D12C0 = 1.0f;
-}
-
-static void __cdecl RestoreDayNight( void )
-{
-    if ( *(bool*)0x00C402B9 )
-        return;
-
-    *(float*)0x008D12C0 = _tempDayNightBalance;
-}
-
-// Make sure the rendering guards the entities it uses.
-struct unorderedEntityRenderChainInfo
-{
-    void InitFirst( void )
-    {
-    }
-
-    void InitLast( void )
-    {
-    }
-
-    bool operator <( const unorderedEntityRenderChainInfo& right )
-    {
-        return false;
-    }
-
-    typedef void (__cdecl*callback_t)( CEntitySAInterface *intf, float dist );
-
-    CEntitySAInterface  *entity;
-    bool isReferenced;
-
-    inline void Execute( void )
-    { }
-};
-
-typedef CRenderChainInterface <unorderedEntityRenderChainInfo> mainEntityRenderChain_t;
-static mainEntityRenderChain_t renderReferenceList( 1000 );
-
-void RenderSystemEntityReference( CEntitySAInterface *entity )
-{
-    if ( entity->Reference() )
-    {
-        // Add it to a list so we clear references on next render cycle.
-        unorderedEntityRenderChainInfo chainInfo;
-        chainInfo.entity = entity;
-        chainInfo.isReferenced = true;
-
-        if ( renderReferenceList.PushRender( &chainInfo ) == NULL )
-        {
-            renderReferenceList.AllocateNew();
-
-            if ( renderReferenceList.PushRender( &chainInfo ) == NULL )
-                __asm int 3;
-        }
-    }
-}
+// Include internal definitions.
+#include "CEntitySA.render.hxx"
 
 inline void RenderEntityNative( CEntitySAInterface *entity )
 {
+    using namespace EntityRender;
+
     // Reference the entity here, for safety.
-    RenderSystemEntityReference( entity );
+    ReferenceEntityForRendering( entity );
 
     if ( AreScreenEffectsEnabled() )
     {
@@ -228,6 +79,8 @@ inline void EntityRender_Global( CEntitySAInterface *entity )
 
 void __cdecl RenderEntity( CEntitySAInterface *entity )
 {
+    using namespace EntityRender;
+
     // Do not render peds in the game world if they are inside a vehicle
     // (they need a special render pass to prevent drawing errors)
     if ( entity->m_type == ENTITY_TYPE_PED && ((CPedSAInterface*)entity)->IsDrivingVehicle() )
@@ -344,78 +197,6 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     entity->RemoveLighting( id );
 }
 
-// based on 0x0055458A (1.0 US and 1.0 EU)
-__forceinline float GetComplexCameraEntityDistance( const CEntitySAInterface *entity, const CVector& camPos )
-{
-    CCameraSAInterface& camera = Camera::GetInterface();;
-
-    const CVector& pos = entity->Placeable.GetPosition();
-    
-    float camDistance = ( camPos - pos ).Length();
-
-    if ( camDistance > 300.0f )
-    {
-        CBaseModelInfoSAInterface *info = ppModelInfo[entity->m_model];
-        float scaledLODDistance = info->fLodDistanceUnscaled * camera.LODDistMultiplier;
-
-        if ( 300.0f < scaledLODDistance && ( scaledLODDistance + 20.0f ) > camDistance )
-        {
-            return scaledLODDistance - 300.0f + camDistance;
-        }
-    }
-
-    return camDistance;
-}
-
-static float CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip )
-{
-    float sectorDivide = 20.0f;
-    float lodScale = pGame->GetCamera()->GetInterface()->LODDistMultiplier;
-    float distAway = entity->GetColModel()->m_bounds.fRadius + camFarClip;
-    float unscaledLODDistance = info->fLodDistanceUnscaled;
-    float scaledLODDistance = unscaledLODDistance * lodScale;
-
-    float useDist = distAway;
-
-    if ( scaledLODDistance < distAway )
-        useDist = scaledLODDistance;
-
-    if ( !entity->m_lod )
-    {
-        float useDist2 = unscaledLODDistance;
-
-        if ( unscaledLODDistance > useDist )
-            useDist2 = useDist;
-
-        if ( useDist2 > 150.0f )
-            sectorDivide = useDist2 * 0.06666667f + 10.0f;
-
-        if ( entity->m_entityFlags & ENTITY_BIG )
-        {
-            useDist *= *(float*)0x008CD804;
-        }
-    }
-
-    useDist += 20.0f;
-    useDist -= camDistance;
-    useDist /= sectorDivide;
-
-    if ( useDist < 0.0f )
-        return 0;
-
-    if ( useDist > 1.0f )
-        useDist = 1;
-
-    return useDist * info->ucAlpha;
-}
-
-float CEntitySAInterface::GetFadingAlpha( void ) const
-{
-    float camDistance = GetComplexCameraEntityDistance( this, Camera::GetInterface().Placeable.GetPosition() );
-
-    return (unsigned char)CalculateFadingAlpha( ppModelInfo[m_model], this, camDistance, *(float*)0x00B7C4F0 );
-}
-
 inline void InitModelRendering( CBaseModelInfoSAInterface *info )
 {
     if ( info->renderFlags & RENDER_ADDITIVE )
@@ -449,7 +230,7 @@ static void __cdecl RenderClumpWithAlpha( CBaseModelInfoSAInterface *info, RpClu
     ShutdownModelRendering( info );
 }
 
-static void __cdecl DefaultRenderEntityHandler( CEntitySAInterface *entity, float camDistance )
+void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entity, float camDistance )
 {
     RwObject *rwobj = entity->m_rwObject;
 
@@ -467,7 +248,7 @@ static void __cdecl DefaultRenderEntityHandler( CEntitySAInterface *entity, floa
 
         // Make sure we keep this entity alive till next render cycle.
         // This is to make sure that we do not crash due to deep render links.
-        RenderSystemEntityReference( entity );
+        ReferenceEntityForRendering( entity );
 
         unsigned int alpha = (unsigned char)CalculateFadingAlpha( info, entity, camDistance, *(float*)0x00B76848 );
 
@@ -510,300 +291,6 @@ static void __cdecl DefaultRenderEntityHandler( CEntitySAInterface *entity, floa
         (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)8, 1 );
 }
 
-// Binary offsets: (1.0 US and 1.0 EU): 0x00733D90
-bool __cdecl PushUnderwaterEntityForRendering( CEntitySAInterface *entity, float distance )
-{
-    entityRenderInfo chainInfo;
-    chainInfo.distance = distance;
-    chainInfo.entity = entity;
-    chainInfo.callback = DefaultRenderEntityHandler;
-
-    entityRenderChain_t::renderChain *node = GetUnderwaterEntityRenderChain().PushRender( &chainInfo );
-
-    if ( node )
-        node->m_entry.isReferenced = entity->Reference();
-
-    return node != NULL;
-}
-
-int __cdecl QueueEntityForRendering( CEntitySAInterface *entity, float camDistance )
-{
-    // This function has been optimized a little.
-    // Rockstar created two depthLevel instances, we only do once.
-    entityRenderInfo level;
-    level.callback = DefaultRenderEntityHandler;
-    level.entity = entity;
-    level.distance = camDistance;
-
-    entityRenderChain_t::renderChain *node = NULL;
-
-    // Try to display the "grasshouse" model
-    if ( entity->m_model == *(short*)0x008CD6F4 )
-    {
-        node = GetAlphaEntityRenderChain().PushRender( &level );
-    }
-    else
-    {
-        // If the entity is underwater, it needs a different rendering order
-        if ( entity->m_entityFlags & ENTITY_UNDERWATER )
-            return PushUnderwaterEntityForRendering( entity, camDistance );
-        else
-        {
-            // Do default render
-            node = GetDefaultEntityRenderChain().PushRender( &level );
-        }
-    }
-
-    // Guard the entity.
-    if ( node )
-        node->m_entry.isReferenced = entity->Reference();
-
-    return node != NULL;
-}
-
-// Native GTA:SA uses static arrays to render world instances.
-// That system has become deprecated, because we can render infinite objects.
-// Hence, I want to use allocatable lists.
-static mainEntityRenderChain_t groundAlphaEntities( 1000 );     // Note that 1000 is also the native limit.
-static mainEntityRenderChain_t staticRenderEntities( 1000 );
-static mainEntityRenderChain_t lowPriorityRenderEntities( 1000 );
-
-inline bool AllocateEntityRenderSlot( mainEntityRenderChain_t& chain, CEntitySAInterface *entity )
-{
-    unorderedEntityRenderChainInfo chainInfo;
-    chainInfo.entity = entity;
-
-    // Attempt to allocate a new render slot.
-    mainEntityRenderChain_t::renderChain *node = chain.PushRender( &chainInfo );
-
-    if ( !node )
-    {
-        // Make sure we can. It can only fail if we are out of memory.
-        chain.AllocateNew();
-
-        node = chain.PushRender( &chainInfo );
-    }
-
-    // If successful, we reference the entity to prevent its destruction by the system.
-    if ( node )
-        node->m_entry.isReferenced = entity->Reference();
-
-    return node != NULL;
-}
-
-void __forceinline ClearUnorderedRenderChain( mainEntityRenderChain_t& chain )
-{
-    while ( mainEntityRenderChain_t::renderChain *iter = chain.GetFirstUsed() )
-    {
-        if ( iter->m_entry.isReferenced )
-        {
-            // Dereference the entity.
-            iter->m_entry.entity->Dereference();
-        }
-
-        chain.RemoveItem( iter );
-    }
-}
-
-inline void ClearEntityRenderChain( entityRenderChain_t& chain )
-{
-    while ( entityRenderChain_t::renderChain *iter = chain.GetFirstUsed() )
-    {
-        if ( iter->m_entry.isReferenced )
-        {
-            // Dereference the entity.
-            iter->m_entry.entity->Dereference();
-        }
-
-        chain.RemoveItem( iter );
-    }
-}
-
-// Binary offsets: (1.0 US and 1.0 EU): 0x00734540
-void __cdecl ClearEntityRenderChains( void )
-{
-    // Clear entity references that were cast when calling RenderEntity.
-    ClearUnorderedRenderChain( renderReferenceList );
-
-    // Clear render lists.
-    ClearEntityRenderChain( GetDefaultEntityRenderChain() );
-    GetBoatRenderChain().Clear();
-    ClearEntityRenderChain( GetUnderwaterEntityRenderChain() );
-    ClearEntityRenderChain( GetAlphaEntityRenderChain() );
-}
-
-// Binary offsets: (1.0 US and 1.0 EU): 0x005534B0
-void __cdecl PushEntityOnRenderQueue( CEntitySAInterface *entity, float camDistance )
-{
-    CBaseModelInfoSAInterface *model = entity->GetModelInfo();
-
-    model->bHasBeenPreRendered = false;
-
-    if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_FADE ) )
-    {
-        if ( IS_ANY_FLAG( entity->m_entityFlags, ENTITY_RENDER_LAST ) )
-        {
-            if ( QueueEntityForRendering( entity, camDistance ) )
-            {
-                entity->m_entityFlags &= ~ENTITY_FADE;
-                return;
-            }
-        }
-    }
-    else if ( QueueEntityForRendering( entity, camDistance ) )
-        return;
-
-    if ( entity->m_numLOD > 0 && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_UNDERWATER ) )
-    {
-        AllocateEntityRenderSlot( groundAlphaEntities, entity );
-    }
-    else
-    {
-        AllocateEntityRenderSlot( staticRenderEntities, entity );
-    }
-}
-
-/*=========================================================
-    RegisterLowPriorityRenderEntity
-
-    Arguments:
-        entity - entity to set up for rendering
-    Purpose:
-        Adds an entity to the low priority render queue.
-        Usually LOD entities reside in here.
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x00554AC4
-=========================================================*/
-void RegisterLowPriorityRenderEntity( CEntitySAInterface *entity )
-{
-    AllocateEntityRenderSlot( lowPriorityRenderEntities, entity );
-}
-
-struct SetupChainEntitiesForRender
-{
-    bool __forceinline OnEntry( const entityRenderInfo& info )
-    {
-        if ( info.callback == DefaultRenderEntityHandler )
-        {
-            CEntitySAInterface *entity = info.entity;
-
-            entity->m_entityFlags &= ~ENTITY_OFFSCREEN;
-
-            entity->PreRender();
-        }
-
-        return true;
-    }
-};
-
-inline void AddMTAEntityToList( CEntitySAInterface *entity, CGame::entityList_t& list )
-{
-    CEntitySA *mtaEntity = Pools::GetEntity( entity );
-
-    if ( mtaEntity )
-        list.push_back( mtaEntity );
-}
-
-struct CollectMainEntitiesRenderQueue
-{
-    CollectMainEntitiesRenderQueue( CGame::entityList_t& list ) : m_list( list )
-    { }
-
-    inline bool OnEntry( const unorderedEntityRenderChainInfo& info )
-    {
-        AddMTAEntityToList( info.entity, m_list );
-        return true;
-    }
-
-    CGame::entityList_t& m_list;
-};
-
-struct CollectEntityRenderChainRenderQueue
-{
-    CollectEntityRenderChainRenderQueue( CGame::entityList_t& list ) : m_list( list )
-    { }
-
-    inline bool OnEntry( const entityRenderInfo& info )
-    {
-        AddMTAEntityToList( info.entity, m_list );
-        return true;
-    }
-
-    CGame::entityList_t& m_list;
-};
-
-// Rendering utilities.
-CGame::entityList_t Entity::GetEntitiesInRenderQueue( void )
-{
-    CGame::entityList_t list;
-
-    {
-        CollectMainEntitiesRenderQueue queueCollect( list );
-
-        groundAlphaEntities.ExecuteCustom( queueCollect );
-        staticRenderEntities.ExecuteCustom( queueCollect );
-        lowPriorityRenderEntities.ExecuteCustom( queueCollect );
-    }
-
-    {
-        CollectEntityRenderChainRenderQueue queueCollect( list );
-
-        GetDefaultEntityRenderChain().ExecuteCustom( queueCollect );
-        GetUnderwaterEntityRenderChain().ExecuteCustom( queueCollect );
-        GetAlphaEntityRenderChain().ExecuteCustom( queueCollect );
-    }
-
-    return list;
-}
-
-inline RpLight*& GetFirstLight( void )
-{
-    return *(RpLight**)0x00C886E8;
-}
-
-inline RpLight*& GetSecondLight( void )
-{
-    return *(RpLight**)0x00C886EC;
-}
-
-// Binary offsets: (1.0 US and 1.0 EU): 0x00735C70
-void __cdecl DisableSecondLighting( void )
-{
-    GetSecondLight()->SetLightActive( false );
-}
-
-// Binary offsets: (1.0 US and 1.0 EU): 0x00735D30
-void __cdecl SetupPostProcessLighting( void )
-{
-    GetFirstLight()->SetColor( *(RwColorFloat*)0x00C886D4 );
-    GetFirstLight()->SetLightActive( true );
-}
-
-unsigned char CEntitySAInterface::_SetupLighting( void )
-{
-    if ( !IS_ANY_FLAG( m_entityFlags, ENTITY_LIGHTING ) )
-        return 0;
-
-    GetSecondLight()->SetLightActive( true );
-
-    float brightness = ((float (__cdecl*)( const CVector& pos, unsigned int, CEntitySAInterface* ))0x006FFBB0)( Placeable.GetPosition(), 0, this );
-
-    ((void (__cdecl*)( float brightness ))0x00735D90)( (float)( brightness * 0.5f ) );
-
-    return 1;
-}
-
-void CEntitySAInterface::_RemoveLighting( unsigned char id )
-{
-    if ( id == 0 )
-        return;
-
-    SetupPostProcessLighting();
-    DisableSecondLighting();
-
-    ((void (__cdecl*)( void ))0x006FFFE0)();
-}
-
 // System callbacks to notify the mods about important progress.
 static gameEntityPreRenderCallback_t _preRenderCallback = NULL;
 static gameEntityRenderCallback_t _renderCallback = NULL;
@@ -824,6 +311,23 @@ struct SetupDefaultEntitiesForRender
     }
 };
 
+struct SetupChainEntitiesForRender
+{
+    bool __forceinline OnEntry( const entityRenderInfo& info )
+    {
+        if ( info.callback == EntityRender::DefaultRenderEntityHandler )
+        {
+            CEntitySAInterface *entity = info.entity;
+
+            entity->m_entityFlags &= ~ENTITY_OFFSCREEN;
+
+            entity->PreRender();
+        }
+
+        return true;
+    }
+};
+
 void __cdecl PreRender( void )
 {
     groundAlphaEntities.ExecuteCustom( SetupDefaultEntitiesForRender() );
@@ -838,23 +342,17 @@ void __cdecl PreRender( void )
 
     lowPriorityRenderEntities.ExecuteCustom( SetupDefaultEntitiesForRender() );
 
-    GetDefaultEntityRenderChain().ExecuteCustom( SetupChainEntitiesForRender() );
-    GetUnderwaterEntityRenderChain().ExecuteCustom( SetupChainEntitiesForRender() );
+    EntityRender::GetDefaultEntityRenderChain().ExecuteCustom( SetupChainEntitiesForRender() );
+    EntityRender::GetUnderwaterEntityRenderChain().ExecuteCustom( SetupChainEntitiesForRender() );
 
     ((void (__cdecl*)( void ))0x00707FA0)();
-}
-
-inline void ClearFallbackRenderChains( void )
-{
-    // Clear all our infinite chains.
-    ClearUnorderedRenderChain( groundAlphaEntities );
-    ClearUnorderedRenderChain( staticRenderEntities );
-    ClearUnorderedRenderChain( lowPriorityRenderEntities );
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x005556E0
 void __cdecl SetupWorldRender( void )
 {
+    using namespace EntityRender;
+
     // TODO: remove this once rendering is fixed.
     // Look in vehicle rendering code, too.
     RenderCallbacks::SetRenderingEnabled( false );
@@ -932,19 +430,6 @@ void __cdecl SetupWorldRender( void )
     Streaming::InitRecentGCNode();
 }
 
-// MTA extension hook to optimize render chain management
-// Fixes some bugs when entities are referenced and Lua wants to quit.
-void __cdecl ClearAllRenderChains( void )
-{
-    ClearEntityRenderChains();
-    ClearFallbackRenderChains();
-}
-
-inline float GetEntityCameraDistance( CEntitySAInterface *entity )
-{
-    return ( entity->Placeable.GetPosition() - *(CVector*)0x00B76870 ).Length();
-}
-
 struct PostProcessEntities
 {
      bool __forceinline OnEntry( unorderedEntityRenderChainInfo& info )
@@ -969,8 +454,8 @@ struct WorldLightingWrap
 {
     inline WorldLightingWrap( void )
     {
-        DisableSecondLighting();
-        SetupPostProcessLighting();
+        EntityRender::DisableSecondLighting();
+        EntityRender::SetupPostProcessLighting();
     }
 
     inline ~WorldLightingWrap( void )
@@ -1047,6 +532,8 @@ struct RenderStaticWorldEntities
                     else
                         isUnderwater = IS_ANY_FLAG( vehicle->m_nodeFlags, 0x8000000 );
                 }
+
+                using namespace EntityRender;
 
                 float camDistance = GetEntityCameraDistance( entity );
                 
@@ -1160,7 +647,7 @@ void __cdecl RenderGrassHouseEntities( void )
     {
         WorldLightingWrap wLighting;
 
-        GetAlphaEntityRenderChain().Execute();
+        EntityRender::GetAlphaEntityRenderChain().Execute();
     }
 
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
@@ -1197,7 +684,7 @@ struct OrderedRenderStage
 // Binary offsets: (1.0 US and 1.0 EU): 0x007337D0
 void __cdecl RenderUnderwaterEntities( void )
 {
-    RenderInstances( OrderedRenderStage( GetUnderwaterEntityRenderChain() ) );
+    RenderInstances( OrderedRenderStage( EntityRender::GetUnderwaterEntityRenderChain() ) );
 
     // Notify the system.
     if ( _renderUnderwaterCallback )
@@ -1209,7 +696,7 @@ void __cdecl RenderBoatAtomics( void )
 {
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
-    GetBoatRenderChain().Execute();
+    EntityRender::GetBoatRenderChain().Execute();
 
     pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
 }
@@ -1217,7 +704,7 @@ void __cdecl RenderBoatAtomics( void )
 // Binary offsets: (1.0 US and 1.0 EU): 0x00733F10
 void __cdecl RenderDefaultOrderedWorldEntities( void )
 {
-    RenderInstances( OrderedRenderStage( GetDefaultEntityRenderChain() ) );
+    RenderInstances( OrderedRenderStage( EntityRender::GetDefaultEntityRenderChain() ) );
 
     RenderBoatAtomics();
 
@@ -1230,174 +717,15 @@ void __cdecl RenderDefaultOrderedWorldEntities( void )
     RwD3D9ApplyDeviceStates();
 }
 
-/*=========================================================
-    CRenderer_SetupEntityVisibility
-
-    Arguments:
-        entity - entity to set up for rendering
-        camDistance - optimized distance from camera to entity
-    Purpose:
-        Initializes the entity for rendering and returns the
-        type how the entity should be rendered.
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x00554230
-=========================================================*/
-inline bool IsEntityRenderable( CEntitySAInterface *entity )
-{
-    return entity->m_rwObject && ( IS_ANY_FLAG( entity->m_entityFlags, ENTITY_VISIBLE ) || ( *(unsigned int*)0x00C7C724 && entity->m_model == 0 ) );
-}
-
-inline bool IsEntityValidForDisplay( CEntitySAInterface *entity )
-{
-    return entity->IsOnScreen() && !entity->CheckScreenValidity();
-}
-
-inline bool GetEntityTunnelOptimization( CEntitySAInterface *entity )
-{
-    return IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNELTRANSITION ) && (
-           *(bool*)0x00B745C0 && IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNEL ) ||
-           *(bool*)0x00B745C1 && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNEL ) );
-}
-
-eRenderType __cdecl CRenderer_SetupEntityVisibility( CEntitySAInterface *entity, float& camDistance )
-{
-    modelId_t modelIndex = entity->m_model;
-    CBaseModelInfoSAInterface *info = ppModelInfo[modelIndex];
-
-    CAtomicModelInfoSA *atomicInfo = info->GetAtomicModelInfo();
-
-    bool unkBoolean = true;
-
-    if ( entity->m_type == ENTITY_TYPE_VEHICLE && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNELTRANSITION ) )
-    {
-        // Exclude inside-tunnel or outside-tunnel entities depending on game settings.
-        // Should optimize FPS a little.
-        if ( GetEntityTunnelOptimization( entity ) )
-        {
-            return ENTITY_RENDER_NONE;
-        }
-    }
-
-    CCameraSAInterface& camera = Camera::GetInterface();
-
-    eModelType modelType = info->GetModelType();
-
-    if ( !atomicInfo )
-    {
-        if ( modelType != (eModelType)5 && modelType != (eModelType)4 )
-        {
-            CVehicleSAInterface *playerVehicle = GetPlayerVehicle( -1, false );
-
-            if ( playerVehicle == entity && *(bool*)0x00B6EC20 && !*(bool*)0x00A43088 )
-            {
-                unsigned int camIndex = camera.ActiveCam;
-                CCamSAInterface& activeCam = camera.m_cams[camIndex];
-
-                eVehicleType vehicleType = playerVehicle->m_vehicleType;
-
-                if ( vehicleType != VEHICLE_BIKE || !IS_ANY_FLAG( ((CBikeSAInterface*)playerVehicle)->m_bikeFlags, 0x80 ) )
-                {
-                    if ( activeCam.DirectionWasLooking == 3 || modelIndex == VT_RHINO || modelIndex == VT_COACH || *(bool*)0x00B6F04A )
-                    {
-                        return (eRenderType)2;
-                    }
-
-                    if ( activeCam.DirectionWasLooking != 0 )
-                    {
-                        *(CVehicleSAInterface**)0x00B745D4 = playerVehicle;
-                        return (eRenderType)2;
-                    }
-
-                    if ( IS_ANY_FLAG( playerVehicle->m_handling->uiModelFlags, MODEL_NOREARWINDOW ) )
-                        return (eRenderType)2;
-
-                    if ( vehicleType != VEHICLE_BOAT || modelIndex == VT_REEFER || modelIndex == VT_TROPIC || modelIndex == VT_PREDATOR || modelIndex == VT_SKIMMER )
-                    {
-                        *(CVehicleSAInterface**)0x00B745D4 = playerVehicle;
-                        return (eRenderType)2;
-                    }
-                }
-            }
-
-            if ( IsEntityRenderable( entity ) )
-            {
-                if ( !entity->IsInStreamingArea() && entity->m_type == ENTITY_TYPE_VEHICLE )
-                    return ENTITY_RENDER_NONE;
-
-                if ( !IsEntityValidForDisplay( entity ) )
-                    return (eRenderType)2;
-
-                if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_RENDER_LAST ) )
-                    return (eRenderType)1;
-
-                entity->m_entityFlags &= ~ENTITY_FADE;
-
-                const CVector& entityPos = entity->Placeable.GetPosition();
-
-                PushEntityOnRenderQueue( entity, ( entityPos - *(CVector*)0x00B76870 ).Length() );
-            }
-
-            return ENTITY_RENDER_NONE;
-        }
-    }
-    else if ( modelType == (eModelType)3 )
-    {
-        ModelInfo::timeInfo *timeInfo = info->GetTimeInfo();
-
-        short timedModel = timeInfo->m_model;
-
-        if ( !Streaming::IsTimeRightForStreaming( timeInfo ) )
-        {
-            // Delete models that are not required, because they
-            // should not render anymore.
-            if ( timedModel == -1 || ppModelInfo[timedModel]->GetRwObject() )
-            {
-                entity->DeleteRwObject();
-                return ENTITY_RENDER_NONE;
-            }
-
-            unkBoolean = false;
-        }
-        else if ( timedModel != -1 && ppModelInfo[timedModel]->GetRwObject() )
-        {
-            info->ucAlpha = 255;
-        }
-    }
-    else if ( IS_ANY_FLAG( entity->m_entityFlags, ENTITY_NOSTREAM ) )
-    {
-        if ( IsEntityRenderable( entity ) )
-        {
-            if ( !IsEntityValidForDisplay( entity ) )
-                return (eRenderType)2;
-
-            if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_RENDER_LAST ) )
-                return (eRenderType)1;
-
-            const CVector& entityPos = entity->Placeable.GetPosition();
-
-            QueueEntityForRendering( entity, ( entityPos - *(CVector*)0x00B76870 ).Length() );
-
-            entity->m_entityFlags &= ~ENTITY_FADE;
-        }
-   
-        return ENTITY_RENDER_NONE;
-    }
-
-    if ( !entity->IsInStreamingArea() )
-        return ENTITY_RENDER_NONE;
-
-    camDistance = GetComplexCameraEntityDistance( entity->m_lod ? entity->m_lod : entity, *(const CVector*)0x00B76870 );
-
-    return ((eRenderType (__cdecl*)( CEntitySAInterface*, CBaseModelInfoSAInterface *model, float camDist, bool ))0x00553F60)( entity, info, camDistance, unkBoolean );
-}
-
 void EntityRender_Init( void )
 {
+    using namespace EntityRender;
+
     // Do some interesting patches
     HookInstall( 0x00733A20, (DWORD)HOOK_InitRenderChains, 5 );
     HookInstall( 0x00553260, (DWORD)RenderEntity, 5 );
     HookInstall( 0x00734570, (DWORD)QueueEntityForRendering, 5 );
-    HookInstall( 0x00554230, (DWORD)CRenderer_SetupEntityVisibility, 5 );
+    HookInstall( 0x00554230, (DWORD)SetupEntityVisibility, 5 );
 
     HookInstall( 0x005556E0, (DWORD)SetupWorldRender, 5 );
     HookInstall( 0x005534B0, (DWORD)PushEntityOnRenderQueue, 5 );
@@ -1409,6 +737,7 @@ void EntityRender_Init( void )
     HookInstall( 0x00733F10, (DWORD)RenderDefaultOrderedWorldEntities, 5 );
     HookInstall( 0x00734540, (DWORD)ClearEntityRenderChains, 5 );
 
+    // Experimental hooks.
     HookInstall( 0x00553DC0, h_memFunc( &CEntitySAInterface::_SetupLighting ), 5 );
     HookInstall( 0x00553370, h_memFunc( &CEntitySAInterface::_RemoveLighting ), 5 );
 
@@ -1422,5 +751,6 @@ void EntityRender_Shutdown( void )
 
 void EntityRender_Reset( void )
 {
+    // By default, we want to render in original mode.
     Entity::SetWorldRenderMode( WORLD_RENDER_ORIGINAL );
 }

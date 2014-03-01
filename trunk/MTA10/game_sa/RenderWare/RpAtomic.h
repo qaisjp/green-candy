@@ -70,7 +70,7 @@ struct RpAtomic : public RwObjectFrame
     unsigned short          frame;              // 96, begin of a substructure
     unsigned short          unknown7;           // 98
     RwList <sectorNode>     sectors;            // 100
-    RwPipeline*             pipelineInst;       // 108
+    RwPipeline*             render;             // 108
 
     RwScene*                scene;              // 112
     RpAtomic*               (*syncCallback)( RpAtomic *atom );  // 116
