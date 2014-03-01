@@ -54,11 +54,11 @@ struct RwTexDictionary : public RwObject
         return true;
     }
 
-    RwTexture*              GetFirstTexture();
+    RwTexture*              GetFirstTexture( void );
     RwTexture*              FindNamedTexture( const char *name );
 };
 
 // TexDictionary API.
-RwTexDictionary*    RwTexDictionaryCreate();        // US exe: 0x007F3600
+RwTexDictionary*    RwTexDictionaryCreate( void );      // US exe: 0x007F3600
 
 #endif //_RENDERWARE_TEXDICTIONARY_

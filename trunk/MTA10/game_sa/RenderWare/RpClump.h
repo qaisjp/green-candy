@@ -28,27 +28,28 @@ struct RpClump : public RwObject
 
     RwStaticGeometry*       pStatic;            // 60
 
-    void                    Render();
+    // Methods.
+    void                    Render                      ( void );
 
-    void                    InitStaticSkeleton();
-    RwStaticGeometry*       CreateStaticGeometry();
+    void                    InitStaticSkeleton          ( void );
+    RwStaticGeometry*       CreateStaticGeometry        ( void );
 
-    RpAnimHierarchy*        GetAtomicAnimHierarchy();
-    RpAnimHierarchy*        GetAnimHierarchy();
+    RpAnimHierarchy*        GetAtomicAnimHierarchy      ( void );
+    RpAnimHierarchy*        GetAnimHierarchy            ( void );
 
-    void                    ScanAtomicHierarchy( RwFrame **atomics, size_t max );
+    void                    ScanAtomicHierarchy         ( RwFrame **atomics, size_t max );
 
-    RpAtomic*               GetFirstAtomic();
-    RpAtomic*               GetLastAtomic();
-    RpAtomic*               FindNamedAtomic( const char *name );
-    RpAtomic*               Find2dfx();
+    RpAtomic*               GetFirstAtomic              ( void );
+    RpAtomic*               GetLastAtomic               ( void );
+    RpAtomic*               FindNamedAtomic             ( const char *name );
+    RpAtomic*               Find2dfx                    ( void );
 
-    void                    SetupAtomicRender();
-    void                    RemoveAtomicComponentFlags( unsigned short flags );
-    void                    FetchMateria( RpMaterials& mats );
+    void                    SetupAtomicRender           ( void );
+    void                    RemoveAtomicComponentFlags  ( unsigned short flags );
+    void                    FetchMateria                ( RpMaterials& mats );
 
     template <class type>
-    bool                    ForAllAtomics( bool (*callback)( RpAtomic *child, type data ), type data )
+    bool                    ForAllAtomics               ( bool (*callback)( RpAtomic *child, type data ), type data )
     {
         RwListEntry <RpAtomic> *child = atomics.root.next;
 
@@ -61,10 +62,10 @@ struct RpClump : public RwObject
         return true;
     }
 
-    void                    GetBoneTransform( CVector *offset );
+    void                    GetBoneTransform            ( CVector *offset );
 };
 
 // Clump API.
-RpClump*            RpClumpCreate();        // US exe: 0x0074A290
+RpClump*            RpClumpCreate( void );      // US exe: 0x0074A290
 
 #endif //_RENDERWARE_CLUMP_

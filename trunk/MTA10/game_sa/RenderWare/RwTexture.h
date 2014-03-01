@@ -57,13 +57,15 @@ struct RwTexture
     unsigned int                refs;                           // 84
     char                        anisotropy;                     // 88
 
-    void                        SetName( const char *name );
+    // Methods.
+    void                        SetName                 ( const char *name );
 
-    void                        AddToDictionary( RwTexDictionary *txd );
-    void                        RemoveFromDictionary();
+    void                        AddToDictionary         ( RwTexDictionary *txd );
+    void                        RemoveFromDictionary    ( void );
 
-    void                        SetFiltering( bool filter )     { BOOL_FLAG( flags, 0x1102, filter ); }
-    bool                        IsFiltering() const             { return IS_FLAG( flags, 0x1102 ); }
+    // Flag derived from research by MTA team.
+    void                        SetFiltering            ( bool filter )     { BOOL_FLAG( flags, 0x1102, filter ); }
+    bool                        IsFiltering             ( void ) const      { return IS_FLAG( flags, 0x1102 ); }
 };
 
 struct RwTextureCoordinates

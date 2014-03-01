@@ -65,14 +65,14 @@ struct RpMaterial
     CEnvMapMaterialSA*  envMapMat;      // 72, env map material plugin, allocated from pool
     CSpecMapMaterialSA* specMapMat;     // 76, specular map material plugin, allocated from pool
     
-    void                SetTexture( RwTexture *tex );
+    void                SetTexture      ( RwTexture *tex );
 };
 struct RpMaterials
 {
-                    RpMaterials( unsigned int count );
-                    ~RpMaterials();
+                    RpMaterials         ( unsigned int count );
+                    ~RpMaterials        ( void );
 
-    bool            Add( RpMaterial *mat );
+    bool            Add                 ( RpMaterial *mat );
 
     RpMaterial**    data;
     unsigned int    entries;

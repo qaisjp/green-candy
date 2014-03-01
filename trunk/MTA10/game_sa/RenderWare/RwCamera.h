@@ -43,14 +43,15 @@ struct RwCamera : public RwObjectFrame   //size: 428
     RpClump*                clump;              // 416
     RwListEntry <RwCamera>  clumpCameras;       // 420
 
-    void                    BeginUpdate();
-    void                    EndUpdate();
+    // Methods.
+    void                    BeginUpdate         ( void );
+    void                    EndUpdate           ( void );
 
-    void                    AddToClump( RpClump *clump );
-    void                    RemoveFromClump();
+    void                    AddToClump          ( RpClump *clump );
+    void                    RemoveFromClump     ( void );
 };
 
 // Camera API.
-RwCamera*           RwCameraCreate();       // US exe: 0x007EE4F0
+RwCamera*           RwCameraCreate( void );     // US exe: 0x007EE4F0
 
 #endif //_RENDERWARE_CAMERA_

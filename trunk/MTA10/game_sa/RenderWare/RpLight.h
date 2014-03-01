@@ -34,22 +34,23 @@ struct RpLight : public RwObjectFrame
     int                     lightIndex;         // 84, may be 0-7
     CVector                 attenuation;        // 88
 
-    void                    SetLightActive( bool active )   { BOOL_FLAG( flags, 0x01, active ); }
-    bool                    IsLightActive( void )           { return IS_ANY_FLAG( flags, 0x01 ); }
+    // Methods.
+    void                    SetLightActive          ( bool active )         { BOOL_FLAG( flags, 0x01, active ); }
+    bool                    IsLightActive           ( void )                { return IS_ANY_FLAG( flags, 0x01 ); }
 
-    void                    SetLightIndex( unsigned int idx );
-    unsigned int            GetLightIndex() const           { return lightIndex; }
+    void                    SetLightIndex           ( unsigned int idx );
+    unsigned int            GetLightIndex           ( void ) const          { return lightIndex; }
 
-    void                    AddToClump( RpClump *clump );
-    void                    RemoveFromClump();
+    void                    AddToClump              ( RpClump *clump );
+    void                    RemoveFromClump         ( void );
 
-    void                    AddToScene_Local( RwScene *scene );
-    void                    AddToScene_Global( RwScene *scene );
+    void                    AddToScene_Local        ( RwScene *scene );
+    void                    AddToScene_Global       ( RwScene *scene );
 
-    void                    AddToScene( RwScene *scene );
-    void                    RemoveFromScene();
+    void                    AddToScene              ( RwScene *scene );
+    void                    RemoveFromScene         ( void );
 
-    void                    SetColor( const RwColorFloat& color );
+    void                    SetColor                ( const RwColorFloat& color );
 };
 
 // Light API.
