@@ -83,7 +83,7 @@ static float cameraRenderAngleRadians = 0;
 void __cdecl CacheVehicleRenderCameraSettings( unsigned char alpha, RwObject *obj )
 {
     highQualityRender = g_effectManager->GetEffectQuality() > 1;        // render High Quality if FX Quality better than Medium
-    renderLOD = g_effectManager->GetEffectQuality() < 3;                  // render LOD vehicles if FX Quality not Very High
+    renderLOD = g_effectManager->GetEffectQuality() < 3;                // render LOD vehicles if FX Quality not Very High
     renderAlpha = highQualityRender && alpha != 255;                    // forces sorting of atomics (makes sense with highQualityRender only)
 
     if ( !highQualityRender )
@@ -188,20 +188,23 @@ void __cdecl ExecuteVehicleRenderChains( unsigned char renderAlpha )
             
             RenderCallbacks::GetAlphaSortingParams( globalRenderOpaque, globalRenderTranslucent, globalRenderDepth );
 
-            if ( renderAlpha != 255 )
+            if ( !globalDoAlphaFix || globalRenderDepth )
             {
-                RenderCallbacks::SetVehicleAlphaSortingEnabled( true );
-                RenderCallbacks::SetVehicleAlphaSortingParams( false, false, true );
-                
-                // Make sure we only render depth of opaque pixels.
-                RenderCallbacks::SetVehicleAlphaClamp( renderAlpha );
+                if ( renderAlpha != 255 )
+                {
+                    RenderCallbacks::SetVehicleAlphaSortingEnabled( true );
+                    RenderCallbacks::SetVehicleAlphaSortingParams( false, false, true );
+                    
+                    // Make sure we only render depth of opaque pixels.
+                    RenderCallbacks::SetVehicleAlphaClamp( renderAlpha );
 
-                // Render depth components.
-                opaqueRenderChain.Execute();
-                vehicleRenderChains.ExecuteReverse();
-                lastRenderChain.Execute();
+                    // Render depth components.
+                    opaqueRenderChain.Execute();
+                    vehicleRenderChains.ExecuteReverse();
+                    lastRenderChain.Execute();
 
-                RenderCallbacks::SetVehicleAlphaSortingEnabled( false );
+                    RenderCallbacks::SetVehicleAlphaSortingEnabled( false );
+                }
             }
 
             // Set opaque rendering flags

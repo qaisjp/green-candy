@@ -402,7 +402,10 @@ typedef CRenderChainInterface <pedRenderInfo> pedRenderChain_t;
 
 enum eRenderType : unsigned int
 {
-    ENTITY_RENDER_NONE
+    ENTITY_RENDER_CROSS_ZONES,
+    ENTITY_RENDER_DEFAULT,
+    ENTITY_RENDER_CONTROVERIAL,
+    ENTITY_RENDER_REQUEST_MODEL
 };
 
 namespace Entity

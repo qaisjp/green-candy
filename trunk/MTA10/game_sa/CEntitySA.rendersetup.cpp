@@ -464,7 +464,7 @@ CGame::entityList_t Entity::GetEntitiesInRenderQueue( void )
         camDistance - optimized distance from camera to entity
     Purpose:
         Initializes the entity for rendering and returns the
-        type how the entity should be rendered.
+        type how the entity should be rendered (WIP).
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00554230
 =========================================================*/
@@ -500,7 +500,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
         // Should optimize FPS a little.
         if ( GetEntityTunnelOptimization( entity ) )
         {
-            return ENTITY_RENDER_NONE;
+            return ENTITY_RENDER_CROSS_ZONES;
         }
     }
 
@@ -525,22 +525,22 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
                 {
                     if ( activeCam.DirectionWasLooking == 3 || modelIndex == VT_RHINO || modelIndex == VT_COACH || *(bool*)0x00B6F04A )
                     {
-                        return (eRenderType)2;
+                        return ENTITY_RENDER_CONTROVERIAL;
                     }
 
                     if ( activeCam.DirectionWasLooking != 0 )
                     {
                         *(CVehicleSAInterface**)0x00B745D4 = playerVehicle;
-                        return (eRenderType)2;
+                        return ENTITY_RENDER_CONTROVERIAL;
                     }
 
                     if ( IS_ANY_FLAG( playerVehicle->m_handling->uiModelFlags, MODEL_NOREARWINDOW ) )
-                        return (eRenderType)2;
+                        return ENTITY_RENDER_CONTROVERIAL;
 
                     if ( vehicleType != VEHICLE_BOAT || modelIndex == VT_REEFER || modelIndex == VT_TROPIC || modelIndex == VT_PREDATOR || modelIndex == VT_SKIMMER )
                     {
                         *(CVehicleSAInterface**)0x00B745D4 = playerVehicle;
-                        return (eRenderType)2;
+                        return ENTITY_RENDER_CONTROVERIAL;
                     }
                 }
             }
@@ -548,13 +548,13 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
             if ( IsEntityRenderable( entity ) )
             {
                 if ( !entity->IsInStreamingArea() && entity->m_type == ENTITY_TYPE_VEHICLE )
-                    return ENTITY_RENDER_NONE;
+                    return ENTITY_RENDER_CROSS_ZONES;
 
                 if ( !IsEntityValidForDisplay( entity ) )
-                    return (eRenderType)2;
+                    return ENTITY_RENDER_CONTROVERIAL;
 
                 if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_RENDER_LAST ) )
-                    return (eRenderType)1;
+                    return ENTITY_RENDER_DEFAULT;
 
                 entity->m_entityFlags &= ~ENTITY_FADE;
 
@@ -563,7 +563,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
                 PushEntityOnRenderQueue( entity, ( entityPos - *(CVector*)0x00B76870 ).Length() );
             }
 
-            return ENTITY_RENDER_NONE;
+            return ENTITY_RENDER_CROSS_ZONES;
         }
     }
     else if ( modelType == (eModelType)3 )
@@ -579,7 +579,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
             if ( timedModel == -1 || ppModelInfo[timedModel]->GetRwObject() )
             {
                 entity->DeleteRwObject();
-                return ENTITY_RENDER_NONE;
+                return ENTITY_RENDER_CROSS_ZONES;
             }
 
             unkBoolean = false;
@@ -594,10 +594,10 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
         if ( IsEntityRenderable( entity ) )
         {
             if ( !IsEntityValidForDisplay( entity ) )
-                return (eRenderType)2;
+                return ENTITY_RENDER_CONTROVERIAL;
 
             if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_RENDER_LAST ) )
-                return (eRenderType)1;
+                return ENTITY_RENDER_DEFAULT;
 
             const CVector& entityPos = entity->Placeable.GetPosition();
 
@@ -606,11 +606,11 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
             entity->m_entityFlags &= ~ENTITY_FADE;
         }
    
-        return ENTITY_RENDER_NONE;
+        return ENTITY_RENDER_CROSS_ZONES;
     }
 
     if ( !entity->IsInStreamingArea() )
-        return ENTITY_RENDER_NONE;
+        return ENTITY_RENDER_CROSS_ZONES;
 
     camDistance = GetComplexCameraEntityDistance( entity->m_lod ? entity->m_lod : entity, *(const CVector*)0x00B76870 );
 
