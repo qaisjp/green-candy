@@ -13,11 +13,23 @@
 
 #include <StdInc.h>
 
-void RwTexture::SetName( const char *_name )
-{
-    (*ppRwInterface)->m_strncpy( name, _name, sizeof(name) );
+/*=========================================================
+    RwTexture::SetName
 
-    if ( (*ppRwInterface)->m_strlen( _name ) >= sizeof(name) )
+    Arguments:
+        name - NULL-terminated string of the new texture name
+    Purpose:
+        Changes the name of this texture. If the name is too long
+        it triggers a RenderWare error.
+    Binary offsets:
+        (1.0 US): 0x007F38A0
+        (1.0 EU): 0x007F38E0
+=========================================================*/
+void RwTexture::SetName( const char *name )
+{
+    (*ppRwInterface)->m_strncpy( this->name, name, sizeof(this->name) );
+
+    if ( (*ppRwInterface)->m_strlen( this->name ) >= sizeof(this->name) )
     {
         RwError err;
         err.err1 = 1;
@@ -27,17 +39,42 @@ void RwTexture::SetName( const char *_name )
     }
 }
 
-void RwTexture::AddToDictionary( RwTexDictionary *_txd )
+/*=========================================================
+    RwTexture::AddToDictionary
+
+    Arguments:
+        _txd - the new TXD to apply this texture to
+    Purpose:
+        Assigns this texture to another TXD container.
+        It unlinks this texture from the previous TXD.
+    Binary offsets:
+        (1.0 US): 0x007F3980
+        (1.0 EU): 0x007F39C0
+    Note:
+        At the binary offset location actually is
+        RwTexDictionaryAddTexture.
+=========================================================*/
+void RwTexture::AddToDictionary( RwTexDictionary *txd )
 {
-    if ( txd )
+    if ( this->txd )
         LIST_REMOVE( TXDList );
 
-    LIST_INSERT( _txd->textures.root, TXDList );
+    LIST_INSERT( txd->textures.root, TXDList );
 
-    txd = _txd;
+    this->txd = txd;
 }
 
-void RwTexture::RemoveFromDictionary()
+/*=========================================================
+    RwTexture::RemoveFromDictionary
+
+    Purpose:
+        Unlinks this texture from the TXD container it is
+        assigned to.
+    Binary offsets:
+        (1.0 US): 0x007F39C0
+        (1.0 EU): 0x007F3A00
+=========================================================*/
+void RwTexture::RemoveFromDictionary( void )
 {
     if ( !txd )
         return;

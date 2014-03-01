@@ -14,6 +14,18 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
+/*=========================================================
+    RpMaterial::SetTexture
+
+    Arguments:
+        tex - new texture to assign to material (can be NULL)
+    Purpose:
+        Changes the texture of this material. If tex is NULL,
+        then this material will not use a texture anymore.
+    Binary offsets:
+        (1.0 US): 0x0074DBC0
+        (1.0 EU): 0x0074DC10
+=========================================================*/
 void RpMaterial::SetTexture( RwTexture *tex )
 {
     // Reference our texture for usage
@@ -36,7 +48,7 @@ RpMaterials::RpMaterials( unsigned int max )
     entries = 0;
 }
 
-RpMaterials::~RpMaterials()
+RpMaterials::~RpMaterials( void )
 {
     if ( data )
     {
@@ -52,6 +64,18 @@ RpMaterials::~RpMaterials()
     max = 0;
 }
 
+/*=========================================================
+    RpMaterials::Add
+
+    Arguments:
+        mat - new material to add to the storage
+    Purpose:
+        Registers another material to this storage. It fails if
+        this container is full.
+    Binary offsets:
+        (1.0 US): 0x0074E350
+        (1.0 EU): 0x0074E3A0
+=========================================================*/
 bool RpMaterials::Add( RpMaterial *mat )
 {
     if ( entries == max )
@@ -64,6 +88,14 @@ bool RpMaterials::Add( RpMaterial *mat )
     return true;
 }
 
+/*=========================================================
+    RwLinkedMaterials::Get
+
+    Arguments:
+        index - index of the material you wish to retrieve
+    Purpose:
+        Returns an indexed linked material from this storage.
+=========================================================*/
 RwLinkedMaterial* RwLinkedMateria::Get( unsigned int index )
 {
     if ( index >= count )

@@ -14,7 +14,16 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
-RwCamera* RwCameraCreate()
+/*=========================================================
+    RwCameraCreate
+
+    Purpose:
+        Returns a new RenderWare camera plugin instance.
+    Binary offsets:
+        (1.0 US): 0x007EE4F0
+        (1.0 EU): 0x007EE530
+=========================================================*/
+RwCamera* RwCameraCreate( void )
 {
     RwCamera *cam = (RwCamera*)pRwInterface->m_allocStruct( pRwInterface->m_cameraInfo, 0x30005 );
 
@@ -51,16 +60,60 @@ RwCamera* RwCameraCreate()
     return cam;
 }
 
-void RwCamera::BeginUpdate()
+/*=========================================================
+    RwCamera::BeginUpdate
+
+    Purpose:
+        Enters the RenderWare rendering stage by notifying this
+        camera. The direct3d 9 rendertarget is set to the
+        camera's buffer. All atomic rendering calls will render
+        on this camera's render target. Only one camera can
+        be rendering at a time. The active camera is set at
+        RwInterface::m_renderCam.
+    Binary offsets:
+        (1.0 US): 0x007EE190
+        (1.0 EU): 0x007EE1D0
+=========================================================*/
+void RwCamera::BeginUpdate( void )
 {
     preCallback( this );
 }
 
-void RwCamera::EndUpdate()
+/*=========================================================
+    RwCamera::EndUpdate
+
+    Purpose:
+        Leaves the RenderWare rendering stage. It applies all
+        rendering to the buffer. The camera is unset from
+        RwInterface::m_renderCam.
+    Binary offsets:
+        (1.0 US): 0x007EE180
+        (1.0 EU): 0x007EE1C0
+=========================================================*/
+void RwCamera::EndUpdate( void )
 {
     postCallback( this );
 }
 
+/*=========================================================
+    RwCamera::AddToClump
+
+    Arguments:
+        _clump - model to which the camera shall be added to
+    Purpose:
+        Adds this camera into the clump's list. It is unlinked
+        from any previous clump.
+    Note:
+        The GTA:SA RenderWare function did fail to unlink
+        the camera; that would result in crashes. This function
+        fixed that issue.
+    Binary offsets:
+        (1.0 US): 0x0074A550
+        (1.0 EU): 0x0074A5A0
+    Note:
+        At the binary offset location actually is
+        RpClumpAddCamera.
+=========================================================*/
 void RwCamera::AddToClump( RpClump *clump )
 {
     // Bugfix: remove from previous clump
@@ -71,7 +124,19 @@ void RwCamera::AddToClump( RpClump *clump )
     this->clump = clump;
 }
 
-void RwCamera::RemoveFromClump()
+/*=========================================================
+    RwCamera::RemoveFromClump
+
+    Purpose:
+        Unlists this camera from the clump's camera registry.
+    Binary offsets:
+        (1.0 US): 0x0074A580
+        (1.0 EU): 0x0074A5D0
+    Note:
+        At the binary offset location actually is
+        RpClumpRemoveCamera.
+=========================================================*/
+void RwCamera::RemoveFromClump( void )
 {
     if ( !clump )
         return;

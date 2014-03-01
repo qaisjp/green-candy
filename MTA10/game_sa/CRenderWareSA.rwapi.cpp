@@ -19,12 +19,28 @@
 *
 *   RenderWare Functions
 *
+*   WARNING: Do not modify these classes if you do not know what you are doing!
+*   They are C++ representations of internal GTA:SA logic. I suggest you analyze
+*   the internals first before you touch the RenderWare interfaces. Any change
+*   might break the compatibility with the engine, so be careful.
+*
 *****************************************************************************/
 
 RwScene *const *p_gtaScene = (RwScene**)0x00C17038;
 RwDeviceInformation *const pRwDeviceInfo = (RwDeviceInformation*)0x00C9BF00;
 
+/*=========================================================
+    RwObjectFrame::AddToFrame
 
+    Arguments:
+        frame - new parent frame
+    Purpose:
+        Set the parent for a frame extension object. The
+        previous parent is unlinked.
+    Binary offsets:
+        (1.0 US): 0x0074BF20
+        (1.0 EU): 0x0074BF70
+=========================================================*/
 void RwObjectFrame::AddToFrame( RwFrame *frame )
 {
     RemoveFromFrame();
@@ -37,7 +53,13 @@ void RwObjectFrame::AddToFrame( RwFrame *frame )
     LIST_INSERT( frame->objects.root, lFrame );
 }
 
-void RwObjectFrame::RemoveFromFrame()
+/*=========================================================
+    RwObjectFrame::RemoveFromFrame
+
+    Purpose:
+        Unlink the current parent frame if there is one.
+=========================================================*/
+void RwObjectFrame::RemoveFromFrame( void )
 {
     if ( !parent )
         return;
@@ -47,12 +69,23 @@ void RwObjectFrame::RemoveFromFrame()
     parent = NULL;
 }
 
-RwStaticGeometry::RwStaticGeometry()
+RwStaticGeometry::RwStaticGeometry( void )
 {
     count = 0;
     link = NULL;
 }
 
+/*=========================================================
+    RwStaticGeometry::AllocateLink (GTA:SA extension)
+
+    Arguments:
+        count - number of links to allocate
+    Purpose:
+        Allocates a number of links to this static geometry.
+        Previous links are discarded.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004CF140
+=========================================================*/
 RwRenderLink* RwStaticGeometry::AllocateLink( unsigned int count )
 {
     if ( link )
@@ -63,6 +96,28 @@ RwRenderLink* RwStaticGeometry::AllocateLink( unsigned int count )
     return link = (RwRenderLink*)RwAllocAligned( (((count * sizeof(RwRenderLink) - 1) >> 6 ) + 1) << 6, 0x40 );
 }
 
+/*=========================================================
+    RwFindTexture
+
+    Arguments:
+        name - primary name of the texture you want to find
+        secName - name of a fallback texture if primary one is not found
+    Purpose:
+        Scans the global and the current TXD containers for a
+        matching texture. If the TXD is found in the current TXD
+        (m_findInstanceRef), it is referenced and returned to the
+        caller. If not, the global texture container is researched.
+        Textures in the global environment are not referenced upon
+        return but are put into the current texture container if it
+        is set. The global texture environment is either like a
+        temporary storage for textures or a routine to dynamically
+        create them and give to models.
+    Note:
+        GTA:SA does not use the global texture routine (m_findInstance).
+    Binary offsets:
+        (1.0 US): 0x007F3AC0
+        (1.0 EU): 0x007F3B00
+=========================================================*/
 RwTexture* RwFindTexture( const char *name, const char *secName )
 {
     RwTexture *tex = pRwInterface->m_textureManager.findInstanceRef( name );
@@ -95,6 +150,17 @@ RwTexture* RwFindTexture( const char *name, const char *secName )
     return tex;
 }
 
+/*=========================================================
+    RwSetError
+
+    Arguments:
+        info - error information
+    Purpose:
+        Notifies the RenderWare system about a runtime error.
+    Binary offsets:
+        (1.0 US): 0x00808820
+        (1.0 EU): 0x00808860
+=========================================================*/
 RwError* RwSetError( RwError *info )
 {
     if ( pRwInterface->m_errorInfo.err1 )

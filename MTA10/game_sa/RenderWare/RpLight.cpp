@@ -14,11 +14,40 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
+/*=========================================================
+    RpLight::SetLightIndex
+
+    Arguments:
+        idx - number from 0 to 7 representing the hardware light index
+    Purpose:
+        Sets the hardware light index. It is used in the rendering
+        stage. Only one light with the same index can be active during
+        rendering. Light indices are not dynamically managed by
+        RenderWare (at the moment). The first time a light is assigned
+        to an atomic, it gains a light index. Settings this light index
+        to 0 will force an update to a freely available index at next
+        atomic render.
+=========================================================*/
 void RpLight::SetLightIndex( unsigned int idx )
 {
     lightIndex = std::min( idx, (unsigned int)7 );
 }
 
+/*=========================================================
+    RpLight::AddToClump
+
+    Arguments:
+        _clump - model registry to put this light into
+    Purpose:
+        Registers this light at another clump. It unregisters
+        it from the previous clump.
+    Binary offsets:
+        (1.0 US): 0x0074A4F0
+        (1.0 EU): 0x0074A540
+    Note:
+        At the binary offset location actually is
+        RpClumpAddLight.
+=========================================================*/
 void RpLight::AddToClump( RpClump *clump )
 {
     // Bugfix: remove from previous clump
@@ -29,7 +58,19 @@ void RpLight::AddToClump( RpClump *clump )
     this->clump = clump;
 }
 
-void RpLight::RemoveFromClump()
+/*=========================================================
+    RpLight::RemoveFromClump
+
+    Purpose:
+        Removes this light from any clump it might be registered at.
+    Binary offsets:
+        (1.0 US): 0x0074A520
+        (1.0 EU): 0x0074A570
+    Note:
+        At the binary offset location actually is
+        RpClumpRemoveLight.
+=========================================================*/
+void RpLight::RemoveFromClump( void )
 {
     if ( !clump )
         return;
@@ -39,6 +80,23 @@ void RpLight::RemoveFromClump()
     clump = NULL;
 }
 
+/*=========================================================
+    RpLight::AddToScene
+
+    Arguments:
+        scene - scene to register this light at
+    Purpose:
+        Puts this light into a scene. It will interact with
+        all atomics inside of the scene. Global lights are applied
+        to all atomics without position preference. Local lights
+        are tailored along sectors, applying to in-range atomics.
+    Binary offsets:
+        (1.0 US): 0x00751910
+        (1.0 EU): 0x00751960
+    Note:
+        At the binary offset location actually is
+        RwSceneAddLight.
+=========================================================*/
 void RpLight::AddToScene_Global( RwScene *scene )
 {
     RemoveFromScene();
@@ -68,7 +126,19 @@ void RpLight::AddToScene( RwScene *scene )
         AddToScene_Local( scene );
 }
 
-void RpLight::RemoveFromScene()
+/*=========================================================
+    RpLight::RemoveFromScene
+
+    Purpose:
+        Unregisters this light from a scene it might be inside.
+    Binary offsets:
+        (1.0 US): 0x00751960
+        (1.0 EU): 0x007519B0
+    Note:
+        At the binary offset location actually is
+        RwSceneRemoveLight.
+=========================================================*/
+void RpLight::RemoveFromScene( void )
 {
     if ( !scene )
         return;
@@ -76,6 +146,18 @@ void RpLight::RemoveFromScene()
     RwSceneRemoveLight( scene, this );
 }
 
+/*=========================================================
+    RpLight::SetColor
+
+    Arguments:
+        color - new color to set the light to
+    Purpose:
+        Changes the light's color to another. If the color is
+        brightness only, it sets privateFlags to 1; otherwise 0.
+    Binary offsets:
+        (1.0 US): 0x00751A90
+        (1.0 EU): 0x00751AE0
+=========================================================*/
 void RpLight::SetColor( const RwColorFloat& color )
 {
     this->color = color;
@@ -84,6 +166,21 @@ void RpLight::SetColor( const RwColorFloat& color )
     privateFlags = ( color.r == color.g && color.r == color.b );
 }
 
+/*=========================================================
+    RpLightCreate
+
+    Arguments:
+        type - type identifier of the new light
+               see RpLightType enum (LIGHT_TYPE_* )
+    Purpose:
+        Creates a new RpLight plugin instance and registers
+        it into the system. It assigns a light-type to it.
+        This light-type may not be changed during the light's
+        lifetime.
+    Binary offsets:
+        (1.0 US): 0x00752110
+        (1.0 EU): 0x00752160
+=========================================================*/
 static void* _lightCallback( void *ptr )
 {
     // Nothing to synchronize for lights!

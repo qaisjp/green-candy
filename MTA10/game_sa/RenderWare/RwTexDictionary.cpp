@@ -14,22 +14,34 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
-static bool RwTexDictionaryGetFirstTexture( RwTexture *tex, RwTexture **rslt )
-{
-    *rslt = tex;
-    return false;
-}
+/*=========================================================
+    RwTexDictionary::GetFirstTexture
 
-RwTexture* RwTexDictionary::GetFirstTexture()
+    Purpose:
+        Returns the first texture of this TXD.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00734940
+=========================================================*/
+RwTexture* RwTexDictionary::GetFirstTexture( void )
 {
-    RwTexture *tex;
-
-    if ( ForAllTextures( RwTexDictionaryGetFirstTexture, &tex ) )
+    if ( LIST_EMPTY( textures.root ) )
         return NULL;
 
-    return tex;
+    return LIST_GETITEM( RwTexture, textures.root.next, TXDList );
 }
 
+/*=========================================================
+    RwTexDictionary::FindNamedTexture
+
+    Arguments:
+        name - case-insensitive name to check the textures against
+    Purpose:
+        Scans the textures of this TXD and returns the first one
+        which is found with the name. If not, it returns NULL.
+    Binary offsets:
+        (1.0 US): 0x007F39F0
+        (1.0 EU): 0x007F3A30
+=========================================================*/
 RwTexture* RwTexDictionary::FindNamedTexture( const char *name )
 {
     LIST_FOREACH_BEGIN( RwTexture, textures.root, TXDList )
@@ -40,6 +52,15 @@ RwTexture* RwTexDictionary::FindNamedTexture( const char *name )
     return NULL;
 }
 
+/*=========================================================
+    RwTexDictionaryCreate
+
+    Purpose:
+        Returns a newly created TexDictionary.
+    Binary offsets:
+        (1.0 US): 0x007F3600
+        (1.0 EU): 0x007F3640
+=========================================================*/
 RwTexDictionary* RwTexDictionaryCreate( void )
 {
     RwTexDictionary *txd = (RwTexDictionary*)pRwInterface->m_allocStruct( pRwInterface->m_textureManager.txdStruct, 0x30016 );
