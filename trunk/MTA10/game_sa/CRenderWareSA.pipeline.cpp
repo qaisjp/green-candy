@@ -874,9 +874,9 @@ struct GenericVideoPassRender
     {
         RpMaterial *curMat = rtPass->m_useMaterial;
 
-        if ( IS_FLAG( renderFlags, 0x84 ) && RwTextureHasAlpha( curMat->m_texture ) )
+        if ( IS_FLAG( renderFlags, 0x84 ) && RwTextureHasAlpha( curMat->texture ) )
         {
-            RwD3D9SetTexture( curMat->m_texture, 0 );
+            RwD3D9SetTexture( curMat->texture, 0 );
 
             if ( !hasAlphaModulation )
             {
@@ -980,15 +980,15 @@ struct AlphaTexturedVideoPassRender
         // Update surface properties.
         unsigned int stateFlags = 0;
 
-        if ( !RwD3D9UpdateRenderPassSurfaceProperties( rtPass, lightValue, curMat, renderFlags ) && IS_ANY_FLAG( renderFlags, 0x40 ) && curMat->m_color != 0xFFFFFFFF )
+        if ( !RwD3D9UpdateRenderPassSurfaceProperties( rtPass, lightValue, curMat, renderFlags ) && IS_ANY_FLAG( renderFlags, 0x40 ) && curMat->color != 0xFFFFFFFF )
         {
             stateFlags |= 0x02;
 
-            HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, curMat->m_color.ToD3DColor() );
+            HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, curMat->color.ToD3DColor() );
         }
 
         // Update texture status.
-        RwTexture *matTex = curMat->m_texture;
+        RwTexture *matTex = curMat->texture;
 
         if ( matTex && IS_ANY_FLAG( renderFlags, 0x84 ) )
         {

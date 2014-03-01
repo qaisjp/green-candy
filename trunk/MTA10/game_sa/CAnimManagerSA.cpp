@@ -75,7 +75,7 @@ RwExtension* CAnimManagerSA::CreateAnimation( RpAnimHierarchy *animInfo )
     if ( !anim )
         return NULL;
 
-    anim->m_count = anim->m_count * 2;
+    anim->count = anim->count * 2;
     return anim;
 }
 

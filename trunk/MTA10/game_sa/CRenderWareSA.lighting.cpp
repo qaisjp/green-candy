@@ -139,7 +139,7 @@ namespace D3D9Lighting
 
     bool lightState::ActivateDirLight( RpLight *light )
     {
-        RwFrame *lightParent = light->m_parent;
+        RwFrame *lightParent = light->parent;
 
         if ( !lightParent )
             return false;
@@ -148,9 +148,9 @@ namespace D3D9Lighting
 
         // Fill the light struct.
         D3DLIGHT9& dirLight = dirLightStruct;
-        dirLight.Diffuse.r = light->m_color.r;
-        dirLight.Diffuse.g = light->m_color.g;
-        dirLight.Diffuse.b = light->m_color.b;
+        dirLight.Diffuse.r = light->color.r;
+        dirLight.Diffuse.g = light->color.g;
+        dirLight.Diffuse.b = light->color.b;
 
         const RwMatrix& lightPos = lightParent->GetLTM();
 
@@ -166,7 +166,7 @@ namespace D3D9Lighting
 
     bool lightState::ActivateLocalLight( RpLight *light )
     {
-        RwFrame *lightParent = light->m_parent;
+        RwFrame *lightParent = light->parent;
 
         if ( !lightParent )
             return false;
@@ -174,9 +174,9 @@ namespace D3D9Lighting
         int lightIndex = GetLightIndex( light );
 
         D3DLIGHT9& localLight = localLightStruct;
-        localLight.Diffuse.r = light->m_color.r;
-        localLight.Diffuse.g = light->m_color.g;
-        localLight.Diffuse.b = light->m_color.b;
+        localLight.Diffuse.r = light->color.r;
+        localLight.Diffuse.g = light->color.g;
+        localLight.Diffuse.b = light->color.b;
 
         const RwMatrix& lightPos = lightParent->GetLTM();
 
@@ -184,18 +184,18 @@ namespace D3D9Lighting
         localLight.Position.y = lightPos.vPos.fY;
         localLight.Position.z = lightPos.vPos.fZ;
 
-        float lightRadius = light->m_radius;
+        float lightRadius = light->radius;
 
         localLight.Range = lightRadius;
 
         if ( lightRadius <= 0.0f )
             return false;
 
-        localLight.Attenuation0 = light->m_attenuation[0];
-        localLight.Attenuation1 = light->m_attenuation[1] / lightRadius;
-        localLight.Attenuation2 = light->m_attenuation[2] / ( lightRadius * lightRadius );
+        localLight.Attenuation0 = light->attenuation[0];
+        localLight.Attenuation1 = light->attenuation[1] / lightRadius;
+        localLight.Attenuation2 = light->attenuation[2] / ( lightRadius * lightRadius );
 
-        switch( light->m_subtype )
+        switch( light->subtype )
         {
         case LIGHT_TYPE_POINT:
             localLight.Type = D3DLIGHT_POINT;
@@ -256,10 +256,10 @@ static RpLight* __cdecl RpD3D9LightConstructor( RpLight *light, size_t offset )
     if ( !light )
         return NULL;
 
-    light->m_lightIndex = -1;
-    light->m_attenuation[0] = 1.0;
-    light->m_attenuation[1] = 0.0;
-    light->m_attenuation[2] = 5.0;
+    light->lightIndex = -1;
+    light->attenuation[0] = 1.0;
+    light->attenuation[1] = 0.0;
+    light->attenuation[2] = 5.0;
     return light;
 }
 
@@ -268,9 +268,9 @@ static RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
     if ( !light )
         return NULL;
 
-    if ( light->m_lightIndex >= 0 )
+    if ( light->lightIndex >= 0 )
     {
-        light->m_lightIndex = -1;
+        light->lightIndex = -1;
     }
 
     return light;
@@ -278,8 +278,8 @@ static RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
 
 static void __cdecl RpD3D9LightCopyConstructor( RpLight *light, const RpLight *srcObj, size_t offset, unsigned int pluginId )
 {
-    light->m_lightIndex = srcObj->m_lightIndex;
-    light->m_attenuation = srcObj->m_attenuation;
+    light->lightIndex = srcObj->lightIndex;
+    light->attenuation = srcObj->attenuation;
 }
 
 static int __cdecl RpD3D9InitializeLightingPlugin( void )
@@ -882,7 +882,7 @@ struct lightPassManager
 
         // Update position.
         {
-            const RwMatrix& camTransform = pRwInterface->m_renderCam->m_parent->GetLTM();
+            const RwMatrix& camTransform = pRwInterface->m_renderCam->parent->GetLTM();
 
             CVector lightPos = camTransform.vPos - (CVector&)lightStruct.Position;
 
@@ -1557,12 +1557,12 @@ int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
     bool isLighting = false;
     unsigned int numLights = 0;
 
-    LIST_FOREACH_BEGIN( RpLight, curScene->m_globalLights.root, m_sceneLights )
+    LIST_FOREACH_BEGIN( RpLight, curScene->globalLights.root, sceneLights )
         if ( cb.CanProcessLight( item ) )
         {
             numLights++;
 
-            switch( item->m_subtype )
+            switch( item->subtype )
             {
             case LIGHT_TYPE_DIRECTIONAL:
                 if ( cb.CanProcessDirectionalLight() )
@@ -1572,9 +1572,9 @@ int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
                 }
                 break;
             default:
-                ambientColor.r += item->m_color.r;
-                ambientColor.g += item->m_color.g;
-                ambientColor.b += item->m_color.b;
+                ambientColor.r += item->color.r;
+                ambientColor.g += item->color.g;
+                ambientColor.b += item->color.b;
 
                 isLighting = true;
                 break;
@@ -1610,7 +1610,7 @@ struct WorldGlobalLightManager
 
     inline bool CanProcessLight( RpLight *globLight )
     {
-        return IS_ANY_FLAG( globLight->m_flags, lightFlags );
+        return IS_ANY_FLAG( globLight->flags, lightFlags );
     }
 
     inline bool CanProcessDirectionalLight( void )
@@ -1648,7 +1648,7 @@ static lightPassManager localLightPassMan( localLight_lightState );
 
 void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 {
-    RpGeometry *geom = atomic->m_geometry;
+    RpGeometry *geom = atomic->geometry;
     RwScene *curScene = pRwInterface->m_currentScene;
 
     RpD3D9ResetLightStatus();
@@ -1694,14 +1694,14 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
                 LIST_FOREACH_BEGIN( RwSector::lightNode, sector->m_localLights.root, node )
                     RpLight *light = item->data;
 
-                    if ( light && light->m_parent && light->m_frame != pRwInterface->m_frame && light->IsLightActive() )
+                    if ( light && light->parent && light->frame != pRwInterface->m_frame && light->IsLightActive() )
                     {
-                        light->m_frame = pRwInterface->m_frame;
+                        light->frame = pRwInterface->m_frame;
 
-                        const RwMatrix& lightPos = light->m_parent->GetLTM();
+                        const RwMatrix& lightPos = light->parent->GetLTM();
                         const RwSphere& atomicSphere = atomic->GetWorldBoundingSphere();
 
-                        float lightSphereActivityRange = light->m_radius + atomicSphere.radius;
+                        float lightSphereActivityRange = light->radius + atomicSphere.radius;
 
                         lightSphereActivityRange *= lightSphereActivityRange;
 

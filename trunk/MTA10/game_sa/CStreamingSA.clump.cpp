@@ -26,24 +26,24 @@
 =========================================================*/
 static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh *mesh )
 {
-    CVector *normals = (CVector*)RwAllocAligned( sizeof(CVector) * geom->m_verticeSize, 0x10 );
+    CVector *normals = (CVector*)RwAllocAligned( sizeof(CVector) * geom->verticeSize, 0x10 );
 
-    for ( unsigned int n = 0; n < geom->m_verticeSize; n++ )
+    for ( unsigned int n = 0; n < geom->verticeSize; n++ )
     {
         CVector& norm = normals[n];
         norm.fX = 0; norm.fY = 0; norm.fZ = 0;
 
-        for ( unsigned int i = 0; i < geom->m_triangleSize; i++ )
+        for ( unsigned int i = 0; i < geom->triangleSize; i++ )
         {
-            const RpTriangle& tri = geom->m_triangles[i];
+            const RpTriangle& tri = geom->triangles[i];
 
             // If the vertex connects to any point of the triangle...
             if ( tri.v1 == n || tri.v2 == n || tri.v3 == n )
             {
                 // ... we should adjust the triangle normal.
-                const CVector& origin = mesh->m_positions[tri.v1];
-                CVector v1 = mesh->m_positions[tri.v2] - origin;
-                const CVector v2 = mesh->m_positions[tri.v3] - origin;
+                const CVector& origin = mesh->positions[tri.v1];
+                CVector v1 = mesh->positions[tri.v2] - origin;
+                const CVector v2 = mesh->positions[tri.v3] - origin;
                 v1.CrossProduct( v2 );
                 v1.Normalize();
 
@@ -69,20 +69,20 @@ static inline CVector* _RpGeometryAllocateNormals( RpGeometry *geom, RpGeomMesh 
 =========================================================*/
 void _initAtomicNormals( RpAtomic *atom )
 {
-    RpGeometry& geom = *atom->m_geometry;
+    RpGeometry& geom = *atom->geometry;
 
     if ( !( geom.flags & RW_GEOMETRY_NORMALS ) )
     {
         // Allocate normals for every mesh
-        for ( unsigned int n = 0; n < geom.m_numMeshes; n++ )
+        for ( unsigned int n = 0; n < geom.numMeshes; n++ )
         {
-            RpGeomMesh& mesh = geom.m_meshes[n];
+            RpGeomMesh& mesh = geom.meshes[n];
 
-            if ( !mesh.m_normals )
-                mesh.m_normals = _RpGeometryAllocateNormals( &geom, &mesh );
+            if ( !mesh.normals )
+                mesh.normals = _RpGeometryAllocateNormals( &geom, &mesh );
         }
 
-        if ( !geom.m_skeleton )
+        if ( !geom.skeleton )
             geom.flags |= RW_GEOMETRY_NO_SKIN;
 
         geom.flags |= RW_GEOMETRY_NORMALS;
@@ -102,7 +102,7 @@ void _initAtomicNormals( RpAtomic *atom )
 static void _initAtomScene( RpAtomic *atom )
 {
     // Apply the default GTA:SA scene
-    atom->m_scene = *p_gtaScene;
+    atom->scene = *p_gtaScene;
 
     // TODO: reenable this using multi-threading (streamline extension!)
     //return;
@@ -129,7 +129,7 @@ static void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
     char unk2[24];
 
     // TODO: reven this function.
-    ((void (__cdecl*)(const char*, char*, bool&))0x005370A0)( atom->m_parent->m_nodeName, unk2, unk );
+    ((void (__cdecl*)(const char*, char*, bool&))0x005370A0)( atom->parent->szName, unk2, unk );
 
     atom->SetRenderCallback( NULL );
 
@@ -144,7 +144,7 @@ static void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
 
     atom->AddToFrame( RwFrameCreate() );
     
-    atom->m_modelId = replacerId;
+    atom->modelId = replacerId;
 }
 
 /*=========================================================
@@ -161,7 +161,7 @@ static void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
 =========================================================*/
 inline static void _initClumpScene( RpClump *clump )
 {
-    LIST_FOREACH_BEGIN( RpAtomic, clump->m_atomics.root, m_atomics )
+    LIST_FOREACH_BEGIN( RpAtomic, clump->atomics.root, atomics )
         _initAtomScene( item );
     LIST_FOREACH_END
 }
@@ -206,8 +206,8 @@ bool __cdecl LoadClumpFile( RwStream *stream, modelId_t model )
     {
         if ( RpClump *clump = RpClumpStreamRead( stream ) )
         {
-            while ( !LIST_EMPTY( clump->m_atomics.root ) )
-                RpClumpAtomicActivator( LIST_GETITEM( RpAtomic, clump->m_atomics.root.next, m_atomics ), model );
+            while ( !LIST_EMPTY( clump->atomics.root ) )
+                RpClumpAtomicActivator( LIST_GETITEM( RpAtomic, clump->atomics.root.next, atomics ), model );
 
             RpClumpDestroy( clump );
 
@@ -245,7 +245,7 @@ bool __cdecl LoadClumpFilePersistent( RwStream *stream, modelId_t id )
     if ( info->renderFlags & RENDER_NOSKELETON )
     {
         RpClump *clump = RpClumpCreate();
-        RwFrame *frame = clump->m_parent = RwFrameCreate();
+        RwFrame *frame = clump->parent = RwFrameCreate();
 
         RwImportedScan::Apply( info->usTextureDictionary );
 
@@ -257,7 +257,7 @@ bool __cdecl LoadClumpFilePersistent( RwStream *stream, modelId_t id )
             {
                 // Small memory leak fix
                 RwFrameDestroy( frame );
-                clump->m_parent = NULL;
+                clump->parent = NULL;
 
                 RwImportedScan::Unapply();
 
@@ -265,15 +265,15 @@ bool __cdecl LoadClumpFilePersistent( RwStream *stream, modelId_t id )
                 return false;
             }
     
-            RwFrame *clonedParent = item->m_parent->CloneRecursive();
+            RwFrame *clonedParent = item->parent->CloneRecursive();
 
             frame->Link( clonedParent );
             
-            while ( !LIST_EMPTY( item->m_atomics.root ) )
+            while ( !LIST_EMPTY( item->atomics.root ) )
             {
-                RpAtomic *atom = LIST_GETITEM( RpAtomic, item->m_atomics.root.next, m_atomics );
+                RpAtomic *atom = LIST_GETITEM( RpAtomic, item->atomics.root.next, atomics );
 
-                atom->AddToFrame( atom->m_parent->m_root );
+                atom->AddToFrame( atom->parent->root );
                 atom->AddToClump( clump );
 
                 _initAtomScene( atom );

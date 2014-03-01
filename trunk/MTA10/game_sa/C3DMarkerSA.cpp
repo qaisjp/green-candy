@@ -27,7 +27,7 @@ void C3DMarkerSAInterface::DeleteRwObject( void )
 
     // Destroy RenderWare objects
     RpAtomic *atom = m_pRwObject;
-    RwFrame *frame = atom->m_parent;
+    RwFrame *frame = atom->parent;
 
     RpAtomicDestroy( atom );
     RwFrameDestroy( frame );

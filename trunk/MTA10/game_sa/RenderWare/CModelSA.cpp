@@ -22,7 +22,7 @@ void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
     {
         CRpAtomicSA *atom = (CRpAtomicSA*)obj;
 
-        if ( atom->GetObject()->m_clump == model->GetObject() )
+        if ( atom->GetObject()->clump == model->GetObject() )
         {
             atom->m_model = model;
             model->m_atomics.push_front( atom );
@@ -32,7 +32,7 @@ void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
     {
         CRpLightSA *light = (CRpLightSA*)obj;
 
-        if ( light->GetObject()->m_clump == model->GetObject() )
+        if ( light->GetObject()->clump == model->GetObject() )
         {
             light->m_model = model;
             model->m_lights.push_front( light );
@@ -42,7 +42,7 @@ void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
     {
         CRwCameraSA *cam = (CRwCameraSA*)obj;
 
-        if ( cam->GetObject()->m_clump == model->GetObjectA() )
+        if ( cam->GetObject()->clump == model->GetObjectA() )
         {
             cam->m_model = model;
             model->m_cameras.push_front( cam );
@@ -74,9 +74,9 @@ CModelSA::CModelSA( RpClump *clump, CColModelSA *col ) : CRwObjectSA( clump )
     m_col = col;
 
     // Assign the frame hierarchy
-    m_frame = new CRwFrameSA( clump->m_parent );
-    clump->m_parent->Unlink();
-    clump->m_parent->Update();
+    m_frame = new CRwFrameSA( clump->parent );
+    clump->parent->Unlink();
+    clump->parent->Update();
 
     // Register all atomics to us
     RpClumpObjectAssociation( m_frame, this );

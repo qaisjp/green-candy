@@ -337,7 +337,7 @@ namespace D3D9Lighting
 
         inline int GetLightIndex( RpLight *light )
         {
-            int preferedLightIndex = light->m_lightIndex;
+            int preferedLightIndex = light->GetLightIndex();
             unsigned int foundAt = 0;
 
             return ( preferedLightIndex < 0 || !activeGlobalLights.Find( preferedLightIndex, foundAt ) ) ? GetFreeLightIndex() : preferedLightIndex;

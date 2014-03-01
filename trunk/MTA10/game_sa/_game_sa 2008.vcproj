@@ -1063,7 +1063,19 @@
 			Name="RenderWare"
 			>
 			<File
+				RelativePath=".\RenderWare\RpAtomic.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RenderWare\RpAtomicD3D9.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RpClump.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RpGeometry.cpp"
 				>
 			</File>
 			<File
@@ -1072,6 +1084,18 @@
 			</File>
 			<File
 				RelativePath=".\RenderWare\RpLight.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RpMaterial.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RwCamera.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RwFrame.cpp"
 				>
 			</File>
 			<File
@@ -1087,6 +1111,14 @@
 				>
 			</File>
 			<File
+				RelativePath=".\RenderWare\RwTexDictionary.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\RenderWare\RwTexture.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\RenderWare\RwTextureD3D9.cpp"
 				>
 			</File>
@@ -1098,11 +1130,35 @@
 				Name="Include"
 				>
 				<File
+					RelativePath=".\RenderWare\RpAtomic.h"
+					>
+				</File>
+				<File
 					RelativePath=".\RenderWare\RpAtomicD3D9.h"
 					>
 				</File>
 				<File
+					RelativePath=".\RenderWare\RpClump.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RpGeometry.h"
+					>
+				</File>
+				<File
 					RelativePath=".\RenderWare\RpLight.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RpMaterial.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RwCamera.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RwFrame.h"
 					>
 				</File>
 				<File
@@ -1123,6 +1179,14 @@
 				</File>
 				<File
 					RelativePath=".\RenderWare\RwStream.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RwTexDictionary.h"
+					>
+				</File>
+				<File
+					RelativePath=".\RenderWare\RwTexture.h"
 					>
 				</File>
 				<File

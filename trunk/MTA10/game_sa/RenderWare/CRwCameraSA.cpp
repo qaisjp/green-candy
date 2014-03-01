@@ -70,27 +70,27 @@ void CRwCameraSA::DestroyBuffers()
 {
     RwCamera *cam = GetObject();
 
-    if ( cam->m_rendertarget )
-        RwRasterDestroy( cam->m_rendertarget );
+    if ( cam->rendertarget )
+        RwRasterDestroy( cam->rendertarget );
 
-    if ( cam->m_bufferDepth )
-        RwRasterDestroy( cam->m_bufferDepth );
+    if ( cam->bufferDepth )
+        RwRasterDestroy( cam->bufferDepth );
 }
 
 void CRwCameraSA::SetRenderSize( int width, int height )
 {
     DestroyBuffers();
 
-    GetObject()->m_rendertarget = RwRasterCreate( width, height, 0, RASTER_RENDERTARGET );
-    GetObject()->m_bufferDepth = RwRasterCreate( width, height, 0, RASTER_DEPTHBUFFER );
+    GetObject()->rendertarget = RwRasterCreate( width, height, 0, RASTER_RENDERTARGET );
+    GetObject()->bufferDepth = RwRasterCreate( width, height, 0, RASTER_DEPTHBUFFER );
 }
 
 void CRwCameraSA::GetRenderSize( int& width, int& height ) const
 {
     const RwCamera *cam = GetObject();
 
-    width = cam->m_rendertarget->width;
-    height = cam->m_rendertarget->height;
+    width = cam->rendertarget->width;
+    height = cam->rendertarget->height;
 }
 
 bool CRwCameraSA::BeginUpdate()

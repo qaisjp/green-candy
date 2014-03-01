@@ -23,8 +23,8 @@ public:
     inline RwFrame*                 GetObject()                         { return (RwFrame*)m_object; }
     inline const RwFrame*           GetObject() const                   { return (const RwFrame*)m_object; }
 
-    void                            SetName( const char *name )         { strncpy( GetObject()->m_nodeName, name, 31 ); }
-    const char*                     GetName() const                     { return GetObject()->m_nodeName; }
+    void                            SetName( const char *name )         { strncpy( GetObject()->szName, name, 31 ); }
+    const char*                     GetName() const                     { return GetObject()->szName; }
     unsigned int                    GetHash() const;
     eRwType                         GetType() const                     { return RW_NULL; }
 
@@ -34,8 +34,8 @@ public:
     objectList_t&                   GetObjects()                        { return m_objects; }
     childList_t&                    GetChildren()                       { return m_children; }
 
-    void                            SetLTM( const RwMatrix& mat )       { GetObject()->m_ltm = mat; }   // todo: synchronize objects and children frames.
-    const RwMatrix&                 GetLTM() const                      { return GetObject()->m_ltm; }
+    void                            SetLTM( const RwMatrix& mat )       { GetObject()->ltm = mat; }   // todo: synchronize objects and children frames.
+    const RwMatrix&                 GetLTM() const                      { return GetObject()->ltm; }
 
     void                            SetModelling( const RwMatrix& mat ) { GetObject()->SetModelling( mat ); }
     const RwMatrix&                 GetModelling() const                { return GetObject()->GetModelling(); }

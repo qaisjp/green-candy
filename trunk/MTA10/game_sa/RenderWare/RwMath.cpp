@@ -18,7 +18,7 @@ bool __cdecl RwD3D9CameraIsSphereFullyInsideFrustum( RwCamera *camera, const RwS
 
     for ( unsigned int n = 0; n < 6; n++ )
     {
-        RwCameraFrustum& curFrustum = camera->m_frustum4D[n];
+        RwCameraFrustum& curFrustum = camera->frustum4D[n];
 
         if ( sphere.pos.DotProduct( (const CVector&)curFrustum.plane.normal ) < negSphereRadius )
             return false;
@@ -31,7 +31,7 @@ bool __cdecl RwD3D9CameraIsBBoxFullyInsideFrustum( RwCamera *camera, const CVect
 {
     for ( unsigned int n = 0; n < 6; n++ )
     {
-        RwCameraFrustum& curFrustum = camera->m_frustum4D[n];
+        RwCameraFrustum& curFrustum = camera->frustum4D[n];
 
         CVector boxVector = CVector(
             ( bbox - curFrustum.x )->fX,

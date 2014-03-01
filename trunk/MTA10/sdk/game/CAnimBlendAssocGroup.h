@@ -13,7 +13,7 @@
 #define __CAnimBlendAssocGroup_H
 
 class CAnimBlendStaticAssociation;
-class RpClump;
+struct RpClump;
 class CAnimBlock;
 
 class CAnimBlendAssocGroup

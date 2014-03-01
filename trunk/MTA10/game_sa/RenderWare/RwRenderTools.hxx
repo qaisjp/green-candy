@@ -113,12 +113,12 @@ inline bool RwD3D9IsAlphaRenderingRequired( unsigned int renderFlags, DWORD& lig
 // Helper function to decide whether vertex alpha rendering is required.
 inline bool RwD3D9IsVertexAlphaRenderingRequired( RwRenderPass *rtPass, RpMaterial *curMat )
 {
-    return ( curMat->m_color.a != 0xFF || rtPass->m_vertexAlpha );
+    return ( curMat->color.a != 0xFF || rtPass->m_vertexAlpha );
 }
 
 inline bool RwD3D9IsVertexAlphaRenderingRequiredEx( RwRenderPass *rtPass, RpMaterial *curMat )
 {
-    return RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat ) || curMat->m_texture && curMat->m_texture->raster->isAlpha;
+    return RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat ) || curMat->texture && curMat->texture->raster->isAlpha;
 }
 
 // Helper function to update surface properties.
@@ -126,7 +126,7 @@ inline bool RwD3D9UpdateRenderPassSurfaceProperties( RwRenderPass *rtPass, DWORD
 {
     if ( lightValue )
     {
-        RpD3D9SetSurfaceProperties( curMat->m_lighting, curMat->m_color, renderFlags );
+        RpD3D9SetSurfaceProperties( curMat->lighting, curMat->color, renderFlags );
         return true;
     }
 
@@ -306,9 +306,9 @@ struct MeshRenderManager
 
                 RpMaterial *useMat = rtPass->m_useMaterial;
 
-                RwRenderStateLock tfactor( D3DRS_TEXTUREFACTOR, useMat->m_color.ToD3DColor() );
+                RwRenderStateLock tfactor( D3DRS_TEXTUREFACTOR, useMat->color.ToD3DColor() );
 
-                RwD3D9SetTexture( useMat->m_texture, 0 );
+                RwD3D9SetTexture( useMat->texture, 0 );
 
                 // Render depth.
                 RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );

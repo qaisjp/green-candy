@@ -33,20 +33,20 @@ public:
     void                            SetLightIndex( unsigned int idx )           { GetObject()->SetLightIndex( idx ); }
     unsigned int                    GetLightIndex() const                       { return GetObject()->GetLightIndex(); }
 
-    inline RpLightType              GetLightType() const                        { return (RpLightType)GetObject()->m_subtype; }
+    inline RpLightType              GetLightType() const                        { return (RpLightType)GetObject()->subtype; }
 
-    void                            SetAttenuation( const CVector& atten )      { GetObject()->m_attenuation = atten; }
-    const CVector&                  GetAttenuation() const                      { return GetObject()->m_attenuation; }
+    void                            SetAttenuation( const CVector& atten )      { GetObject()->attenuation = atten; }
+    const CVector&                  GetAttenuation() const                      { return GetObject()->attenuation; }
 
     void                            AddToModel( CModel *model );
     CModel*                         GetModel();
     void                            RemoveFromModel();
 
     void                            SetColor( const RwColorFloat& color )       { GetObject()->SetColor( color ); }
-    const RwColorFloat&             GetColor() const                            { return GetObject()->m_color; }
+    const RwColorFloat&             GetColor() const                            { return GetObject()->color; }
 
     void                            SetRadius( float radius );
-    float                           GetRadius() const                           { return GetObject()->m_radius; }
+    float                           GetRadius() const                           { return GetObject()->radius; }
 
     void                            SetConeAngle( float radians );
     float                           GetConeAngle() const;

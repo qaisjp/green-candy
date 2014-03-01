@@ -237,7 +237,7 @@ struct corotLoadFlavor
 
             // Check if there is animation attached
             if ( header.id == 0x2B )
-                animDict->m_current = dict = RtDictSchemaStreamReadDict( animDict, stream );
+                animDict->current = dict = RtDictSchemaStreamReadDict( animDict, stream );
             else
                 dict = NULL;
 
