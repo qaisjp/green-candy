@@ -815,7 +815,10 @@ __forceinline void ProcessSlicerInstances( unsigned int slicerIndex, pulseManage
 
             // Perform the loading
             {
-                void *buf = (char*)Streaming::threadAllocationBuffers[slicerIndex] + requester.bufOffsets[n] * 2048;
+                // MTA extension: we use a destination buffer inside of the requester here
+                // instead of the global threading buffer. This way we can easily implement
+                // loading from cached data.
+                void *buf = (char*)requester.loaderBuffer + requester.bufOffsets[n] * 2048;
 
                 pulseMan.DoLoading( buf, mid, slicerIndex );
             }
@@ -1051,25 +1054,29 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
 
     streamingRequest& requester = Streaming::GetStreamingRequest( id );
 
-    // Are we waiting for resources?
-    if ( unsigned int status = GetSyncSemaphoreStatus( Streaming::GetStreamingRequestSyncSemaphoreIndex( id ) ) )
+    // Perform security checks depending on buffering behavior.
+    if ( requester.bufBehavior == streamingRequest::BUFFERING_IMG )
     {
-        if ( status == 0xFF || status == 0xFA )
-            return false;   // the data request has not finished yet (safe).
+        // Are we waiting for resources?
+        if ( unsigned int status = GetSyncSemaphoreStatus( Streaming::GetStreamingRequestSyncSemaphoreIndex( id ) ) )
+        {
+            if ( status == 0xFF || status == 0xFA )
+                return false;   // the data request has not finished yet (safe).
 
-        // Make our initial status
-        requester.returnCode = status;
-        requester.status = streamingRequest::STREAMING_WAITING;
+            // Make our initial status
+            requester.returnCode = status;
+            requester.status = streamingRequest::STREAMING_WAITING;
 
-        // We cannot wait for a model if we already wait for one!
-        // Let this request fail then.
-        if ( streamingWaitModel != -1 )
-            return false;
+            // We cannot wait for a model if we already wait for one!
+            // Let this request fail then.
+            if ( streamingWaitModel != -1 )
+                return false;
 
-        streamingWaitModel = id;
+            streamingWaitModel = id;
 
-        CompleteStreamingRequest( id );
-        return true;
+            CompleteStreamingRequest( id );
+            return true;
+        }
     }
 
     // This system depends on whether we load fibered or not.
@@ -1084,7 +1091,8 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
     if ( !loadFibered && isLoading )
     {
         // Continue the loading procedure.
-        LoadBigModel( (char*)Streaming::threadAllocationBuffers[id] + requester.bufOffsets[0] * 2048, requester.ids[0] );
+        // MTA extension: we use a slicer buffer variable for freedom to choose loading location.
+        LoadBigModel( (char*)requester.loaderBuffer + requester.bufOffsets[0] * 2048, requester.ids[0] );
 
         // Mark that we are done.
         // The remaining slots of this requester will be cleared below.
@@ -1438,6 +1446,69 @@ struct ModelStreamingPulseDispatch : ModelCheckDispatch <false>
     }
 };
 
+template <typename loaderDispatchType>
+static bool __forceinline AddModelToSlicerLoading_ordered( streamingRequest& requester, int slotIndex, modelId_t modelId, loaderDispatchType& dispatch, unsigned int& threadBufferOffset, unsigned int& blockCount )
+{
+    CModelLoadInfoSA *loadInfo = &Streaming::GetModelLoadInfo( modelId );
+
+    if ( loadInfo->m_eLoading != MODEL_LOADING )
+        return false;
+
+    loadInfo->GetBlockCount( blockCount );
+
+    // If there are priority requests waiting to be loaded and this is
+    // not a priority request, we cannot afford continuing
+    if ( Streaming::numPriorityRequests && !( loadInfo->m_flags & FLAG_PRIORITY ) )
+        return false;
+
+    // Only valid for modelId < DATA_TEXTURE_BLOCK
+    if ( !DefaultDispatchExecute( modelId, dispatch ) )
+        return false;
+
+    // Write our request into the streaming requester
+    requester.bufOffsets[slotIndex] = threadBufferOffset;
+    requester.ids[slotIndex] = modelId;
+
+    // Set the new offset
+    threadBufferOffset += blockCount;
+
+    // If the request overshoots the thread allocation buffer at its offset...
+    if ( threadBufferOffset > (unsigned int)Streaming::biggestResourceBlockCount )
+    {
+        if ( slotIndex > 0 )
+        {
+            threadBufferOffset -= blockCount;
+            return false;
+        }
+    }
+
+    // The_GTA: Here was some sort of debug table which stored all model ids that reached this
+    // code location. I have left it out since this information was not further used during runtime.
+    // Must have been a left-over from quick debugging. (1.0 US and 1.0 EU: 0x0040CE59)
+
+    dispatch.AfterPerform( modelId );
+
+    // Put it into the direct loading queue
+    loadInfo->m_eLoading = MODEL_QUEUE;
+
+    // Remove it from the long queue
+    loadInfo->PopFromLoader();
+
+    // Decrease the number of models that are in the long queue
+    (*(unsigned int*)0x008E4CB8)--;
+
+    // Unset priority status since we loaded
+    if ( loadInfo->m_flags & FLAG_PRIORITY )
+    {
+        // Decrease number of priority requests
+        Streaming::numPriorityRequests--;
+
+        loadInfo->m_flags &= ~FLAG_PRIORITY;
+    }
+
+    return true;
+}
+
 void __cdecl PulseStreamingRequest( unsigned int reqId )
 {
     using namespace Streaming;
@@ -1446,7 +1517,7 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
     // The streaming requests keep track of buffer offsets (that is where
     // resource data is written to in the thread allocation buffer).
     // This also means that if this memory block count is overshot, we cause a
-    // buffer overflow. R* indeed employed a dangerous loading mechanism!
+    // buffer overflow. R* indeed employed a smart loading mechanism!
     unsigned int threadBufferOffset = 0;
 
     // The_GTA: My speculation about the GetNextReadOffset is that it is
@@ -1465,6 +1536,9 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
     CBaseModelInfoSAInterface *model;
     ModelStreamingPulseDispatch dispatch( model, blockCount );
 
+    // Decide where to load the data from.
+    streamingRequest::bufferingType bufferLoc;
+    void *bufferPtr = NULL;
     {
         CModelLoadInfoSA *loadInfo = &GetModelLoadInfo( modelId );
 
@@ -1487,22 +1561,40 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
         if ( modelId == -1 )
             return;
 
-        // Get our offset information
-        loadInfo->GetOffset( offset, blockCount );
-
-        // Check whether it really is a big block
-        if ( blockCount > (unsigned int)Streaming::biggestResourceBlockCount )
+        // MTA extension: Attempt to load data from the cache so we do not have to request it from the disk.
         {
-            // We cannot request big models on the second requester.
-            // If the secondary requesters are active, we have to let them finish first.
-            for ( unsigned int n = 1; n < MAX_STREAMING_REQUESTERS; n++ )
+            void *cachedDataPtr = NULL;
+
+            if ( StreamingCache::GetCachedIMGData( loadInfo->m_imgID, loadInfo->m_blockOffset, loadInfo->m_blockCount, cachedDataPtr ) )
             {
-                if ( reqId == n || GetStreamingRequest( n ).status != streamingRequest::STREAMING_NONE )
-                    return;
+                bufferLoc = streamingRequest::BUFFERING_CACHE;
+                bufferPtr = cachedDataPtr;
+            }
+        }
+
+        // Attempt to load from disk if everything else fails.
+        if ( bufferPtr == NULL )
+        {
+            // Get our offset information
+            loadInfo->GetOffset( offset, blockCount );
+
+            // Check whether it really is a big block
+            if ( blockCount > (unsigned int)Streaming::biggestResourceBlockCount )
+            {
+                // We cannot request big models on the second requester.
+                // If the secondary requesters are active, we have to let them finish first.
+                for ( unsigned int n = 1; n < MAX_STREAMING_REQUESTERS; n++ )
+                {
+                    if ( reqId == n || GetStreamingRequest( n ).status != streamingRequest::STREAMING_NONE )
+                        return;
+                }
+
+                // We are loading a big model, eh
+                isLoadingBigModel = true;
             }
 
-            // We are loading a big model, eh
-            isLoadingBigModel = true;
+            bufferLoc = streamingRequest::BUFFERING_IMG;
+            bufferPtr = Streaming::threadAllocationBuffers[reqId];
         }
     }
 
@@ -1511,77 +1603,38 @@ void __cdecl PulseStreamingRequest( unsigned int reqId )
 
     int n = 0;
 
-    for ( ; n < MAX_STREAMING_REQUESTS; n++ )
+    if ( bufferLoc == streamingRequest::BUFFERING_IMG )
     {
-        if ( modelId == -1 )
-            goto abortedLoading;
-
-        CModelLoadInfoSA *loadInfo = &GetModelLoadInfo( modelId );
-
-        if ( loadInfo->m_eLoading != MODEL_LOADING )
-            goto abortedLoading;
-
-        loadInfo->GetBlockCount( blockCount );
-
-        // If there are priority requests waiting to be loaded and this is
-        // not a priority request, we cannot afford continuing
-        if ( Streaming::numPriorityRequests && !( loadInfo->m_flags & FLAG_PRIORITY ) )
-            goto abortedLoading;
-
-        // Only valid for modelId < DATA_TEXTURE_BLOCK
-        if ( !DefaultDispatchExecute( modelId, dispatch ) )
-            goto abortedLoading;
-
-        // Write our request into the streaming requester
-        requester.bufOffsets[n] = threadBufferOffset;
-        requester.ids[n] = modelId;
-
-        // Set the new offset
-        threadBufferOffset += blockCount;
-
-        // If the request overshoots the thread allocation buffer at its offset...
-        if ( threadBufferOffset > (unsigned int)Streaming::biggestResourceBlockCount )
+        for ( ; n < MAX_STREAMING_REQUESTS; n++ )
         {
-            if ( n > 0 )
-            {
-                threadBufferOffset -= blockCount;
-                goto abortedLoading;
-            }
+            if ( modelId == -1 || !AddModelToSlicerLoading_ordered( requester, n, modelId, dispatch, threadBufferOffset, blockCount ) )
+                break;
+
+            // Try to load the next model id in order.
+            // The order is established in .IMG archive loading.
+            modelId = GetModelLoadInfo( modelId ).m_lastID;
         }
-
-        // The_GTA: Here was some sort of debug table which stored all model ids that reached this
-        // code location. I have left it out since this information was not further used during runtime.
-        // Must have been a left-over from quick debugging. (1.0 US and 1.0 EU: 0x0040CE59)
-
-        dispatch.AfterPerform( modelId );
-
-        // Put it into the direct loading queue
-        loadInfo->m_eLoading = MODEL_QUEUE;
-
-        // Remove it from the long queue
-        loadInfo->PopFromLoader();
-
-        // Decrease the number of models that are in the long queue
-        (*(unsigned int*)0x008E4CB8)--;
-
-        // Unset priority status since we loaded
-        if ( loadInfo->m_flags & FLAG_PRIORITY )
-        {
-            // Decrease number of priority requests
-            Streaming::numPriorityRequests--;
-
-            loadInfo->m_flags &= ~FLAG_PRIORITY;
-        }
-
-        // Try to load the next model id in order.
-        // The order is established in .IMG archive loading.
-        modelId = loadInfo->m_lastID;
+    }
+    else if ( bufferLoc == streamingRequest::BUFFERING_CACHE )
+    {
+        // In loading from the cache, we only support loading of one resource at a time.
+        // We could change this in the future once caching becomes more sophisticated.
+        if ( modelId != -1 )
+            AddModelToSlicerLoading_ordered( requester, n, modelId, dispatch, threadBufferOffset, blockCount );
     }
 
-pulseSemaphore:
-    // Notify the synchronous semaphore.
-    // Is this a normal request or just a big model one?
-    ReadStream( Streaming::GetStreamingRequestSyncSemaphoreIndex( reqId ), Streaming::threadAllocationBuffers[reqId], offset, threadBufferOffset );
+    // GTA:SA code checked for n < MAX_STREAMING_REQUESTS; that is established here,
+    // so I removed the check.
+    for ( ; n < MAX_STREAMING_REQUESTS; n++ )
+        requester.ids[n] = -1;
+
+    // Push data into the buffer.
+    if ( bufferLoc == streamingRequest::BUFFERING_IMG )
+    {
+        // Notify the synchronous semaphore.
+        // Is this a normal request or just a big model one?
+        ReadStream( Streaming::GetStreamingRequestSyncSemaphoreIndex( reqId ), bufferPtr, offset, threadBufferOffset );
+    }
 
     // Update the requester
     requester.status = streamingRequest::STREAMING_BUFFERING;
@@ -1590,17 +1643,11 @@ pulseSemaphore:
     requester.offset = offset;
     requester.count = 0;
 
+    // MTA extension: tell it about the request type.
+    requester.loaderBuffer = bufferPtr;
+
     // I do not know what this is.
     *(bool*)0x009654C4 = false;
-    return;
-
-abortedLoading:
-    // GTA:SA code checked for n < MAX_STREAMING_REQUESTS; that is established here,
-    // so I removed the check
-    for ( ; n < MAX_STREAMING_REQUESTS; n++ )
-        requester.ids[n] = -1;
-    
-    goto pulseSemaphore;
 }
 
 /*=========================================================

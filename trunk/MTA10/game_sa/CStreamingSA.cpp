@@ -367,6 +367,8 @@ struct ModelAbortBigRequestDispatcher : ModelFreeDispatch
 {
     bool DoBaseModel( modelId_t id )
     {
+        // To be honest, I have no idea what the correct name is.
+        // If you have a clue, contact me (The_GTA).
         RwFlushLoader();
         return true;
     }
@@ -387,7 +389,7 @@ void __cdecl Streaming::FreeModel( modelId_t id )
     if ( info->m_eLoading == MODEL_LOADED && DefaultDispatchExecute( id, ModelFreeDispatch() ) )
     {
         // Only decrease if the free-request was successful!
-        *(DWORD*)VAR_MEMORYUSAGE -= info->m_blockCount * 2048;
+        *(DWORD*)VAR_MEMORYUSAGE -= info->GetSize();
     }
 
     if ( info->IsOnLoader() )

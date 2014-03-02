@@ -35,7 +35,7 @@ enum eLoadingState : unsigned char
 };
 
 // Allocated at 0x008E4CC0 in an array[MAX_RESOURCES]
-class CModelLoadInfoSA  // size: 20
+class CModelLoadInfoSA  // size: 20 bytes
 {
 public:
     CModelLoadInfoSA( void );

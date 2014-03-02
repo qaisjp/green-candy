@@ -48,7 +48,7 @@ bool StreamingCache::GetCachedIMGData( unsigned int imgId, unsigned int blockOff
 
     if ( cacheEntry.isCached )
     {
-        dataPtr = &cacheEntry.buffer[0];
+        dataPtr = ( &cacheEntry.buffer[0] + blockOffset * 2048 );
         return true;
     }
 
