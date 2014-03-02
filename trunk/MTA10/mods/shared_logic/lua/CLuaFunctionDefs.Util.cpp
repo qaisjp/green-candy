@@ -421,6 +421,7 @@ namespace CLuaFunctionDefs
 
     LUA_DECLARE( getPerformanceTimer )
     {
+        // You might wanna be careful if your machine is running for days :p
         LONGLONG counterFrequency, currentCount;
 
         LUA_CHECK( 
@@ -428,7 +429,17 @@ namespace CLuaFunctionDefs
             QueryPerformanceCounter( (LARGE_INTEGER*)&currentCount ) == TRUE
         );
 
-        lua_pushnumber( L, (lua_Number)currentCount / (lua_Number)counterFrequency );
+        // Section of high precision math!
+        {
+            HighPrecisionMathWrap mathWrap;
+
+            long double _currentCount = (long double)currentCount;
+            long double _counterFrequency = (long double)counterFrequency;
+
+            long double perfCount = _currentCount / _counterFrequency;
+
+            lua_pushnumber( L, (lua_Number)perfCount );
+        }
         return 1;
     }
 }

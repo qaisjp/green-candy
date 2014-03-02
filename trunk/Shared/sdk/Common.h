@@ -82,3 +82,25 @@ private:
 #else
 #define _DECLSPEC_EX extern "C" 
 #endif
+
+#include <float.h>
+
+// High precision math wrap.
+// Use it if you are encountering floating point precision issues.
+// This wrap is used in timing critical code.
+struct HighPrecisionMathWrap
+{
+    unsigned int _oldFPUVal;
+
+    inline HighPrecisionMathWrap( void )
+    {
+        _oldFPUVal = _controlfp( 0, 0 );
+
+        _controlfp( _PC_64, _MCW_PC );
+    }
+
+    inline ~HighPrecisionMathWrap( void )
+    {
+        _controlfp( _oldFPUVal, _MCW_PC );
+    }
+};
