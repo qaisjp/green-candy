@@ -53,6 +53,12 @@ public:
         STREAMING_READY
     };
 
+    enum bufferingType : unsigned int
+    {
+        BUFFERING_IMG,
+        BUFFERING_CACHE
+    };
+
     int             ids[MAX_STREAMING_REQUESTS];        // 0
     size_t          bufOffsets[MAX_STREAMING_REQUESTS]; // 64, offset into the thread allocation buffer
 
@@ -65,6 +71,10 @@ public:
 
     // These members do not exist in native GTA:SA, but in MTA.
     CFiberSA*       loaderFiber;
+
+    // Ability to choose buffering behavior (from .img, from cache, etc)
+    void*           loaderBuffer;
+    bufferingType   bufBehavior;
 };
 
 namespace Streaming
