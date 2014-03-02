@@ -236,10 +236,18 @@ void __declspec(naked) ExecutiveFiber::qswitch( Fiber *from, Fiber *to )
 
 void CFiberSA::yield_proc( void )
 {
-    // Do some test with timing.
-    double currentTimer = ExecutiveManager::GetPerformanceTimer();
-    double perfMultiplier = group->perfMultiplier;
+    bool needYield = false;
+    {
+        // We need very high precision math here.
+        HighPrecisionMathWrap mathWrap;
+        
+        // Do some test with timing.
+        double currentTimer = ExecutiveManager::GetPerformanceTimer();
+        double perfMultiplier = group->perfMultiplier;
 
-    if ( ( currentTimer - resumeTimer ) > manager->GetFrameDuration() * perfMultiplier )
+        needYield = ( currentTimer - resumeTimer ) > manager->GetFrameDuration() * perfMultiplier;
+    }
+
+    if ( needYield )
         yield();
 }

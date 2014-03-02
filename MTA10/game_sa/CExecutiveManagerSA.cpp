@@ -156,11 +156,15 @@ CExecutiveGroupSA* CExecutiveManagerSA::CreateGroup( void )
 
 void CExecutiveManagerSA::DoPulse( void )
 {
-    // Update frame timer.
-    double timeNow = ExecutiveManager::GetPerformanceTimer();
+    {
+        HighPrecisionMathWrap mathWrap;
 
-    frameDuration = timeNow - frameTime;
-    frameTime = timeNow;
+        // Update frame timer.
+        double timeNow = ExecutiveManager::GetPerformanceTimer();
+
+        frameDuration = timeNow - frameTime;
+        frameTime = timeNow;
+    }
 
     LIST_FOREACH_BEGIN( CExecutiveGroupSA, groups.root, managerNode )
         item->DoPulse();
