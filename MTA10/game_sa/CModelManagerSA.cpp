@@ -31,7 +31,7 @@ CModelManagerSA::~CModelManagerSA( void )
         delete *m_models.begin();
 }
 
-CModelSA* CModelManagerSA::CreateModel( CFile *file, unsigned short id )
+CModelSA* CModelManagerSA::CreateModel( CFile *file, modelId_t id )
 {
     CColModelSA *col = NULL;
     RpClump *clump = pGame->GetRenderWare()->ReadDFF( file, id, col );
@@ -42,7 +42,7 @@ CModelSA* CModelManagerSA::CreateModel( CFile *file, unsigned short id )
     return new CModelSA( clump, col );
 }
 
-CModelSA* CModelManagerSA::CloneClump( unsigned short model )
+CModelSA* CModelManagerSA::CloneClump( modelId_t model )
 {
     if ( model > DATA_TEXTURE_BLOCK-1 )
         return NULL;
@@ -58,7 +58,7 @@ CModelSA* CModelManagerSA::CloneClump( unsigned short model )
     return new CModelSA( RpClumpClone( info->GetRwObject() ), NULL );
 }
 
-CRpAtomicSA* CModelManagerSA::CloneAtomic( unsigned short model )
+CRpAtomicSA* CModelManagerSA::CloneAtomic( modelId_t model )
 {
     if ( model > DATA_TEXTURE_BLOCK-1 )
         return NULL;
@@ -74,7 +74,7 @@ CRpAtomicSA* CModelManagerSA::CloneAtomic( unsigned short model )
     return new CRpAtomicSA( RpAtomicClone( info->GetRwObject() ) );
 }
 
-bool CModelManagerSA::GetRwModelType( unsigned short model, eRwType& type ) const
+bool CModelManagerSA::GetRwModelType( modelId_t model, eRwType& type ) const
 {
     if ( model > MAX_MODELS-1 )
         return false;
@@ -88,7 +88,7 @@ bool CModelManagerSA::GetRwModelType( unsigned short model, eRwType& type ) cons
     return true;
 }
 
-bool CModelManagerSA::RestoreModel( unsigned short id )
+bool CModelManagerSA::RestoreModel( modelId_t id )
 {
     if ( id > DATA_TEXTURE_BLOCK-1 )
         return false;
@@ -111,7 +111,7 @@ bool CModelManagerSA::RestoreModel( unsigned short id )
     return true;
 }
 
-bool CModelManagerSA::RestoreCollision( unsigned short id )
+bool CModelManagerSA::RestoreCollision( modelId_t id )
 {
     if ( id > DATA_TEXTURE_BLOCK-1 )
         return false;
@@ -122,4 +122,14 @@ bool CModelManagerSA::RestoreCollision( unsigned short id )
         return false;
 
     return col->Restore( id );
+}
+
+void CModelManagerSA::RestreamByModel( modelId_t model )
+{
+    // todo
+}
+
+void CModelManagerSA::RestreamByTXD( modelId_t model )
+{
+    // todo
 }
