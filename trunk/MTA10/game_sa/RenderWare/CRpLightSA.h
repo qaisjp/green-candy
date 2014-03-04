@@ -19,41 +19,41 @@ class CRpLightSA : public virtual CRpLight, public CRwObjectSA
 {
     friend class CModelSA;
 public:
-                                    CRpLightSA( RpLight *light );
-                                    ~CRpLightSA();
+                                    CRpLightSA          ( RpLight *light );
+                                    ~CRpLightSA         ( void );
 
-    inline RpLight*                 GetObject()                                 { return (RpLight*)m_object; }
-    inline const RpLight*           GetObject() const                           { return (const RpLight*)m_object; }
+    inline RpLight*                 GetObject           ( void )                            { return (RpLight*)m_object; }
+    inline const RpLight*           GetObject           ( void ) const                      { return (const RpLight*)m_object; }
 
-    eRwType                         GetType() const                             { return RW_LIGHT; }
-    bool                            IsFrameExtension() const                    { return true; }
+    eRwType                         GetType             ( void ) const                      { return RW_LIGHT; }
+    bool                            IsFrameExtension    ( void ) const                      { return true; }
 
-    CRpLightSA*                     Clone( void ) const;
+    CRpLightSA*                     Clone               ( void ) const;
 
-    void                            SetLightIndex( unsigned int idx )           { GetObject()->SetLightIndex( idx ); }
-    unsigned int                    GetLightIndex() const                       { return GetObject()->GetLightIndex(); }
+    void                            SetLightIndex       ( unsigned int idx )                { GetObject()->SetLightIndex( idx ); }
+    unsigned int                    GetLightIndex       ( void ) const                      { return GetObject()->GetLightIndex(); }
 
-    inline RpLightType              GetLightType() const                        { return (RpLightType)GetObject()->subtype; }
+    inline RpLightType              GetLightType        ( void ) const                      { return (RpLightType)GetObject()->subtype; }
 
-    void                            SetAttenuation( const CVector& atten )      { GetObject()->attenuation = atten; }
-    const CVector&                  GetAttenuation() const                      { return GetObject()->attenuation; }
+    void                            SetAttenuation      ( const CVector& atten )            { GetObject()->attenuation = atten; }
+    const CVector&                  GetAttenuation      ( void ) const                      { return GetObject()->attenuation; }
 
-    void                            AddToModel( CModel *model );
-    CModel*                         GetModel();
-    void                            RemoveFromModel();
+    void                            AddToModel          ( CModel *model );
+    CModel*                         GetModel            ( void );
+    void                            RemoveFromModel     ( void );
 
-    void                            SetColor( const RwColorFloat& color )       { GetObject()->SetColor( color ); }
-    const RwColorFloat&             GetColor() const                            { return GetObject()->color; }
+    void                            SetColor            ( const RwColorFloat& color )       { GetObject()->SetColor( color ); }
+    const RwColorFloat&             GetColor            ( void ) const                      { return GetObject()->color; }
 
-    void                            SetRadius( float radius );
-    float                           GetRadius() const                           { return GetObject()->radius; }
+    void                            SetRadius           ( float radius );
+    float                           GetRadius           ( void ) const                      { return GetObject()->radius; }
 
-    void                            SetConeAngle( float radians );
-    float                           GetConeAngle() const;
+    void                            SetConeAngle        ( float radians );
+    float                           GetConeAngle        ( void ) const;
 
-    void                            AddToScene( void );
-    bool                            IsAddedToScene( void ) const;
-    void                            RemoveFromScene( void );
+    void                            AddToScene          ( void );
+    bool                            IsAddedToScene      ( void ) const;
+    void                            RemoveFromScene     ( void );
 
 private:
     CModelSA*   m_model;

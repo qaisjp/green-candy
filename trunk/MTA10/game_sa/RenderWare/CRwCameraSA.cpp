@@ -19,7 +19,7 @@ CRwCameraSA::CRwCameraSA( RwCamera *cam ) : CRwObjectSA( cam )
     m_model = NULL;
 }
 
-CRwCameraSA::~CRwCameraSA()
+CRwCameraSA::~CRwCameraSA( void )
 {
     // If we are still rendering, unset
     if ( IsRendering() )
@@ -50,12 +50,12 @@ void CRwCameraSA::AddToModel( CModel *model )
     GetObject()->AddToClump( m_model->GetObject() );
 }
 
-CModel* CRwCameraSA::GetModel()
+CModel* CRwCameraSA::GetModel( void )
 {
     return m_model;
 }
 
-void CRwCameraSA::RemoveFromModel()
+void CRwCameraSA::RemoveFromModel( void )
 {
     if ( !m_model )
         return;
@@ -66,7 +66,7 @@ void CRwCameraSA::RemoveFromModel()
     m_model = NULL;
 }
 
-void CRwCameraSA::DestroyBuffers()
+void CRwCameraSA::DestroyBuffers( void )
 {
     RwCamera *cam = GetObject();
 
@@ -93,7 +93,7 @@ void CRwCameraSA::GetRenderSize( int& width, int& height ) const
     height = cam->rendertarget->height;
 }
 
-bool CRwCameraSA::BeginUpdate()
+bool CRwCameraSA::BeginUpdate( void )
 {
     if ( IsRendering() )
         return true;
@@ -107,7 +107,7 @@ bool CRwCameraSA::BeginUpdate()
     return true;
 }
 
-void CRwCameraSA::EndUpdate()
+void CRwCameraSA::EndUpdate( void )
 {
     if ( !IsRendering() )
         return;

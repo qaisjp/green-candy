@@ -20,7 +20,7 @@ CRwObjectSA::CRwObjectSA( RwObject *obj )
     m_frame = NULL;
 }
 
-CRwObjectSA::~CRwObjectSA()
+CRwObjectSA::~CRwObjectSA( void )
 {
     if ( !IsFrameExtension() )
         SetFrame( NULL );
@@ -55,12 +55,12 @@ void CRwObjectSA::SetFrame( CRwFrame *frame )
     }
 }
 
-CRwFrame* CRwObjectSA::GetFrame()
+CRwFrame* CRwObjectSA::GetFrame( void )
 {
     return m_frame;
 }
 
-const CRwFrame* CRwObjectSA::GetFrame() const
+const CRwFrame* CRwObjectSA::GetFrame( void ) const
 {
     return m_frame;
 }

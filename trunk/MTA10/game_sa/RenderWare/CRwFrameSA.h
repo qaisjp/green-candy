@@ -17,31 +17,31 @@ class CRwFrameSA : public virtual CRwFrame, public CRwObjectSA
 {
     friend class CRwObjectSA;
 public:
-                                    CRwFrameSA( RwFrame *obj );
-                                    ~CRwFrameSA();
+                                    CRwFrameSA      ( RwFrame *obj );
+                                    ~CRwFrameSA     ( void );
 
-    inline RwFrame*                 GetObject()                         { return (RwFrame*)m_object; }
-    inline const RwFrame*           GetObject() const                   { return (const RwFrame*)m_object; }
+    inline RwFrame*                 GetObject       ( void )                        { return (RwFrame*)m_object; }
+    inline const RwFrame*           GetObject       ( void ) const                  { return (const RwFrame*)m_object; }
 
-    void                            SetName( const char *name )         { strncpy( GetObject()->szName, name, 31 ); }
-    const char*                     GetName() const                     { return GetObject()->szName; }
-    unsigned int                    GetHash() const;
-    eRwType                         GetType() const                     { return RW_NULL; }
+    void                            SetName         ( const char *name )            { strncpy( GetObject()->szName, name, 31 ); }
+    const char*                     GetName         ( void ) const                  { return GetObject()->szName; }
+    unsigned int                    GetHash         ( void ) const;
+    eRwType                         GetType         ( void ) const                  { return RW_NULL; }
 
-    void                            Link( CRwFrame *child );
-    void                            Unlink();
+    void                            Link            ( CRwFrame *child );
+    void                            Unlink          ( void );
 
-    objectList_t&                   GetObjects()                        { return m_objects; }
-    childList_t&                    GetChildren()                       { return m_children; }
+    objectList_t&                   GetObjects      ( void )                        { return m_objects; }
+    childList_t&                    GetChildren     ( void )                        { return m_children; }
 
-    void                            SetLTM( const RwMatrix& mat )       { GetObject()->ltm = mat; }   // todo: synchronize objects and children frames.
-    const RwMatrix&                 GetLTM() const                      { return GetObject()->ltm; }
+    void                            SetLTM          ( const RwMatrix& mat )         { GetObject()->ltm = mat; }   // todo: synchronize objects and children frames.
+    const RwMatrix&                 GetLTM          ( void ) const                  { return GetObject()->ltm; }
 
-    void                            SetModelling( const RwMatrix& mat ) { GetObject()->SetModelling( mat ); }
-    const RwMatrix&                 GetModelling() const                { return GetObject()->GetModelling(); }
+    void                            SetModelling    ( const RwMatrix& mat )         { GetObject()->SetModelling( mat ); }
+    const RwMatrix&                 GetModelling    ( void ) const                  { return GetObject()->GetModelling(); }
 
-    void                            SetPosition( const CVector& pos )   { GetObject()->SetPosition( pos ); }
-    const CVector&                  GetPosition() const                 { return GetObject()->GetPosition(); }
+    void                            SetPosition     ( const CVector& pos )          { GetObject()->SetPosition( pos ); }
+    const CVector&                  GetPosition     ( void ) const                  { return GetObject()->GetPosition(); }
 
     childList_t                     m_children;
 

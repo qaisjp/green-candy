@@ -742,7 +742,7 @@ void CVehicleSA::SetRemapTexDictionary( int txd )
 
     GetInterface()->m_paintjobTexture = NULL;
 
-    (*ppTxdPool)->Get( GetInterface()->m_paintjobTxd )->Dereference();
+    TextureManager::GetTxdPool()->Get( GetInterface()->m_paintjobTxd )->Dereference();
 
     GetInterface()->m_paintjobTxd = -1;
     GetInterface()->m_queuePaintjob = -1;
@@ -756,7 +756,8 @@ void CVehicleSA::SetRemap( int iRemap )
 
         if ( paintjobId != -1 )
         {
-            (*ppTxdPool)->Get( paintjobId )->Dereference();
+            TextureManager::GetTxdPool()->Get( paintjobId )->Dereference();
+
             GetInterface()->m_paintjobTexture = NULL;
 
             GetInterface()->m_paintjobTxd = -1;

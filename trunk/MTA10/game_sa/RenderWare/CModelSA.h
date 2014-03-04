@@ -21,35 +21,35 @@ class CModelSA : public virtual CModel, public CRwObjectSA
     friend class CRwCameraSA;
     friend class CStreamingSA;
 public:
-                                    CModelSA( RpClump *clump, CColModelSA *col );
-                                    ~CModelSA();
+                                    CModelSA            ( RpClump *clump, CColModelSA *col );
+                                    ~CModelSA           ( void );
 
-    inline RpClump*                 GetObject()                     { return (RpClump*)m_object; }
-    inline const RpClump*           GetObject() const               { return (const RpClump*)m_object; }
+    inline RpClump*                 GetObject           ( void )                        { return (RpClump*)m_object; }
+    inline const RpClump*           GetObject           ( void ) const                  { return (const RpClump*)m_object; }
 
-    void                            SetCollision( CColModelSA* col );
-    inline CColModelSA*             GetCollision()                  { return m_col; }
+    void                            SetCollision        ( CColModelSA* col );
+    inline CColModelSA*             GetCollision        ( void )                        { return m_col; }
 
-    eRwType                         GetType() const                 { return RW_CLUMP; }
+    eRwType                         GetType             ( void ) const                  { return RW_CLUMP; }
 
-    const char*                     GetName() const;
-    unsigned int                    GetHash() const;
+    const char*                     GetName             ( void ) const;
+    unsigned int                    GetHash             ( void ) const;
 
-    CModel*                         Clone() const;
-    void                            Render();
+    CModel*                         Clone               ( void ) const;
+    void                            Render              ( void );
 
-    unsigned int                    GetImportCount() const          { return m_imported.size(); }
-    void                            ForAllImports( importIterCallback_t cb, void *ud );
+    unsigned int                    GetImportCount      ( void ) const                  { return m_imported.size(); }
+    void                            ForAllImports       ( importIterCallback_t cb, void *ud );
 
-    bool                            Replace( unsigned short id );
-    bool                            IsReplaced( unsigned short id ) const;
-    bool                            Restore( unsigned short id );
+    bool                            Replace             ( unsigned short id );
+    bool                            IsReplaced          ( unsigned short id ) const;
+    bool                            Restore             ( unsigned short id );
 
-    void                            RestoreAll();
+    void                            RestoreAll          ( void );
 
-    const atomicList_t&             GetAtomics() const              { return m_atomics; }
-    const lightList_t&              GetLights() const               { return m_lights; }
-    const cameraList_t&             GetCameras() const              { return m_cameras; }
+    const atomicList_t&             GetAtomics          ( void ) const                  { return m_atomics; }
+    const lightList_t&              GetLights           ( void ) const                  { return m_lights; }
+    const cameraList_t&             GetCameras          ( void ) const                  { return m_cameras; }
 
     // Static accessors
     static void RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model );

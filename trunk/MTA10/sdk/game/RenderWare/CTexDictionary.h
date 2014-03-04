@@ -16,28 +16,28 @@
 class CTexDictionary abstract : public virtual CRwObject
 {
 public:
-    virtual                         ~CTexDictionary()   {};
+    virtual                         ~CTexDictionary     ( void )   {};
 
-    virtual std::list <CTexture*>&  GetTextures() = 0;
-    virtual void                    Clear() = 0;
+    virtual std::list <CTexture*>&  GetTextures         ( void ) = 0;
+    virtual void                    Clear               ( void ) = 0;
 
-    virtual void                    SetGlobalEmitter() = 0;
+    virtual void                    SetGlobalEmitter    ( void ) = 0;
 
-    virtual bool                    Import( unsigned short id ) = 0;
-    virtual bool                    ImportTXD( unsigned short id ) = 0;
-    virtual bool                    Remove( unsigned short id ) = 0;
-    virtual bool                    RemoveTXD( unsigned short id ) = 0;
+    virtual bool                    Import              ( unsigned short id ) = 0;
+    virtual bool                    ImportTXD           ( unsigned short id ) = 0;
+    virtual bool                    Remove              ( unsigned short id ) = 0;
+    virtual bool                    RemoveTXD           ( unsigned short id ) = 0;
 
-    virtual void                    ClearImports() = 0;
+    virtual void                    ClearImports        ( void ) = 0;
 
-    virtual bool                    IsImported( unsigned short id ) const = 0;
-    virtual bool                    IsImportedTXD( unsigned short id ) const = 0;
+    virtual bool                    IsImported          ( unsigned short id ) const = 0;
+    virtual bool                    IsImportedTXD       ( unsigned short id ) const = 0;
 
-    virtual bool                    IsUsed() const = 0;
+    virtual bool                    IsUsed              ( void ) const = 0;
 
     typedef std::list <unsigned short> importList_t;
 
-    virtual const importList_t&     GetImportedList() const = 0;
+    virtual const importList_t&     GetImportedList     ( void ) const = 0;
 };
 
 #endif //_CTexDictionary_

@@ -21,32 +21,32 @@ class CTexDictionarySA : public virtual CTexDictionary, public CRwObjectSA
 {
     friend class CTextureManagerSA;
 public:
-                            CTexDictionarySA( RwTexDictionary *txd );
-                            ~CTexDictionarySA();
+                            CTexDictionarySA    ( RwTexDictionary *txd );
+                            ~CTexDictionarySA   ( void );
 
-    RwTexDictionary*        GetObject()                     { return (RwTexDictionary*)m_object; }
-    const RwTexDictionary*  GetObject() const               { return (const RwTexDictionary*)m_object; }
+    RwTexDictionary*        GetObject           ( void )                        { return (RwTexDictionary*)m_object; }
+    const RwTexDictionary*  GetObject           ( void ) const                  { return (const RwTexDictionary*)m_object; }
 
-    eRwType                 GetType() const                 { return RW_TXD; }
+    eRwType                 GetType             ( void ) const                  { return RW_TXD; }
 
-    std::list <CTexture*>&  GetTextures()                   { return (std::list <CTexture*>&)m_textures; }
-    void                    Clear();
+    std::list <CTexture*>&  GetTextures         ( void )                        { return (std::list <CTexture*>&)m_textures; }
+    void                    Clear               ( void );
 
-    void                    SetGlobalEmitter();
+    void                    SetGlobalEmitter    ( void );
 
-    bool                    Import( unsigned short id );
-    bool                    ImportTXD( unsigned short id );
-    bool                    Remove( unsigned short id );
-    bool                    RemoveTXD( unsigned short id );
+    bool                    Import              ( unsigned short id );
+    bool                    ImportTXD           ( unsigned short id );
+    bool                    Remove              ( unsigned short id );
+    bool                    RemoveTXD           ( unsigned short id );
 
-    void                    ClearImports();
+    void                    ClearImports        ( void );
 
-    bool                    IsImported( unsigned short id ) const;
-    bool                    IsImportedTXD( unsigned short id ) const;
+    bool                    IsImported          ( unsigned short id ) const;
+    bool                    IsImportedTXD       ( unsigned short id ) const;
 
-    bool                    IsUsed() const;
+    bool                    IsUsed              ( void ) const;
 
-    const importList_t&     GetImportedList() const         { return m_imported; }
+    const importList_t&     GetImportedList     ( void ) const                  { return m_imported; }
 
 protected:
     importList_t            m_imported;

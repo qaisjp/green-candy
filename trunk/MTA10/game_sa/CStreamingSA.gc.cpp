@@ -562,7 +562,7 @@ struct ModelGarbageCollectDispatch : public ModelCheckDispatch <false>
 
     __forceinline bool DoTexDictionary( modelId_t id )
     {
-        CTxdInstanceSA *inst = (*ppTxdPool)->Get( id );
+        CTxdInstanceSA *inst = TextureManager::GetTxdPool()->Get( id );
 
         return inst->m_references == 0 && !CheckTXDDependency( id );
     }

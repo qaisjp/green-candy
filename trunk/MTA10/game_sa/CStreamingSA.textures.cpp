@@ -271,7 +271,7 @@ static RwTexDictionary* __cdecl RwTexDictionaryContinueLoading( RwStream *stream
 =========================================================*/
 bool __cdecl LoadTXDFirstHalf( unsigned int id, RwStream *stream )
 {
-    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
 
     if ( !RwStreamFindChunk( stream, 0x16, NULL, NULL ) )
         return false;
@@ -295,7 +295,7 @@ bool __cdecl LoadTXDFirstHalf( unsigned int id, RwStream *stream )
 =========================================================*/
 bool __cdecl LoadTXDContinue( unsigned int id, RwStream *stream )
 {
-    CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( id );
+    CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( id );
 
     RwTexDictionary *txd = txdInst->m_txd = RwTexDictionaryContinueLoading( stream, txdInst->m_txd );
 

@@ -42,46 +42,21 @@ public:
     void                DeallocateTxdEntry          ( unsigned short id );
     void                RemoveTxdEntry              ( unsigned short id );
 
-    ushort              GetTXDIDForModelID          ( ushort usModelID );
-    void                InitWorldTextureWatch       ( PFN_WATCH_CALLBACK pfnWatchCallback );
-    bool                AddWorldTextureWatch        ( CSHADERDUMMY* pShaderData, const char* szMatch, float fOrderPriority );
-    void                RemoveWorldTextureWatch     ( CSHADERDUMMY* pShaderData, const char* szMatch );
-    void                RemoveWorldTextureWatchByContext ( CSHADERDUMMY* pShaderData );
-    void                PulseWorldTextureWatch      ( void );
-    void                GetModelTextureNames        ( std::vector < SString >& outNameList, ushort usModelID );
-    void                GetTxdTextures              ( std::vector < RwTexture* >& outTextureList, ushort usTxdId );
-    const SString&      GetTextureName              ( CD3DDUMMY* pD3DData );
-
 private:
-    void                InitShaderSystem            ( void );
-    void                ShutdownShaderSystem        ( void );
-
-    void                AddActiveTexture            ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
-    void                RemoveTxdActiveTextures     ( ushort usTxdId );
-    void                FindNewAssociationForTexInfo( STexInfo* pTexInfo );
-    STexInfo*           CreateTexInfo               ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
-    void                OnDestroyTexInfo            ( STexInfo* pTexInfo );
-    SShadInfo*          CreateShadInfo              ( CSHADERDUMMY* pShaderData, const SString& strTextureName, float fOrderPriority );
-    void                OnDestroyShadInfo           ( SShadInfo* pShadInfo );
-    void                MakeAssociation             ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
-    void                BreakAssociation            ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
-
     // Managed textures
     RwList <CTexDictionarySA>               m_txdList;
+};
 
-    // Watched world textures
-    std::list < SShadInfo >                 m_ShadInfoList;
-    std::list < STexInfo >                  m_TexInfoList;
+// Definition of the pool containing all texture dictionaries of the game.
+typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
 
-    std::map < SString, STexInfo* >         m_UniqueTexInfoMap;
-    std::map < CD3DDUMMY*, STexInfo* >      m_D3DDataTexInfoMap;
-    std::map < SString, SShadInfo* >        m_UniqueShadInfoMap;
-    std::multimap < float, SShadInfo* >     m_orderMap;
-
-    PFN_WATCH_CALLBACK                      m_pfnWatchCallback;
+namespace TextureManager
+{
+    inline CTxdPool*&   GetTxdPool                  ( void )            { return *(CTxdPool**)0x00C8800C; }
 };
 
 typedef std::list <CTextureSA*> dictImportList_t;
+
 extern dictImportList_t g_dictImports[MAX_TXD];
 extern RwTexDictionary *g_textureEmitter;
 

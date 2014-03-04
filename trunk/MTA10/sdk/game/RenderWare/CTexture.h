@@ -18,29 +18,29 @@ class CTexDictionary;
 class CTexture
 {
 public:
-    virtual                         ~CTexture()   {};
+    virtual                         ~CTexture       ( void )   {};
 
-    virtual const char*             GetName() const = 0;
-    virtual unsigned int            GetHash() const = 0;
+    virtual const char*             GetName         ( void ) const = 0;
+    virtual unsigned int            GetHash         ( void ) const = 0;
 
-    virtual void                    SetFiltering( bool filter ) = 0;
-    virtual bool                    IsFiltering() const = 0;
+    virtual void                    SetFiltering    ( bool filter ) = 0;
+    virtual bool                    IsFiltering     ( void ) const = 0;
 
-    virtual void                    SetTXD( CTexDictionary *txd ) = 0;
-    virtual void                    RemoveFromTXD() = 0;
-    virtual CTexDictionary*         GetTXD() = 0;
+    virtual void                    SetTXD          ( CTexDictionary *txd ) = 0;
+    virtual void                    RemoveFromTXD   ( void ) = 0;
+    virtual CTexDictionary*         GetTXD          ( void ) = 0;
 
-    virtual bool                    Import( unsigned short id ) = 0;
-    virtual bool                    ImportTXD( unsigned short id ) = 0;
-    virtual bool                    Remove( unsigned short id ) = 0;
-    virtual bool                    RemoveTXD( unsigned short id ) = 0;
+    virtual bool                    Import          ( unsigned short id ) = 0;
+    virtual bool                    ImportTXD       ( unsigned short id ) = 0;
+    virtual bool                    Remove          ( unsigned short id ) = 0;
+    virtual bool                    RemoveTXD       ( unsigned short id ) = 0;
 
-    virtual void                    ClearImports() = 0;
+    virtual void                    ClearImports    ( void ) = 0;
 
-    virtual bool                    IsImported( unsigned short id ) const = 0;
-    virtual bool                    IsImportedTXD( unsigned short id ) const = 0;
+    virtual bool                    IsImported      ( unsigned short id ) const = 0;
+    virtual bool                    IsImportedTXD   ( unsigned short id ) const = 0;
 
-    virtual bool                    IsUsed() const = 0;
+    virtual bool                    IsUsed          ( void ) const = 0;
 };
 
 #endif //_CTexture_

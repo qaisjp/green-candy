@@ -24,7 +24,7 @@ CRpAtomicSA::CRpAtomicSA( RpAtomic *atom ) : CRwObjectSA( atom )
     _initAtomicNormals( atom );
 }
 
-CRpAtomicSA::~CRpAtomicSA()
+CRpAtomicSA::~CRpAtomicSA( void )
 {
     // Restore all models
     RestoreAll();
@@ -38,7 +38,7 @@ CRpAtomicSA::~CRpAtomicSA()
     RpAtomicDestroy( GetObject() );
 }
 
-CRpAtomic* CRpAtomicSA::Clone() const
+CRpAtomic* CRpAtomicSA::Clone( void ) const
 {
     return new CRpAtomicSA( RpAtomicClone( GetObject() ) );
 }
@@ -55,7 +55,7 @@ RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
     return atom;
 }
 
-void CRpAtomicSA::Render()
+void CRpAtomicSA::Render( void )
 {
     if ( !m_frame || !pRwInterface->m_renderCam )
         return;
@@ -86,12 +86,12 @@ void CRpAtomicSA::AddToModel( CModel *model )
     GetObject()->AddToClump( m_model->GetObject() );
 }
 
-CModel* CRpAtomicSA::GetModel()
+CModel* CRpAtomicSA::GetModel( void )
 {
     return m_model;
 }
 
-void CRpAtomicSA::RemoveFromModel()
+void CRpAtomicSA::RemoveFromModel( void )
 {
     if ( !m_model )
         return;
@@ -165,7 +165,7 @@ bool CRpAtomicSA::Restore( unsigned short id )
     if ( isLoaded )
     {
         // Keep the textures alive
-        txd = (*ppTxdPool)->Get( info->usTextureDictionary );
+        txd = TextureManager::GetTxdPool()->Get( info->usTextureDictionary );
         txd->Reference();
     }
 
@@ -189,7 +189,7 @@ bool CRpAtomicSA::Restore( unsigned short id )
     return true;
 }
 
-void CRpAtomicSA::RestoreAll()
+void CRpAtomicSA::RestoreAll( void )
 {
     while ( !m_imported.empty() )
         Restore( m_imported[0] );

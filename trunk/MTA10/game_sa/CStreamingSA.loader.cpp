@@ -99,7 +99,8 @@ struct ModelTXDDependency
     inline bool operator() ( modelId_t model, unsigned short txdId )
     {
         return model < DATA_TEXTURE_BLOCK && (unsigned short)ppModelInfo[model]->usTextureDictionary == txdId ||
-              idOffset( model, DATA_TEXTURE_BLOCK ) < MAX_TXD && (*ppTxdPool)->Get( idOffset( model, DATA_TEXTURE_BLOCK ) )->m_parentTxd == txdId;
+              idOffset( model, DATA_TEXTURE_BLOCK ) < MAX_TXD &&
+              TextureManager::GetTxdPool()->Get( idOffset( model, DATA_TEXTURE_BLOCK ) )->m_parentTxd == txdId;
     }
 };
 
@@ -330,7 +331,7 @@ struct ModelLoadDispatch : public ModelCheckDispatch <false>
         CBaseModelInfoSAInterface *info = ppModelInfo[id];
         int animIndex = info->GetAnimFileIndex();
 
-        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( info->usTextureDictionary );
+        CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( info->usTextureDictionary );
         CAnimBlockSAInterface *animBlock;
 
         // Fail if the model texture dictionary is not loaded yet.
@@ -378,11 +379,11 @@ struct ModelLoadDispatch : public ModelCheckDispatch <false>
 
     __forceinline bool DoTexDictionary( modelId_t txdId )
     {
-        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( txdId );
+        CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( txdId );
 
         if ( txdInst->m_parentTxd != 0xFFFF )
         {
-            if ( !(*ppTxdPool)->Get( txdInst->m_parentTxd )->m_txd )
+            if ( !TextureManager::GetTxdPool()->Get( txdInst->m_parentTxd )->m_txd )
                 return false;
         }
 
@@ -672,7 +673,7 @@ bool __cdecl LoadBigModel( char *buf, modelId_t id )
     }
     else if ( id < DATA_TEXTURE_BLOCK + MAX_TXD )
     {
-        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( idOffset( id, DATA_TEXTURE_BLOCK ) );
+        CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( idOffset( id, DATA_TEXTURE_BLOCK ) );
 
         // Reference it during the loading
         txdInst->Reference();
@@ -1255,7 +1256,7 @@ struct ModelLoadQueueDispatch : ModelCheckDispatch <true, false>
 
     bool __forceinline DoTexDictionary( modelId_t id )
     {
-        CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( id );
+        CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( id );
         unsigned short parentId = txdInst->m_parentTxd;
 
         return parentId == 0xFFFF || !EnsureResourceAvailability( DATA_TEXTURE_BLOCK, parentId, 0x08 );

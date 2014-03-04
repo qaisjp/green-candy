@@ -77,8 +77,8 @@ bool CParticleSystemSAInterface::LoadDefinitions( const char *filename )
     strcpy( path + strlen( filename ) - ( 1 + 4 ), "PC.txd" );  // append string to it
 
     m_txdID = pGame->GetTextureManager()->LoadDictionaryEx( "fx", path );
-
-    CTxdInstanceSA *inst = (*ppTxdPool)->Get( m_txdID );
+    
+    CTxdInstanceSA *inst = TextureManager::GetTxdPool()->Get( m_txdID );
 
     // Reference the main fx texture for ourselves
     inst->Reference();

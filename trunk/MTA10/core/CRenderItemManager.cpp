@@ -53,7 +53,7 @@ void CRenderItemManager::OnDeviceCreate ( IDirect3DDevice9* pDevice, float fView
 
     m_pRenderWare = CCore::GetSingleton ().GetGame ()->GetRenderWare ();
     m_pTextureManager = CCore::GetSingleton().GetGame()->GetTextureManager();
-    m_pTextureManager->InitWorldTextureWatch ( StaticWatchCallback );
+    m_pRenderWare->InitWorldTextureWatch ( StaticWatchCallback );
 
     // Get some stats
     m_strVideoCardName = (const char*)g_pDeviceState->AdapterState.Name;
@@ -323,7 +323,7 @@ void CRenderItemManager::NotifyDestructRenderItem ( CRenderItem* pItem )
 ////////////////////////////////////////////////////////////////
 void CRenderItemManager::DoPulse ( void )
 {
-    m_pTextureManager->PulseWorldTextureWatch ();
+    m_pRenderWare->PulseWorldTextureWatch ();
 
     m_PrevFrameTextureUsage = m_FrameTextureUsage;
     m_FrameTextureUsage.clear ();

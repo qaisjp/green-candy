@@ -78,7 +78,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
         {
             if ( m_paintjobTexture )
             {
-                (*ppTxdPool)->Get( m_paintjobTxd )->Dereference();
+                TextureManager::GetTxdPool()->Get( m_paintjobTxd )->Dereference();
 
                 m_paintjobTexture = NULL;
             }
@@ -87,7 +87,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
             m_paintjobTxd = remapId;
             m_queuePaintjob = 0xFFFF;
 
-            CTxdInstanceSA *txdInst = (*ppTxdPool)->Get( remapId );
+            CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( remapId );
 
             txdInst->Reference();
 

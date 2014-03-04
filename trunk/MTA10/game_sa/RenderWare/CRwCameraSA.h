@@ -17,28 +17,28 @@ class CRwCameraSA : public virtual CRwCamera, public CRwObjectSA
 {
     friend class CModelSA;
 public:
-                                    CRwCameraSA( RwCamera *cam );
-                                    ~CRwCameraSA();
+                                    CRwCameraSA         ( RwCamera *cam );
+                                    ~CRwCameraSA        ( void );
 
-    inline RwCamera*                GetObject()                                 { return (RwCamera*)m_object; }
-    inline const RwCamera*          GetObject() const                           { return (const RwCamera*)m_object; }
+    inline RwCamera*                GetObject           ( void )                            { return (RwCamera*)m_object; }
+    inline const RwCamera*          GetObject           ( void ) const                      { return (const RwCamera*)m_object; }
 
-    eRwType                         GetType() const                             { return RW_CAMERA; }
-    bool                            IsFrameExtension() const                    { return true; }
+    eRwType                         GetType             ( void ) const                      { return RW_CAMERA; }
+    bool                            IsFrameExtension    ( void ) const                      { return true; }
 
-    void                            AddToModel( CModel *model );
-    CModel*                         GetModel();
-    void                            RemoveFromModel();
+    void                            AddToModel          ( CModel *model );
+    CModel*                         GetModel            ( void );
+    void                            RemoveFromModel     ( void );
 
-    void                            SetRenderSize( int width, int height );
-    void                            GetRenderSize( int& width, int& height ) const;
+    void                            SetRenderSize       ( int width, int height );
+    void                            GetRenderSize       ( int& width, int& height ) const;
 
-    bool                            BeginUpdate();
-    bool                            IsRendering() const                         { return m_isRendering; }
-    void                            EndUpdate();
+    bool                            BeginUpdate         ( void );
+    bool                            IsRendering         ( void ) const                      { return m_isRendering; }
+    void                            EndUpdate           ( void );
 
 private:
-    void                            DestroyBuffers();
+    void                            DestroyBuffers      ( void );
 
     CModelSA*   m_model;
     bool        m_isRendering;

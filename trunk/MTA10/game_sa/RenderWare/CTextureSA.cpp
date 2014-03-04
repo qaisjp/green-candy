@@ -29,7 +29,7 @@ CTextureSA::CTextureSA( CTexDictionarySA *dict, RwTexture *tex )
     SetTXD( dict );
 }
 
-CTextureSA::~CTextureSA()
+CTextureSA::~CTextureSA( void )
 {
     ClearImports();
 
@@ -40,12 +40,12 @@ CTextureSA::~CTextureSA()
     RwTextureDestroy( m_texture );
 }
 
-const char* CTextureSA::GetName() const
+const char* CTextureSA::GetName( void ) const
 {
     return m_texture->name;
 }
 
-unsigned int CTextureSA::GetHash() const
+unsigned int CTextureSA::GetHash( void ) const
 {
     return pGame->GetKeyGen()->GetUppercaseKey( m_texture->name );
 }
@@ -68,7 +68,7 @@ void CTextureSA::SetTXD( CTexDictionary *_txd )
     }
 }
 
-void CTextureSA::RemoveFromTXD()
+void CTextureSA::RemoveFromTXD( void )
 {
     if ( !m_dictionary )
         return;
@@ -79,7 +79,7 @@ void CTextureSA::RemoveFromTXD()
     m_dictionary = NULL;
 }
 
-CTexDictionary* CTextureSA::GetTXD()
+CTexDictionary* CTextureSA::GetTXD( void )
 {
     return m_dictionary;
 }
@@ -102,7 +102,7 @@ bool CTextureSA::IsImportedTXD( unsigned short id ) const
     return std::find( m_imported.begin(), m_imported.end(), id ) != m_imported.end();
 }
 
-bool CTextureSA::IsUsed() const
+bool CTextureSA::IsUsed( void ) const
 {
     return ( m_imported.size() != 0 );
 }
@@ -126,7 +126,7 @@ bool CTextureSA::ImportTXD( unsigned short id )
     if ( IsImportedTXD( id ) )
         return true;
 
-    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
 
     if ( !txd )
         return false;
@@ -163,7 +163,7 @@ bool CTextureSA::RemoveTXD( unsigned short id )
     return true;
 }
 
-void CTextureSA::ClearImports()
+void CTextureSA::ClearImports( void )
 {
     while ( !m_imported.empty() )
         RemoveTXD( (*m_imported.begin()) );

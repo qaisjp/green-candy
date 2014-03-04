@@ -26,7 +26,6 @@
 #include "CColModelSA.h"
 #include "CEntryInfoSA.h"
 #include "RenderWare/include.h"
-#include "CTextureManagerSA.h"
 #include "CEventSA.h"
 #include "CBuildingSA.h"
 #include "CDummySA.h"
@@ -265,8 +264,6 @@ typedef CPool <CPtrNodeSingleSA <void>, 100000> CPtrNodeSinglePool; // Allocated
 typedef CPool <CPtrNodeDoubleSA <void>, 200000> CPtrNodeDoublePool;  // Allocated for physical entities of special types
 typedef CPool <CEntryInfoSA, 100000> CEntryInfoPool; // info for every entity in the world (I think!)
 
-typedef CPool <CTxdInstanceSA, MAX_TXD> CTxdPool;
-
 typedef CPool <CVehicleSAInterface, MAX_VEHICLES, MAX_VEHICLE_SIZE> CVehiclePool;
 typedef CPool <CPedSAInterface, MAX_PEDS, MAX_PED_SIZE> CPedPool;
 typedef CPool <CObjectSAInterface, MAX_OBJECTS, MAX_OBJECT_SIZE> CObjectPool;
@@ -297,8 +294,6 @@ extern CColModelPool** ppColModelPool;
 extern CPtrNodeSinglePool** ppPtrNodeSinglePool;
 extern CPtrNodeDoublePool** ppPtrNodeDoublePool;
 extern CEntryInfoPool** ppEntryInfoPool;
-
-extern CTxdPool** ppTxdPool;
 
 extern CVehiclePool** ppVehiclePool;
 extern CPedPool** ppPedPool;

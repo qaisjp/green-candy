@@ -430,6 +430,7 @@ namespace CLuaFunctionDefs
         );
 
         // Section of high precision math!
+        lua_Number ext_perfCount;
         {
             HighPrecisionMathWrap mathWrap;
 
@@ -438,8 +439,10 @@ namespace CLuaFunctionDefs
 
             long double perfCount = _currentCount / _counterFrequency;
 
-            lua_pushnumber( L, (lua_Number)perfCount );
+            ext_perfCount = (lua_Number)perfCount;
         }
+
+        lua_pushnumber( L, ext_perfCount );
         return 1;
     }
 }

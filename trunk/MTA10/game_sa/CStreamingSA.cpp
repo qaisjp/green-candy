@@ -90,7 +90,7 @@ struct ModelRequestDispatch : ModelCheckDispatch <true>
 
     bool __forceinline DoTexDictionary( modelId_t id )
     {
-        CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+        CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
 
         // Crashfix
         if ( !txd )
@@ -315,7 +315,7 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>   // by default we do not 
 #endif
 
         // Deallocate textures
-        (*ppTxdPool)->Get( id )->Deallocate();
+        TextureManager::GetTxdPool()->Get( id )->Deallocate();
         return true;
     }
 
@@ -941,7 +941,7 @@ static void __cdecl _Streaming_Init( void )
     // Initialize all textures.
     for ( unsigned int n = 0; n < MAX_TXD; n++ )
     {
-        CTxdInstanceSA *inst = (*ppTxdPool)->Get( n );
+        CTxdInstanceSA *inst = TextureManager::GetTxdPool()->Get( n );
 
         if ( inst && inst->m_txd )
             Streaming::GetModelLoadInfo( DATA_TEXTURE_BLOCK, n ).m_eLoading = MODEL_LOADED;
