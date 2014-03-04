@@ -42,6 +42,8 @@ public:
     void                DeallocateTxdEntry          ( unsigned short id );
     void                RemoveTxdEntry              ( unsigned short id );
 
+    void                InitGameHooks               ( void );
+
 private:
     // Managed textures
     RwList <CTexDictionarySA>               m_txdList;

@@ -252,7 +252,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
         return NULL;
     }
 
-    inst = (RwExtension*)pRwInterface->m_memory.m_malloc( sizeof(RwExtension) + ext->structSize * count + ext->internalSize, 0 );
+    inst = (RwExtension*)RenderWare::GetInterface()->m_memory.m_malloc( sizeof(RwExtension) + ext->structSize * count + ext->internalSize, 0 );
 
     inst->size = size;
     inst->count = count;
@@ -286,7 +286,7 @@ RwExtension* CRwExtensionManagerSA::Allocate( unsigned int rwId, unsigned int co
 void CRwExtensionManagerSA::Free( RwExtension *ext )
 {
     // No idea if that is correct, i.e. cleanup?
-    pRwInterface->m_memory.m_free( ext );
+    RenderWare::GetInterface()->m_memory.m_free( ext );
 }
 
 /*
@@ -462,7 +462,7 @@ RwTexture* RwTextureStreamReadEx( RwStream *stream )
     // We do not require it, so I leave it out
     RwTexture *tex;
 
-    if ( pRwInterface->m_readTexture( stream, &tex, size ) == 0 || !tex )
+    if ( RenderWare::GetInterface()->m_readTexture( stream, &tex, size ) == 0 || !tex )
         return NULL;
 
     if ( !RwPluginRegistryReadDataChunks( (void*)0x008E23CC, stream, tex ) )
@@ -542,7 +542,7 @@ RwTexDictionary* RwTexDictionaryStreamReadEx( RwStream *stream )
     unsigned int rendStatus;
 
     // Request whether the system is ready (?).
-    RwDeviceSystemRequest( pRwInterface->m_renderSystem, 0x16, rendStatus, 0, 0 );
+    RwDeviceSystemRequest( RenderWare::GetInterface()->m_renderSystem, 0x16, rendStatus, 0, 0 );
 
     rendStatus &= 0xFF;
 

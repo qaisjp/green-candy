@@ -138,5 +138,6 @@ extern IDirect3DDevice9 *const *g_renderDevice;
 #include "CRenderWareSA.render.h"
 #include "CRenderWareSA.rtcallback.h"
 #include "CRenderWareSA.lighting.h"
+#include "CRenderWareSA.shader.h"
 
 #endif

@@ -14,6 +14,8 @@
 #ifndef _RENDERWARE_SHADERS_FOR_MTA_
 #define _RENDERWARE_SHADERS_FOR_MTA_
 
-
+// Function exports.
+void _cdecl OnStreamingAddTxd( unsigned short id );
+void _cdecl OnStreamingRemoveTxd( unsigned short id );
 
 #endif //_RENDERWARE_SHADERS_FOR_MTA_

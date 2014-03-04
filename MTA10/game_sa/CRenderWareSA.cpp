@@ -180,7 +180,6 @@ CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuild
 extern CGameSA *pGame;
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-RwInterface **ppRwInterface = (RwInterface**)0x00C97B24;
 IDirect3DDevice9 *const *g_renderDevice = (IDirect3DDevice9**)0x00C97C28;
 
 CRenderWareSA::CRenderWareSA( eGameVersion version )
@@ -717,9 +716,11 @@ bool CRenderWareSA::PositionFrontSeat( RpClump *pClump, unsigned short usModelID
 
 ==========================================================*/
 
-RwMatrix* CRenderWareSA::AllocateMatrix()
+RwMatrix* CRenderWareSA::AllocateMatrix( void )
 {
-    return new ( pRwInterface->m_allocStruct( pRwInterface->m_matrixInfo, 0x3000D ) ) RwMatrix();
+    RwInterface *rwInterface = RenderWare::GetInterface();
+
+    return new ( rwInterface->m_allocStruct( rwInterface->m_matrixInfo, 0x3000D ) ) RwMatrix();
 }
 
 CRpLight* CRenderWareSA::CreateLight( RpLightType type )
@@ -727,7 +728,7 @@ CRpLight* CRenderWareSA::CreateLight( RpLightType type )
     return new CRpLightSA( RpLightCreate( type ) );
 }
 
-CRwFrame* CRenderWareSA::CreateFrame()
+CRwFrame* CRenderWareSA::CreateFrame( void )
 {
     RwFrame *frame = RwFrameCreate();
     frame->Update();    // synchronize us
@@ -756,7 +757,7 @@ CModel* CRenderWareSA::CreateClump( void )
 
 bool CRenderWareSA::IsRendering( void ) const
 {
-    return pRwInterface->m_renderCam != NULL;
+    return RenderWare::GetInterface()->m_renderCam != NULL;
 }
 
 void CRenderWareSA::EnableEnvMapRendering( bool enabled )

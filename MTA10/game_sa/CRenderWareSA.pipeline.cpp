@@ -806,7 +806,7 @@ inline void __cdecl RpD3D9DrawPrimitive( D3DPRIMITIVETYPE primitiveType, UINT st
 inline void RwD3D9EnableClippingIfNeeded( RwObject *renderObject, eRwType renderType )
 {
     bool isObjectVisible = false;
-    RwCamera *currentCam = pRwInterface->m_renderCam;
+    RwCamera *currentCam = RenderWare::GetInterface()->m_renderCam;
 
     if ( renderType == RW_ATOMIC )
     {

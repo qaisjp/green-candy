@@ -59,7 +59,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
 {
     CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[m_model];
 
-    (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+    RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
     if ( m_vehicleType == VEHICLE_CAR )
         SetPlateTextureForRendering( info );
@@ -127,7 +127,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
 void CVehicleSAInterface::LeaveRender( void )
 {
     // Change texture stage
-    (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 2 );
 
     // Restore clump data
     RpClumpRestoreVehicleMaterials( (RpClump*)m_rwObject );

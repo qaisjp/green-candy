@@ -289,7 +289,7 @@ __forceinline void RenderReflectiveEnvMap( renderObjType *renderObj, CEnvMapMate
     // Crashfix (imported from MP_SA)
     if ( enableEnvMapRendering && envMapMat )
     {
-        pRwInterface->m_deviceCommand( (eRwDeviceCmd)2, 1 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)2, 1 );
 
         // Notify the reflective manager.
         reflectMan.OnMaterialEnvMapRender( renderObj, envMapMat );
@@ -531,7 +531,7 @@ int __fastcall CalculateVehicleReflectiveMapParamsAtomic( CEnvMapMaterialSA *env
     float x_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->envMod3 );
     float y_trans = ENV_MAP_UNPACK_FLOAT( envMapMat->envMod4 );
 
-    unsigned short frame = pRwInterface->m_renderScanCode;
+    unsigned short frame = RenderWare::GetInterface()->m_renderScanCode;
 
     float unkFloat = envMapAtom->m_unk1;
 
@@ -728,7 +728,7 @@ struct ReflectiveVehicleRenderManager
             if ( specialEffect2 && enableEnvMapRendering )
             {
                 // Render the reflection as seen on all vehicle chasis.
-                pRwInterface->m_deviceCommand( (eRwDeviceCmd)2, 1 );
+                RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)2, 1 );
 
                 float reflectParams[2] = { 0, 0 };
 

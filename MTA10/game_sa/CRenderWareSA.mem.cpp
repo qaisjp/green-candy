@@ -43,7 +43,7 @@ __forceinline void _DeallocFreeList( RwFreeList *list )
     LIST_FOREACH_BEGIN( RwFreeListMemBlock, list->m_memBlocks.root, list )
         LIST_REMOVE( item->list );
 
-        (*ppRwInterface)->m_memory.m_free( item );
+        RenderWare::GetInterface()->m_memory.m_free( item );
     LIST_FOREACH_END
 
     if ( list->m_flags == RWALLOC_SELFCONSTRUCT )
@@ -54,12 +54,12 @@ __forceinline void _DeallocFreeList( RwFreeList *list )
 
     if ( list != freeListInfo && freeListInfo )
     {
-        (*ppRwInterface)->m_freeStruct( freeListInfo, list );
+        RenderWare::GetInterface()->m_freeStruct( freeListInfo, list );
     }
     else
     {
         // Free using global allocator.
-        (*ppRwInterface)->m_memory.m_free( list );
+        RenderWare::GetInterface()->m_memory.m_free( list );
     }
 }
 
@@ -109,7 +109,7 @@ __forceinline RwFreeListMemBlock* _RwFreeListAllocateBlock( RwFreeList *list, un
 
     // Blocks contain a header, metaData and the actual data blocks.
     // The sections are placed in said order.
-    RwFreeListMemBlock *block = (RwFreeListMemBlock*)(*ppRwInterface)->m_memory.m_malloc( allocSize, allocFlags );
+    RwFreeListMemBlock *block = (RwFreeListMemBlock*)RenderWare::GetInterface()->m_memory.m_malloc( allocSize, allocFlags );
 
     if ( !block )
         return NULL;
@@ -161,9 +161,9 @@ RwFreeList* __cdecl RwFreeListCreateEx( unsigned int dataSize, unsigned int bloc
     {
         // Allocate a slot for us
         if ( RwFreeList *freeListInfo = freeListMemory )
-            list = (RwFreeList*)(*ppRwInterface)->m_allocStruct( freeListInfo, allocFlags & 0xFF0000 );
+            list = (RwFreeList*)RenderWare::GetInterface()->m_allocStruct( freeListInfo, allocFlags & 0xFF0000 );
         else
-            list = (RwFreeList*)(*ppRwInterface)->m_memory.m_malloc( sizeof(RwFreeList), allocFlags & 0xFF0000 );
+            list = (RwFreeList*)RenderWare::GetInterface()->m_memory.m_malloc( sizeof(RwFreeList), allocFlags & 0xFF0000 );
 
         if ( !list )
             return NULL;
@@ -443,7 +443,7 @@ __forceinline bool RwFreeListBlockFree( RwFreeListMemBlock *block, size_t metaDa
     // Unregister the block (kind of like garbage collection)
     LIST_REMOVE( block->list );
 
-    (*ppRwInterface)->m_memory.m_free( block );
+    RenderWare::GetInterface()->m_memory.m_free( block );
     return true;
 }
 
@@ -513,7 +513,7 @@ void __cdecl RwFreeListForAllUsedBlocks( RwFreeList *list, void (__cdecl*callbac
     RwList <RwFreeListMemBlock>& root = list->m_memBlocks;
 
     LIST_FOREACH_BEGIN( RwFreeListMemBlock, root.root, list )
-        unsigned char *metaCopy = (unsigned char*)(*ppRwInterface)->m_memory.m_malloc( metaDataSize, 0x10000 );
+        unsigned char *metaCopy = (unsigned char*)RenderWare::GetInterface()->m_memory.m_malloc( metaDataSize, 0x10000 );
 
         if ( !metaCopy )
             return;
@@ -538,7 +538,7 @@ void __cdecl RwFreeListForAllUsedBlocks( RwFreeList *list, void (__cdecl*callbac
             }
         }
 
-        (*ppRwInterface)->m_memory.m_free( metaCopy );
+        RenderWare::GetInterface()->m_memory.m_free( metaCopy );
     LIST_FOREACH_END
 }
 
@@ -709,7 +709,7 @@ unsigned int __cdecl RwMemoryOpen( const RwMemoryDescriptor *memDesc )
     LIST_REMOVE( freeListInfo->m_globalLists );
 
     // Set the memory allocation interface
-    RwInterface *intf = *ppRwInterface;
+    RwInterface *intf = RenderWare::GetInterface();
 
     if ( memDesc )
     {

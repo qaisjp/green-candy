@@ -27,20 +27,11 @@ std::vector < STxdAction > ms_txdActionList;
 //
 // Hooks for creating txd create and destroy events
 //
-#define HOOKPOS_CTxdStore_SetupTxdParent       0x00731D50
-void __cdecl HOOK_CTxdStore_SetupTxdParent( unsigned short id );
-
-#define HOOKPOS_CTxdStore_RemoveTxd       0x731E90
-void __cdecl HOOK_CTxdStore_RemoveTxd( unsigned short id );
 
 void CRenderWareSA::InitShaderSystem( void )
 {
     // Our stuff
     m_pfnWatchCallback = NULL;
-
-    // Hook runtime
-    HookInstall( HOOKPOS_CTxdStore_SetupTxdParent, (DWORD)HOOK_CTxdStore_SetupTxdParent, 6 );
-    HookInstall( HOOKPOS_CTxdStore_RemoveTxd, (DWORD)HOOK_CTxdStore_RemoveTxd, 6 );
 }
 
 void CRenderWareSA::ShutdownShaderSystem( void )
@@ -484,7 +475,7 @@ const SString& CRenderWareSA::GetTextureName ( CD3DDUMMY* pD3DData )
 //
 ////////////////////////////////////////////////////////////////
 
-void _cdecl OnAddTxd( unsigned short id )
+void _cdecl OnStreamingAddTxd( unsigned short id )
 {
     STxdAction action;
     action.bAdd = true;
@@ -492,24 +483,12 @@ void _cdecl OnAddTxd( unsigned short id )
     ms_txdActionList.push_back ( action );
 }
 
-// called from streaming on TXD create
-void __cdecl HOOK_CTxdStore_SetupTxdParent( unsigned short id )
-{
-    TextureManager::GetTxdPool()->Get( id )->InitParent();
-}
-
-void _cdecl OnRemoveTxd( unsigned short id )
+void _cdecl OnStreamingRemoveTxd( unsigned short id )
 {
     STxdAction action;
     action.bAdd = false;
     action.usTxdId = id;
     ms_txdActionList.push_back ( action );
-}
-
-// called from streaming on TXD destroy
-void __cdecl HOOK_CTxdStore_RemoveTxd( unsigned short id )
-{
-    TextureManager::GetTxdPool()->Get( id )->Deallocate();
 }
 
 /////////////////////////////////////////

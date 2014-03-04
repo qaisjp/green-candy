@@ -882,7 +882,7 @@ struct lightPassManager
 
         // Update position.
         {
-            const RwMatrix& camTransform = pRwInterface->m_renderCam->parent->GetLTM();
+            const RwMatrix& camTransform = RenderWare::GetInterface()->m_renderCam->parent->GetLTM();
 
             CVector lightPos = camTransform.vPos - (CVector&)lightStruct.Position;
 
@@ -1550,7 +1550,7 @@ template <typename lightMan>
 int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
 {
     RwColorFloat& ambientColor = state.ambientLightColor;
-    RwScene *curScene = pRwInterface->m_currentScene;
+    RwScene *curScene = RenderWare::GetInterface()->m_currentScene;
 
     ambientColor = RwColorFloat( 0.0f, 0, 0, 1.0f );
 
@@ -1649,7 +1649,7 @@ static lightPassManager localLightPassMan( localLight_lightState );
 void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 {
     RpGeometry *geom = atomic->geometry;
-    RwScene *curScene = pRwInterface->m_currentScene;
+    RwScene *curScene = RenderWare::GetInterface()->m_currentScene;
 
     RpD3D9ResetLightStatus();
 
@@ -1686,7 +1686,9 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
             localLightState.ResetActiveLights();
 
             // Scancode algorithm, so lights do not get processed twice.
-            pRwInterface->m_frame++;
+            RwInterface *rwInterface = RenderWare::GetInterface();
+
+            rwInterface->m_frame++;
 
             LIST_FOREACH_BEGIN( RpAtomic::sectorNode, atomic->sectors.root, node )
                 RwSector *sector = item->data;
@@ -1694,9 +1696,9 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
                 LIST_FOREACH_BEGIN( RwSector::lightNode, sector->m_localLights.root, node )
                     RpLight *light = item->data;
 
-                    if ( light && light->parent && light->frame != pRwInterface->m_frame && light->IsLightActive() )
+                    if ( light && light->parent && light->frame != rwInterface->m_frame && light->IsLightActive() )
                     {
-                        light->frame = pRwInterface->m_frame;
+                        light->frame = rwInterface->m_frame;
 
                         const RwMatrix& lightPos = light->parent->GetLTM();
                         const RwSphere& atomicSphere = atomic->GetWorldBoundingSphere();

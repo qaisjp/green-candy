@@ -57,7 +57,7 @@ RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
 
 void CRpAtomicSA::Render( void )
 {
-    if ( !m_frame || !pRwInterface->m_renderCam )
+    if ( !m_frame || !RenderWare::GetInterface()->m_renderCam )
         return;
 
     RpAtomic *atom = GetObject();
