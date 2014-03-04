@@ -98,7 +98,7 @@ bool CRwCameraSA::BeginUpdate( void )
     if ( IsRendering() )
         return true;
 
-    if ( pRwInterface->m_renderCam || !m_frame )
+    if ( RenderWare::GetInterface()->m_renderCam || !m_frame )
         return false;
 
     GetObject()->BeginUpdate();

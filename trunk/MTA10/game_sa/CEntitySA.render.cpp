@@ -172,7 +172,7 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     else if ( !( entity->m_entityFlags & ENTITY_BACKFACECULL ) )
     {
         // Change texture stage
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 1 );
     }
 
     if ( AreScreenEffectsEnabled() )
@@ -205,7 +205,7 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     else if ( !( entity->m_entityFlags & ENTITY_BACKFACECULL ) )
     {
         // Set texture stage back to two
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 2 );
     }
 
     // Does the entity have alpha enabled?
@@ -234,13 +234,13 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
 inline void InitModelRendering( CBaseModelInfoSAInterface *info )
 {
     if ( info->renderFlags & RENDER_ADDITIVE )
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)11, 2 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)11, 2 );
 }
 
 inline void ShutdownModelRendering( CBaseModelInfoSAInterface *info )
 {
     if ( info->renderFlags & RENDER_ADDITIVE )
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)11, 6 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)11, 6 );
 }
 
 static void __cdecl RenderAtomicWithAlpha( CBaseModelInfoSAInterface *info, RpAtomic *atom, unsigned int alpha )
@@ -299,11 +299,11 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
     CBaseModelInfoSAInterface *info = ppModelInfo[entity->m_model];
 
     if ( info->renderFlags & RENDER_NOSHADOW )
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)8, 0 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)8, 0 );
 
     if ( entity->m_entityFlags & ENTITY_FADE )
     {
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 0 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 0 );
 
         // Make sure we keep this entity alive till next render cycle.
         // This is to make sure that we do not crash due to deep render links.
@@ -317,7 +317,7 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
         entity->m_entityFlags = flags;
 
         if ( flags & ENTITY_BACKFACECULL )
-            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
         unsigned char lightIndex = entity->SetupLighting();
 
@@ -332,22 +332,22 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
         entity->m_entityFlags = flags;
 
         if ( flags & ENTITY_BACKFACECULL )
-            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 2 );
 
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 100 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 100 );
     }
     else
     {
         if ( !*(unsigned int*)VAR_currArea && info->renderFlags & RENDER_NOSHADOW )
-            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 100 );
+            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 100 );
         else
-            (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)30, 0 );
+            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 0 );
 
         RenderEntity( entity );
     }
 
     if ( info->renderFlags & RENDER_NOSHADOW )
-        (*ppRwInterface)->m_deviceCommand( (eRwDeviceCmd)8, 1 );
+        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)8, 1 );
 }
 
 // System callbacks to notify the mods about important progress.
@@ -553,9 +553,11 @@ struct WorldLightingWrap
 
 void __cdecl PostProcessRenderEntities( void )
 {
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    RwInterface *rwInterface = RenderWare::GetInterface();
+
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
     
     {
         // Configure lighting.
@@ -693,12 +695,14 @@ struct QuickRenderStage
 
 void __cdecl RenderWorldEntities( void )
 {
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    RwInterface *rwInterface = RenderWare::GetInterface();
+
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
 
     if ( *(unsigned int*)VAR_currArea == 0 )
-        pRwInterface->m_deviceCommand( (eRwDeviceCmd)30, 140 );
+        rwInterface->m_deviceCommand( (eRwDeviceCmd)30, 140 );
 
     RenderInstances( StaticRenderStage() );
 
@@ -736,14 +740,16 @@ void __cdecl RenderWorldEntities( void )
 =========================================================*/
 void __cdecl RenderGrassHouseEntities( void )
 {
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)1, 0 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)6, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)8, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)10, 5 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)11, 6 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+    RwInterface *rwInterface = RenderWare::GetInterface();
+
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)1, 0 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)6, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)8, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)10, 5 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)11, 6 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
     {
         WorldLightingWrap wLighting;
@@ -751,7 +757,7 @@ void __cdecl RenderGrassHouseEntities( void )
         EntityRender::GetAlphaEntityRenderChain().Execute();
     }
 
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
 }
 
 /*=========================================================
@@ -811,11 +817,13 @@ void __cdecl RenderUnderwaterEntities( void )
 =========================================================*/
 void __cdecl RenderBoatAtomics( void )
 {
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+    RwInterface *rwInterface = RenderWare::GetInterface();
+
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
     EntityRender::GetBoatRenderChain().Execute();
 
-    pRwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
 }
 
 /*=========================================================

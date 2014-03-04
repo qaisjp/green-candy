@@ -91,12 +91,14 @@ struct growableArray
                 }
             }
 
+            RwInterface *rwInterface = RenderWare::GetInterface();
+
             if ( index == 0 )
             {
                 // Handle clearance requests.
                 if ( data )
                 {
-                    pRwInterface->m_memory.m_free( data );
+                    rwInterface->m_memory.m_free( data );
 
                     data = NULL;
                 }
@@ -106,9 +108,9 @@ struct growableArray
                 size_t newArraySize = sizeCount * sizeof( dataType );
 
                 if ( !data )
-                    data = (dataType*)pRwInterface->m_memory.m_malloc( newArraySize, allocFlags );
+                    data = (dataType*)rwInterface->m_memory.m_malloc( newArraySize, allocFlags );
                 else
-                    data = (dataType*)pRwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
+                    data = (dataType*)rwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
             }
 
             if ( data )

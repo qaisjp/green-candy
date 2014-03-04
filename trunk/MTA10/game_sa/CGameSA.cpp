@@ -89,6 +89,9 @@ CGameSA::CGameSA( void )
         ModelInfo [i].SetModelID ( i );
     }
 
+    // Monitor GTA:SA file system activity.
+    FileMgr::InitHooks();
+
     IMG_Initialize();
 
     DEBUG_TRACE("CGameSA::CGameSA()");
@@ -269,6 +272,9 @@ CGameSA::~CGameSA( void )
     delete m_executiveManager;
 
     IMG_Shutdown();
+
+    // Shutdown file monitoring.
+    FileMgr::ShutdownHooks();
 
     // Dump any memory leaks if DETECT_LEAKS is defined
 #ifdef DETECT_LEAKS    
@@ -886,6 +892,10 @@ CFile* OpenGlobalStream( const char *filename, const char *mode )
 
     // Attempt to access the MTA directory
     if ( file = core->GetMTARoot()->Open( filename, mode ) )
+        return file;
+
+    // Attempt to access the GTA:SA current directory.
+    if ( file = FileMgr::GetCurDirTranslator()->Open( filename, mode ) )
         return file;
 
     // Attempt to access the GTA:SA directory

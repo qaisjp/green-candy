@@ -73,7 +73,7 @@ inline static RwTexture* RwTexDictionaryScanTree( RwTexDictionary *txd, const ch
 static RwTexture* __cdecl RwTexDictionaryDefaultCurrentScan( const char *name )
 {
     // First check the current TexDictionary tree
-    if ( RwTexture *tex = RwTexDictionaryScanTree( pRwInterface->m_textureManager.current, name ) )
+    if ( RwTexture *tex = RwTexDictionaryScanTree( RenderWare::GetInterface()->m_textureManager.current, name ) )
         return tex;
 
     // MTA extension: also scan a global texture emitter which is controlled by MTA (low priority)
@@ -96,8 +96,10 @@ static void __cdecl Hook_InitTextureManager( void )
         *( (unsigned short*)VAR_CPlayerTexDictionaries + n ) = pGame->GetTextureManager()->CreateTxdEntry( "*" );
 
     // Register some callbacks
-    pRwInterface->m_textureManager.findInstance = RwTexDictionaryDefaultScanGlobalEnv;
-    pRwInterface->m_textureManager.findInstanceRef = RwTexDictionaryDefaultCurrentScan;
+    RwInterface *rwInterface = RenderWare::GetInterface();
+
+    rwInterface->m_textureManager.findInstance = RwTexDictionaryDefaultScanGlobalEnv;
+    rwInterface->m_textureManager.findInstanceRef = RwTexDictionaryDefaultCurrentScan;
 }
 
 CTextureManagerSA::CTextureManagerSA( void )
@@ -111,6 +113,9 @@ CTextureManagerSA::CTextureManagerSA( void )
 
     // Initialize the dictionary list
     LIST_CLEAR( m_txdList.root );
+
+    // Make sure we are monitoring game activity.
+    InitGameHooks();
 }
 
 CTextureManagerSA::~CTextureManagerSA( void )
@@ -131,17 +136,7 @@ CTextureManagerSA::~CTextureManagerSA( void )
 =========================================================*/
 int CTextureManagerSA::FindTxdEntry( const char *name ) const
 {
-    unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( name );
-
-    for ( unsigned int n = 0; n < MAX_TXD; n++ )
-    {
-        CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( n );
-
-        if ( txd && txd->m_hash == hash )
-            return (int)n;
-    }
-
-    return -1;
+    return TxdFind( name );
 }
 
 /*=========================================================
@@ -157,13 +152,7 @@ int CTextureManagerSA::FindTxdEntry( const char *name ) const
 =========================================================*/
 int CTextureManagerSA::CreateTxdEntry( const char *name )
 {
-    CTxdInstanceSA *inst = new CTxdInstanceSA( name );
-
-    // Check for crashes here
-    if ( !inst )
-        return -1;
-
-    return TextureManager::GetTxdPool()->GetIndex( inst );
+    return TxdCreate( name );
 }
 
 /*=========================================================
@@ -225,7 +214,7 @@ CTexDictionarySA* CTextureManagerSA::CreateTxd( CFile *file )
 =========================================================*/
 int CTextureManagerSA::LoadDictionary( const char *filename )
 {
-    return LoadDictionaryEx( ExtractFilename( filename ), filename );
+    return LoadDictionaryEx( FileMgr::GetFileNameItem( filename ).c_str(), filename );
 }
 
 /*=========================================================
@@ -239,27 +228,20 @@ int CTextureManagerSA::LoadDictionary( const char *filename )
 =========================================================*/
 int CTextureManagerSA::LoadDictionaryEx( const char *name, const char *filename )
 {
-    int id = CreateTxdEntry( name );
+    int id = TxdCreate( name );
 
     if ( id == -1 )
         return -1;
 
-    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+    int iRet = TxdLoadEx( id, name, filename );
 
-    CFile *file = OpenGlobalStream( filename, "rb" );
-
-    bool success = txd->LoadTXD( file );
-
-    delete file;
-
-    if ( success )
+    if ( iRet == -1 )
     {
-        delete txd;
-
-        return -1;
+        TxdDestroy( id );
+        
+        id = -1;
     }
 
-    txd->InitParent();
     return id;
 }
 
@@ -277,13 +259,7 @@ int CTextureManagerSA::LoadDictionaryEx( const char *name, const char *filename 
 =========================================================*/
 bool CTextureManagerSA::SetCurrentTexture( unsigned short id )
 {
-    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
-
-    if ( !txd )
-        return false;
-
-    txd->SetCurrent();
-    return true;
+    return TxdSetCurrentSafe( id );
 }
 
 /*=========================================================
@@ -299,12 +275,7 @@ bool CTextureManagerSA::SetCurrentTexture( unsigned short id )
 =========================================================*/
 void CTextureManagerSA::DeallocateTxdEntry( unsigned short id )
 {
-    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
-
-    if ( !txd )
-        return;
-
-    txd->Deallocate();
+    TxdDeallocate( id );
 }
 
 /*=========================================================
@@ -320,11 +291,5 @@ void CTextureManagerSA::DeallocateTxdEntry( unsigned short id )
 =========================================================*/
 void CTextureManagerSA::RemoveTxdEntry( unsigned short id )
 {
-    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
-
-    // Crashfix
-    if ( !txd )
-        return;
-
-    delete txd;
+    TxdDestroy( id );
 }

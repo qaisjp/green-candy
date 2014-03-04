@@ -130,7 +130,7 @@ CModel* CModelSA::Clone( void ) const
 void CModelSA::Render( void )
 {
     // No point in rendering if no camera is set
-    if ( !pRwInterface->m_renderCam )
+    if ( !RenderWare::GetInterface()->m_renderCam )
         return;
 
     GetObject()->Render();

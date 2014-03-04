@@ -14,10 +14,6 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
-// Events (for shader system)
-void _cdecl OnAddTxd( unsigned short id );
-void _cdecl OnRemoveTxd( unsigned short id );
-
 /*=========================================================
     CTxdInstanceSA::constructor
 
@@ -104,10 +100,8 @@ void CTxdInstanceSA::Deallocate( void )
 {
     unsigned short id = TextureManager::GetTxdPool()->GetIndex( this );
 
-#if 0
     // Notify the shader system
-    OnRemoveTxd( id );
-#endif
+    OnStreamingRemoveTxd( id );
 
     if ( m_txd )
     {
@@ -195,22 +189,22 @@ bool CTxdInstanceSA::LoadTXD( CFile *file )
 =========================================================*/
 void CTxdInstanceSA::InitParent( void )
 {
+    CTxdPool *txdPool = TextureManager::GetTxdPool();
+
     // Assign texture imports
-    unsigned short id = TextureManager::GetTxdPool()->GetIndex( this );
+    unsigned short id = txdPool->GetIndex( this );
 
-#if 0
     // Notify the shader system
-    OnAddTxd( id );
-#endif
+    OnStreamingAddTxd( id );
 
-    CTxdInstanceSA *parent = TextureManager::GetTxdPool()->Get( m_parentTxd );
+    CTxdInstanceSA *parent = txdPool->Get( m_parentTxd );
 
-    if ( !parent )
-        return;
+    if ( parent )
+    {
+        m_txd->m_parentTxd = parent->m_txd;
 
-    m_txd->m_parentTxd = parent->m_txd;
-
-    parent->Reference();
+        parent->Reference();
+    }
 }
 
 /*=========================================================
@@ -272,5 +266,205 @@ void CTxdInstanceSA::DereferenceNoDestroy( void )
 =========================================================*/
 void CTxdInstanceSA::SetCurrent( void )
 {
-    pRwInterface->m_textureManager.current = m_txd;
+    RenderWare::GetInterface()->m_textureManager.current = m_txd;
+}
+
+/*=====================================================================
+===
+=== Global Texture Dictionary Game Lookup Interface
+===
+======================================================================*/
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731C80
+int __cdecl TxdCreate( const char *name )
+{
+    CTxdInstanceSA *inst = new CTxdInstanceSA( name );
+
+    // Check for crashes here
+    if ( !inst )
+        return -1;
+
+    return TextureManager::GetTxdPool()->GetIndex( inst );
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731CD0
+void __cdecl TxdDestroy( int txdIndex )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( txdIndex );
+
+    // Crashfix
+    if ( !txd )
+        return;
+
+    delete txd;
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731850
+static int _txdFindIndexCache = 0;      // Binary offsets: (1.0 US and 1.0 EU): 0x00C88014
+
+int __cdecl TxdFind( const char *name )
+{
+    unsigned int hash = pGame->GetKeyGen()->GetUppercaseKey( name );
+
+    CTxdPool *txdPool = TextureManager::GetTxdPool();
+
+    bool shouldRepeat = true;
+
+    int n = _txdFindIndexCache;
+    int max = MAX_TXD;
+
+    while ( true )
+    {
+        if ( n >= max )
+        {
+            if ( shouldRepeat )
+            {
+                shouldRepeat = false;
+
+                // Reset scanning boundaries.
+                max = n;
+                n = 0;
+            }
+            else
+                break;
+        }
+
+        CTxdInstanceSA *txd = txdPool->Get( n );
+
+        if ( txd && txd->GetHash() == hash )
+        {
+            _txdFindIndexCache = n;
+            return n;
+        }
+
+        n++;
+    }
+
+    return -1;
+}
+
+// MTA extension.
+int __cdecl TxdLoadEx( int id, const char *name, const char *filename )
+{
+    CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( id );
+
+    CFile *file = OpenGlobalStream( filename, "rb" );
+
+    bool success = txdInst->LoadTXD( file );
+
+    if ( file )
+        delete file;
+
+    // Just to be sure :p
+    if ( !success )
+        return -1;
+
+    txdInst->InitParent();
+    return id;
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x007320B0
+int __cdecl TxdLoad( int id, const char *filename )
+{
+    return TxdLoadEx( id, FileMgr::GetFileNameItem( filename ).c_str(), filename );
+}
+
+bool __cdecl TxdSetCurrentSafe( int id )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+
+    // Crashfix.
+    if ( !txd )
+        return false;
+
+    txd->SetCurrent();
+    return true;
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x007319C0
+void __cdecl TxdSetCurrent( int id )
+{
+    TxdSetCurrentSafe( id );
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731E90
+void __cdecl TxdDeallocate( int id )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+
+    // Just to be sure.
+    if ( txd )
+        txd->Deallocate();
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731D50
+void __cdecl TxdInitParent( int id )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+
+    // That we do not have game crashes.
+    if ( txd )
+        txd->InitParent();
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731A00
+void __cdecl TxdAddRef( int id )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+
+    // Imagine that R* did not make these.
+    if ( txd )
+        txd->Reference();
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731A30
+void __cdecl TxdRemoveRef( int id )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+
+    // They were either mad
+    if ( txd )
+        txd->Dereference();
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731A70
+void __cdecl TxdRemoveRefNoDestroy( int id )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+
+    // or extremely sure of their code.
+    if ( txd )
+        txd->DereferenceNoDestroy();
+}
+
+// Binary offsets: (1.0 US): 0x007F3AC0 (1.0 EU): 0x007F3B00
+static RwTexture* __cdecl HOOK_RwFindTexture( const char *name, const char *secName )
+{
+    return RwFindTexture( name, secName );
+}
+
+void CTextureManagerSA::InitGameHooks( void )
+{
+    // Hook important routines.
+    HookInstall( 0x00731C80, (DWORD)TxdCreate, 5 );
+    HookInstall( 0x00731CD0, (DWORD)TxdDestroy, 5 );
+    HookInstall( 0x00731850, (DWORD)TxdFind, 5 );
+    HookInstall( 0x007320B0, (DWORD)TxdLoad, 5 );
+    HookInstall( 0x007319C0, (DWORD)TxdSetCurrent, 5 );
+    HookInstall( 0x00731E90, (DWORD)TxdDeallocate, 5 );
+    HookInstall( 0x00731D50, (DWORD)TxdInitParent, 5 );
+    HookInstall( 0x00731A00, (DWORD)TxdAddRef, 5 );
+    HookInstall( 0x00731A30, (DWORD)TxdRemoveRef, 5 );
+    HookInstall( 0x00731A70, (DWORD)TxdRemoveRefNoDestroy, 5 );
+
+    // Texture scanning fixes.
+    switch( pGame->GetGameVersion() )
+    {
+    case VERSION_EU_10:
+        HookInstall( 0x007F3B00, (DWORD)HOOK_RwFindTexture, 5 );
+        break;
+    case VERSION_US_10:
+        HookInstall( 0x007F3AC0, (DWORD)HOOK_RwFindTexture, 5 );
+        break;
+    }
 }
