@@ -22,14 +22,17 @@ public:
                                 CModelManagerSA     ( void );
                                 ~CModelManagerSA    ( void );
 
-    CModelSA*                   CreateModel         ( CFile *file, unsigned short model );
-    CModelSA*                   CloneClump          ( unsigned short model );
-    CRpAtomicSA*                CloneAtomic         ( unsigned short model );
+    CModelSA*                   CreateModel         ( CFile *file, modelId_t model );
+    CModelSA*                   CloneClump          ( modelId_t model );
+    CRpAtomicSA*                CloneAtomic         ( modelId_t model );
 
-    bool                        GetRwModelType      ( unsigned short model, eRwType& type ) const;
+    bool                        GetRwModelType      ( modelId_t model, eRwType& type ) const;
 
-    bool                        RestoreModel        ( unsigned short id );
-    bool                        RestoreCollision    ( unsigned short id );
+    bool                        RestoreModel        ( modelId_t id );
+    bool                        RestoreCollision    ( modelId_t id );
+
+    void                        RestreamByModel     ( modelId_t id );
+    void                        RestreamByTXD       ( modelId_t id );
 
     void                        SetRequestCallback  ( modelRequestCallback_t callback );
     void                        SetFreeCallback     ( modelFreeCallback_t callback );

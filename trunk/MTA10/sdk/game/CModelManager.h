@@ -19,17 +19,20 @@ typedef void (__cdecl*modelFreeCallback_t)( unsigned short id );
 class CModelManager
 {
 public:
-    virtual CModel*                     CreateModel( CFile *file, unsigned short model ) = 0;
-    virtual CModel*                     CloneClump( unsigned short model ) = 0;
-    virtual CRpAtomic*                  CloneAtomic( unsigned short model ) = 0;
+    virtual CModel*                     CreateModel         ( CFile *file, modelId_t model ) = 0;
+    virtual CModel*                     CloneClump          ( modelId_t model ) = 0;
+    virtual CRpAtomic*                  CloneAtomic         ( modelId_t model ) = 0;
 
-    virtual bool                        GetRwModelType( unsigned short model, eRwType& type ) const = 0;
+    virtual bool                        GetRwModelType      ( modelId_t model, eRwType& type ) const = 0;
 
-    virtual bool                        RestoreModel( unsigned short id ) = 0;
-    virtual bool                        RestoreCollision( unsigned short id ) = 0;
+    virtual bool                        RestoreModel        ( modelId_t id ) = 0;
+    virtual bool                        RestoreCollision    ( modelId_t id ) = 0;
 
-    virtual void                        SetRequestCallback( modelRequestCallback_t callback ) = 0;
-    virtual void                        SetFreeCallback( modelFreeCallback_t callback ) = 0;
+    virtual void                        RestreamByModel     ( modelId_t id ) = 0;
+    virtual void                        RestreamByTXD       ( modelId_t id ) = 0;
+
+    virtual void                        SetRequestCallback  ( modelRequestCallback_t callback ) = 0;
+    virtual void                        SetFreeCallback     ( modelFreeCallback_t callback ) = 0;
 };
 
 #endif //_MODEL_MANAGER_EXPORT_
