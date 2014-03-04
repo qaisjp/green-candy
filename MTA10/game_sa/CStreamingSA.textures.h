@@ -16,6 +16,8 @@
 // Imported textures scanning
 namespace RwImportedScan
 {
+    RwTexture* scanMethodEx( int id, const char *name );
+
     void Apply( unsigned short model );
     void Unapply( void );
 };

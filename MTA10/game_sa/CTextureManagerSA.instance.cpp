@@ -369,6 +369,8 @@ int __cdecl TxdLoad( int id, const char *filename )
     return TxdLoadEx( id, FileMgr::GetFileNameItem( filename ).c_str(), filename );
 }
 
+int _currentTxdItem = -1;
+
 bool __cdecl TxdSetCurrentSafe( int id )
 {
     CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
@@ -376,6 +378,8 @@ bool __cdecl TxdSetCurrentSafe( int id )
     // Crashfix.
     if ( !txd )
         return false;
+
+    _currentTxdItem = id;
 
     txd->SetCurrent();
     return true;
@@ -440,6 +444,16 @@ void __cdecl TxdRemoveRefNoDestroy( int id )
 // Binary offsets: (1.0 US): 0x007F3AC0 (1.0 EU): 0x007F3B00
 static RwTexture* __cdecl HOOK_RwFindTexture( const char *name, const char *secName )
 {
+    // We must scan texture replacement dictionaries here.
+    if ( _currentTxdItem != -1 )
+    {
+        if ( RwTexture *tex = RwImportedScan::scanMethodEx( _currentTxdItem, name ) )
+        {
+            tex->refs++;
+            return tex;
+        }
+    }
+
     return RwFindTexture( name, secName );
 }
 
