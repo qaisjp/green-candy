@@ -21,34 +21,34 @@ class CTextureSA : public CTexture
     friend class CTexDictionarySA;
     friend class CTextureManagerSA;
 public:
-                            CTextureSA( RwTexture *tex );
-                            CTextureSA( CTexDictionarySA *txd, RwTexture *tex );
-                            ~CTextureSA();
+                            CTextureSA      ( RwTexture *tex );
+                            CTextureSA      ( CTexDictionarySA *txd, RwTexture *tex );
+                            ~CTextureSA     ( void );
 
-    const char*             GetName() const;
-    unsigned int            GetHash() const;
+    const char*             GetName         ( void ) const;
+    unsigned int            GetHash         ( void ) const;
 
-    void                    SetFiltering( bool filter )                     { m_texture->SetFiltering( filter ); }
-    bool                    IsFiltering() const                             { return m_texture->IsFiltering(); }
+    void                    SetFiltering    ( bool filter )                     { m_texture->SetFiltering( filter ); }
+    bool                    IsFiltering     ( void ) const                      { return m_texture->IsFiltering(); }
 
-    RwTexture*              GetTexture()                                    { return m_texture; }
-    const RwTexture*        GetTexture() const                              { return m_texture; }
+    RwTexture*              GetTexture      ( void )                            { return m_texture; }
+    const RwTexture*        GetTexture      ( void ) const                      { return m_texture; }
 
-    void                    SetTXD( CTexDictionary *txd );
-    void                    RemoveFromTXD();
-    CTexDictionary*         GetTXD();
+    void                    SetTXD          ( CTexDictionary *txd );
+    void                    RemoveFromTXD   ( void );
+    CTexDictionary*         GetTXD          ( void );
 
-    bool                    Import( unsigned short id );
-    bool                    ImportTXD( unsigned short id );
-    bool                    Remove( unsigned short id );
-    bool                    RemoveTXD( unsigned short id );
+    bool                    Import          ( unsigned short id );
+    bool                    ImportTXD       ( unsigned short id );
+    bool                    Remove          ( unsigned short id );
+    bool                    RemoveTXD       ( unsigned short id );
 
-    void                    ClearImports();
+    void                    ClearImports    ( void );
 
-    bool                    IsImported( unsigned short id ) const;
-    bool                    IsImportedTXD( unsigned short id ) const;
+    bool                    IsImported      ( unsigned short id ) const;
+    bool                    IsImportedTXD   ( unsigned short id ) const;
     
-    bool                    IsUsed() const;
+    bool                    IsUsed          ( void ) const;
 
 protected:
     CTexDictionarySA*       m_dictionary;

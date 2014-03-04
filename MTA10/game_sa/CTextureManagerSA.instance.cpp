@@ -56,12 +56,12 @@ CTxdInstanceSA::~CTxdInstanceSA( void )
 // Allocators for TXD instances. They have to be placed inside the pool.
 void* CTxdInstanceSA::operator new( size_t )
 {
-    return (*ppTxdPool)->Allocate();
+    return TextureManager::GetTxdPool()->Allocate();
 }
 
 void CTxdInstanceSA::operator delete( void *ptr )
 {
-    (*ppTxdPool)->Free( (CTxdInstanceSA*)ptr );
+    TextureManager::GetTxdPool()->Free( (CTxdInstanceSA*)ptr );
 }
 
 /*=========================================================
@@ -102,7 +102,7 @@ static bool Txd_DeleteAll( RwTexture *tex, int )
 
 void CTxdInstanceSA::Deallocate( void )
 {
-    unsigned short id = (*ppTxdPool)->GetIndex( this );
+    unsigned short id = TextureManager::GetTxdPool()->GetIndex( this );
 
 #if 0
     // Notify the shader system
@@ -125,7 +125,7 @@ void CTxdInstanceSA::Deallocate( void )
     if ( m_parentTxd != 0xFFFF )
     {
         // Bugfix for resource termination (we check if the id is still valid)
-        CTxdInstanceSA *parentTxd = (*ppTxdPool)->Get( m_parentTxd );
+        CTxdInstanceSA *parentTxd = TextureManager::GetTxdPool()->Get( m_parentTxd );
 
         if ( parentTxd )
             parentTxd->Dereference();
@@ -196,14 +196,14 @@ bool CTxdInstanceSA::LoadTXD( CFile *file )
 void CTxdInstanceSA::InitParent( void )
 {
     // Assign texture imports
-    unsigned short id = (*ppTxdPool)->GetIndex( this );
+    unsigned short id = TextureManager::GetTxdPool()->GetIndex( this );
 
 #if 0
     // Notify the shader system
     OnAddTxd( id );
 #endif
 
-    CTxdInstanceSA *parent = (*ppTxdPool)->Get( m_parentTxd );
+    CTxdInstanceSA *parent = TextureManager::GetTxdPool()->Get( m_parentTxd );
 
     if ( !parent )
         return;
@@ -242,7 +242,7 @@ void CTxdInstanceSA::Dereference( void )
 
     // We unload ourselves if not used anymore
     if ( m_references == 0 )
-        pGame->GetStreaming()->FreeModel( DATA_TEXTURE_BLOCK + (*ppTxdPool)->GetIndex( this ) );
+        pGame->GetStreaming()->FreeModel( DATA_TEXTURE_BLOCK + TextureManager::GetTxdPool()->GetIndex( this ) );
 }
 
 /*=========================================================

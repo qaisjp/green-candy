@@ -121,7 +121,7 @@ void CRenderItemManager::GetVisibleTextureNames ( std::vector < SString >& outNa
     if ( usModelID )
     {
         std::vector < SString > modelTextureNameList;
-        m_pTextureManager->GetModelTextureNames ( modelTextureNameList, usModelID );
+        m_pRenderWare->GetModelTextureNames ( modelTextureNameList, usModelID );
         for ( std::vector < SString >::const_iterator iter = modelTextureNameList.begin () ; iter != modelTextureNameList.end () ; ++iter )
             modelTextureNameMap.insert ( (*iter).ToLower () );
     }
@@ -134,7 +134,7 @@ void CRenderItemManager::GetVisibleTextureNames ( std::vector < SString >& outNa
     for ( std::set < CD3DDUMMY* >::const_iterator iter = m_PrevFrameTextureUsage.begin () ; iter != m_PrevFrameTextureUsage.end () ; ++iter )
     {
         // Get the texture name
-        SString strTextureName = m_pTextureManager->GetTextureName ( *iter );
+        SString strTextureName = m_pRenderWare->GetTextureName ( *iter );
         SString strTextureNameLower = strTextureName.ToLower ();
 
         if ( strTextureName.empty () )
@@ -190,7 +190,7 @@ void CRenderItemManager::RemoveNameMatchInfo ( SNameMatchInfo* pNameMatchInfo )
     //
     // Remove match info item from all world textures
     //
-    m_pTextureManager->RemoveWorldTextureWatchByContext ( (CSHADERDUMMY*)pNameMatchInfo );
+    m_pRenderWare->RemoveWorldTextureWatchByContext ( (CSHADERDUMMY*)pNameMatchInfo );
 
     //
     // Remove match info item from D3DData map
@@ -332,7 +332,7 @@ bool CRenderItemManager::ApplyShaderItemToWorldTexture ( CShaderItem* pShaderIte
     pNameMatchInfo->AddShaderAndClientEntity ( pShaderItem, pClientEntity );
 
     // Add new match at the end
-    m_pTextureManager->AddWorldTextureWatch ( (CSHADERDUMMY*)pNameMatchInfo, strTextureNameMatch, pShaderItem->m_fPriority );
+    m_pRenderWare->AddWorldTextureWatch ( (CSHADERDUMMY*)pNameMatchInfo, strTextureNameMatch, pShaderItem->m_fPriority );
 
     return true;
 }
@@ -356,7 +356,7 @@ bool CRenderItemManager::RemoveShaderItemFromWorldTexture ( CShaderItem* pShader
     if ( pNameMatchInfo->IsEmpty () )
     {
         // Remove match info if not longer used
-        m_pTextureManager->RemoveWorldTextureWatch ( (CSHADERDUMMY*)pNameMatchInfo, strTextureNameMatch );
+        m_pRenderWare->RemoveWorldTextureWatch ( (CSHADERDUMMY*)pNameMatchInfo, strTextureNameMatch );
         RemoveNameMatchInfo ( pNameMatchInfo );
     }
 
@@ -381,7 +381,7 @@ void CRenderItemManager::RemoveShaderItemFromWatchLists ( CShaderItem* pShaderIt
         if ( pNameMatchInfo->IsEmpty () )
         {
             // Remove match info if not longer used
-            m_pTextureManager->RemoveWorldTextureWatch ( (CSHADERDUMMY*)pNameMatchInfo, strTextureNameMatch );
+            m_pRenderWare->RemoveWorldTextureWatch ( (CSHADERDUMMY*)pNameMatchInfo, strTextureNameMatch );
             RemoveNameMatchInfo ( pNameMatchInfo );
             iterMatch = m_NameMatchInfoMap.begin ();
         }

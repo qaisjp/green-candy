@@ -18,14 +18,14 @@ class CRwFrame;
 class CRwObject abstract
 {
 public:
-    virtual                         ~CRwObject()    {}
+    virtual                         ~CRwObject          ( void )    {}
 
-    virtual eRwType                 GetType() const = 0;
-    virtual bool                    IsFrameExtension() const = 0;
+    virtual eRwType                 GetType             ( void ) const = 0;
+    virtual bool                    IsFrameExtension    ( void ) const = 0;
 
-    virtual CRwFrame*               GetFrame() = 0;
-    virtual const CRwFrame*         GetFrame() const = 0;
-    virtual void                    SetFrame( CRwFrame *frame ) = 0;
+    virtual CRwFrame*               GetFrame            ( void ) = 0;
+    virtual const CRwFrame*         GetFrame            ( void ) const = 0;
+    virtual void                    SetFrame            ( CRwFrame *frame ) = 0;
 };
 
 #endif //_RW_OBJECT_

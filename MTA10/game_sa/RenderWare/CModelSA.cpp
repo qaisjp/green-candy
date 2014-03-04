@@ -87,7 +87,7 @@ CModelSA::CModelSA( RpClump *clump, CColModelSA *col ) : CRwObjectSA( clump )
     models.push_back( this );
 }
 
-CModelSA::~CModelSA()
+CModelSA::~CModelSA( void )
 {
     RestoreAll();
 
@@ -112,22 +112,22 @@ CModelSA::~CModelSA()
     models.erase( std::remove( models.begin(), models.end(), this ) );
 }
 
-const char* CModelSA::GetName() const
+const char* CModelSA::GetName( void ) const
 {
     return GetFrame()->GetName();
 }
 
-unsigned int CModelSA::GetHash() const
+unsigned int CModelSA::GetHash( void ) const
 {
     return pGame->GetKeyGen()->GetUppercaseKey( GetName() );
 }
 
-CModel* CModelSA::Clone() const
+CModel* CModelSA::Clone( void ) const
 {
     return new CModelSA( RpClumpClone( GetObject() ), m_col );
 }
 
-void CModelSA::Render()
+void CModelSA::Render( void )
 {
     // No point in rendering if no camera is set
     if ( !pRwInterface->m_renderCam )
@@ -246,7 +246,7 @@ bool CModelSA::Restore( unsigned short id )
     return true;
 }
 
-void CModelSA::RestoreAll()
+void CModelSA::RestoreAll( void )
 {
     while ( !m_imported.empty() )
         Restore( (*m_imported.begin()).first );

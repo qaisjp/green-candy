@@ -20,9 +20,6 @@
 extern CBaseModelInfoSAInterface **ppModelInfo;
 RwTexDictionary *g_textureEmitter = NULL;
 
-// Pool of TXD instances. This is how GTA:SA manages it's textures.
-CTxdPool**   ppTxdPool = (CTxdPool**)0x00C8800C;
-
 // Imports to the textures of ppTxdPool. Used in the streaming model system.
 dictImportList_t    g_dictImports[MAX_TXD];
 
@@ -109,10 +106,8 @@ CTextureManagerSA::CTextureManagerSA( void )
     HookInstall( FUNC_InitTextureManager, (DWORD)Hook_InitTextureManager, 6 );
 
     // We can initialize the pool here
-    *ppTxdPool = new CTxdPool;
-
-    // Init shader essentials
-    InitShaderSystem();
+    // This is where GTA:SA stores its texture.
+    TextureManager::GetTxdPool() = new CTxdPool();
 
     // Initialize the dictionary list
     LIST_CLEAR( m_txdList.root );
@@ -120,10 +115,7 @@ CTextureManagerSA::CTextureManagerSA( void )
 
 CTextureManagerSA::~CTextureManagerSA( void )
 {
-    // Destroy shader essentials
-    ShutdownShaderSystem();
-
-    delete *ppTxdPool;
+    delete TextureManager::GetTxdPool();
 }
 
 /*=========================================================
@@ -143,7 +135,7 @@ int CTextureManagerSA::FindTxdEntry( const char *name ) const
 
     for ( unsigned int n = 0; n < MAX_TXD; n++ )
     {
-        CTxdInstanceSA *txd = (*ppTxdPool)->Get(n);
+        CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( n );
 
         if ( txd && txd->m_hash == hash )
             return (int)n;
@@ -171,7 +163,7 @@ int CTextureManagerSA::CreateTxdEntry( const char *name )
     if ( !inst )
         return -1;
 
-    return (*ppTxdPool)->GetIndex( inst );
+    return TextureManager::GetTxdPool()->GetIndex( inst );
 }
 
 /*=========================================================
@@ -252,7 +244,7 @@ int CTextureManagerSA::LoadDictionaryEx( const char *name, const char *filename 
     if ( id == -1 )
         return -1;
 
-    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
 
     CFile *file = OpenGlobalStream( filename, "rb" );
 
@@ -285,7 +277,7 @@ int CTextureManagerSA::LoadDictionaryEx( const char *name, const char *filename 
 =========================================================*/
 bool CTextureManagerSA::SetCurrentTexture( unsigned short id )
 {
-    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
 
     if ( !txd )
         return false;
@@ -307,7 +299,7 @@ bool CTextureManagerSA::SetCurrentTexture( unsigned short id )
 =========================================================*/
 void CTextureManagerSA::DeallocateTxdEntry( unsigned short id )
 {
-    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
 
     if ( !txd )
         return;
@@ -328,7 +320,7 @@ void CTextureManagerSA::DeallocateTxdEntry( unsigned short id )
 =========================================================*/
 void CTextureManagerSA::RemoveTxdEntry( unsigned short id )
 {
-    CTxdInstanceSA *txd = (*ppTxdPool)->Get( id );
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
 
     // Crashfix
     if ( !txd )

@@ -18,7 +18,7 @@ CRpLightSA::CRpLightSA( RpLight *light ) : CRwObjectSA( light )
     m_model = NULL;
 }
 
-CRpLightSA::~CRpLightSA()
+CRpLightSA::~CRpLightSA( void )
 {
     GetObject()->RemoveFromScene();
 
@@ -49,12 +49,12 @@ void CRpLightSA::AddToModel( CModel *model )
     GetObject()->AddToClump( m_model->GetObject() );
 }
 
-CModel* CRpLightSA::GetModel()
+CModel* CRpLightSA::GetModel( void )
 {
     return m_model;
 }
 
-void CRpLightSA::RemoveFromModel()
+void CRpLightSA::RemoveFromModel( void )
 {
     if ( !m_model )
         return;
@@ -78,7 +78,7 @@ void CRpLightSA::SetConeAngle( float radians )
     GetObject()->coneAngle = -cos( radians );
 }
 
-float CRpLightSA::GetConeAngle() const
+float CRpLightSA::GetConeAngle( void ) const
 {
     return RpLightGetConeAngle( GetObject() );
 }

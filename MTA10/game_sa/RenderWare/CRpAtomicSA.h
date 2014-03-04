@@ -19,32 +19,32 @@ class CRpAtomicSA : public virtual CRpAtomic, public CRwObjectSA
 {
     friend class CModelSA;
 public:
-                                    CRpAtomicSA( RpAtomic *atomic );
-                                    ~CRpAtomicSA();
+                                    CRpAtomicSA         ( RpAtomic *atomic );
+                                    ~CRpAtomicSA        ( void );
 
-    inline RpAtomic*                GetObject()                     { return (RpAtomic*)m_object; }
-    inline const RpAtomic*          GetObject() const               { return (const RpAtomic*)m_object; }
+    inline RpAtomic*                GetObject           ( void )                    { return (RpAtomic*)m_object; }
+    inline const RpAtomic*          GetObject           ( void ) const              { return (const RpAtomic*)m_object; }
 
-    CRpAtomic*                      Clone() const;
-    RpAtomic*                       CreateInstance( unsigned short id ) const;
+    CRpAtomic*                      Clone               ( void ) const;
+    RpAtomic*                       CreateInstance      ( unsigned short id ) const;
 
-    void                            Render();
+    void                            Render              ( void );
 
-    void                            GetWorldSphere( RwSphere& out );
+    void                            GetWorldSphere      ( RwSphere& out );
 
-    eRwType                         GetType() const                 { return RW_ATOMIC; }
-    bool                            IsFrameExtension() const        { return true; }
+    eRwType                         GetType             ( void ) const              { return RW_ATOMIC; }
+    bool                            IsFrameExtension    ( void ) const              { return true; }
 
-    void                            AddToModel( CModel *model );
-    CModel*                         GetModel();
-    void                            RemoveFromModel();
+    void                            AddToModel          ( CModel *model );
+    CModel*                         GetModel            ( void );
+    void                            RemoveFromModel     ( void );
 
-    bool                            Replace( unsigned short id );
-    bool                            IsReplaced( unsigned short id ) const;
-    bool                            Restore( unsigned short id );
-    void                            RestoreAll();
+    bool                            Replace             ( unsigned short id );
+    bool                            IsReplaced          ( unsigned short id ) const;
+    bool                            Restore             ( unsigned short id );
+    void                            RestoreAll          ( void );
 
-    const imports_t&                GetImportList() const           { return m_imported; }
+    const imports_t&                GetImportList       ( void ) const              { return m_imported; }
 
 private:
     CModelSA*                       m_model;

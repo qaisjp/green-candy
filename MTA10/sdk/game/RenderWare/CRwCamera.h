@@ -16,18 +16,18 @@
 class CRwCamera : public virtual CRwObject
 {
 public:
-    virtual                         ~CRwCamera()    {}
+    virtual                         ~CRwCamera          ( void )    {}
 
-    virtual void                    AddToModel( CModel *model ) = 0;
-    virtual CModel*                 GetModel() = 0;
-    virtual void                    RemoveFromModel() = 0;
+    virtual void                    AddToModel          ( CModel *model ) = 0;
+    virtual CModel*                 GetModel            ( void ) = 0;
+    virtual void                    RemoveFromModel     ( void ) = 0;
 
-    virtual void                    SetRenderSize( int width, int height ) = 0;
-    virtual void                    GetRenderSize( int& width, int& height ) const = 0;
+    virtual void                    SetRenderSize       ( int width, int height ) = 0;
+    virtual void                    GetRenderSize       ( int& width, int& height ) const = 0;
 
-    virtual bool                    BeginUpdate() = 0;
-    virtual bool                    IsRendering() const = 0;
-    virtual void                    EndUpdate() = 0;
+    virtual bool                    BeginUpdate         ( void ) = 0;
+    virtual bool                    IsRendering         ( void ) const = 0;
+    virtual void                    EndUpdate           ( void ) = 0;
 };
 
 #endif //_RW_CAMERA_

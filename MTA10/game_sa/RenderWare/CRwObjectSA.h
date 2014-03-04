@@ -18,18 +18,18 @@ class CRwFrameSA;
 class CRwObjectSA : public virtual CRwObject
 {
 public:
-                                    CRwObjectSA( RwObject *obj );
-    virtual                         ~CRwObjectSA();
+                                    CRwObjectSA         ( RwObject *obj );
+    virtual                         ~CRwObjectSA        ( void );
 
-    inline RwObject*                GetObject()                         { return m_object; }
-    inline const RwObject*          GetObject() const                   { return m_object; }
+    inline RwObject*                GetObject           ( void )                { return m_object; }
+    inline const RwObject*          GetObject           ( void ) const          { return m_object; }
 
-    virtual eRwType                 GetType() const = 0;
-    virtual bool                    IsFrameExtension() const            { return false; }
+    virtual eRwType                 GetType             ( void ) const = 0;
+    virtual bool                    IsFrameExtension    ( void ) const          { return false; }
 
-    CRwFrame*                       GetFrame();
-    const CRwFrame*                 GetFrame() const;
-    void                            SetFrame( CRwFrame *frame );
+    CRwFrame*                       GetFrame            ( void );
+    const CRwFrame*                 GetFrame            ( void ) const;
+    void                            SetFrame            ( CRwFrame *frame );
 
     CRwFrameSA*         m_frame;
 

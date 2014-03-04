@@ -30,7 +30,7 @@ CTexDictionarySA::CTexDictionarySA( RwTexDictionary *txd ) : CRwObjectSA( txd )
     // The texture manager (or whatever management environment) sets up the list node
 }
 
-CTexDictionarySA::~CTexDictionarySA()
+CTexDictionarySA::~CTexDictionarySA( void )
 {
     // Make sure we unlink from the global emitter (if assigned)
     if ( g_textureEmitter == GetObject() )
@@ -44,7 +44,7 @@ CTexDictionarySA::~CTexDictionarySA()
     RwTexDictionaryDestroy( GetObject() );
 }
 
-void CTexDictionarySA::Clear()
+void CTexDictionarySA::Clear( void )
 {
     // Destroy all textures, they automatically detach from txds
     while ( !m_textures.empty() )
@@ -74,12 +74,12 @@ bool CTexDictionarySA::IsImportedTXD( unsigned short id ) const
     return false;
 }
 
-bool CTexDictionarySA::IsUsed() const
+bool CTexDictionarySA::IsUsed( void ) const
 {
     return ( m_imported.size() != 0 );
 }
 
-void CTexDictionarySA::SetGlobalEmitter()
+void CTexDictionarySA::SetGlobalEmitter( void )
 {
     // Hook ourselves into the loading schemantics
     g_textureEmitter = GetObject();
@@ -100,7 +100,7 @@ bool CTexDictionarySA::Import( unsigned short id )
 
 bool CTexDictionarySA::ImportTXD( unsigned short id )
 {
-    if ( !(*ppTxdPool)->Get( id ) )
+    if ( !TextureManager::GetTxdPool()->Get( id ) )
         return false;
 
     textureList_t::iterator iter = m_textures.begin();
@@ -132,7 +132,7 @@ bool CTexDictionarySA::RemoveTXD( unsigned short id )
     if ( iter == m_imported.end() )
         return true;
 
-    if ( !(*ppTxdPool)->Get( id ) )
+    if ( !TextureManager::GetTxdPool()->Get( id ) )
         return false;
 
     textureList_t::iterator itera = m_textures.begin();
@@ -144,7 +144,7 @@ bool CTexDictionarySA::RemoveTXD( unsigned short id )
     return true;
 }
 
-void CTexDictionarySA::ClearImports()
+void CTexDictionarySA::ClearImports( void )
 {
     while ( !m_imported.empty() )
         RemoveTXD( *m_imported.begin() );

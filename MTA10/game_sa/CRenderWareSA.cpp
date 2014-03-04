@@ -479,6 +479,8 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwSceneAddAtomic                    = (RwSceneAddAtomic_t)                      0x00750F90;
         RwSceneRemoveLight                  = (RwSceneRemoveLight_t)                    0x00751960;
         RwSceneDestroy                      = (RwSceneDestroy_t)                        0x0074F610;
+        RwSceneRegisterPlugin               = (RwSceneRegisterPlugin_t)                 0x0074FCD0;
+        RwSceneRegisterPluginStream         = (RwSceneRegisterPluginStream_t)           0x0074FD00;
 
         // Dict functions
         RtDictSchemaStreamReadDict          = (RtDictSchemaStreamReadDict_t)            0x007CF240;
@@ -510,10 +512,16 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
     RenderCallbacks_Init();
     RenderWareLighting_Init();
     RenderWareUtilsD3D9_Init();
+
+    // Init shader essentials
+    InitShaderSystem();
 }
 
 CRenderWareSA::~CRenderWareSA( void )
 {
+    // Destroy shader essentials
+    ShutdownShaderSystem();
+
     // Shutdown sub modules
     RenderWareUtilsD3D9_Shutdown();
     RenderWareLighting_Shutdown();
@@ -555,7 +563,7 @@ RpClump* CRenderWareSA::ReadDFF( CFile *file, unsigned short id, CColModelSA*& c
         // We therefor have to prepare all resources so it can retrive them; textures and animations!
         if ( model )
         {
-            txd = (*ppTxdPool)->Get( model->usTextureDictionary );
+            txd = TextureManager::GetTxdPool()->Get( model->usTextureDictionary );
 
             if ( !txd->m_txd )
             {

@@ -54,7 +54,7 @@ CRwFrameSA::CRwFrameSA( RwFrame *obj ) : CRwObjectSA( obj )
     obj->ForAllObjects( RwFrameObjectAssign, this );
 }
 
-CRwFrameSA::~CRwFrameSA()
+CRwFrameSA::~CRwFrameSA( void )
 {
     // Destroy all children and objects
     while ( !m_objects.empty() )
@@ -69,7 +69,7 @@ CRwFrameSA::~CRwFrameSA()
     RwFrameDestroy( GetObject() );
 }
 
-unsigned int CRwFrameSA::GetHash() const
+unsigned int CRwFrameSA::GetHash( void ) const
 {
     return pGame->GetKeyGen()->GetKey( GetObject()->szName );
 }
@@ -92,7 +92,7 @@ void CRwFrameSA::Link( CRwFrame *child )
     m_children.insert( m_children.begin(), frame );
 }
 
-void CRwFrameSA::Unlink()
+void CRwFrameSA::Unlink( void )
 {
     if ( !m_frame )
         return;

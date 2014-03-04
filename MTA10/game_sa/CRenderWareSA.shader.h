@@ -2,8 +2,8 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        game_sa/CTextureManagerSA.shader.h
-*  PURPOSE:     Internal texture management definitions
+*  FILE:        game_sa/CRenderWareSA.shader.h
+*  PURPOSE:     RenderWare shader implementation for MTA
 *               SubInterface of RenderWare
 *  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
@@ -11,8 +11,9 @@
 *
 *****************************************************************************/
 
-#ifndef _TEXTUREMANAGER_SHADER_IMPL_
-#define _TEXTUREMANAGER_SHADER_IMPL_
+#ifndef _RENDERWARE_SHADERS_FOR_MTA_
+#define _RENDERWARE_SHADERS_FOR_MTA_
 
 
-#endif //_TEXTUREMANAGER_SHADER_IMPL_
+
+#endif //_RENDERWARE_SHADERS_FOR_MTA_
