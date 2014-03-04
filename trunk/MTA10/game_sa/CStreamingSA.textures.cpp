@@ -109,15 +109,23 @@ namespace RwImportedScan
     static unsigned short   txdId;
     static bool             applied;
 
-    static RwTexture* scanMethod( const char *name )
+    RwTexture* scanMethodEx( int id, const char *name )
     {
-        dictImportList_t& imported = g_dictImports[txdId];
+        dictImportList_t& imported = g_dictImports[id];
 
         for ( dictImportList_t::const_iterator iter = imported.begin(); iter != imported.end(); ++iter )
         {
             if ( stricmp( (*iter)->GetName(), name ) == 0 )
                 return (*iter)->GetTexture();
         }
+
+        return NULL;
+    }
+
+    RwTexture* scanMethod( const char *name )
+    {
+        if ( RwTexture *tex = scanMethodEx( txdId, name ) )
+            return tex;
 
         return prevStackScan( name );
     }
