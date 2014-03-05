@@ -149,6 +149,10 @@ public:
     bool            HasVehicleUpgradeLoaded         ( int model );
     void            RequestSpecialModel             ( modelId_t model, const char *tex, unsigned int channel );
 
+    void            CacheIMGFile                    ( const char *name );
+    bool            IsIMGFileCached                 ( const char *name ) const;
+    void            FreeIMGFileCache                ( const char *name );
+
     // Utility methods.
     unsigned int    GetActiveStreamingEntityCount   ( void ) const;
     unsigned int    GetFreeStreamingEntitySlotCount ( void ) const;
