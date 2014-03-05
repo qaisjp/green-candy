@@ -144,7 +144,7 @@ void CAutomobileSAInterface::UpdateNitrous( unsigned char rounds )
 {
     CPadSAInterface *pad;
 
-    if ( !m_status && m_driver->IsPlayer() )
+    if ( !nStatus && m_driver->IsPlayer() )
         pad = m_driver->GetJoypad();
 
     if ( !rounds )
@@ -175,8 +175,7 @@ CAutomobileSA::CAutomobileSA( CAutomobileSAInterface *veh ) : CVehicleSA( veh ),
         m_doors[i] = new CDoorSA( &GetInterface()->m_doors[i] );
 
     // Privatise our suspension lines
-    CBaseModelInfoSAInterface *info = ppModelInfo[veh->m_model];
-    CColDataSA *data = info->pColModel->pColData;
+    CColDataSA *data = veh->GetColModel()->pColData;
 
     m_suspensionLines = new char [data->ucNumWheels * 0x20];
     memcpy( m_suspensionLines, data->pSuspensionLines, data->ucNumWheels * 0x20 );

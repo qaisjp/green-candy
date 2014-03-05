@@ -58,7 +58,7 @@ CPhysicalSAInterface::CPhysicalSAInterface( void )
 
     m_distanceTravelled = 0;
 
-    m_attachedTo = NULL;
+    m_pAttachedEntity = NULL;
     m_unk8 = 0;
     m_unk9 = 0;
     m_unk10 = 0;
@@ -69,7 +69,7 @@ CPhysicalSAInterface::CPhysicalSAInterface( void )
     m_lighting3 = 0;
 
     m_unk13 = 10;
-    m_nodeFlags = 2;
+    physicalFlags = 2;
 
     m_lighting = 0;
 }
@@ -138,7 +138,7 @@ void CPhysicalSA::ResetLastDamage()
 
 CEntity* CPhysicalSA::GetAttachedEntity() const
 {
-    return pGame->GetPools()->GetEntity( GetInterface()->m_attachedTo );
+    return pGame->GetPools()->GetEntity( GetInterface()->m_pAttachedEntity );
 }
 
 void CPhysicalSA::AttachTo( CPhysical& Entity, const CVector& pos, const CVector& rot )
@@ -157,7 +157,7 @@ void CPhysicalSA::DetachFrom( float fUnkX, float fUnkY, float fUnkZ, bool bUnk )
 
     // DetachFrom appears to crash when there's no entity attached (0x544403, bug 2350)
     // So do a NULL check here
-    if ( GetInterface()->m_attachedTo == NULL )
+    if ( GetInterface()->m_pAttachedEntity == NULL )
         return;
 
     _asm

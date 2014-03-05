@@ -121,7 +121,7 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
     new (&m_audio) CVehicleAudioSAInterface();
     new (&m_control) CVehicleControlSAInterface();
 
-    m_type = ENTITY_TYPE_VEHICLE;
+    nType = ENTITY_TYPE_VEHICLE;
 
     m_entityFlags |= ENTITY_PRERENDERED;
 
@@ -177,9 +177,9 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
     m_usedForCover &= ~0x20;
 
     m_unk2 = -1;
-    m_specialColModel = -1;
+    m_nSpecialColModel = -1;
 
-    m_nodeFlags |= 0x10000000;
+    physicalFlags |= 0x10000000;
 
     m_unk2 = 0;
     m_unk3 = NULL;
@@ -391,7 +391,7 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
 
 CModel* CVehicleSA::CloneClump() const
 {
-    return new CModelSA( RpClumpClone( (RpClump*)GetInterface()->m_rwObject ), NULL );
+    return new CModelSA( RpClumpClone( (RpClump*)GetInterface()->GetRwObject() ), NULL );
 }
 
 CVehicleComponent* CVehicleSA::GetComponent( const char *name )
@@ -402,7 +402,7 @@ CVehicleComponent* CVehicleSA::GetComponent( const char *name )
     if ( ( iter = m_compContainer.find( name ) ) != m_compContainer.end() )
         return iter->second;
 
-    RpClump *clump = (RpClump*)GetInterface()->m_rwObject;
+    RpClump *clump = (RpClump*)GetInterface()->GetRwObject();
     RwFrame *frame = clump->parent->FindChildByName( name );
 
     if ( !frame )
@@ -421,7 +421,7 @@ static bool RwFrameListNames( RwFrame *child, std::vector <std::string> *list )
 
 void CVehicleSA::GetComponentNameList( std::vector <std::string>& list )
 {
-    GetInterface()->m_rwObject->parent->ForAllChildren( RwFrameListNames, &list );
+    GetInterface()->GetRwObject()->parent->ForAllChildren( RwFrameListNames, &list );
 }
 
 void CVehicleSA::SetHealth( float health )
@@ -774,13 +774,15 @@ void CVehicleSA::SetRemap( int iRemap )
 
 int CVehicleSA::GetRemapIndex() const
 {
-    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[GetInterface()->m_model];
+    const CVehicleModelInfoSAInterface *info = GetInterface()->GetModelInfo();
 
     unsigned short num = info->GetNumberOfValidPaintjobs();
 
     for ( unsigned short n = 0; n < num; n++ )
+    {
         if ( (unsigned short)GetInterface()->m_paintjobTxd == info->paintjobTypes[n] )
             return n;
+    }
 
     return -1;
 }
@@ -852,7 +854,7 @@ void CVehicleSA::SetGravity( const CVector& grav )
         // Make sure we have a matrix
         m_pInterface->AcquaintMatrix();
         
-        const CVector& pos = m_pInterface->Placeable.m_matrix->vPos;
+        const CVector& pos = m_pInterface->Placeable.matrix->vPos;
 
         matOld.Invert();
         pCam->GetTargetHistoryPos()[0] = matOld * (pCam->GetTargetHistoryPos()[0] - pos);
@@ -867,12 +869,12 @@ void CVehicleSA::SetGravity( const CVector& grav )
 
 CColModelSA* CVehicleSA::GetSpecialColModel() const
 {
-    unsigned char colModel = GetInterface()->m_specialColModel;
+    unsigned char colModel = GetInterface()->m_nSpecialColModel;
 
     if ( colModel == 0xFF )
         return NULL;
 
-    return new CColModelSA( &((CColModelSAInterface*)VAR_CVehicle_SpecialColModels)[ GetInterface()->m_specialColModel ] );
+    return new CColModelSA( &((CColModelSAInterface*)VAR_CVehicle_SpecialColModels)[ GetInterface()->m_nSpecialColModel ] );
 }
 
 void* CVehicleSAInterface::operator new( size_t )

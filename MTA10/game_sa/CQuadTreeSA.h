@@ -13,6 +13,8 @@
 #ifndef _QUAD_TREE_ENGINE_
 #define _QUAD_TREE_ENGINE_
 
+#include "CPtrNodeSA.h"
+
 enum eQuadCheckType : unsigned int
 {
     QUADC_TOP_LEFT,

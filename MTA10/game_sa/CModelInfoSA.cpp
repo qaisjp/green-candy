@@ -373,7 +373,7 @@ struct _entityModelRefresh
             if ( !_ValidateEntity( pEntity ) )
                 __asm int 3
 
-            if ( MapContains( CModelInfoSA::ms_RestreamTxdIDMap, pGame->GetModelInfo( pEntity->m_model )->GetTextureDictionaryID () ) )
+            if ( MapContains( CModelInfoSA::ms_RestreamTxdIDMap, pEntity->GetModelInfo()->usTextureDictionary ) )
             {
                 if ( !IS_FLAG( pEntity->m_entityFlags, ENTITY_DISABLESTREAMING ) && !IS_FLAG( pEntity->m_entityFlags, ENTITY_RENDERING ) )
                 {
@@ -381,7 +381,7 @@ struct _entityModelRefresh
                     pEntity->DeleteRwObject();
 
                     // Remember the model.
-                    m_modelList.insert( pEntity->m_model );
+                    m_modelList.insert( pEntity->GetModelIndex() );
                 }
             }
         }

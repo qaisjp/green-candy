@@ -48,7 +48,10 @@ CEntity* CFireSA::GetCreator() const
 {
     DEBUG_TRACE("CEntity* CFireSA::GetCreator() const");
 
-    switch( m_interface->m_creator->m_type )
+    if ( !m_interface->m_creator )
+        return NULL;
+
+    switch( m_interface->m_creator->nType )
     {
     case ENTITY_TYPE_PED:       return pGame->GetPools()->GetPed( m_interface->m_creator );
     case ENTITY_TYPE_VEHICLE:   return pGame->GetPools()->GetVehicle( m_interface->m_creator );
@@ -61,7 +64,10 @@ CEntity* CFireSA::GetEntityOnFire() const
 {
     DEBUG_TRACE("CEntity* CFireSA::GetEntityOnFire() const");
 
-    switch( m_interface->m_target->m_type )
+    if ( !m_interface->m_target )
+        return NULL;
+
+    switch( m_interface->m_target->nType )
     {
     case ENTITY_TYPE_PED:       return pGame->GetPools()->GetPed( m_interface->m_target );
     case ENTITY_TYPE_VEHICLE:   return pGame->GetPools()->GetVehicle( m_interface->m_target );

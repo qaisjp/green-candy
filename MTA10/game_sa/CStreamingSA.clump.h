@@ -21,4 +21,7 @@ bool __cdecl LoadClumpFile( RwStream *stream, modelId_t model );
 bool __cdecl LoadClumpFilePersistent( RwStream *stream, modelId_t id );
 bool __cdecl LoadClumpFileBigContinue( RwStream *stream, modelId_t id );
 
+// Exports.
+void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId );
+
 #endif //_STREAMING_CLUMP_

@@ -213,6 +213,18 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
         if ( !DefaultDispatchExecute( id, ModelRequestDispatch( flags ) ) )
             return;
 
+#ifdef _MTA_BLUE
+        // Wire in a MTA team fix regarding clothes replacing.
+        // What a dirty hook :p
+        if ( OnCStreaming_RequestModel_Mid( flags, (ClothesReplacing::SImgGTAItemInfo*)info ) )
+        {
+            // MTA team wants to skip async loading by doing things directly.
+            // Well, okay.
+            LoadModel( ClothesReplacing::pReturnBuffer, ClothesReplacing::iReturnFileId, 0 );
+            return;
+        }
+#endif //_MTA_BLUE
+
         // Push onto the to-be-loaded queue
         info->PushIntoLoader( *(CModelLoadInfoSA**)0x008E4C58 );
 
@@ -523,7 +535,7 @@ struct ClearPedRefs
 
     void __forceinline OnEntry( CPedSAInterface *ped, unsigned int index )
     {
-        if ( ped->m_model = m_model && ped->IsPlayer() )
+        if ( ped->GetModelIndex() == m_model && ped->IsPlayer() )
         {
             
         }
@@ -722,7 +734,7 @@ void __cdecl Streaming::Update( void )
     COLEnv_t& COLEnv = Streaming::GetCOLEnvironment();
     IPLEnv_t& IPLEnv = Streaming::GetIPLEnvironment();
 
-    if ( CVehicleSAInterface *remoteVehicle = PlayerInfo::GetInfo( -1 ).m_remoteVehicle )
+    if ( CVehicleSAInterface *remoteVehicle = PlayerInfo::GetInfo( -1 ).pRemoteVehicle )
     {
         const CVector& remotePos = remoteVehicle->Placeable.GetPosition();
 

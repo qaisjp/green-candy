@@ -903,10 +903,6 @@
 				>
 			</File>
 			<File
-				RelativePath=".\CTextureManagerSA.shader.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CTheCarGeneratorsSA.cpp"
 				>
 			</File>
@@ -1869,10 +1865,6 @@
 			</File>
 			<File
 				RelativePath=".\CTextureManagerSA.instance.h"
-				>
-			</File>
-			<File
-				RelativePath=".\CTextureManagerSA.shader.h"
 				>
 			</File>
 			<File

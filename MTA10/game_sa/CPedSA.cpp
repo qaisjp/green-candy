@@ -67,13 +67,13 @@ void CPedSAInterface::OnFrame()
         return;
 
     // Update our alpha
-    pGame->GetVisibilityPlugins()->SetClumpAlpha( (RpClump*)m_rwObject, m_areaCode != pGame->GetWorld()->GetCurrentArea() ? 0 : ped->GetAlpha() );
+    pGame->GetVisibilityPlugins()->SetClumpAlpha( (RpClump*)GetRwObject(), m_areaCode != pGame->GetWorld()->GetCurrentArea() ? 0 : ped->GetAlpha() );
 
     // Is the player stealth aiming?
     if ( ped->IsStealthAiming() )
     {
         // Grab our current anim
-        CAnimBlendAssociation *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetFirstAssociation( (RpClump*)m_rwObject );
+        CAnimBlendAssociation *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetFirstAssociation( (RpClump*)GetRwObject() );
 
         if ( assoc )
         {
@@ -94,7 +94,7 @@ void CPedSAInterface::OnFrame()
                 if ( block->IsLoaded() )
                 {
                     // Force the animation
-                    pGame->GetAnimManager()->BlendAnimation( (RpClump*)m_rwObject, ANIM_GROUP_STEALTH_KN, ANIM_ID_STEALTH_AIM, 8.0f );
+                    pGame->GetAnimManager()->BlendAnimation( (RpClump*)GetRwObject(), ANIM_GROUP_STEALTH_KN, ANIM_ID_STEALTH_AIM, 8.0f );
                 }
             }
         }
@@ -254,11 +254,11 @@ void CPedSA::AttachPedToEntity( CEntitySAInterface *entity, const CVector& offse
     float fX = offset.fX;
     float fY = offset.fY;
     float fZ = offset.fZ;
-    ePedType type = GetInterface()->m_pedType;
+    ePedType type = GetInterface()->bPedType;
 
     // Hack the CPed type to non-player so the camera doesn't get changed
     if ( !camChange )
-        GetInterface()->m_pedType = PEDTYPE_PLAYER_NETWORK;
+        GetInterface()->bPedType = PEDTYPE_PLAYER_NETWORK;
 
     _asm
     {
@@ -276,7 +276,7 @@ void CPedSA::AttachPedToEntity( CEntitySAInterface *entity, const CVector& offse
     
     // Hack the CPed type(?) to whatever it was set to
     if ( !camChange )
-        GetInterface()->m_pedType = type;
+        GetInterface()->bPedType = type;
 }
 
 bool CPedSA::CanSeeEntity( CEntity *entity, float distance ) const
@@ -382,7 +382,7 @@ void CPedSA::SetStealthAiming( bool enable )
     if ( !enable )
     {
         // Do we have the aiming animation?
-        CAnimBlendAssociationSA *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)GetInterface()->m_rwObject, ANIM_ID_STEALTH_AIM );
+        CAnimBlendAssociationSA *assoc = pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)GetInterface()->GetRwObject(), ANIM_ID_STEALTH_AIM );
 
         if ( assoc )
         {
@@ -396,7 +396,7 @@ void CPedSA::SetStealthAiming( bool enable )
 
 void CPedSA::SetAnimationProgress( const char *name, float progress )
 {
-    CAnimBlendAssociationSA *assoc = (CAnimBlendAssociationSA*)pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)GetInterface()->m_rwObject, name );
+    CAnimBlendAssociationSA *assoc = (CAnimBlendAssociationSA*)pGame->GetAnimManager()->RpAnimBlendClumpGetAssociation( (RpClump*)GetInterface()->GetRwObject(), name );
     
     if ( !assoc )
         return;
@@ -542,7 +542,7 @@ void CPedSA::SetCurrentWeaponSlot( eWeaponSlot weaponSlot )
 
     if ( localPlayer == dynamic_cast <CPlayerPedSA*> ( this ) )
     {
-        pGame->GetPlayerInfo()->GetInterface()->m_pedData.m_nChosenWeapon = weaponSlot;
+        pGame->GetPlayerInfo()->GetInterface()->PlayerPedData.m_nChosenWeapon = weaponSlot;
 
         DWORD dwFunc = FUNC_MakeChangesForNewWeapon_Slot;
         _asm
@@ -702,7 +702,7 @@ bool CPedSA::IsPlayingAnimation( const char *name ) const
 {
     DWORD dwReturn = 0;
     DWORD dwFunc = FUNC_RpAnimBlendClumpGetAssociation;
-    DWORD dwThis = (DWORD)m_pInterface->m_rwObject;
+    DWORD dwThis = (DWORD)m_pInterface->GetRwObject();
 
     _asm
     {
@@ -782,7 +782,7 @@ void CPedSA::SetGogglesState( bool wear )
     CAnimBlock *block = pGame->GetAnimManager()->GetAnimationBlock( "GOGGLES" );
 
     if ( block->IsLoaded() )
-        pGame->GetAnimManager()->BlendAnimation( (RpClump*)GetInterface()->m_rwObject, ANIM_GROUP_GOGGLES, ANIM_ID_GOGGLES_ON, 4.0f );
+        pGame->GetAnimManager()->BlendAnimation( (RpClump*)GetInterface()->GetRwObject(), ANIM_GROUP_GOGGLES, ANIM_ID_GOGGLES_ON, 4.0f );
 }
 
 void CPedSA::SetClothesTextureAndModel( const char *tex, const char *model, short txd )
@@ -854,7 +854,7 @@ CEntity* CPedSA::GetContactEntity() const
     if ( !pInterface )
         return NULL;
 
-    switch( pInterface->m_type )
+    switch( pInterface->nType )
     {
     case ENTITY_TYPE_VEHICLE:
         return pGame->GetPools()->GetVehicle( pInterface );
@@ -869,7 +869,7 @@ CEntity* CPedSA::GetTargetedEntity() const
 {
     CEntitySAInterface *pInterface = GetInterface()->m_target;
 
-    switch( pInterface->m_type )
+    switch( pInterface->nType )
     {
     case ENTITY_TYPE_PED:
         return pGame->GetPools()->GetPed( pInterface );

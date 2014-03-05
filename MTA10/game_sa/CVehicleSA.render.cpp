@@ -57,7 +57,7 @@ void CVehicleSAInterface::RenderPassengers( void )
 =========================================================*/
 void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
 {
-    CVehicleModelInfoSAInterface *info = (CVehicleModelInfoSAInterface*)ppModelInfo[m_model];
+    CVehicleModelInfoSAInterface *info = GetModelInfo();
 
     RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 1 );
 
@@ -112,7 +112,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
     // Store the body texture for rendering
     *(RwTexture**)0x00B4E47C = m_paintjobTexture;
 
-    RpClumpSetupVehicleMaterials( (RpClump*)m_rwObject, mtaVeh );
+    RpClumpSetupVehicleMaterials( (RpClump*)GetRwObject(), mtaVeh );
 }
 
 /*=========================================================
@@ -130,10 +130,10 @@ void CVehicleSAInterface::LeaveRender( void )
     RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 2 );
 
     // Restore clump data
-    RpClumpRestoreVehicleMaterials( (RpClump*)m_rwObject );
+    RpClumpRestoreVehicleMaterials( (RpClump*)GetRwObject() );
 
     if ( m_vehicleType == VEHICLE_CAR )
-        RestoreLicensePlate( (CVehicleModelInfoSAInterface*)ppModelInfo[m_model] );
+        RestoreLicensePlate( GetModelInfo() );
 }
 
 /*=========================================================

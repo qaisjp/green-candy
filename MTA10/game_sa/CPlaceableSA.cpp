@@ -23,8 +23,8 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 =========================================================*/
 CPlaceableSAInterface::CPlaceableSAInterface( void )
 {
-    Placeable.m_heading = 0;
-    Placeable.m_matrix = NULL;
+    Placeable.m_transform.m_heading = 0;
+    Placeable.matrix = NULL;
 }
 
 /*=========================================================
@@ -56,11 +56,11 @@ CPlaceableSAInterface::~CPlaceableSAInterface( void )
 =========================================================*/
 void CPlaceableSAInterface::AllocateMatrix( void )
 {
-    if ( Placeable.m_matrix )
+    if ( Placeable.matrix )
     {
         // We already have a matrix, make sure its in the active list
-        LIST_REMOVE( *Placeable.m_matrix );
-        LIST_APPEND( pTransform->m_activeList, *Placeable.m_matrix );
+        LIST_REMOVE( *Placeable.matrix );
+        LIST_APPEND( pTransform->m_activeList, *Placeable.matrix );
         return;
     }
 
@@ -69,8 +69,8 @@ void CPlaceableSAInterface::AllocateMatrix( void )
         pTransform->NewMatrix();
 
     // Allocate it
-    Placeable.m_matrix = pTransform->AllocateStatic();
-    Placeable.m_matrix->m_entity = this;
+    Placeable.matrix = pTransform->AllocateStatic();
+    Placeable.matrix->m_entity = this;
 }
 
 /*=========================================================
@@ -86,7 +86,7 @@ void CPlaceableSAInterface::AllocateMatrix( void )
 =========================================================*/
 void CPlaceableSAInterface::AcquaintMatrix( void )
 {
-    if ( Placeable.m_matrix )
+    if ( Placeable.matrix )
         return;
 
     // Extend the matrix list
@@ -94,8 +94,8 @@ void CPlaceableSAInterface::AcquaintMatrix( void )
         pTransform->NewMatrix();
 
     // Allocate it
-    Placeable.m_matrix = pTransform->AllocateDynamic();
-    Placeable.m_matrix->m_entity = this;
+    Placeable.matrix = pTransform->AllocateDynamic();
+    Placeable.matrix->m_entity = this;
 }
 
 /*=========================================================
@@ -110,14 +110,14 @@ void CPlaceableSAInterface::AcquaintMatrix( void )
 =========================================================*/
 void CPlaceableSAInterface::FreeMatrix( void )
 {
-    CTransformSAInterface *trans = Placeable.m_matrix;
+    CTransformSAInterface *trans = Placeable.matrix;
 
     // Transform the entity
-    Placeable.m_translate = trans->vPos;
-    Placeable.m_heading = trans->ToHeading();
+    Placeable.m_transform.m_translate = trans->vPos;
+    Placeable.m_transform.m_heading = trans->ToHeading();
 
     // Free the matrix
-    Placeable.m_matrix = NULL;
+    Placeable.matrix = NULL;
     trans->m_entity = NULL;
 
     LIST_REMOVE( *trans );
@@ -139,12 +139,12 @@ void CPlaceableSAInterface::FreeMatrix( void )
 =========================================================*/
 void CPlaceableSAInterface::Transform::GetOffsetByHeading( CVector& out, const CVector& in ) const
 {
-    float ch = cos( m_heading );
-    float sh = sin( m_heading );
+    float ch = cos( m_transform.m_heading );
+    float sh = sin( m_transform.m_heading );
 
-    out[0] = ch * in[0] - sh * in[1] + m_translate[0];
-    out[1] = sh * in[0] + ch * in[1] + m_translate[1];
-    out[2] = in[2] + m_translate[2];
+    out[0] = ch * in[0] - sh * in[1] + m_transform.m_translate[0];
+    out[1] = sh * in[0] + ch * in[1] + m_transform.m_translate[1];
+    out[2] = in[2] + m_transform.m_translate[2];
 }
 
 /*=========================================================
@@ -162,8 +162,8 @@ void CPlaceableSAInterface::Transform::GetOffsetByHeading( CVector& out, const C
 =========================================================*/
 void CPlaceableSAInterface::GetOffset( CVector& out, const CVector& in ) const
 {
-    if ( Placeable.m_matrix )
-        Placeable.m_matrix->Transform( in, out );
+    if ( Placeable.matrix )
+        Placeable.matrix->Transform( in, out );
     else
         Placeable.GetOffsetByHeading( out, in );
 }
@@ -181,8 +181,8 @@ void CPlaceableSAInterface::GetOffset( CVector& out, const CVector& in ) const
 =========================================================*/
 void CPlaceableSAInterface::Transform::GetMatrixFromHeading( RwMatrix& mat ) const
 {
-    mat.FromHeading( m_heading );
-    mat.vPos = m_translate;
+    mat.FromHeading( m_transform.m_heading );
+    mat.vPos = m_transform.m_translate;
 }
 
 void Placeable_Init( void )

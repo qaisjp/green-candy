@@ -50,7 +50,7 @@ bool CPlayerPedSAInterface::ShouldBeStealthAiming( void )
         return false;
 
     // Do we have a target ped?
-    if ( !m_target || m_target->m_type != ENTITY_TYPE_PED )
+    if ( !m_target || m_target->nType != ENTITY_TYPE_PED )
         return false;
 
     // Are we close enough to the target?
@@ -64,7 +64,7 @@ bool CPlayerPedSAInterface::ShouldBeStealthAiming( void )
         return false;
 
     // Grab our current anim
-    if ( !pGame->GetAnimManager()->RpAnimBlendClumpGetFirstAssociation( (RpClump*)m_rwObject ) )
+    if ( !pGame->GetAnimManager()->RpAnimBlendClumpGetFirstAssociation( (RpClump*)GetRwObject() ) )
         return false;
 
     // GTA:SA checks for stealth killing

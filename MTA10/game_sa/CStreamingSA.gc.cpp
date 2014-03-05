@@ -115,7 +115,7 @@ struct GarbageCollectStreamingEntities
         if ( !loadInfo.IsOnLoader() || loadInfo.m_flags & m_ignoreFlags )
             return true;
 
-        if ( player && player->m_pedFlags.bInVehicle && player->m_vehicleObjective == entity )
+        if ( player && player->m_pedFlags.bInVehicle && player->CurrentObjective == entity )
             return true;
 
         entity->DeleteRwObject();
@@ -191,7 +191,7 @@ Streaming::streamingEntityReference_t* __cdecl Streaming::AddActiveEntity( CEnti
         return NULL;
 
     // Exclude vehicles and peds from the garbage collection.
-    if ( entity->m_type == ENTITY_TYPE_VEHICLE || entity->m_type == ENTITY_TYPE_PED )
+    if ( entity->nType == ENTITY_TYPE_VEHICLE || entity->nType == ENTITY_TYPE_PED )
         return NULL;
 
     // Create the depth level information.

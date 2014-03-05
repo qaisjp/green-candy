@@ -127,7 +127,7 @@ float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const
     if ( scaledLODDistance < distAway )
         useDist = scaledLODDistance;
 
-    if ( !entity->m_lod )
+    if ( !entity->m_pLod )
     {
         float useDist2 = unscaledLODDistance;
 
@@ -171,7 +171,7 @@ float CEntitySAInterface::GetFadingAlpha( void ) const
 
     float camDistance = GetComplexCameraEntityDistance( this, Camera::GetInterface().Placeable.GetPosition() );
 
-    return (unsigned char)CalculateFadingAlpha( ppModelInfo[m_model], this, camDistance, *(float*)0x00B7C4F0 );
+    return (unsigned char)CalculateFadingAlpha( GetModelInfo(), this, camDistance, *(float*)0x00B7C4F0 );
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00735C70

@@ -101,7 +101,7 @@ void CTxdInstanceSA::Deallocate( void )
     unsigned short id = TextureManager::GetTxdPool()->GetIndex( this );
 
     // Notify the shader system
-    OnStreamingRemoveTxd( id );
+    OnStreamingRemoveTxd( id + 20000 );
 
     if ( m_txd )
     {
@@ -137,7 +137,7 @@ void CTxdInstanceSA::Deallocate( void )
         there was no error during the loading of individual
         textures.
     Binary offsets:
-        (1.0 US and 1.0 EU): 0x007320B0 (actually void TxdLoad( int, const char* ))
+        (1.0 US and 1.0 EU): 0x00731DD0 (actually void TxdLoadBinary( int, RwStream* ))
 =========================================================*/
 bool CTxdInstanceSA::LoadTXD( RwStream *stream )
 {
@@ -343,6 +343,18 @@ int __cdecl TxdFind( const char *name )
     return -1;
 }
 
+// Binary offsets: (1.0 US and 1.0 EU): 0x00731DD0
+bool __cdecl TxdLoadBinary( int id, RwStream *stream )
+{
+    CTxdInstanceSA *txdInst = TextureManager::GetTxdPool()->Get( id );
+
+    // Checking them NULLs!
+    if ( !txdInst )
+        return false;
+
+    return txdInst->LoadTXD( stream );
+}
+
 // MTA extension.
 int __cdecl TxdLoadEx( int id, const char *name, const char *filename )
 {
@@ -367,6 +379,18 @@ int __cdecl TxdLoadEx( int id, const char *name, const char *filename )
 int __cdecl TxdLoad( int id, const char *filename )
 {
     return TxdLoadEx( id, FileMgr::GetFileNameItem( filename ).c_str(), filename );
+}
+
+// Binary offsets: (1.0 US and 1.0 EU): 0x00408340
+RwTexDictionary* __cdecl TxdGetRwObject( int id )
+{
+    CTxdInstanceSA *txd = TextureManager::GetTxdPool()->Get( id );
+
+    // They may have used debug assertions to fix these NULL-ptr crashes.
+    if ( !txd )
+        return NULL;
+
+    return txd->m_txd;
 }
 
 int _currentTxdItem = -1;
@@ -463,7 +487,9 @@ void CTextureManagerSA::InitGameHooks( void )
     HookInstall( 0x00731C80, (DWORD)TxdCreate, 5 );
     HookInstall( 0x00731CD0, (DWORD)TxdDestroy, 5 );
     HookInstall( 0x00731850, (DWORD)TxdFind, 5 );
+    HookInstall( 0x00731DD0, (DWORD)TxdLoadBinary, 4 );
     HookInstall( 0x007320B0, (DWORD)TxdLoad, 5 );
+    HookInstall( 0x00408340, (DWORD)TxdGetRwObject, 5 );
     HookInstall( 0x007319C0, (DWORD)TxdSetCurrent, 5 );
     HookInstall( 0x00731E90, (DWORD)TxdDeallocate, 5 );
     HookInstall( 0x00731D50, (DWORD)TxdInitParent, 5 );

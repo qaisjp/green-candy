@@ -102,7 +102,7 @@ void CObjectSA::SetModelIndex( unsigned short ulModel )
 
 CRpAtomicSA* CObjectSA::CloneAtomic() const
 {
-    return new CRpAtomicSA( RpAtomicClone( (RpAtomic*)GetInterface()->m_rwObject ) );
+    return new CRpAtomicSA( RpAtomicClone( (RpAtomic*)GetInterface()->GetRwObject() ) );
 }
 
 void CObjectSA::CheckForGangTag()

@@ -2061,14 +2061,14 @@ CVector * pedPosition;
 
 bool processGrab ()
 {
-    if ( entity->m_type == ENTITY_TYPE_OBJECT )
+    if ( entity->nType == ENTITY_TYPE_OBJECT )
     {
         //CObjectSA * object = (CObjectSA*)entity;
         //CModelInfo * info = pGameInterface->GetModelInfo(entity->m_nModelIndex);
-        if ( entity->Placeable.m_matrix )
-            edgeHeight = *entityEdgeHeight + entity->Placeable.m_matrix->vPos.fZ;
+        if ( entity->Placeable.matrix )
+            edgeHeight = *entityEdgeHeight + entity->Placeable.matrix->vPos.fZ;
         else
-            edgeHeight = *entityEdgeHeight + entity->Placeable.m_translate.fZ; 
+            edgeHeight = *entityEdgeHeight + entity->Placeable.m_transform.m_translate.fZ; 
     }
     else
         edgeHeight = *entityEdgeHeight;
@@ -4989,7 +4989,7 @@ void* SetModelSuspensionLinesToVehiclePrivate ( CVehicleSAInterface* pVehicleInt
 
 void SetModelSuspensionLines ( CVehicleSAInterface* pVehicleIntf, void* pSuspensionLines )
 {
-    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->m_model );
+    CModelInfo* pModelInfo = pGameInterface->GetModelInfo ( pVehicleIntf->GetModelIndex() );
     pModelInfo->SetVehicleSuspensionData ( pSuspensionLines );
 }
 

@@ -30,7 +30,7 @@
 =========================================================*/
 void __cdecl World::AddEntity( CEntitySAInterface *entity )
 {
-    if ( RwObject *rwobj = entity->m_rwObject )
+    if ( RwObject *rwobj = entity->GetRwObject() )
     {
         entity->Placeable.GetMatrix( rwobj->parent->modelling );
     }
@@ -39,7 +39,7 @@ void __cdecl World::AddEntity( CEntitySAInterface *entity )
     
     entity->AddToWorld();
 
-    unsigned char entityType = entity->m_type;
+    unsigned char entityType = entity->nType;
 
     if ( entityType != ENTITY_TYPE_BUILDING && entityType != ENTITY_TYPE_DUMMY && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_WAITFORCOLL | ENTITY_STATIC ) )
     {
@@ -64,7 +64,7 @@ void __cdecl World::RemoveEntity( CEntitySAInterface *entity )
     entity->RemoveFromWorld();
 
     // Unlink the entity from world if it is of physical type.
-    switch( entity->m_type )
+    switch( entity->nType )
     {
     case ENTITY_TYPE_VEHICLE:
     case ENTITY_TYPE_PED:
@@ -291,16 +291,16 @@ bool CWorldSA::ProcessLineOfSight( const CVector * vecStart, const CVector * vec
     if ( targetEntity )
     {
         // Building info needed?
-        if ( pBuildingResult && targetEntity->m_type == ENTITY_TYPE_BUILDING )
+        if ( pBuildingResult && targetEntity->nType == ENTITY_TYPE_BUILDING )
         {
             pBuildingResult->bValid = true;
-            pBuildingResult->usModelID = targetEntity->m_model;
+            pBuildingResult->usModelID = targetEntity->GetModelIndex();
             pBuildingResult->vecPosition = targetEntity->Placeable.GetPosition();
 
-            if ( targetEntity->Placeable.m_matrix )
+            if ( targetEntity->Placeable.matrix )
             {
                 CVector& vecRotation = pBuildingResult->vecRotation;
-                targetEntity->Placeable.m_matrix->GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
+                targetEntity->Placeable.matrix->GetRotationRad( vecRotation.fX, vecRotation.fY, vecRotation.fZ );
                 vecRotation = -vecRotation;
             }
         }

@@ -69,7 +69,7 @@ CEntity * CEventDamageSA::GetInflictingEntity ( void )
     if ( pInterface )
     {
         CPoolsSA * pPools = ((CPoolsSA *)pGame->GetPools());
-        switch( pInterface->m_type )
+        switch( pInterface->nType )
         {
         case ENTITY_TYPE_PED:
             pReturn = pPools->GetPed((DWORD *)pInterface);

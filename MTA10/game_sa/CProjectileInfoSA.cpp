@@ -181,7 +181,7 @@ CEntity* CProjectileInfoSA::GetTarget() const
     if ( !pTargetInterface )
         return NULL;
 
-    switch ( pTargetInterface->m_type )
+    switch ( pTargetInterface->nType )
     {
     case ENTITY_TYPE_PED:       return pGame->GetPools()->GetPed( pTargetInterface );
     case ENTITY_TYPE_VEHICLE:   return pGame->GetPools()->GetVehicle( pTargetInterface );
