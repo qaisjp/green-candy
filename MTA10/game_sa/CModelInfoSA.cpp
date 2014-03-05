@@ -416,26 +416,13 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL( void )
     }
 }
 
-static modelRequestCallback_t modelRequestCallback = NULL;
-static modelFreeCallback_t modelFreeCallback = NULL;
-
-void CModelManagerSA::SetRequestCallback( modelRequestCallback_t callback )
-{
-    modelRequestCallback = callback;
-}
-
-void CModelManagerSA::SetFreeCallback( modelFreeCallback_t callback )
-{
-    modelFreeCallback = callback;
-}
-
 void CModelInfoSA::AddRef( bool bWaitForLoad, bool bHighPriority )
 {
     if ( m_dwReferences == 0 )
     {
         // Notify the client
-        if ( modelRequestCallback )
-            modelRequestCallback( m_modelID );
+        if ( ModelManager::modelRequestCallback )
+            ModelManager::modelRequestCallback( m_modelID );
     }
 
     // Are we not loaded?
@@ -477,8 +464,8 @@ void CModelInfoSA::RemoveRef( bool bRemoveExtraGTARef )
             Remove();
 
         // Notify the client
-        if ( modelFreeCallback )
-            modelFreeCallback( m_modelID );
+        if ( ModelManager::modelFreeCallback )
+            ModelManager::modelFreeCallback( m_modelID );
     }
 }
 

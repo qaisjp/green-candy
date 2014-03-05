@@ -66,7 +66,7 @@ namespace Streamer
         void __forceinline OnSector( streamSectorEntry& sector )
         {
             for ( streamSectorEntry::ptrNode_t *iter = sector.GetList(); iter != NULL; iter = iter->m_next )
-                iter->data->m_scanCode = 0;
+                iter->data->m_nScanCode = 0;
         }
     };
 
@@ -145,9 +145,9 @@ namespace Streamer
             // Ignore certain entities whose scan code should be ignored.
             unsigned short applyScanCode = *(unsigned short*)0x00B7CD78;
 
-            if ( entity->m_scanCode != applyScanCode )
+            if ( entity->m_nScanCode != applyScanCode )
             {
-                entity->m_scanCode = applyScanCode;
+                entity->m_nScanCode = applyScanCode;
 
                 // Can we stream the entity at all?
                 if ( !IsEntityStreamable( entity ) )
@@ -193,9 +193,9 @@ namespace Streamer
             // Ignore certain entities whose scan code should be ignored.
             unsigned short applyScanCode = *(unsigned short*)0x00B7CD78;
 
-            if ( entity->m_scanCode != applyScanCode )
+            if ( entity->m_nScanCode != applyScanCode )
             {
-                entity->m_scanCode = applyScanCode;
+                entity->m_nScanCode = applyScanCode;
 
                 // Can we stream the entity at all?
                 if ( !IsEntityStreamable( entity ) )
@@ -582,9 +582,9 @@ namespace Streamer
 
                     unsigned short applyScanCode = *(unsigned short*)0x00B7CD78;
 
-                    if ( entity->m_scanCode != applyScanCode )
+                    if ( entity->m_nScanCode != applyScanCode )
                     {
-                        entity->m_scanCode = applyScanCode;
+                        entity->m_nScanCode = applyScanCode;
 
                         cb.OnEntity( entity, unimportantSector );
                     }

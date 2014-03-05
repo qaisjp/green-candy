@@ -19,7 +19,11 @@ typedef void (__cdecl*modelFreeCallback_t)( unsigned short id );
 class CModelManager
 {
 public:
+#ifndef _MTA_BLUE
     virtual CModel*                     CreateModel         ( CFile *file, modelId_t model ) = 0;
+#else
+    virtual CModel*                     CreateModel         ( const char *filename, modelId_t model ) = 0;
+#endif
     virtual CModel*                     CloneClump          ( modelId_t model ) = 0;
     virtual CRpAtomic*                  CloneAtomic         ( modelId_t model ) = 0;
 

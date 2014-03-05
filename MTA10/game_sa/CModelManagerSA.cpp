@@ -16,7 +16,7 @@
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
-CRwObjectSA *g_replObjectNative[DATA_TEXTURE_BLOCK];
+CRwObjectSA *g_replObjectNative[MAX_MODELS];
 
 CModelManagerSA::CModelManagerSA( void )
 {
@@ -31,8 +31,23 @@ CModelManagerSA::~CModelManagerSA( void )
         delete *m_models.begin();
 }
 
+#ifndef _MTA_BLUE
 CModelSA* CModelManagerSA::CreateModel( CFile *file, modelId_t id )
+#else
+CModelSA* CModelManagerSA::CreateModel( const char *filename, modelId_t id )
+#endif //_MTA_BLUE
 {
+#ifdef _MTA_BLUE
+    CColModel *col = NULL;
+    RpClump *clump = pGame->GetRenderWare()->ReadDFF( filename, id, true, col );
+
+    if ( !clump )
+        return NULL;
+
+    CColModelSA *colSA = dynamic_cast <CColModelSA*> ( col );
+
+    return new CModelSA( clump, colSA );
+#else
     CColModelSA *col = NULL;
     RpClump *clump = pGame->GetRenderWare()->ReadDFF( file, id, col );
 
@@ -40,6 +55,7 @@ CModelSA* CModelManagerSA::CreateModel( CFile *file, modelId_t id )
         return NULL;
 
     return new CModelSA( clump, col );
+#endif //_MTA_BLUE
 }
 
 CModelSA* CModelManagerSA::CloneClump( modelId_t model )
@@ -132,4 +148,22 @@ void CModelManagerSA::RestreamByModel( modelId_t model )
 void CModelManagerSA::RestreamByTXD( modelId_t model )
 {
     // todo
+}
+
+namespace ModelManager
+{
+    // Callbacks for the model info class.
+    // They should be called if game_sa references/dereferences a model.
+    modelRequestCallback_t modelRequestCallback = NULL;     // when refCount > 0
+    modelFreeCallback_t modelFreeCallback = NULL;           // when refCount == 0
+};
+
+void CModelManagerSA::SetRequestCallback( modelRequestCallback_t callback )
+{
+    ModelManager::modelRequestCallback = callback;
+}
+
+void CModelManagerSA::SetFreeCallback( modelFreeCallback_t callback )
+{
+    ModelManager::modelFreeCallback = callback;
 }

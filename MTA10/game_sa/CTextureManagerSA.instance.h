@@ -63,10 +63,10 @@ void __cdecl TxdRemoveRef               ( int id );
 void __cdecl TxdRemoveRefNoDestroy      ( int id );
 
 // Links used by MTA:BLUE
-int __cdecl CTxdStore_LoadTxd               ( int id, RwStream *stream )        { return TxdLoadBinary( id, stream ); }
-RwTexDictionary* __cdecl CTxdStore_GetTxd   ( int id )                          { return TxdGetRwObject( id ); }
-void __cdecl CTxdStore_RemoveTxd            ( int id )                          { return TxdDeallocate( id ); }
-void __cdecl CTxdStore_RemoveRef            ( int id )                          { return TxdRemoveRef( id ); }
-void __cdecl CTxdStore_AddRef               ( int id )                          { return TxdAddRef( id ); }
+inline int __cdecl CTxdStore_LoadTxd                ( int id, RwStream *stream )        { return TxdLoadBinary( id, stream ); }
+inline RwTexDictionary* __cdecl CTxdStore_GetTxd    ( int id )                          { return TxdGetRwObject( id ); }
+inline void __cdecl CTxdStore_RemoveTxd             ( int id )                          { return TxdDeallocate( id ); }
+inline void __cdecl CTxdStore_RemoveRef             ( int id )                          { return TxdRemoveRef( id ); }
+inline void __cdecl CTxdStore_AddRef                ( int id )                          { return TxdAddRef( id ); }
 
 #endif //_TEXTUREMANAGER_TXD_INSTANCE_
