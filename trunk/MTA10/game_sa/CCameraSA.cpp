@@ -575,7 +575,7 @@ CEntity* CCameraSA::GetTargetEntity() const
 {
     CEntitySAInterface* pInterface = GetInterface()->pTargetEntity;
 
-    switch( pInterface->m_type )
+    switch( pInterface->nType )
     {
     case ENTITY_TYPE_PED:
         return pGame->GetPools()->GetPed( pInterface );

@@ -88,18 +88,18 @@ public:
 class CCameraSAInterface : public CPlaceableSAInterface //size: 3132
 {
 public:
-    bool __thiscall         IsSphereVisible( const CVector& pos, float radius, void *unk );
-    float __thiscall        GetGroundLevel( unsigned int type );
-    unsigned int __thiscall GetMusicFadeType( void ) const;
+    bool __thiscall         IsSphereVisible             ( const CVector& pos, float radius, void *unk );
+    float __thiscall        GetGroundLevel              ( unsigned int type );
+    unsigned int __thiscall GetMusicFadeType            ( void ) const;
 
-    void __thiscall         SetFadeColor( unsigned char red, unsigned char green, unsigned char blue );
-    void __thiscall         Fade( float fadeDuration, unsigned short direction );
+    void __thiscall         SetFadeColor                ( unsigned char red, unsigned char green, unsigned char blue );
+    void __thiscall         Fade                        ( float fadeDuration, unsigned short direction );
 
-    int __thiscall          GetFadeDirection( void ) const;
+    int __thiscall          GetFadeDirection            ( void ) const;
 
-    CCamSAInterface&        GetActiveCam( void )                            { return m_cams[ActiveCam]; }
+    CCamSAInterface&        GetActiveCam                ( void )                    { return m_cams[ActiveCam]; }
 
-    int __thiscall          GetActiveCamLookDirection( void );
+    int __thiscall          GetActiveCamLookDirection   ( void );
 
     //move these out the class, have decided to set up a mirrored enumerated type thingy at the top
 #if 0

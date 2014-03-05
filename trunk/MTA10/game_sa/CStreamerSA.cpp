@@ -92,7 +92,7 @@ namespace Streamer
     static inline bool IsEntityStreamable( CEntitySAInterface *entity )
     {
         // Only proceed if the model is not already loaded.
-        if ( !Streaming::GetModelLoadInfo( entity->m_model ).m_eLoading == MODEL_LOADED )
+        if ( !Streaming::GetModelLoadInfo( entity->GetModelIndex() ).m_eLoading == MODEL_LOADED )
             return false;
 
         // Only process static entities.
@@ -130,7 +130,7 @@ namespace Streamer
         // The_GTA: this appears to be a hack/bugfix by R*, since entities
         // could lose their RenderWare objects while they are still loaded.
         // Does not make sense to me if the system should be without limits.
-        if ( model->pRwObject && !entity->m_rwObject )
+        if ( model->pRwObject && !entity->GetRwObject() )
             entity->CreateRwObject();
 
         return true;
@@ -153,12 +153,12 @@ namespace Streamer
                 if ( !IsEntityStreamable( entity ) )
                     return;
 
-                CBaseModelInfoSAInterface *model = ppModelInfo[entity->m_model];
+                CBaseModelInfoSAInterface *model = entity->GetModelInfo();
 
                 if ( PreRequest( entity, model ) )
                 {
                     // Request it!
-                    Streaming::RequestModel( entity->m_model, reqFlags );
+                    Streaming::RequestModel( entity->GetModelIndex(), reqFlags );
                 }
             }
         }
@@ -201,7 +201,7 @@ namespace Streamer
                 if ( !IsEntityStreamable( entity ) )
                     return;
 
-                CBaseModelInfoSAInterface *model = ppModelInfo[entity->m_model];
+                CBaseModelInfoSAInterface *model = entity->GetModelInfo();
                 CCameraSAInterface& camera = Camera::GetInterface();
                 
                 float scaledLODDistance = model->GetLODDistance() * camera.LODDistMultiplier;
@@ -227,7 +227,7 @@ namespace Streamer
                 if ( PreRequest( entity, model ) )
                 {
                     // Request it!
-                    Streaming::RequestModel( entity->m_model, reqFlags );
+                    Streaming::RequestModel( entity->GetModelIndex(), reqFlags );
                 }
             }
         }
@@ -612,7 +612,7 @@ namespace Streamer
                 if ( *(bool*)0x009654B0 || !entity->IsOnScreen() || *(bool*)0x00B76851 )
                     return;
 
-                if ( Streaming::GetModelLoadInfo( entity->m_model ).m_eLoading != MODEL_LOADED )
+                if ( Streaming::GetModelLoadInfo( entity->GetModelIndex() ).m_eLoading != MODEL_LOADED )
                 {
                     if ( !entity->CheckScreenValidity() && unimportantSector )
                     {
@@ -625,13 +625,13 @@ namespace Streamer
                 if ( !unimportantSector && IsLoaderTooBusy() )
                     return;
 
-                Streaming::RequestModel( entity->m_model, 0 );
+                Streaming::RequestModel( entity->GetModelIndex(), 0 );
                 break;
             case ENTITY_RENDER_DEFAULT:
                 EntityRender::PushEntityOnRenderQueue( entity, camDistance );
                 break;
             case ENTITY_RENDER_CROSS_ZONES:
-                if ( entity->m_type != ENTITY_TYPE_OBJECT )
+                if ( entity->nType != ENTITY_TYPE_OBJECT )
                     return;
 
                 {
@@ -655,7 +655,7 @@ namespace Streamer
 
                 float unkDist = 30.0f;
 
-                if ( entity->m_type == ENTITY_TYPE_VEHICLE && IS_ANY_FLAG( ((CVehicleSAInterface*)entity)->m_genericFlags, VEHGENERIC_FIREGUN ) )
+                if ( entity->nType == ENTITY_TYPE_VEHICLE && IS_ANY_FLAG( ((CVehicleSAInterface*)entity)->m_genericFlags, VEHGENERIC_FIREGUN ) )
                     unkDist = 200.0f;
 
                 if ( CBounds2D( unkDist, -unkDist, -unkDist, unkDist ).IsInside( CVector2D( camDist.fX - entityPos.fX, camDist.fY - entityPos.fY ) ) )

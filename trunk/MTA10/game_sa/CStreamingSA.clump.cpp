@@ -122,7 +122,7 @@ static void _initAtomScene( RpAtomic *atom )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00537150 (FUNC_AtomicsReplacer)
 =========================================================*/
-static void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
+void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
 {
     CAtomicModelInfoSA *atomInfo = ppModelInfo[replacerId]->GetAtomicModelInfo();
     bool unk;

@@ -19,7 +19,6 @@
 class CTexDictionarySA;
 
 #include "CTextureManagerSA.instance.h"
-#include "CTextureManagerSA.shader.h"
 
 
 class CTextureManagerSA : public CTextureManager

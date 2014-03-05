@@ -147,7 +147,7 @@ int __cdecl EntityRender::QueueEntityForRendering( CEntitySAInterface *entity, f
     entityRenderChain_t::renderChain *node = NULL;
 
     // Try to display the "grasshouse" model
-    if ( entity->m_model == *(short*)0x008CD6F4 )
+    if ( entity->GetModelIndex() == *(short*)0x008CD6F4 )
     {
         node = GetAlphaEntityRenderChain().PushRender( &level );
     }
@@ -470,7 +470,7 @@ CGame::entityList_t Entity::GetEntitiesInRenderQueue( void )
 =========================================================*/
 inline bool IsEntityRenderable( CEntitySAInterface *entity )
 {
-    return entity->m_rwObject && ( IS_ANY_FLAG( entity->m_entityFlags, ENTITY_VISIBLE ) || ( *(unsigned int*)0x00C7C724 && entity->m_model == 0 ) );
+    return entity->GetRwObject() && ( IS_ANY_FLAG( entity->m_entityFlags, ENTITY_VISIBLE ) || ( *(unsigned int*)0x00C7C724 && entity->GetModelIndex() == 0 ) );
 }
 
 inline bool IsEntityValidForDisplay( CEntitySAInterface *entity )
@@ -487,14 +487,14 @@ inline bool GetEntityTunnelOptimization( CEntitySAInterface *entity )
 
 eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *entity, float& camDistance )
 {
-    modelId_t modelIndex = entity->m_model;
-    CBaseModelInfoSAInterface *info = ppModelInfo[modelIndex];
+    modelId_t modelIndex = entity->GetModelIndex();
+    CBaseModelInfoSAInterface *info = entity->GetModelInfo();
 
     CAtomicModelInfoSA *atomicInfo = info->GetAtomicModelInfo();
 
     bool unkBoolean = true;
 
-    if ( entity->m_type == ENTITY_TYPE_VEHICLE && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNELTRANSITION ) )
+    if ( entity->nType == ENTITY_TYPE_VEHICLE && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNELTRANSITION ) )
     {
         // Exclude inside-tunnel or outside-tunnel entities depending on game settings.
         // Should optimize FPS a little.
@@ -547,7 +547,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
 
             if ( IsEntityRenderable( entity ) )
             {
-                if ( !entity->IsInStreamingArea() && entity->m_type == ENTITY_TYPE_VEHICLE )
+                if ( !entity->IsInStreamingArea() && entity->nType == ENTITY_TYPE_VEHICLE )
                     return ENTITY_RENDER_CROSS_ZONES;
 
                 if ( !IsEntityValidForDisplay( entity ) )
@@ -612,7 +612,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
     if ( !entity->IsInStreamingArea() )
         return ENTITY_RENDER_CROSS_ZONES;
 
-    camDistance = GetComplexCameraEntityDistance( entity->m_lod ? entity->m_lod : entity, *(const CVector*)0x00B76870 );
+    camDistance = GetComplexCameraEntityDistance( entity->m_pLod ? entity->m_pLod : entity, *(const CVector*)0x00B76870 );
 
     return ((eRenderType (__cdecl*)( CEntitySAInterface*, CBaseModelInfoSAInterface *model, float camDist, bool ))0x00553F60)( entity, info, camDistance, unkBoolean );
 }

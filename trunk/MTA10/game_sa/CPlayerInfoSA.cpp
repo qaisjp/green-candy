@@ -42,7 +42,7 @@ void CPlayerPedDataSAInterface::Serialize( void )
 =========================================================*/
 CPlayerPedSAInterface* __cdecl GetPlayerPed( int id )
 {
-    return PlayerInfo::GetInfo( id ).m_ped;
+    return PlayerInfo::GetInfo( id ).pPed;
 }
 
 /*=========================================================
@@ -60,12 +60,12 @@ CVehicleSAInterface* __cdecl GetPlayerVehicle( int id, bool excludeRemote )
 {
     CPlayerInfoSAInterface& info = PlayerInfo::GetInfo( id );
 
-    CPlayerPedSAInterface *ped = info.m_ped;
+    CPlayerPedSAInterface *ped = info.pPed;
 
     if ( !ped || !ped->m_pedFlags.bInVehicle )
         return NULL;
 
-    if ( excludeRemote && info.m_remoteVehicle )
+    if ( excludeRemote && info.pRemoteVehicle )
         return NULL;
 
     return (CVehicleSAInterface*)ped->m_objective;
@@ -88,7 +88,7 @@ const CVector& __cdecl FindPlayerCoords( CVector& pos, int id )
 {
     CPlayerInfoSAInterface& info = PlayerInfo::GetInfo( id );
 
-    CPlayerPedSAInterface *ped = info.m_ped;
+    CPlayerPedSAInterface *ped = info.pPed;
 
     // If there is no player ped loaded yet, we
     // default to 0,0,0
@@ -136,7 +136,7 @@ inline const CEntitySAInterface* GetPlayerEntityContext( int id )
     CPlayerInfoSAInterface& info = PlayerInfo::GetInfo( id );
 
     // We check the remote vehicle first.
-    if ( CVehicleSAInterface *remoteVehicle = info.m_remoteVehicle )
+    if ( CVehicleSAInterface *remoteVehicle = info.pRemoteVehicle )
         return remoteVehicle;
 
     // Let us try the player's vehicle next.
@@ -144,7 +144,7 @@ inline const CEntitySAInterface* GetPlayerEntityContext( int id )
         return veh;
 
     // Default to the player.
-    return info.m_ped;
+    return info.pPed;
 }
 
 const CVector& __cdecl FindPlayerCenterOfWorld( int id )
@@ -214,10 +214,10 @@ void __cdecl SetupPlayerPed( unsigned int playerIndex )
     }
 
     CPlayerInfoSAInterface& playerInfo = PlayerInfo::GetInfo( playerIndex );
-    playerInfo.m_ped = player;
+    playerInfo.pPed = player;
 
     if ( playerIndex == 1 )
-        player->m_pedType = PEDTYPE_PLAYER2;
+        player->bPedType = PEDTYPE_PLAYER2;
 
     player->SetOrientation( 0, 0, 0 );
 
@@ -225,7 +225,7 @@ void __cdecl SetupPlayerPed( unsigned int playerIndex )
 
     player->m_unkPlayerVal = 100;
 
-    playerInfo.m_state = PS_PLAYING;
+    playerInfo.PlayerState = PS_PLAYING;
 }
 
 /*=========================================================
@@ -252,7 +252,7 @@ void __cdecl HOOK_CRunningScript_Process( void )
 
         SetupPlayerPed( 0 );
 
-        PlayerInfo::GetInfo( 0 ).m_ped->Placeable.SetPosition( 0, 0, 0 );
+        PlayerInfo::GetInfo( 0 ).pPed->Placeable.SetPosition( 0, 0, 0 );
 
         // We have set up our player instance.
         bHasProcessedScript = true;
@@ -285,7 +285,7 @@ CWantedSA* CPlayerInfoSA::GetWanted( void )
     DEBUG_TRACE("CWantedSA* CPlayerInfoSA::GetWanted( void )");
 
     if ( !m_wanted )
-        m_wanted = new CWantedSA( m_interface->m_pedData.m_Wanted ); 
+        m_wanted = new CWantedSA( m_interface->PlayerPedData.m_Wanted ); 
 
     return m_wanted;
 }
@@ -294,9 +294,9 @@ bool CPlayerInfoSA::GetCrossHair( float& tarX, float& tarY )
 {
     DEBUG_TRACE("bool CPlayerInfoSA::GetCrossHair( float &tarX, float &tarY )");
 
-    tarX = m_interface->m_crossHair.m_tarX;
-    tarY = m_interface->m_crossHair.m_tarY;
-    return m_interface->m_crossHair.m_active;
+    tarX = m_interface->CrossHair.m_tarX;
+    tarY = m_interface->CrossHair.m_tarY;
+    return m_interface->CrossHair.m_active;
 }
 
 long CPlayerInfoSA::GetPlayerMoney( void )
@@ -447,32 +447,32 @@ float CPlayerInfoSA::GetFPSMoveHeading( void )
 
 bool CPlayerInfoSA::GetDoesNotGetTired()
 {
-    return m_interface->m_awardNoTiredness;
+    return m_interface->DoesNotGetTired;
 }
 
 void CPlayerInfoSA::SetDoesNotGetTired( bool award )
 {
-    m_interface->m_awardNoTiredness = award;
+    m_interface->DoesNotGetTired = award;
 }
 
 unsigned short CPlayerInfoSA::GetLastTimeEaten( void )
 {
-    return m_interface->m_starvingTimer;
+    return m_interface->TimeLastEaten;
 }
 
 void CPlayerInfoSA::SetLastTimeEaten( unsigned short timer )
 {
-    m_interface->m_starvingTimer = timer;
+    m_interface->TimeLastEaten = timer;
 }
 
 unsigned int CPlayerInfoSA::GetLastTimeBigGunFired( void )
 {
-    return m_interface->m_vehicleFireTimer;
+    return m_interface->LastTimeBigGunFired;
 }
 
 void CPlayerInfoSA::SetLastTimeBigGunFired( unsigned int time )
 {
-    m_interface->m_vehicleFireTimer = time;
+    m_interface->LastTimeBigGunFired = time;
 }
 
 void* CPlayerPedDataSAInterface::operator new( size_t )

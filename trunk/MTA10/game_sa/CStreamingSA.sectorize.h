@@ -327,7 +327,7 @@ struct Sectorizer
         if ( !entity )
             return;
 
-        if ( IS_ANY_FLAG( entity->m_nodeFlags, 0x60 ) )
+        if ( IS_ANY_FLAG( entity->physicalFlags, 0x60 ) )
             return;
 
         const CVector& pos = entity->Placeable.GetPosition();
@@ -373,7 +373,7 @@ struct Sectorizer
 
             if ( vehicle )
             {
-                m_sectorMan.AddVelocityFeedback( requestPos, vehicle->m_velocity );
+                m_sectorMan.AddVelocityFeedback( requestPos, vehicle->m_vecLinearVelocity );
             }
         }
 
@@ -391,9 +391,9 @@ struct Sectorizer
             {
                 CVehicleSAInterface *vehicle = (*ppVehiclePool)->Get( info.poolIndex );
 
-                if ( vehicle && !vehicle->m_attachedTo )
+                if ( vehicle && !vehicle->m_pAttachedEntity )
                 {
-                    unsigned char status = vehicle->m_status;
+                    unsigned char status = vehicle->nStatus;
 
                     if ( status == 2 || status == 3 || status == 4 )
                         FlagSectorsForEntity( vehicle );
@@ -403,9 +403,9 @@ struct Sectorizer
             {
                 CPedSAInterface *ped = (*ppPedPool)->Get( info.poolIndex );
 
-                if ( ped && !ped->m_attachedTo )
+                if ( ped && !ped->m_pAttachedEntity )
                 {
-                    int status = ped->m_pedStatus;
+                    int status = ped->pedStatus;
 
                     if ( status != 54 && status != 55 )
                         FlagSectorsForEntity( ped );

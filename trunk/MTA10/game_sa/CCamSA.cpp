@@ -23,7 +23,7 @@ CEntity* CCamSA::GetTargetEntity() const
     if ( !m_pInterface->CamTargetEntity )
         return NULL;
 
-    switch( m_pInterface->CamTargetEntity->m_type )
+    switch( m_pInterface->CamTargetEntity->nType )
     {
     case ENTITY_TYPE_PED:
         return pPools->GetPed( m_pInterface->CamTargetEntity );

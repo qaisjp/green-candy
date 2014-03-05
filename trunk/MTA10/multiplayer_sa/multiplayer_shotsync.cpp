@@ -838,7 +838,7 @@ bool ProcessProjectileAdd ()
         CEntity * pOwner = NULL;
         if ( pProjectileOwner )
         {
-            switch ( pProjectileOwner->m_type )
+            switch ( pProjectileOwner->nType )
             {
                 case ENTITY_TYPE_VEHICLE:
                     pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
@@ -869,7 +869,7 @@ void ProcessProjectile ( )
         CEntity * pOwner = NULL;
         if ( pProjectileOwner )
         {
-            switch ( pProjectileOwner->m_type )
+            switch ( pProjectileOwner->nType )
             {
                 case ENTITY_TYPE_VEHICLE:
                     pOwner = pPools->GetVehicle ( (DWORD *)pProjectileOwner );
@@ -966,7 +966,7 @@ static void CheckInVehicleDamage()
     if ( pPed && !IsLocalPlayer( pPed ) )
     {
         // Did he hit a vehicle?
-        if ( *ppInstantHitEntity && (*ppInstantHitEntity)->m_type == ENTITY_TYPE_VEHICLE )
+        if ( *ppInstantHitEntity && (*ppInstantHitEntity)->nType == ENTITY_TYPE_VEHICLE )
         {
             // Lets do a windscreen shooting check
             CWeapon * pWeapon = pPed->GetWeapon ( pPed->GetCurrentWeaponSlot () );

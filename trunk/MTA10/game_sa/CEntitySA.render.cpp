@@ -90,7 +90,7 @@ bool CanVehicleRenderNatively( void )
 
 inline void EntityRender_Global( CEntitySAInterface *entity )
 {
-    if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+    if ( entity->nType == ENTITY_TYPE_VEHICLE )
     {
         if ( !CanVehicleRenderNatively() )
         {
@@ -109,7 +109,7 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
 
     // Do not render peds in the game world if they are inside a vehicle
     // (they need a special render pass to prevent drawing errors)
-    if ( entity->m_type == ENTITY_TYPE_PED && ((CPedSAInterface*)entity)->IsDrivingVehicle() )
+    if ( entity->nType == ENTITY_TYPE_PED && ((CPedSAInterface*)entity)->IsDrivingVehicle() )
         return;
 
     unsigned char id = entity->SetupLighting();
@@ -126,18 +126,18 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     if ( mtaEntity )
     {
         // Perform alpha calculations
-        if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+        if ( entity->nType == ENTITY_TYPE_VEHICLE )
             alpha = ((CVehicleSA*)mtaEntity)->GetAlpha();
-        else if ( entity->m_type == ENTITY_TYPE_OBJECT )
+        else if ( entity->nType == ENTITY_TYPE_OBJECT )
             alpha = ((CObjectSA*)mtaEntity)->GetAlpha();
-        else if ( entity->m_type == ENTITY_TYPE_PED )
+        else if ( entity->nType == ENTITY_TYPE_PED )
             alpha = ((CPedSA*)mtaEntity)->GetAlpha();
     }
-    else if ( entity->m_rwObject && entity->m_rwObject->type == RW_CLUMP )    // the entity may not have a RenderWare object?!
+    else if ( entity->GetRwObject() && entity->GetRwObject()->type == RW_CLUMP )    // the entity may not have a RenderWare object?!
     {
         // This value will be used for internal GTA:SA vehicles.
         // We might aswell use this alpha value of the clump.
-        alpha = (unsigned char)((RpClump*)entity->m_rwObject)->alpha;
+        alpha = (unsigned char)( (RpClump*)entity->GetRwObject() )->alpha;
     }
 
     if ( alpha != 255 )
@@ -153,10 +153,10 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     }
 
     // Prepare entity for rendering/enter frame
-    if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+    if ( entity->nType == ENTITY_TYPE_VEHICLE )
     {
         // Set up global variables for fast rendering
-        CacheVehicleRenderCameraSettings( alpha, entity->m_rwObject );
+        CacheVehicleRenderCameraSettings( alpha, entity->GetRwObject() );
 
         // Clear previous vehicle atomics from render chains
         ClearVehicleRenderChains();
@@ -188,7 +188,7 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     EntityRender_Global( entity );
 
     // Restore values and unset entity rendering status/leave frame
-    if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+    if ( entity->nType == ENTITY_TYPE_VEHICLE )
     {
         BOOL_FLAG( entity->m_entityFlags, ENTITY_RENDERING, true );
 
@@ -291,12 +291,12 @@ static void __cdecl RenderClumpWithAlpha( CBaseModelInfoSAInterface *info, RpClu
 =========================================================*/
 void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entity, float camDistance )
 {
-    RwObject *rwobj = entity->m_rwObject;
+    RwObject *rwobj = entity->GetRwObject();
 
     if ( !rwobj )
         return;
 
-    CBaseModelInfoSAInterface *info = ppModelInfo[entity->m_model];
+    CBaseModelInfoSAInterface *info = entity->GetModelInfo();
 
     if ( info->renderFlags & RENDER_NOSHADOW )
         RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)8, 0 );
@@ -522,7 +522,7 @@ struct PostProcessEntities
     {
         CEntitySAInterface *entity = info.entity;
 
-        if ( entity->m_type == ENTITY_TYPE_BUILDING )
+        if ( entity->nType == ENTITY_TYPE_BUILDING )
         {
             CBaseModelInfoSAInterface *model = entity->GetModelInfo();
 
@@ -590,12 +590,12 @@ struct RenderStaticWorldEntities
     {
         CEntitySAInterface *entity = info.entity;
 
-        if ( entity->m_type == ENTITY_TYPE_BUILDING && IS_ANY_FLAG( entity->GetModelInfo()->flags, RENDER_STATIC ) )
+        if ( entity->nType == ENTITY_TYPE_BUILDING && IS_ANY_FLAG( entity->GetModelInfo()->flags, RENDER_STATIC ) )
             return true;
 
         bool successfullyRendered = false;
 
-        if ( entity->m_type == ENTITY_TYPE_VEHICLE || entity->m_type == ENTITY_TYPE_PED && ((RpClump*)entity->m_rwObject)->alpha != 255 )
+        if ( entity->nType == ENTITY_TYPE_VEHICLE || entity->nType == ENTITY_TYPE_PED && ((RpClump*)entity->GetRwObject())->alpha != 255 )
         {
             // MTA extension: make sure that entities are still visible behind alpha textures.
             if ( m_isAlphaFix && !m_directPurge )
@@ -604,7 +604,7 @@ struct RenderStaticWorldEntities
             {
                 bool isUnderwater = false;
 
-                if ( entity->m_type == ENTITY_TYPE_VEHICLE )
+                if ( entity->nType == ENTITY_TYPE_VEHICLE )
                 {
                     CVehicleSAInterface *vehicle = (CVehicleSAInterface*)entity;
 
@@ -626,7 +626,7 @@ struct RenderStaticWorldEntities
                         }
                     }
                     else
-                        isUnderwater = IS_ANY_FLAG( vehicle->m_nodeFlags, 0x8000000 );
+                        isUnderwater = IS_ANY_FLAG( vehicle->physicalFlags, 0x8000000 );
                 }
 
                 using namespace EntityRender;

@@ -86,7 +86,7 @@ CPhysical* CHeliSA::QueryPickedUpEntityWithWinch()
     if ( !phys )
         return NULL;
 
-    switch( phys->m_type )
+    switch( phys->nType )
     {
     case ENTITY_TYPE_PED:
         return (CPhysicalSA*)pGame->GetPools()->GetPed( phys );

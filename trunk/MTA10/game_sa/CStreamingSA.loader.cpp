@@ -342,7 +342,7 @@ struct ModelLoadDispatch : public ModelCheckDispatch <false>
         {
             animBlock = pGame->GetAnimManager()->GetAnimBlock( animIndex );
 
-            if ( !animBlock->m_loaded )
+            if ( !animBlock->IsLoaded() )
                 return false;
         }
         else

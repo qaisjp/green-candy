@@ -632,7 +632,7 @@ CCivilianPedSA* Pools::AddCivilianPed( void *entity )
 {
     DEBUG_TRACE("CCivilianPedSA* Pools::AddCivilianPed( void *entity )");
 
-    return new CCivilianPedSA( (CCivilianPedSAInterface*)entity, ((CCivilianPedSAInterface*)entity)->m_model );
+    return new CCivilianPedSA( (CCivilianPedSAInterface*)entity, ((CCivilianPedSAInterface*)entity)->GetModelIndex() );
 }
 
 CPedSA* Pools::GetPed( void *entity )
@@ -669,7 +669,7 @@ CEntitySA* Pools::GetEntity( void *entity )
     if ( !entity )
         return NULL;
 
-    switch( ((CEntitySAInterface*)entity)->m_type )
+    switch( ((CEntitySAInterface*)entity)->nType )
     {
     case ENTITY_TYPE_PED:       return GetPed( entity );
     case ENTITY_TYPE_VEHICLE:   return GetVehicle( entity );

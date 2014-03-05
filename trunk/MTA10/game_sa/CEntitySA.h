@@ -121,26 +121,26 @@ public:
     unsigned char __thiscall        _SetupLighting          ( void );
     void __thiscall                 _RemoveLighting         ( unsigned char id );
 
-    modelId_t                       GetModelIndex           ( void ) const          { return m_model; }
+    modelId_t                       GetModelIndex           ( void ) const          { return m_nModelIndex; }
     CBaseModelInfoSAInterface*      GetModelInfo            ( void ) const          { return ppModelInfo[GetModelIndex()]; }
 
     void                            GetPosition             ( CVector& pos ) const;
     const CVector&                  GetLODPosition          ( void ) const
     {
-        if ( m_lod )
-            return m_lod->Placeable.GetPosition();
+        if ( m_pLod )
+            return m_pLod->Placeable.GetPosition();
 
         return Placeable.GetPosition();
     }
 
     CEntitySAInterface*             GetFinalLOD             ( void )
     {
-        CEntitySAInterface *lod = m_lod;
+        CEntitySAInterface *lod = m_pLod;
 
         if ( !lod )
             return this;
 
-        while ( CEntitySAInterface *nextLOD = lod->m_lod )
+        while ( CEntitySAInterface *nextLOD = lod->m_pLod )
             lod = nextLOD;
 
         return lod;
@@ -168,16 +168,19 @@ public:
 
     bool __thiscall                 IsInStreamingArea       ( void ) const;
 
+    inline RwObject*                GetRwObject             ( void )                { return m_pRwObject; }
+    inline const RwObject*          GetRwObject             ( void ) const          { return m_pRwObject; }
+
     // System functions for communication with the mods.
     bool                            Reference               ( void );
     void                            Dereference             ( void );
 
-    RwObject*               m_rwObject;         // 24
+    RwObject*               m_pRwObject;        // 24
 
     unsigned int            m_entityFlags;      // 28
 
     unsigned short          m_randomSeed;       // 32
-    short                   m_model;            // 34
+    short                   m_nModelIndex;      // 34
     CReferences*            m_references;       // 36
 
     struct streamingEntityReference_t;
@@ -188,13 +191,13 @@ public:
     unsigned char           m_iplIndex;         // 46, used to define which IPL file object is in
     unsigned char           m_areaCode;         // 47, used to define what objects are visible at this point
     
-    CEntitySAInterface*     m_lod;              // 48
+    CEntitySAInterface*     m_pLod;             // 48
     unsigned char           m_numLOD;           // 52
     unsigned char           m_numRenderedLOD;   // 53
 
     //********* BEGIN CEntityInfo **********//
-    BYTE                    m_type : 3;         // 54 ( see ENTITY_TYPE_* )
-    BYTE                    m_status : 5;  
+    BYTE                    nType : 3;          // 54 ( see ENTITY_TYPE_* )
+    BYTE                    nStatus : 5;  
     //********* END CEntityInfo **********//
 
     unsigned char           m_pad;              // 55
@@ -233,7 +236,7 @@ public:
     void                        SetupLighting();
     void                        Render()                                        { m_pInterface->Render(); }
 
-    bool                        IsRwObjectPresent() const                       { return m_pInterface->m_rwObject != NULL; }
+    bool                        IsRwObjectPresent() const                       { return m_pInterface->GetRwObject() != NULL; }
 
     void                        SetOrientation( float x, float y, float z );
     void                        FixBoatOrientation();        // eAi you might want to rename this

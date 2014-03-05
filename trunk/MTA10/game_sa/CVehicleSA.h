@@ -345,6 +345,7 @@ public:
                                     ~CVehicleSAInterface();
 
     inline CVehicleModelInfoSAInterface*    GetModelInfo()                              { return (CVehicleModelInfoSAInterface*)CEntitySAInterface::GetModelInfo(); }
+    inline const CVehicleModelInfoSAInterface*  GetModelInfo() const                    { return (const CVehicleModelInfoSAInterface*)CEntitySAInterface::GetModelInfo(); }
 
     void                            HandlePopulation( bool create );
 
@@ -395,7 +396,8 @@ public:
     void*   operator new( size_t );
     void    operator delete( void *ptr );
 
-    RpClump*                    GetRwObject()                               { return (RpClump*)m_rwObject; }
+    RpClump*                    GetRwObject()                               { return (RpClump*)CEntitySAInterface::GetRwObject(); }
+    const RpClump*              GetRwObject() const                         { return (const RpClump*)CEntitySAInterface::GetRwObject(); }
 
     void __thiscall             RenderPassengers( void );
     void __thiscall             SetupRender( CVehicleSA *mtaVeh );
@@ -478,7 +480,7 @@ public:
     unsigned char               m_windowsOpenFlags;                     // 1161
     unsigned char               m_nitroBoosts;                          // 1162
 
-    unsigned char               m_specialColModel;                      // 1163
+    unsigned char               m_nSpecialColModel;                     // 1163
     CEntitySAInterface*         m_entityVisibilityCheck;                // 1164
     CFireSAInterface*           m_fire;                                 // 1168
 
@@ -680,7 +682,7 @@ public:
     bool                        IsBeingDriven() const                                   { return GetInterface()->m_driver != NULL; }
     bool                        IsPassenger( CPed *ped ) const;
     bool                        IsSphereTouchingVehicle( const CVector& pos, float fRadius ) const;
-    bool                        IsUpsideDown() const                                    { return GetInterface()->Placeable.m_matrix->vUp.fZ <= -0.9; }
+    bool                        IsUpsideDown() const                                    { return GetInterface()->Placeable.matrix->vUp.fZ <= -0.9; }
     void                        MakeDirty( CColPoint *point );
 
     virtual void                PlaceOnRoadProperly()                                   {}

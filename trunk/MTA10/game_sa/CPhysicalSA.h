@@ -44,9 +44,9 @@ public:
 
     BYTE                    m_pad2[3];                  // 60
     unsigned char           m_numImmunities;            // 63
-    unsigned int            m_nodeFlags;                // 64
+    unsigned int            physicalFlags;              // 64
 
-    CVector                 m_velocity;                 // 68
+    CVector                 m_vecLinearVelocity;        // 68
     CVector                 m_spin;                     // 80
     CVector                 m_vecUnk;                   // 92
     CVector                 m_vecUnk2;                  // 104
@@ -83,7 +83,7 @@ public:
     unsigned short          m_unk6;                     // 248
     unsigned short          m_unk7;                     // 250
 
-    CEntitySAInterface*     m_attachedTo;               // 252
+    CEntitySAInterface*     m_pAttachedEntity;          // 252
     CVector                 m_attachOffset;             // 256
     CVector                 m_attachRotation;           // 268
 
@@ -107,9 +107,9 @@ public:
     inline CPhysicalSAInterface* GetInterface()                                 { return (CPhysicalSAInterface*)m_pInterface; }
     inline const CPhysicalSAInterface* GetInterface() const                     { return (const CPhysicalSAInterface*)m_pInterface; }
 
-    void            GetMoveSpeed( CVector& moveSpeed ) const                    { moveSpeed = GetInterface()->m_velocity; }
+    void            GetMoveSpeed( CVector& moveSpeed ) const                    { moveSpeed = GetInterface()->m_vecLinearVelocity; }
     void            GetTurnSpeed( CVector& turnSpeed ) const                    { turnSpeed = GetInterface()->m_spin; }
-    void            SetMoveSpeed( const CVector& moveSpeed )                    { GetInterface()->m_velocity = moveSpeed; }
+    void            SetMoveSpeed( const CVector& moveSpeed )                    { GetInterface()->m_vecLinearVelocity = moveSpeed; }
     void            SetTurnSpeed( const CVector& turnSpeed )                    { GetInterface()->m_spin = turnSpeed; }
 
     float           GetMass() const                                             { return GetInterface()->m_mass; }

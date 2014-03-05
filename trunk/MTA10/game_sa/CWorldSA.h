@@ -46,15 +46,15 @@
 // Native management API.
 namespace World
 {
-    void __cdecl        AddEntity( CEntitySAInterface *entity );
-    void __cdecl        RemoveEntity( CEntitySAInterface *entity );
+    void __cdecl        AddEntity           ( CEntitySAInterface *entity );
+    void __cdecl        RemoveEntity        ( CEntitySAInterface *entity );
 
-    void                SetCenterOfWorld( CEntitySAInterface *streamingEntity, const CVector *pos, float heading );
-    bool                GetCenterOfWorld( CVector& pos );
-    bool                IsCenterOfWorldSet( void );
-    const CVector&      GetCenterOfWorld( void );
-    CEntitySAInterface* GetStreamingEntity( void );
-    float               GetFalseHeading( void );
+    void                SetCenterOfWorld    ( CEntitySAInterface *streamingEntity, const CVector *pos, float heading );
+    bool                GetCenterOfWorld    ( CVector& pos );
+    bool                IsCenterOfWorldSet  ( void );
+    const CVector&      GetCenterOfWorld    ( void );
+    CEntitySAInterface* GetStreamingEntity  ( void );
+    float               GetFalseHeading     ( void );
 };
 
 class CWorldSA : public CWorld

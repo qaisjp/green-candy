@@ -31,7 +31,7 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 =========================================================*/
 inline float GetEntityBasePlaneSpeed( const CPhysicalSAInterface *entity )
 {
-    const CVector& speed = entity->m_velocity;
+    const CVector& speed = entity->m_vecLinearVelocity;
 
     return CVector2D( speed[0], speed[1] ).Length();
 }

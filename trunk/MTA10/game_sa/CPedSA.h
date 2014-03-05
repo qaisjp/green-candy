@@ -272,7 +272,7 @@ public:
     void    operator delete( void *ptr );
 
     bool                            IsEnteringVehicle();
-    inline bool                     IsDrivingVehicle( void )            { return m_pedStatus == PED_STATUS_DRIVING_VEHICLE; }
+    inline bool                     IsDrivingVehicle( void )            { return pedStatus == PED_STATUS_DRIVING_VEHICLE; }
 
     bool __thiscall                 IsPlayer( void );
     CPadSAInterface*                GetJoypad();
@@ -293,7 +293,7 @@ public:
     BYTE                            m_pad5g[12];                // 1280
     CPedIKSAInterface               m_pedIK;                    // 1292 (length 32 bytes)
     BYTE                            m_pad20[4];                 // 1324
-    int                             m_pedStatus;                // 1328
+    int                             pedStatus;                  // 1328
 
     unsigned char                   m_runState;                 // 1332
 
@@ -310,12 +310,12 @@ public:
     BYTE                            m_pad9[4];                  // 1380
     CEntitySAInterface*             m_contactEntity;            // 1384
     BYTE                            m_pad10[24];                // 1388
-    CEntitySAInterface*             m_vehicleObjective;         // 1412
+    CEntitySAInterface*             CurrentObjective;           // 1412
     BYTE                            m_pad21[4];                 // 1416
     CEntitySAInterface*             m_objective;                // 1420
     BYTE                            m_pad11[8];                 // 1424
 
-    ePedType                        m_pedType;                  // 1432
+    ePedType                        bPedType;                   // 1432
 
     BYTE                            m_pad12[4];                 // 1436
     CWeaponSAInterface              m_weapons[WEAPONSLOT_MAX];  // 1440 

@@ -13,6 +13,8 @@
 #ifndef _IPL_SECTOR_
 #define _IPL_SECTOR_
 
+#include "CQuadTreeSA.h"
+
 // Module initialization.
 void IPLSector_Init( void );
 void IPLSector_Shutdown( void );

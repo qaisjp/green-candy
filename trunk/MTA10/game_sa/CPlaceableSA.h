@@ -31,50 +31,54 @@ public:
     {
         void                        SetPosition                 ( float x, float y, float z )
         {
-            if ( m_matrix )
-                m_matrix->vPos = CVector( x, y, z );
+            if ( matrix )
+                matrix->vPos = CVector( x, y, z );
             else
-                m_translate = CVector( x, y, z );
+                m_transform.m_translate = CVector( x, y, z );
         }
         void                        SetPosition                 ( const CVector& pos )
         {
-            if ( m_matrix )
-                m_matrix->vPos = pos;
+            if ( matrix )
+                matrix->vPos = pos;
             else
-                m_translate = pos;
+                m_transform.m_translate = pos;
         }
 
-        const CVector&              GetPosition                 ( void ) const      { return m_matrix ? m_matrix->vPos : m_translate; }
+        const CVector&              GetPosition                 ( void ) const      { return matrix ? matrix->vPos : m_transform.m_translate; }
         void                        GetMatrix                   ( RwMatrix& out ) const
         {
-            if ( m_matrix )
-                out.assign( *m_matrix );
+            if ( matrix )
+                out.assign( *matrix );
             else
                 GetMatrixFromHeading( out );
         }
 
         inline float                GetHeading                  ( void ) const
         {
-            if ( CTransformSAInterface *trans = m_matrix )
+            if ( CTransformSAInterface *trans = matrix )
                 return trans->ToHeading();
             
-            return m_heading;
+            return m_transform.m_heading;
         }
 
         inline void                 SetRotation                 ( float x, float y, float z )
         {
-            if ( CTransformSAInterface *trans = m_matrix )
-                m_matrix->SetRotationRad( x, y, z );
+            if ( CTransformSAInterface *trans = matrix )
+                matrix->SetRotationRad( x, y, z );
             else
-                m_heading = z;
+                m_transform.m_heading = z;
         }
 
         void __thiscall             GetOffsetByHeading          ( CVector& out, const CVector& in ) const;
         void __thiscall             GetMatrixFromHeading        ( RwMatrix& mat ) const;
 
-        CVector                     m_translate;                // 4
-        float                       m_heading;                  // 16
-        CTransformSAInterface*      m_matrix;                   // 20
+        struct
+        {
+            CVector                     m_translate;            // 4
+            float                       m_heading;              // 16
+        } m_transform;
+
+        CTransformSAInterface*      matrix;                     // 20
     } Placeable;
 };
 

@@ -22,13 +22,13 @@ extern CBaseModelInfoSAInterface **ppModelInfo;
 
 CEntitySAInterface::CEntitySAInterface()
 {
-    m_status = 4;
+    nStatus = 4;
     m_entityFlags = ENTITY_VISIBLE | ENTITY_BACKFACECULL;
 
     m_scanCode = 0;
 
-    m_model = -1;
-    m_rwObject = NULL;
+    m_nModelIndex = -1;
+    m_pRwObject = NULL;
 
     m_iplIndex = 0;
     m_areaCode = 0;
@@ -40,7 +40,7 @@ CEntitySAInterface::CEntitySAInterface()
     
     m_numLOD = 0;
     m_numRenderedLOD = 0;
-    m_lod = NULL;
+    m_pLod = NULL;
 }
 
 CEntitySAInterface::~CEntitySAInterface( void )
@@ -76,16 +76,18 @@ static bool RpAtomicMaterialSetAlpha( RpAtomic *atom, unsigned char alpha )
 
 void CEntitySAInterface::SetAlpha( unsigned char alpha )
 {
-    if ( !m_rwObject )
+    RwObject *rwobj = GetRwObject();
+
+    if ( !rwobj )
         return;
 
-    if ( m_rwObject->type == RW_ATOMIC )
+    if ( rwobj->type == RW_ATOMIC )
     {
-        RpAtomicMaterialSetAlpha( (RpAtomic*)m_rwObject, alpha );
+        RpAtomicMaterialSetAlpha( (RpAtomic*)rwobj, alpha );
     }
-    else if ( m_rwObject->type == RW_CLUMP )
+    else if ( rwobj->type == RW_CLUMP )
     {
-        ((RpClump*)m_rwObject)->ForAllAtomics( RpAtomicMaterialSetAlpha, alpha );
+        ((RpClump*)rwobj)->ForAllAtomics( RpAtomicMaterialSetAlpha, alpha );
     }
 }
 
@@ -101,16 +103,16 @@ CColModelSAInterface* CEntitySAInterface::GetColModel( void ) const
             return col->GetInterface();
     }
 
-    if ( m_type == ENTITY_TYPE_VEHICLE )
+    if ( nType == ENTITY_TYPE_VEHICLE )
     {
         CVehicleSAInterface *veh = (CVehicleSAInterface*)this;
-        unsigned char n = veh->m_specialColModel;
+        unsigned char n = veh->m_nSpecialColModel;
 
         if ( n != 0xFF )
             return (CColModelSAInterface*)VAR_CVehicle_SpecialColModels + n;
     }
 
-    return ppModelInfo[m_model]->pColModel;
+    return GetModelInfo()->pColModel;
 }
 
 const CVector& CEntitySAInterface::GetCollisionOffset( CVector& out ) const
@@ -183,18 +185,18 @@ bool __thiscall CEntitySAInterface::CheckScreenValidity( void ) const
 
 void CEntitySAInterface::UpdateRwMatrix( void )
 {
-    if ( !m_rwObject )
+    if ( !GetRwObject() )
         return;
 
-    Placeable.GetMatrix( m_rwObject->parent->modelling );
+    Placeable.GetMatrix( GetRwObject()->parent->modelling );
 }
 
 void CEntitySAInterface::UpdateRwFrame( void )
 {
-    if ( !m_rwObject )
+    if ( !GetRwObject() )
         return;
 
-    m_rwObject->parent->Update();
+    GetRwObject()->parent->Update();
 }
 
 // Binary offsets: (1.0 US and 1.0 EU): 0x00407000
@@ -383,7 +385,7 @@ void CEntitySA::SetMatrix( const RwMatrix& mat )
 
     // Make sure we keep this matrix (static allocation)
     m_pInterface->AllocateMatrix();
-    m_pInterface->Placeable.m_matrix->assign( mat );
+    m_pInterface->Placeable.matrix->assign( mat );
 
     pGame->GetWorld()->Remove( this );
 
@@ -398,13 +400,13 @@ void CEntitySA::SetMatrix( const RwMatrix& mat )
 unsigned short CEntitySA::GetModelIndex() const
 {
     DEBUG_TRACE("unsigned short CEntitySA::GetModelIndex() const");
-    return m_pInterface->m_model;
+    return m_pInterface->GetModelIndex();
 }
 
 eEntityType CEntitySA::GetEntityType() const
 {
     DEBUG_TRACE("eEntityType CEntitySA::GetEntityType() const");
-    return (eEntityType)m_pInterface->m_type;
+    return (eEntityType)m_pInterface->nType;
 }
 
 float CEntitySA::GetBasingDistance() const
@@ -417,13 +419,13 @@ float CEntitySA::GetBasingDistance() const
 void CEntitySA::SetEntityStatus( eEntityStatus bStatus )
 {
     DEBUG_TRACE("void CEntitySA::SetEntityStatus( eEntityStatus bStatus )");
-    m_pInterface->m_status = bStatus;
+    m_pInterface->nStatus = bStatus;
 }
 
 eEntityStatus CEntitySA::GetEntityStatus() const
 {
     DEBUG_TRACE("eEntityStatus CEntitySA::GetEntityStatus() const");
-    return (eEntityStatus) m_pInterface->m_status;
+    return (eEntityStatus) m_pInterface->nStatus;
 }
 
 void CEntitySA::ReplaceTexture( const char *name, CTexture *tex )

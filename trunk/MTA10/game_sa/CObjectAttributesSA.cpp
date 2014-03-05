@@ -177,8 +177,8 @@ static void __cdecl _Object_PrepareDynamicPhysics( modelId_t model, CObjectSAInt
     {
         obj->m_mass = 99999;
         obj->m_turnMass = 99999;
-        obj->m_nodeFlags &= ~0x02;
-        obj->m_nodeFlags |= 0x80000C;
+        obj->physicalFlags &= ~0x02;
+        obj->physicalFlags |= 0x80000C;
         obj->m_dynData = &g_dynObjData[0];
         return;
     }
@@ -195,33 +195,33 @@ static void __cdecl _Object_PrepareDynamicPhysics( modelId_t model, CObjectSAInt
 
     if ( data->mass >= 99998 )
     {
-        obj->m_nodeFlags &= ~0x02;
-        obj->m_nodeFlags |= 0x0C;
+        obj->physicalFlags &= ~0x02;
+        obj->physicalFlags |= 0x0C;
 
         if ( data->CDEff == 0 )
-            obj->m_nodeFlags |= 0x800000;
+            obj->physicalFlags |= 0x800000;
     }
 
     if ( data->SpCDR == 6 )
     {
-        obj->m_nodeFlags |= 0x20;
+        obj->physicalFlags |= 0x20;
         obj->m_objFlags &= ~0xC000;
     }
     else if ( data->SpCDR == 7 )
     {
         obj->m_objFlags &= ~0x8000;
         obj->m_objFlags |= 0x4000;
-        obj->m_nodeFlags |= 0x2C;
+        obj->physicalFlags |= 0x2C;
     }
     else if ( data->SpCDR == 8 )
     {
-        obj->m_nodeFlags |= 0x40;
+        obj->physicalFlags |= 0x40;
         obj->m_centerOfMass = CVector( 0, 0, info->pColModel->m_bounds.vecBoundMin[2] );
     }
     else if ( data->SpCDR == 9 )
     {
-        obj->m_nodeFlags &= ~0x02;
-        obj->m_nodeFlags |= 0x80;
+        obj->physicalFlags &= ~0x02;
+        obj->physicalFlags |= 0x80;
     }
 }
 

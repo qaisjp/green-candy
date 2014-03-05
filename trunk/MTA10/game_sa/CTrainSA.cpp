@@ -42,7 +42,7 @@ void CTrainSA::SetPosition( float x, float y, float z )
 
 void CTrainSA::SetMoveSpeed( const CVector& vecMoveSpeed )
 {
-    GetInterface()->m_velocity = vecMoveSpeed;
+    GetInterface()->m_vecLinearVelocity = vecMoveSpeed;
 
     // INACCURATE. Use Get/SetTrainSpeed instead of Get/SetMoveSpeed. (Causes issue #4829).
 #if 0
@@ -123,12 +123,12 @@ void CTrainSA::SetDerailed( bool bDerailed )
     if ( bDerailed )
     {
         GetInterface()->m_trainFlags.bIsDerailed = true;
-        GetInterface()->m_nodeFlags &= ~0x20004;
+        GetInterface()->physicalFlags &= ~0x20004;
         return;
     }
 
     GetInterface()->m_trainFlags.bIsDerailed = false;
-    GetInterface()->m_nodeFlags &= 0x20004;
+    GetInterface()->physicalFlags &= 0x20004;
 
     // Recalculate the on-rail distance from the start node (train position parameter, m_fTrainRailDistance)
     DWORD dwFunc = FUNC_CVehicle_RecalcOnRailDistance;
