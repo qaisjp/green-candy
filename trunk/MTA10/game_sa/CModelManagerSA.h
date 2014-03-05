@@ -14,6 +14,8 @@
 #ifndef _MODEL_ENTITY_MANAGER_
 #define _MODEL_ENTITY_MANAGER_
 
+#include <game/CModelManager.h>
+
 class CModelManagerSA : public CModelManager
 {
     friend class CModelSA;
@@ -22,7 +24,11 @@ public:
                                 CModelManagerSA     ( void );
                                 ~CModelManagerSA    ( void );
 
+#ifndef _MTA_BLUE
     CModelSA*                   CreateModel         ( CFile *file, modelId_t model );
+#else
+    CModelSA*                   CreateModel         ( const char *filename, modelId_t model );
+#endif //_MTA_BLUE
     CModelSA*                   CloneClump          ( modelId_t model );
     CRpAtomicSA*                CloneAtomic         ( modelId_t model );
 
@@ -40,6 +46,13 @@ public:
 protected:
     typedef std::vector <CModelSA*> models_t;
     models_t                m_models;
+};
+
+namespace ModelManager
+{
+    // Callbacks for model info management.
+    extern modelRequestCallback_t modelRequestCallback;
+    extern modelFreeCallback_t modelFreeCallback;
 };
 
 #endif //_MODEL_ENTITY_MANAGER_

@@ -144,9 +144,6 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     {
         // This has to stay enabled anyway
         HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
-        HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
-        HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
-        HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
 
         // Ensure the RenderStates necessary for proper alpha blending
         alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0x00 );
@@ -338,7 +335,7 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
     }
     else
     {
-        if ( !*(unsigned int*)VAR_currArea && info->renderFlags & RENDER_NOSHADOW )
+        if ( !*(unsigned int*)VAR_currArea && !( info->renderFlags & RENDER_NOSHADOW ) )
             RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 100 );
         else
             RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 0 );
@@ -842,12 +839,12 @@ void __cdecl RenderDefaultOrderedWorldEntities( void )
 
     RenderBoatAtomics();
 
-    // Fix some occasional RenderState screw-ups
+    // This has to stay enabled anyway
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
-    
+
     // Lets apply the render states for safety.
     // Who knows whether R* produced clean logic? So let us play safe.
     RwD3D9ApplyDeviceStates();

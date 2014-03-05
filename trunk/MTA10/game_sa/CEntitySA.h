@@ -187,7 +187,7 @@ public:
     
     streamingEntityReference_t* m_streamingRef; // 40
     
-    unsigned short          m_scanCode;         // 44
+    unsigned short          m_nScanCode;        // 44
     unsigned char           m_iplIndex;         // 46, used to define which IPL file object is in
     unsigned char           m_areaCode;         // 47, used to define what objects are visible at this point
     

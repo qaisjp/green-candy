@@ -25,7 +25,7 @@ CEntitySAInterface::CEntitySAInterface()
     nStatus = 4;
     m_entityFlags = ENTITY_VISIBLE | ENTITY_BACKFACECULL;
 
-    m_scanCode = 0;
+    m_nScanCode = 0;
 
     m_nModelIndex = -1;
     m_pRwObject = NULL;
