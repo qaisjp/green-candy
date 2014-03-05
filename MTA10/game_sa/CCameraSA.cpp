@@ -203,6 +203,15 @@ int __thiscall CCameraSAInterface::GetActiveCamLookDirection( void )
     return 3;
 }
 
+void Camera_Init( void )
+{
+    HookInstall( 0x00514B80, h_memFunc( &CCameraSAInterface::GetGroundLevel ), 5 );
+}
+
+void Camera_Shutdown( void )
+{
+}
+
 CCameraSA::CCameraSA( CCameraSAInterface *cam )
 { 
     DEBUG_TRACE("CCameraSA::CCameraSA(CCameraSAInterface * cameraInterface)");
@@ -635,14 +644,4 @@ void CCameraSA::SetCameraViewMode( unsigned char mode )
 bool CCameraSA::IsSphereVisible( const RwSphere& sphere ) const
 {
     return m_interface->IsSphereVisible( sphere.pos, sphere.radius, (void*)0x00B6FA74 );
-}
-
-void Camera_Init( void )
-{
-    HookInstall( 0x00514B80, h_memFunc( &CCameraSAInterface::GetGroundLevel ), 5 );
-}
-
-void Camera_Shutdown( void )
-{
-
 }

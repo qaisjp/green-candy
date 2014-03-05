@@ -898,10 +898,6 @@ CFile* OpenGlobalStream( const char *filename, const char *mode )
     if ( file = FileMgr::GetCurDirTranslator()->Open( filename, mode ) )
         return file;
 
-    // Attempt to access the GTA:SA directory
-    if ( file = gameFileRoot->Open( filename, mode ) )
-        return file;
-
     // (off-topic) TODO: accept read-only access to the game directory
     // MTA team has voiced their concern about game directory access; TOD (topic of discussion)
     // I see this feature as optional anyway ;)
