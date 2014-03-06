@@ -1,6 +1,8 @@
 #ifdef WIN32
 #pragma message("Compiling precompiled header.\n")
 
+#define NOMINMAX
+
 #include <windows.h>
 #include <winsock.h>
 #include <mmsystem.h>
