@@ -15,7 +15,7 @@
 #ifndef _RENDERWARE_RENDER_TOOLS_
 #define _RENDERWARE_RENDER_TOOLS_
 
-#include "gamesa_renderware.h"
+#include "../gamesa_renderware.h"
 
 inline IDirect3DDevice9* GetRenderDevice( void )
 {
