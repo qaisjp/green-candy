@@ -29,11 +29,14 @@ void __cdecl    RpD3D9EnableLights          ( bool enable, int unused );
 // Utility namespace.
 namespace D3D9Lighting
 {
-    void        SetGlobalLightingAlwaysEnabled  ( bool enabled );
-    bool        IsGlobalLightingAlwaysEnabled   ( void );
+    void                SetGlobalLightingAlwaysEnabled  ( bool enabled );
+    bool                IsGlobalLightingAlwaysEnabled   ( void );
 
-    void        SetLocalLightingAlwaysEnabled   ( bool enabled );
-    bool        IsLocalLightingAlwaysEnabled    ( void );
+    void                SetLocalLightingAlwaysEnabled   ( bool enabled );
+    bool                IsLocalLightingAlwaysEnabled    ( void );
+
+    void                SetShaderLightingMode           ( eShaderLightingMode mode );
+    eShaderLightingMode GetShaderLightingMode           ( void );
 };
 
 struct nativeLightInfo  //size: 108 bytes

@@ -752,4 +752,11 @@ struct RwPluginRegistry
     }
 };
 
+// Macro to get a plugin struct from a RenderWare object.
+template <typename structType, typename rwobjType>
+structType* RW_PLUGINSTRUCT( rwobjType *obj, size_t pluginOffset )
+{
+    return (structType*)( (char*)obj + pluginOffset );
+}
+
 #endif //__RENDERWARE_COMPAT

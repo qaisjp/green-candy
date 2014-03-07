@@ -744,6 +744,8 @@ unsigned int CPoolsSA::GetPoolDefaultCapacity( ePools pool ) const
     case ENV_MAP_MATERIAL_POOL:     return 4096;
     case ENV_MAP_ATOMIC_POOL:       return 1024;
     case SPEC_MAP_MATERIAL_POOL:    return 4096;
+    case COL_FILE_POOL:             return 256;
+    case IPL_FILE_POOL:             return 256;
     }
     return 0;
 }
@@ -769,9 +771,9 @@ unsigned int CPoolsSA::GetNumberOfUsedSpaces( ePools pool ) const
     case POINT_ROUTE_POOL:          return Pools::GetPointRoutePool()->GetCount();
     case POINTER_DOUBLE_LINK_POOL:  return Pools::GetPtrNodeDoublePool()->GetCount();
     case POINTER_SINGLE_LINK_POOL:  return Pools::GetPtrNodeSinglePool()->GetCount();
-    case ENV_MAP_MATERIAL_POOL:     return (*ppEnvMapMaterialPool)->GetCount();
-    case ENV_MAP_ATOMIC_POOL:       return (*ppEnvMapAtomicPool)->GetCount();
-    case SPEC_MAP_MATERIAL_POOL:    return (*ppSpecMapMaterialPool)->GetCount();
+    case ENV_MAP_MATERIAL_POOL:     return RenderWare::GetEnvMapMaterialPool()->GetCount();
+    case ENV_MAP_ATOMIC_POOL:       return RenderWare::GetEnvMapAtomicPool()->GetCount();
+    case SPEC_MAP_MATERIAL_POOL:    return RenderWare::GetSpecMapMaterialPool()->GetCount();
     case COL_FILE_POOL:             return Streaming::GetCOLEnvironment().m_pool->GetCount();
     case IPL_FILE_POOL:             return Streaming::GetIPLEnvironment().m_pool->GetCount();
     }
@@ -800,9 +802,9 @@ unsigned int CPoolsSA::GetPoolCapacity( ePools pool ) const
     case POINT_ROUTE_POOL:              return Pools::GetPointRoutePool()->GetMax();
     case POINTER_DOUBLE_LINK_POOL:      return Pools::GetPtrNodeDoublePool()->GetMax();
     case POINTER_SINGLE_LINK_POOL:      return Pools::GetPtrNodeSinglePool()->GetMax();
-    case ENV_MAP_MATERIAL_POOL:         return (*ppEnvMapMaterialPool)->GetMax();
-    case ENV_MAP_ATOMIC_POOL:           return (*ppEnvMapAtomicPool)->GetMax();
-    case SPEC_MAP_MATERIAL_POOL:        return (*ppSpecMapMaterialPool)->GetMax();
+    case ENV_MAP_MATERIAL_POOL:         return RenderWare::GetEnvMapMaterialPool()->GetMax();
+    case ENV_MAP_ATOMIC_POOL:           return RenderWare::GetEnvMapAtomicPool()->GetMax();
+    case SPEC_MAP_MATERIAL_POOL:        return RenderWare::GetSpecMapMaterialPool()->GetMax();
     case COL_FILE_POOL:                 return Streaming::GetCOLEnvironment().m_pool->GetMax();
     case IPL_FILE_POOL:                 return Streaming::GetIPLEnvironment().m_pool->GetMax();
     }

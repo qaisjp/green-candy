@@ -20,7 +20,6 @@
 #include <game/CModelInfo.h>
 #include <game/Common.h>
 
-#include "CRenderWareSA.h"
 class CPedModelInfoSA;
 class CPedModelInfoSAInterface;
 

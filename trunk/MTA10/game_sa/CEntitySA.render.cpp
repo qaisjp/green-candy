@@ -499,6 +499,9 @@ void __cdecl SetupWorldRender( void )
     ((void (__cdecl*)( void ))0x00554FE0)();
     ((void (__cdecl*)( void ))0x00553770)();
 
+    // Cache lights to the frustum.
+    RpLightPerformFrustumCaching();
+
     // Initialize the recent GC node system that sorts stuff.
     Streaming::InitRecentGCNode();
 }

@@ -14,11 +14,6 @@
 #include "RenderWare/RwRenderTools.hxx"
 #include "RenderWare/RwInternals.h"
 
-// Nasty pools which limit rendering.
-CEnvMapMaterialPool **ppEnvMapMaterialPool = (CEnvMapMaterialPool**)0x00C02D28;
-CEnvMapAtomicPool **ppEnvMapAtomicPool = (CEnvMapAtomicPool**)0x00C02D2C;
-CSpecMapMaterialPool **ppSpecMapMaterialPool = (CSpecMapMaterialPool**)0x00C02D30;
-
 RwRenderStateLock::_rsLockDesc RwRenderStateLock::_rsLockInfo[210];
 
 /*=========================================================
@@ -1261,9 +1256,9 @@ static int __cdecl HOOK_InitDeviceSystem( void )
     memset( (void*)0x00C02CB0, 0, sizeof(void*) * 26 );
 
     // Finally initialize the pools!
-    *ppEnvMapMaterialPool = new CEnvMapMaterialPool;
-    *ppEnvMapAtomicPool = new CEnvMapAtomicPool;
-    *ppSpecMapMaterialPool = new CSpecMapMaterialPool;
+    RenderWare::GetEnvMapMaterialPool() = new CEnvMapMaterialPool;
+    RenderWare::GetEnvMapAtomicPool() = new CEnvMapAtomicPool;
+    RenderWare::GetSpecMapMaterialPool() = new CSpecMapMaterialPool;
     return 1;
 }
 
