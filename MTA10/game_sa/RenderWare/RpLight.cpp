@@ -245,3 +245,78 @@ RpLight* RpLightClone( const RpLight *src )
     ((RwPluginRegistry <RpLight>*)0x008D62F8)->CloneObject( obj, src );
     return obj;
 }
+
+/*===================================================================
+    RpLight Frustum Caching Plugin
+===================================================================*/
+
+static int _lightFrustumCachePluginOffset = -1;
+
+struct _lightFrustumCache
+{
+    bool isInsideFrustum;
+};
+
+static RpLight* __cdecl _RpLightFrustumCacheConstructor( RpLight *light, size_t pluginOffset, unsigned int pluginId )
+{
+    _lightFrustumCache *cache = RW_PLUGINSTRUCT <_lightFrustumCache> ( light, pluginOffset );
+
+    cache->isInsideFrustum = true;
+    return light;
+}
+
+static void __cdecl _RpLightFrustumCacheDestructor( RpLight *light, size_t pluginOffset )
+{
+    return;
+}
+
+bool __cdecl RpLightIsFrustumCachable( RpLight *light )
+{
+    unsigned char subType = light->subtype;
+
+    if ( !light->parent )
+        return false;
+
+    return subType == LIGHT_TYPE_POINT ||
+           subType == LIGHT_TYPE_SPOT_1 ||
+           subType == LIGHT_TYPE_SPOT_2;
+}
+
+bool __cdecl RpLightIsInsideFrustum( RpLight *light )
+{
+    return RW_PLUGINSTRUCT <_lightFrustumCache> ( light, _lightFrustumCachePluginOffset )->isInsideFrustum;
+}
+
+void __cdecl RpLightPerformFrustumCaching( void )
+{
+    RwInterface *rwInterface = RenderWare::GetInterface();
+
+    RwScene *scene = *p_gtaScene;
+    CCameraSAInterface& camera = Camera::GetInterface();
+
+    if ( !scene )
+        return;
+
+    LIST_FOREACH_BEGIN( RpLight, scene->localLights.root, sceneLights )
+        if ( RpLightIsFrustumCachable( item ) )
+        {
+            _lightFrustumCache *cache = RW_PLUGINSTRUCT <_lightFrustumCache> ( item, _lightFrustumCachePluginOffset );
+
+            cache->isInsideFrustum = camera.IsSphereVisible( item->parent->GetLTM().vPos, item->radius, (void*)0x00B6FA74 );
+        }
+    LIST_FOREACH_END
+}
+
+// General light initialization
+void __cdecl RpLightInit( void )
+{
+    _lightFrustumCachePluginOffset = RpLightRegisterPlugin( sizeof( _lightFrustumCache ), 0xDEAD1005,
+        (RpLightPluginConstructor)_RpLightFrustumCacheConstructor,
+        (RpLightPluginDestructor)_RpLightFrustumCacheDestructor,
+        NULL
+    );
+}
+
+void __cdecl RpLightShutdown( void )
+{
+}

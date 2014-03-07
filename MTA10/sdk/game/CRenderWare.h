@@ -27,6 +27,12 @@ enum eWorldRenderMode
     WORLD_RENDER_SCENE_ALPHAFIX
 };
 
+enum eShaderLightingMode
+{
+    SHADER_LIGHTING_SINGULAR,
+    SHADER_LIGHTING_MULTI
+};
+
 struct RwTexture;
 
 class CRenderWare
@@ -48,6 +54,10 @@ public:
 
     virtual void                    SetLocalLightingAlwaysEnabled       ( bool enabled ) = 0;
     virtual bool                    IsLocalLightingAlwaysEnabled        ( void ) const = 0;
+
+    // Shader lighting management.
+    virtual void                    SetShaderLightingMode               ( eShaderLightingMode mode ) = 0;
+    virtual eShaderLightingMode     GetShaderLightingMode               ( void ) const = 0;
 
     // Rendering modes.
     virtual void                    SetWorldRenderMode                  ( eWorldRenderMode mode ) = 0;

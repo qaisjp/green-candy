@@ -13,7 +13,7 @@
 #ifndef _RENDERWARE_PIPELINES_
 #define _RENDERWARE_PIPELINES_
 
-// D3D9 pipeline functions
+// D3D9 pipeline functions (use HOOK_* instead)
 void __cdecl RwD3D9SetRenderState       ( D3DRENDERSTATETYPE type, DWORD value );
 void __cdecl RwD3D9GetRenderState       ( D3DRENDERSTATETYPE type, DWORD& value );
 void __cdecl RwD3D9ApplyDeviceStates    ( void );
@@ -34,6 +34,18 @@ void RwD3D9FreeRenderState              ( D3DRENDERSTATETYPE type );
 void RwD3D9FreeRenderStates             ( void );
 
 void RwD3D9InitializeCurrentStates      ( void );
+
+typedef CPool <CEnvMapMaterialSA, 16000> CEnvMapMaterialPool;
+typedef CPool <CEnvMapAtomicSA, 4000> CEnvMapAtomicPool;
+typedef CPool <CSpecMapMaterialSA, 16000> CSpecMapMaterialPool;
+
+namespace RenderWare
+{
+    // Nasty pools which limit rendering.
+    inline CEnvMapMaterialPool*&    GetEnvMapMaterialPool   ( void )        { return *(CEnvMapMaterialPool**)0x00C02D28; }
+    inline CEnvMapAtomicPool*&      GetEnvMapAtomicPool     ( void )        { return *(CEnvMapAtomicPool**)0x00C02D2C; }
+    inline CSpecMapMaterialPool*&   GetSpecMapMaterialPool  ( void )        { return *(CSpecMapMaterialPool**)0x00C02D30; }
+};
 
 // Stack-based anonymous RenderState management
 //todo: fix this (removed inlined RS changes from native code)

@@ -176,6 +176,7 @@ public:
 
     void                    Initialize();
     void                    Reset();
+    void                    Shutdown();
     void                    OnPreFrame();
     void                    OnFrame();
 

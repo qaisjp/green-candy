@@ -281,10 +281,6 @@ typedef CPool <CTaskAllocatorSA, 16> CTaskAllocatorPool;
 typedef CPool <CPedIntelligenceSAInterface, MAX_PEDS> CPedIntelligencePool;
 typedef CPool <CPedAttractorSA, 64> CPedAttractorPool;
 
-typedef CPool <CEnvMapMaterialSA, 16000> CEnvMapMaterialPool;
-typedef CPool <CEnvMapAtomicSA, 4000> CEnvMapAtomicPool;
-typedef CPool <CSpecMapMaterialSA, 16000> CSpecMapMaterialPool;
-
 typedef CPool <CQuadTreeNodeSAInterface <void>, 400> CQuadTreeNodePool;
 
 // They have to be defined somewhere!
@@ -311,10 +307,6 @@ extern CTaskAllocatorPool** ppTaskAllocatorPool;
 
 extern CPedIntelligencePool** ppPedIntelligencePool;
 extern CPedAttractorPool** ppPedAttractorPool;
-
-extern CEnvMapMaterialPool** ppEnvMapMaterialPool;
-extern CEnvMapAtomicPool** ppEnvMapAtomicPool;
-extern CSpecMapMaterialPool** ppSpecMapMaterialPool;
 
 extern CQuadTreeNodePool** ppQuadTreeNodePool;
 

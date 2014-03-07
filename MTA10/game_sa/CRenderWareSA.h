@@ -57,64 +57,68 @@ struct STexInfo
 class CRenderWareSA : public CRenderWare
 {
 public:
-                        CRenderWareSA( enum eGameVersion version );
-                        ~CRenderWareSA();
+                        CRenderWareSA                   ( enum eGameVersion version );
+                        ~CRenderWareSA                  ( void );
 
-    RwMatrix*           AllocateMatrix();
-    CRpLight*           CreateLight( RpLightType type );
-    CRwFrame*           CreateFrame();
-    CRwCamera*          CreateCamera( int width, int height );
-    CModel*             CreateClump();
+    RwMatrix*           AllocateMatrix                  ( void );
+    CRpLight*           CreateLight                     ( RpLightType type );
+    CRwFrame*           CreateFrame                     ( void );
+    CRwCamera*          CreateCamera                    ( int width, int height );
+    CModel*             CreateClump                     ( void );
 
-    bool                IsRendering() const;
+    bool                IsRendering                     ( void ) const;
     
-    void                EnableEnvMapRendering( bool enabled );
-    bool                IsEnvMapRenderingEnabled( void ) const;
+    void                EnableEnvMapRendering           ( bool enabled );
+    bool                IsEnvMapRenderingEnabled        ( void ) const;
 
     // Lighting utilities.
-    void                SetGlobalLightingAlwaysEnabled( bool enabled );
-    bool                IsGlobalLightingAlwaysEnabled( void ) const;
+    void                SetGlobalLightingAlwaysEnabled  ( bool enabled );
+    bool                IsGlobalLightingAlwaysEnabled   ( void ) const;
 
-    void                SetLocalLightingAlwaysEnabled( bool enabled );
-    bool                IsLocalLightingAlwaysEnabled( void ) const;
+    void                SetLocalLightingAlwaysEnabled   ( bool enabled );
+    bool                IsLocalLightingAlwaysEnabled    ( void ) const;
+
+    // Shader lighting management.
+    void                SetShaderLightingMode           ( eShaderLightingMode mode );
+    eShaderLightingMode GetShaderLightingMode           ( void ) const;
 
     // Rendering modes.
-    void                SetWorldRenderMode( eWorldRenderMode mode );
-    eWorldRenderMode    GetWorldRenderMode( void ) const;
+    void                SetWorldRenderMode              ( eWorldRenderMode mode );
+    eWorldRenderMode    GetWorldRenderMode              ( void ) const;
 
     // uiModelID == 0 means no collisions will be loaded
-    RpClump*            ReadDFF( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
-    CColModel*          ReadCOL( CFile *file );
+    RpClump*            ReadDFF                         ( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
+    CColModel*          ReadCOL                         ( CFile *file );
 
     // Positions the front seat by reading out the vector from the 'ped_frontseat' atomic in the clump (RpClump*)
     // and changing the vector in the CModelInfo class identified by the model id (usModelID)
-    bool                PositionFrontSeat( RpClump *clump, unsigned short usModelID );
+    bool                PositionFrontSeat               ( RpClump *clump, unsigned short usModelID );
 
     // Shader management logic.
-    ushort              GetTXDIDForModelID          ( ushort usModelID );
-    void                InitWorldTextureWatch       ( PFN_WATCH_CALLBACK pfnWatchCallback );
-    bool                AddWorldTextureWatch        ( CSHADERDUMMY* pShaderData, const char* szMatch, float fOrderPriority );
-    void                RemoveWorldTextureWatch     ( CSHADERDUMMY* pShaderData, const char* szMatch );
+    ushort              GetTXDIDForModelID              ( ushort usModelID );
+    void                InitWorldTextureWatch           ( PFN_WATCH_CALLBACK pfnWatchCallback );
+    bool                AddWorldTextureWatch            ( CSHADERDUMMY* pShaderData, const char* szMatch, float fOrderPriority );
+    void                RemoveWorldTextureWatch         ( CSHADERDUMMY* pShaderData, const char* szMatch );
     void                RemoveWorldTextureWatchByContext ( CSHADERDUMMY* pShaderData );
-    void                PulseWorldTextureWatch      ( void );
-    void                GetModelTextureNames        ( std::vector < SString >& outNameList, ushort usModelID );
-    void                GetTxdTextures              ( std::vector < RwTexture* >& outTextureList, ushort usTxdId );
-    const SString&      GetTextureName              ( CD3DDUMMY* pD3DData );
+    void                PulseWorldTextureWatch          ( void );
+    void                GetModelTextureNames            ( std::vector < SString >& outNameList, ushort usModelID );
+    void                GetTxdTextures                  ( std::vector < RwTexture* >& outTextureList, ushort usTxdId );
+    const SString&      GetTextureName                  ( CD3DDUMMY* pD3DData );
 
 protected:
     // Protected Shader management logic.
-    void                InitShaderSystem            ( void );
-    void                ShutdownShaderSystem        ( void );
+    void                InitShaderSystem                ( void );
+    void                ShutdownShaderSystem            ( void );
 
-    void                AddActiveTexture            ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
-    void                RemoveTxdActiveTextures     ( ushort usTxdId );
-    void                FindNewAssociationForTexInfo( STexInfo* pTexInfo );
-    STexInfo*           CreateTexInfo               ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
-    void                OnDestroyTexInfo            ( STexInfo* pTexInfo );
-    SShadInfo*          CreateShadInfo              ( CSHADERDUMMY* pShaderData, const SString& strTextureName, float fOrderPriority );
-    void                OnDestroyShadInfo           ( SShadInfo* pShadInfo );
-    void                MakeAssociation             ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
-    void                BreakAssociation            ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
+    void                AddActiveTexture                ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
+    void                RemoveTxdActiveTextures         ( ushort usTxdId );
+    void                FindNewAssociationForTexInfo    ( STexInfo* pTexInfo );
+    STexInfo*           CreateTexInfo                   ( ushort usTxdId, const SString& strTextureName, CD3DDUMMY* pD3DData );
+    void                OnDestroyTexInfo                ( STexInfo* pTexInfo );
+    SShadInfo*          CreateShadInfo                  ( CSHADERDUMMY* pShaderData, const SString& strTextureName, float fOrderPriority );
+    void                OnDestroyShadInfo               ( SShadInfo* pShadInfo );
+    void                MakeAssociation                 ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
+    void                BreakAssociation                ( SShadInfo* pShadInfo, STexInfo* pTexInfo );
 
     // Shader management variables.
     // Watched world textures

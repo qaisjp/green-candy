@@ -213,6 +213,8 @@ CGameSA::~CGameSA( void )
         delete reinterpret_cast < CWeaponInfoSA* > ( WeaponInfos [i] );
     }
 
+    Shutdown();
+
     HUD_Shutdown();
     PlayerInfo_Shutdown();
     VehicleModels_Shutdown();
@@ -461,15 +463,15 @@ void CGameSA::Reset( void )
         Pause( false );        // We don't have to pause as the fadeout will stop the sound. Pausing it will make the fadein next start ugly
         m_pHud->Disable( false );
 
-        // Notify modules which want it.
-        HUD_OnReset();
-
         DisableRenderer( false );
 
         // Restore the HUD
         m_pHud->Disable( false );
         m_pHud->DisableAll( false );
     }
+
+    // Notify modules which want it.
+    HUD_OnReset();
 
     // Reset ubiqitous managers.
     Streaming::Reset();
@@ -490,6 +492,10 @@ void CGameSA::Initialize()
 
     VehicleModelInfoRender_SetupDevice();
     RenderWareLighting_InitShaders();
+}
+
+void CGameSA::Shutdown()
+{
 }
 
 void CGameSA::OnPreFrame()

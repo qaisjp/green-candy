@@ -59,4 +59,12 @@ RpLight*            RpLightCreate( unsigned char type );        // US exe: 0x007
 // NEW RenderWare functions
 RpLight*            RpLightClone( const RpLight *src );
 
+// * Frustum caching plugin.
+bool __cdecl        RpLightIsInsideFrustum( RpLight *light );
+void __cdecl        RpLightPerformFrustumCaching( void );
+
+// General light initialization
+void __cdecl        RpLightInit( void );
+void __cdecl        RpLightShutdown( void );
+
 #endif //_RENDERWARE_LIGHT_

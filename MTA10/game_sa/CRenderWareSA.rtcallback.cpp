@@ -902,9 +902,9 @@ void RenderCallbacks_Init( void )
     }
 
     // Hook shared routines.
-    *(DWORD*)0x005D67F4 = (DWORD)HOOK_ReflectiveRenderCallback;
-    *(DWORD*)0x005D7B0B = (DWORD)HOOK_SpecialObjectRenderCallback;
-    *(DWORD*)0x005D9FE4 = (DWORD)HOOK_VehicleAtomicRenderCallback;
+    MemPut( 0x005D67F4, HOOK_ReflectiveRenderCallback ),
+    MemPut( 0x005D7B0B, HOOK_SpecialObjectRenderCallback );
+    MemPut( 0x005D9FE4, HOOK_VehicleAtomicRenderCallback );
 }
 
 void RenderCallbacks_Shutdown( void )
