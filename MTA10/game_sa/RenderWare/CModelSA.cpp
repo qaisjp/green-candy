@@ -42,7 +42,7 @@ void CModelSA::RpClumpAssignObjects( CRwObjectSA *obj, CModelSA *model )
     {
         CRwCameraSA *cam = (CRwCameraSA*)obj;
 
-        if ( cam->GetObject()->clump == model->GetObjectA() )
+        if ( cam->GetObject()->clump == model->GetObject() )
         {
             cam->m_model = model;
             model->m_cameras.push_front( cam );

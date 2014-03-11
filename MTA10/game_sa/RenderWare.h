@@ -614,25 +614,6 @@ extern RwDeviceInformation *const pRwDeviceInfo;
 /** RenderWare Helper Definitions                                           **/
 /*****************************************************************************/
 
-// Swap the current txd with another
-class RwTxdStack
-{
-public:
-    RwTxdStack( RwTexDictionary *txd )
-    {
-        m_txd = RenderWare::GetInterface()->m_textureManager.current;
-        RenderWare::GetInterface()->m_textureManager.current = txd;
-    }
-
-    ~RwTxdStack( void )
-    {
-        RenderWare::GetInterface()->m_textureManager.current = m_txd;
-    }
-
-private:
-    RwTexDictionary*    m_txd;
-};
-
 // Include basic dependencies.
 #include "RenderWare/RwMath.h"
 

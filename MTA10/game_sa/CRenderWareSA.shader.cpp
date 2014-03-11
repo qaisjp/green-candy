@@ -416,7 +416,7 @@ void CRenderWareSA::RemoveTxdActiveTextures ( ushort usTxdId )
 // Get list of texture names associated with the model
 //
 ////////////////////////////////////////////////////////////////
-static bool StaticGetTxdTextureNames( RwTexture *tex, std::vector <SString> *names )
+static int StaticGetTxdTextureNames( RwTexture *tex, std::vector <SString> *names )
 {
     names->push_back( tex->name );
     return true;
@@ -433,7 +433,7 @@ void CRenderWareSA::GetModelTextureNames ( std::vector < SString >& outNameList,
 // CRenderWareSA::GetTxdTextures
 //
 ////////////////////////////////////////////////////////////////
-static bool StaticGetTextureCB( RwTexture* texture, std::vector <RwTexture*>* list )
+static int StaticGetTextureCB( RwTexture* texture, std::vector <RwTexture*>* list )
 {
     list->push_back( texture );
     return true;

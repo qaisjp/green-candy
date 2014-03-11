@@ -126,4 +126,10 @@ struct RwFrame : public RwObject
     void                    ThrowUpdate             ( void );
 };
 
+// API exports.
+RwFrame* __cdecl RwFrameLink( RwFrame *frame, RwFrame *child );
+RwFrame* __cdecl RwFrameAddChild( RwFrame *frame, RwFrame *child );
+
+RwFrame* __cdecl RwFrameRemoveChild( RwFrame *child );
+
 #endif //_RENDERWARE_FRAME_

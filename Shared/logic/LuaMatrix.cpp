@@ -63,9 +63,9 @@ static LUA_DECLARE( multiply )
 inline static void lua_pushvector3D( lua_State *L, CVector& vec )
 {
     lua_createtable( L, 3, 0 );
-    lua_pushnumber( L, vec[3] );
     lua_pushnumber( L, vec[2] );
     lua_pushnumber( L, vec[1] );
+    lua_pushnumber( L, vec[0] );
     lua_rawseti( L, -4, 1 );
     lua_rawseti( L, -3, 2 );
     lua_rawseti( L, -2, 3 );

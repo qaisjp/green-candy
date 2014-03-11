@@ -52,6 +52,61 @@ RwTexture* RwTexDictionary::FindNamedTexture( const char *name )
     return NULL;
 }
 
+RwTexture* __cdecl RwTexDictionaryFindNamedTexture( RwTexDictionary *texDict, const char *name )    { return texDict->FindNamedTexture( name ); }
+/*=========================================================
+    RwTexDictionarySetCurrent
+
+    Arguments:
+        texDict - texture dictionary that should be set as current
+    Purpose:
+        Sets the given texture dictionary as current. It will
+        be queried when a texture lookup is requested by
+        the engine.
+    Binary offsets:
+        (1.0 US): 0x007F3A70
+        (1.0 EU): 0x007F3AB0
+=========================================================*/
+RwTexDictionary* __cdecl RwTexDictionarySetCurrent( RwTexDictionary *texDict )
+{
+    RenderWare::GetInterface()->m_textureManager.current = texDict;
+    return texDict;
+}
+
+/*=========================================================
+    RwTexDictionaryGetCurrent
+
+    Purpose:
+        Returns the texture dictionary that is used for texture
+        lookup using RwFindTexture.
+    Binary offsets:
+        (1.0 US): 0x007F3A90
+        (1.0 EU): 0x007F3AD0
+=========================================================*/
+RwTexDictionary* __cdecl RwTexDictionaryGetCurrent( void )
+{
+    return RenderWare::GetInterface()->m_textureManager.current;
+}
+
+/*=========================================================
+    RwTexDictionaryForAllTextures
+
+    Arguments:
+        texDict - the texture dictionary to loop through
+        callback - function to call for every texture found
+        data - userdata pointer to pass to callback
+    Purpose:
+        Loops through all texture of the given texture dictionary
+        and calls the callback for each one found.
+    Binary offsets:
+        (1.0 US): 0x007F3730
+        (1.0 EU): 0x007F3770
+=========================================================*/
+RwTexDictionary* __cdecl RwTexDictionaryForAllTextures( RwTexDictionary *texDict, int (*callback)( RwTexture *texture, void *data ), void *data )
+{
+    texDict->ForAllTextures <void*> ( callback, data );
+    return texDict;
+}
+
 /*=========================================================
     RwTexDictionaryCreate
 

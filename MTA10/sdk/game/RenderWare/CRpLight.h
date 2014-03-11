@@ -28,6 +28,9 @@ public:
     virtual void                    SetAttenuation      ( const CVector& atten ) = 0;
     virtual const CVector&          GetAttenuation      ( void ) const = 0;
 
+    virtual void                    SetFalloff          ( float falloff ) = 0;
+    virtual float                   GetFalloff          ( void ) const = 0;
+
     virtual void                    AddToModel          ( CModel *model ) = 0;
     virtual CModel*                 GetModel            ( void ) = 0;
     virtual void                    RemoveFromModel     ( void ) = 0;

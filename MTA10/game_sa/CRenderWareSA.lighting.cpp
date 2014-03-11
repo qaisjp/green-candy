@@ -191,9 +191,11 @@ namespace D3D9Lighting
         if ( lightRadius <= 0.0f )
             return false;
 
-        localLight.Attenuation0 = light->attenuation[0];
-        localLight.Attenuation1 = light->attenuation[1] / lightRadius;
-        localLight.Attenuation2 = light->attenuation[2] / ( lightRadius * lightRadius );
+        const CVector& attenuation = RpLightGetAttenuation( light );
+
+        localLight.Attenuation0 = attenuation[0];
+        localLight.Attenuation1 = attenuation[1] / lightRadius;
+        localLight.Attenuation2 = attenuation[2] / ( lightRadius * lightRadius );
 
         switch( light->subtype )
         {
@@ -202,6 +204,7 @@ namespace D3D9Lighting
             localLight.Direction.x = 0;
             localLight.Direction.y = 0;
             localLight.Direction.z = 0;
+            localLight.Falloff = RpLightGetFalloff( light );
             localLight.Theta = 0;
             localLight.Phi = 0;
             break;
@@ -210,6 +213,8 @@ namespace D3D9Lighting
             localLight.Direction.x = lightPos.vUp.fX;
             localLight.Direction.y = lightPos.vUp.fY;
             localLight.Direction.z = lightPos.vUp.fZ;
+
+            localLight.Falloff = RpLightGetFalloff( light );
 
             {
                 float coneAngle = RpLightGetConeAngle( light );
@@ -224,6 +229,8 @@ namespace D3D9Lighting
             localLight.Direction.x = lightPos.vUp.fX;
             localLight.Direction.y = lightPos.vUp.fY;
             localLight.Direction.z = lightPos.vUp.fZ;
+
+            localLight.Falloff = RpLightGetFalloff( light );
 
             localLight.Theta = 0;
             localLight.Phi = RpLightGetConeAngle( light ) * 2;
@@ -251,26 +258,55 @@ namespace D3D9Lighting
 =========================================================*/
 static size_t d3d9lightplg = 0xFFFFFFFF;
 
+struct _d3d9LightStruct
+{
+    // Start of D3D9Light plugin
+    int                     lightIndex;         // 84, may be 0-7
+    CVector                 attenuation;        // 88
+    float                   falloff;            // 92
+};
+
+static AINLINE _d3d9LightStruct* _GetLightInfo( RpLight *light )
+{
+    if ( d3d9lightplg == 0xFFFFFFFF )
+        return NULL;
+
+    return RW_PLUGINSTRUCT <_d3d9LightStruct> ( light, d3d9lightplg );
+}
+
+static AINLINE const _d3d9LightStruct* _GetLightInfoConst( const RpLight *light )
+{
+    if ( d3d9lightplg == 0xFFFFFFFF )
+        return NULL;
+
+    return RW_PLUGINSTRUCT <const _d3d9LightStruct> ( light, d3d9lightplg );
+}
+
 static RpLight* __cdecl RpD3D9LightConstructor( RpLight *light, size_t offset )
 {
     if ( !light )
         return NULL;
 
-    light->lightIndex = -1;
-    light->attenuation[0] = 1.0;
-    light->attenuation[1] = 0.0;
-    light->attenuation[2] = 5.0;
+    _d3d9LightStruct *lightInfo = RW_PLUGINSTRUCT <_d3d9LightStruct> ( light, offset );
+
+    lightInfo->lightIndex = -1;
+    lightInfo->attenuation[0] = 1.0f;
+    lightInfo->attenuation[1] = 0.0f;
+    lightInfo->attenuation[2] = 5.0f;
+    lightInfo->falloff = 1.0f;
     return light;
 }
 
-static RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
+static RpLight* __cdecl RpD3D9LightDestructor( RpLight *light, size_t offset )
 {
     if ( !light )
         return NULL;
 
-    if ( light->lightIndex >= 0 )
+    _d3d9LightStruct *lightInfo = RW_PLUGINSTRUCT <_d3d9LightStruct> ( light, offset );
+
+    if ( lightInfo->lightIndex >= 0 )
     {
-        light->lightIndex = -1;
+        lightInfo->lightIndex = -1;
     }
 
     return light;
@@ -278,13 +314,16 @@ static RpLight* __cdecl RpD3D9LightDestructor( RpLight *light )
 
 static void __cdecl RpD3D9LightCopyConstructor( RpLight *light, const RpLight *srcObj, size_t offset, unsigned int pluginId )
 {
-    light->lightIndex = srcObj->lightIndex;
-    light->attenuation = srcObj->attenuation;
+    _d3d9LightStruct *dstLightInfo = RW_PLUGINSTRUCT <_d3d9LightStruct> ( light, offset );
+    _d3d9LightStruct *srcLightInfo = RW_PLUGINSTRUCT <_d3d9LightStruct> ( srcObj, offset );
+
+    // Quick copy.
+    *dstLightInfo = *srcLightInfo;
 }
 
 static int __cdecl RpD3D9InitializeLightingPlugin( void )
 {
-    d3d9lightplg = RpLightRegisterPlugin( 0x10, 0x505,
+    d3d9lightplg = RpLightRegisterPlugin( sizeof( _d3d9LightStruct ), 0x505,
         (RpLightPluginConstructor)RpD3D9LightConstructor,
         (RpLightPluginDestructor)RpD3D9LightDestructor,
         (RpLightPluginCopyConstructor)RpD3D9LightCopyConstructor
@@ -296,6 +335,51 @@ static int __cdecl RpD3D9InitializeLightingPlugin( void )
     RpLightInit();
 
     return successful;
+}
+
+// API exports.
+void __cdecl RpLightSetAttenuation( RpLight *light, const CVector& atten )
+{
+    _GetLightInfo( light )->attenuation = atten;
+}
+
+const CVector& __cdecl RpLightGetAttenuation( const RpLight *light )
+{
+    return _GetLightInfoConst( light )->attenuation;
+}
+
+void __cdecl RpLightSetFalloff( RpLight *light, float falloff )
+{
+    _GetLightInfo( light )->falloff = falloff;
+}
+
+float __cdecl RpLightGetFalloff( const RpLight *light )
+{
+    return _GetLightInfoConst( light )->falloff;
+}
+
+/*=========================================================
+    RpLightSetLightIndex
+
+    Arguments:
+        idx - number representing the hardware light index
+    Purpose:
+        Sets the hardware light index. It is used in the rendering
+        stage. Only one light with the same index can be active during
+        rendering. Light indices are not dynamically managed by
+        RenderWare (at the moment). The first time a light is assigned
+        to an atomic, it gains a light index. Settings this light index
+        to 0 will force an update to a freely available index at next
+        atomic render.
+=========================================================*/
+void __cdecl RpLightSetLightIndex( RpLight *light, int index )
+{
+    _GetLightInfo( light )->lightIndex = index;
+}
+
+int __cdecl RpLightGetLightIndex( const RpLight *light )
+{
+    return _GetLightInfoConst( light )->lightIndex;
 }
 
 /*=========================================================
@@ -352,7 +436,8 @@ __forceinline bool _LightsCompare( const D3DLIGHT9& left, const D3DLIGHT9& right
             cmp.CompareData( left.Direction.z, right.Direction.z ) &&
             cmp.CompareData( left.Range, right.Range ) &&
             cmp.CompareData( left.Theta, right.Theta ) &&
-            cmp.CompareData( left.Phi, right.Phi );
+            cmp.CompareData( left.Phi, right.Phi ) &&
+            cmp.CompareData( left.Falloff, right.Falloff );
 
         break;
     case D3DLIGHT_DIRECTIONAL:
@@ -533,6 +618,19 @@ inline CShaderItem* _NewLightShaderInstance( const char *name )
     return shader;
 }
 
+// Utilities for shader management.
+namespace ShaderLightUtils
+{
+    AINLINE std::string to_string( int num )
+    {
+        std::stringstream stream;
+
+        stream << num;
+
+        return stream.str();
+    }
+};
+
 // Manager for rendering light states.
 using namespace D3D9Lighting;
 
@@ -628,8 +726,7 @@ struct lightPassManager
             return (int)D3D9Lighting::maxNumberOfActiveLights;
         else if ( lightShader )
         {
-            // todo: dispatch by type and possibility.
-            return 9;
+            return shaderTypeMan.GetLightSlots();
         }
 
         return 0;
@@ -872,15 +969,6 @@ struct lightPassManager
         return ( cachedLightShader != NULL );
     }
 
-    AINLINE std::string to_string( int num )
-    {
-        std::stringstream stream;
-
-        stream << num;
-
-        return stream.str();
-    }
-
     AINLINE void EnableShaderLightInstance( shaderCacheItem& item, int instanceIndex, bool enable )
     {
         // Make sure we have enough slots allocated.
@@ -895,7 +983,7 @@ struct lightPassManager
 
         if ( dstStruct.active != activeNum )
         {
-            cachedLightShader->SetValue( ( ( std::string( "gLight" ) + to_string( instanceIndex ) ) + "Enable" ).c_str(), enable );
+            cachedLightShader->SetValue( ( ( std::string( "gLight" ) + ShaderLightUtils::to_string( instanceIndex ) ) + "Enable" ).c_str(), enable );
 
             dstStruct.active = activeNum;
         }
@@ -911,58 +999,8 @@ struct lightPassManager
         nativeLightInfo& dstStruct = item.activeLights.Get( instanceIndex );
         CShaderItem *cachedLightShader = item.cachedShader;
 
-        // Get the ~pointer to the shader light instance.
-        std::string instancePrefix = "gLight" + to_string( instanceIndex );
-
-        // Update position.
-        if ( lightStruct.Position.x != dstStruct.native.Position.x ||
-             lightStruct.Position.y != dstStruct.native.Position.y ||
-             lightStruct.Position.z != dstStruct.native.Position.z )
-        {
-            cachedLightShader->SetValue( ( instancePrefix + "Position" ).c_str(), (float*)&lightStruct.Position, 3 );
-
-            dstStruct.native.Position = lightStruct.Position;
-        }
-
-        // Update color.
-        if ( lightStruct.Diffuse.r != dstStruct.native.Diffuse.r ||
-             lightStruct.Diffuse.g != dstStruct.native.Diffuse.g ||
-             lightStruct.Diffuse.b != dstStruct.native.Diffuse.b )
-        {
-            cachedLightShader->SetValue( ( instancePrefix + "Diffuse" ).c_str(), (float*)&lightStruct.Diffuse, 4 );
-
-            dstStruct.native.Diffuse = lightStruct.Diffuse;
-        }
-
-        // Update attenuation values.
-        if ( lightStruct.Attenuation0 != dstStruct.native.Attenuation0 )
-        {
-            cachedLightShader->SetValue( ( instancePrefix + "Attenuation0" ).c_str(), &lightStruct.Attenuation0, 1 );
-
-            dstStruct.native.Attenuation0 = lightStruct.Attenuation0;
-        }
-
-        if ( lightStruct.Attenuation1 != dstStruct.native.Attenuation1 )
-        {
-            cachedLightShader->SetValue( ( instancePrefix + "Attenuation1" ).c_str(), &lightStruct.Attenuation1, 1 );
-
-            dstStruct.native.Attenuation1 = lightStruct.Attenuation1;
-        }
-
-        if ( lightStruct.Attenuation2 != dstStruct.native.Attenuation2 )
-        {
-            cachedLightShader->SetValue( ( instancePrefix + "Attenuation2" ).c_str(), &lightStruct.Attenuation2, 1 );
-
-            dstStruct.native.Attenuation2 = lightStruct.Attenuation2;
-        }
-
-        // Update light range.
-        if ( lightStruct.Range != dstStruct.native.Range )
-        {
-            cachedLightShader->SetValue( ( instancePrefix + "Range" ).c_str(), &lightStruct.Range, 1 );
-
-            dstStruct.native.Range = lightStruct.Range;
-        }
+        // Send data to the GPU.
+        shaderTypeMan.UpdateShader( cachedLightShader, instanceIndex, dstStruct.native, lightStruct );
     }
 
     inline bool ApplyLightPassConfiguration( lightPass& pass, lightIndexArray& passLightIndice, int shaderIndex )
@@ -1144,6 +1182,7 @@ struct lightPassManager
                 // If we found an inactive shader, just use it.
                 if ( shaderIndex != -1 )
                 {
+justCached:
                     lightIndice = &_cachedActiveLightIndice;
 
                     lightIndice->numActiveEntries = passCount;
@@ -1160,6 +1199,16 @@ struct lightPassManager
                     lightIndice = &applProc.cache.Get( applProc.m_closestIndex ).applicatorsByPass;
 
                     shaderIndex = applProc.m_closestIndex;
+                }
+                // Else we allocate more space for cache.
+                else
+                {
+                    shaderIndex = lightShaderCache.GetSizeCount();
+
+                    // Increment the cache count.
+                    lightShaderCache.SetSizeCount( shaderIndex + 1 );
+
+                    goto justCached;
                 }
 
                 if ( shaderIndex != -1 )
@@ -1442,6 +1491,9 @@ struct lightPassManager
 
                     item.cachedShader = NULL;
                 }
+
+                // There are no active lights anymore.
+                item.activeLights.SetSizeCount( 0 );
             }
         }
 
@@ -1502,6 +1554,14 @@ struct pointLightShaderTypeManager
             Attenuation2 = 0.0f;
 
             Range = 0.0f;
+
+            Direction.x = 0.0f;
+            Direction.y = 0.0f;
+            Direction.z = -1.0f;
+
+            Falloff = 1.0f;
+            Theta = 0.0f;
+            Phi = 0.0f;
         }
     };
 
@@ -1512,9 +1572,129 @@ struct pointLightShaderTypeManager
         return lightStructDefault;
     }
 
-    AINLINE const char* GetShaderSource( void )
+    AINLINE static const char* GetShaderSource( void )
     {
-        return "shader_point_9sm3.fx";
+        // We handle both point and spot lights, since they are very similar.
+        return "shader_point_spot_9sm3.fx";
+    }
+
+    AINLINE unsigned int GetLightSlots( void )
+    {
+        return 9;
+    }
+
+    AINLINE void UpdateShader( CShaderItem *shader, int instanceIndex, D3DLIGHT9& dstLight, const D3DLIGHT9& srcLight )
+    {
+        // Get the ~pointer to the shader light instance.
+        std::string instancePrefix = "gLight" + ShaderLightUtils::to_string( instanceIndex );
+
+        // Update light type.
+        if ( dstLight.Type != srcLight.Type )
+        {
+            // Shader API: 1 -> point, 2 -> spot
+            float shaderLightType = 1.0f;
+
+            if ( srcLight.Type == D3DLIGHT_POINT )
+            {
+                shaderLightType = 1.0f;
+            }
+            else if ( srcLight.Type == D3DLIGHT_SPOT )
+            {
+                shaderLightType = 2.0f;
+            }
+
+            shader->SetValue( ( instancePrefix + "Type" ).c_str(), &shaderLightType, 1 );
+
+            dstLight.Type = srcLight.Type;
+        }
+
+        // Update position.
+        if ( srcLight.Position.x != dstLight.Position.x ||
+             srcLight.Position.y != dstLight.Position.y ||
+             srcLight.Position.z != dstLight.Position.z )
+        {
+            shader->SetValue( ( instancePrefix + "Position" ).c_str(), (float*)&srcLight.Position, 3 );
+
+            dstLight.Position = srcLight.Position;
+        }
+
+        // Update color.
+        if ( srcLight.Diffuse.r != dstLight.Diffuse.r ||
+             srcLight.Diffuse.g != dstLight.Diffuse.g ||
+             srcLight.Diffuse.b != dstLight.Diffuse.b )
+        {
+            shader->SetValue( ( instancePrefix + "Diffuse" ).c_str(), (float*)&srcLight.Diffuse, 4 );
+
+            dstLight.Diffuse = srcLight.Diffuse;
+        }
+
+        // Update attenuation values.
+        if ( srcLight.Attenuation0 != dstLight.Attenuation0 )
+        {
+            shader->SetValue( ( instancePrefix + "Attenuation0" ).c_str(), &srcLight.Attenuation0, 1 );
+
+            dstLight.Attenuation0 = srcLight.Attenuation0;
+        }
+
+        if ( srcLight.Attenuation1 != dstLight.Attenuation1 )
+        {
+            shader->SetValue( ( instancePrefix + "Attenuation1" ).c_str(), &srcLight.Attenuation1, 1 );
+
+            dstLight.Attenuation1 = srcLight.Attenuation1;
+        }
+
+        if ( srcLight.Attenuation2 != dstLight.Attenuation2 )
+        {
+            shader->SetValue( ( instancePrefix + "Attenuation2" ).c_str(), &srcLight.Attenuation2, 1 );
+
+            dstLight.Attenuation2 = srcLight.Attenuation2;
+        }
+
+        // Update light range.
+        if ( srcLight.Range != dstLight.Range )
+        {
+            shader->SetValue( ( instancePrefix + "Range" ).c_str(), &srcLight.Range, 1 );
+
+            dstLight.Range = srcLight.Range;
+        }
+
+        // Update spot/point falloff.
+        if ( srcLight.Falloff != dstLight.Falloff )
+        {
+            shader->SetValue( ( instancePrefix + "Falloff" ).c_str(), &srcLight.Falloff, 1 );
+
+            dstLight.Falloff = srcLight.Falloff;
+        }
+
+        // Update spot lights details (if required).
+        if ( srcLight.Type == D3DLIGHT_SPOT )
+        {
+            // Update spot direction.
+            if ( srcLight.Direction.x != dstLight.Direction.x ||
+                 srcLight.Direction.y != dstLight.Direction.y ||
+                 srcLight.Direction.z != dstLight.Direction.z )
+            {
+                shader->SetValue( ( instancePrefix + "Direction" ).c_str(), (float*)&srcLight.Direction, 3 );
+
+                dstLight.Direction = srcLight.Direction;
+            }
+
+            // Update inner cone angle.
+            if ( srcLight.Theta != dstLight.Theta )
+            {
+                shader->SetValue( ( instancePrefix + "Theta" ).c_str(), &srcLight.Theta, 1 );
+
+                dstLight.Theta = srcLight.Theta;
+            }
+
+            // Update outer cone angle.
+            if ( srcLight.Phi != dstLight.Phi )
+            {
+                shader->SetValue( ( instancePrefix + "Phi" ).c_str(), &srcLight.Phi, 1 );
+
+                dstLight.Phi = srcLight.Phi;
+            }
+        }
     }
 };
 
@@ -1540,6 +1720,16 @@ struct globalLightShaderTypeManager
     AINLINE const char* GetShaderSource( void )
     {
         return NULL;
+    }
+
+    AINLINE unsigned int GetLightSlots( void )
+    {
+        return 0;
+    }
+
+    AINLINE void UpdateShader( CShaderItem *shader, int instanceIndex, D3DLIGHT9& dstLight, const D3DLIGHT9& srcLight )
+    {
+        return;
     }
 };
 
@@ -2174,7 +2364,7 @@ void RenderWareLighting_Reset( void )
 void RenderWareLighting_InitShaders( void )
 {
     // Initialize lighting shader.
-    lightingShader = _NewLightShaderInstance( "shader_point_9sm3.fx" );
+    lightingShader = _NewLightShaderInstance( pointLightShaderTypeManager::GetShaderSource() );
 
     // Prepare device capabilities.
     D3DCAPS9 deviceCaps;

@@ -34,6 +34,8 @@ struct RpClump : public RwObject
     void                    InitStaticSkeleton          ( void );
     RwStaticGeometry*       CreateStaticGeometry        ( void );
 
+    int                     GetNumAtomics               ( void );
+
     RpAnimHierarchy*        GetAtomicAnimHierarchy      ( void );
     RpAnimHierarchy*        GetAnimHierarchy            ( void );
 
@@ -66,6 +68,9 @@ struct RpClump : public RwObject
 };
 
 // Clump API.
-RpClump*            RpClumpCreate( void );      // US exe: 0x0074A290
+RpClump* __cdecl    RpClumpAddAtomic( RpClump *clump, RpAtomic *atomic );
+RpClump* __cdecl    RpClumpAddLight( RpClump *clump, RpLight *light );
+int __cdecl         RpClumpGetNumAtomics( RpClump *clump );
+RpClump*            RpClumpCreate( void );                                  // US exe: 0x0074A290
 
 #endif //_RENDERWARE_CLUMP_

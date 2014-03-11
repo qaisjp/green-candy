@@ -50,12 +50,21 @@ void RwObjectFrame::AddToFrame( RwFrame *frame )
 
     parent = frame;
 
-    if ( !frame )
-        return;
+    if ( frame )
+    {
+        LIST_INSERT( frame->objects.root, lFrame );
 
-    LIST_INSERT( frame->objects.root, lFrame );
+        frame->Update();
+    }
 }
 
+RpAtomic* __cdecl RpAtomicSetFrame( RpAtomic *atomic, RwFrame *frame )
+{
+    atomic->AddToFrame( frame );
+
+    atomic->privateFlags |= 1;
+    return atomic;
+}
 /*=========================================================
     RwObjectFrame::RemoveFromFrame
 
@@ -146,7 +155,7 @@ RwTexture* RwFindTexture( const char *name, const char *secName )
         return NULL;
     }
 
-    if ( RwTexDictionary *txd = rwInterface->m_textureManager.current )
+    if ( RwTexDictionary *txd = RwTexDictionaryGetCurrent() )
     {
         tex->RemoveFromDictionary();
         tex->AddToDictionary( txd );

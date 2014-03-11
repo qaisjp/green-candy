@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#undef GetObject
+
 //#define USE_HEAP_DEBUGGING
 //#define USE_FULL_PAGE_HEAP
 //#define PAGE_HEAP_INTEGRITY_CHECK

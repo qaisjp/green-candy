@@ -266,7 +266,7 @@ void CTxdInstanceSA::DereferenceNoDestroy( void )
 =========================================================*/
 void CTxdInstanceSA::SetCurrent( void )
 {
-    RenderWare::GetInterface()->m_textureManager.current = m_txd;
+    RwTexDictionarySetCurrent( m_txd );
 }
 
 /*=====================================================================
