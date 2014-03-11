@@ -282,7 +282,7 @@ public:
     BYTE                            m_pad[348];                 // 312
     CPedSoundSAInterface            m_sound;                    // 660
     BYTE                            m_pad2[318];                // 814
-    CPedFlags                       m_pedFlags;                 // 1132 (16 bytes long including alignment probably)
+    CPedFlags                       pedFlags;                   // 1132 (16 bytes long including alignment probably)
     CPedIntelligenceSAInterface*    m_intelligence;             // 1148
     CPlayerPedDataSAInterface*      m_playerData;               // 1152
     BYTE                            m_pad4[80];                 // 1156
@@ -379,16 +379,16 @@ public:
     unsigned char               GetRunState() const                                         { return GetInterface()->m_runState; }
     CEntity*                    GetContactEntity() const;
     CEntity*                    GetTargetedEntity() const;
-    bool                        GetCanBeShotInVehicle() const                               { return GetInterface()->m_pedFlags.bCanBeShotInVehicle; }
-    bool                        GetTestForShotInVehicle() const                             { return GetInterface()->m_pedFlags.bTestForShotInVehicle; }
+    bool                        GetCanBeShotInVehicle() const                               { return GetInterface()->pedFlags.bCanBeShotInVehicle; }
+    bool                        GetTestForShotInVehicle() const                             { return GetInterface()->pedFlags.bTestForShotInVehicle; }
     unsigned int                GetFootBlood() const;
     unsigned char               GetOccupiedSeat() const                                     { return m_ucOccupiedSeat; }
-    inline bool                 GetStayInSamePlace() const                                  { return GetInterface()->m_pedFlags.bStayInSamePlace; }
-    unsigned char               GetCantBeKnockedOffBike() const                             { return GetInterface()->m_pedFlags.CantBeKnockedOffBike; }
+    inline bool                 GetStayInSamePlace() const                                  { return GetInterface()->pedFlags.bStayInSamePlace; }
+    unsigned char               GetCantBeKnockedOffBike() const                             { return GetInterface()->pedFlags.CantBeKnockedOffBike; }
 
     bool                        IsStealthAiming() const                                     { return m_stealthAiming; }
-    bool                        IsDucking() const                                           { return GetInterface()->m_pedFlags.bIsDucking; }
-    bool                        IsStanding() const                                          { return GetInterface()->m_pedFlags.bIsStanding; }
+    bool                        IsDucking() const                                           { return GetInterface()->pedFlags.bIsDucking; }
+    bool                        IsStanding() const                                          { return GetInterface()->pedFlags.bIsStanding; }
     bool                        IsInWater() const;
     bool                        IsDying() const;
     bool                        IsDead() const;
@@ -410,18 +410,18 @@ public:
     void                        SetStealthAiming( bool enable );
     void                        SetAnimationProgress( const char *name, float progress );
     void                        SetCurrentWeaponSlot( eWeaponSlot weaponSlot );
-    void                        SetIsStanding( bool bStanding )                             { GetInterface()->m_pedFlags.bIsStanding = bStanding; }
-    void                        SetDucking( bool bDuck )                                    { GetInterface()->m_pedFlags.bIsDucking = bDuck; }
+    void                        SetIsStanding( bool bStanding )                             { GetInterface()->pedFlags.bIsStanding = bStanding; }
+    void                        SetDucking( bool bDuck )                                    { GetInterface()->pedFlags.bIsDucking = bDuck; }
     void                        SetFightingStyle( eFightingStyle style, unsigned char extra = 6 );
     void                        SetTargetedEntity( CEntity *entity );
-    void                        SetCanBeShotInVehicle( bool bShot )                         { GetInterface()->m_pedFlags.bCanBeShotInVehicle = bShot; }
-    void                        SetTestForShotInVehicle( bool bTest )                       { GetInterface()->m_pedFlags.bTestForShotInVehicle = bTest; }
+    void                        SetCanBeShotInVehicle( bool bShot )                         { GetInterface()->pedFlags.bCanBeShotInVehicle = bShot; }
+    void                        SetTestForShotInVehicle( bool bTest )                       { GetInterface()->pedFlags.bTestForShotInVehicle = bTest; }
     void                        SetFootBlood( unsigned int density );
     void                        SetOnFire( bool bOnFire );
     void                        SetGogglesState( bool bIsWearingThem );
     void                        SetOccupiedSeat( unsigned char seat )                       { m_ucOccupiedSeat = seat; }
-    void                        SetStayInSamePlace( bool bStay )                            { GetInterface()->m_pedFlags.bStayInSamePlace = bStay; }
-    void                        SetCantBeKnockedOffBike( unsigned char val )                { GetInterface()->m_pedFlags.CantBeKnockedOffBike = val; }
+    void                        SetStayInSamePlace( bool bStay )                            { GetInterface()->pedFlags.bStayInSamePlace = bStay; }
+    void                        SetCantBeKnockedOffBike( unsigned char val )                { GetInterface()->pedFlags.CantBeKnockedOffBike = val; }
 
     void                        AttachPedToBike( CEntity *entity, const CVector& pos, unsigned short sUnk, float fUnk, float fUnk2, eWeaponType weaponType );
     void                        AttachPedToEntity( CEntitySAInterface *entity, const CVector& offset, unsigned short sDirection, float rotLimit, eWeaponType weaponType, bool camChange );

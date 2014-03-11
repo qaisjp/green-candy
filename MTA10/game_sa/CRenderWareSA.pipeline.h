@@ -71,7 +71,7 @@ struct RwRenderStateLock
             and locks them from changing by the GTA:SA engine
             until the reference count reaches zero.
     =========================================================*/
-    __forceinline RwRenderStateLock( D3DRENDERSTATETYPE type, DWORD value )
+    AINLINE RwRenderStateLock( D3DRENDERSTATETYPE type, DWORD value )
     {
         m_type = type;
 
@@ -94,7 +94,7 @@ struct RwRenderStateLock
             to creation of this lock. If reference count reaches
             zero, 
     =========================================================*/
-    __forceinline ~RwRenderStateLock( void )
+    AINLINE ~RwRenderStateLock( void )
     {
         // Free if not referenced anymore
         if ( --_rsLockInfo[m_type].refCount == 0 )
@@ -115,12 +115,12 @@ class StaticAllocator
     unsigned int count;
 
 public:
-    __forceinline StaticAllocator( void )
+    AINLINE StaticAllocator( void )
     {
         count = 0;
     }
     
-    void* Allocate( void )
+    AINLINE void* Allocate( void )
     {
         assume( count < max );
 
@@ -132,7 +132,7 @@ public:
     }
 
     // Hack function; only use if performance critical code is used.
-    void Pop( void )
+    AINLINE void Pop( void )
     {
         count--;
     }

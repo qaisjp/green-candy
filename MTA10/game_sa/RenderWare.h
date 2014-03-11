@@ -591,12 +591,6 @@ struct RwInterface   // size: 1456
     BYTE                    m_pad10[16];                                    // 1440
 };
 
-// Special RenderWare namespace.
-namespace RenderWare
-{
-    inline RwInterface*     GetInterface( void )    { return *(RwInterface**)0x00C97B24; }
-};
-
 // offset 0x00C9BF00 (1.0 US and 1.0 EU)
 //padlevel: 2
 struct RwDeviceInformation
@@ -608,7 +602,12 @@ struct RwDeviceInformation
     unsigned int            maxLights;                                      // 160
 };
 
-extern RwDeviceInformation *const pRwDeviceInfo;
+// Special RenderWare namespace.
+namespace RenderWare
+{
+    inline RwInterface*             GetInterface            ( void )    { return *(RwInterface**)0x00C97B24; }
+    inline RwDeviceInformation&     GetDeviceInformation    ( void )    { return *(RwDeviceInformation*)0x00C9BF00; }
+};
 
 /*****************************************************************************/
 /** RenderWare Helper Definitions                                           **/
@@ -623,6 +622,10 @@ extern RwDeviceInformation *const pRwDeviceInfo;
 #include "RenderWare/RwTextureD3D9.h"
 #include "RenderWare/RwUtilsD3D9.h"
 #include "RenderWare/RpAtomicD3D9.h"
+
+/* RenderWare macros */
+inline RwFrame* RpGetFrame( RwObject *obj )                     { return obj->parent; }
+inline void RpSetFrame( RwObject *obj, RwFrame *frame )         { obj->parent = frame; }
 
 /*****************************************************************************/
 /** RenderWare Plugin System                                                **/

@@ -21,7 +21,7 @@ CVehicleComponentSA::CVehicleComponentSA( vehComponents_t& container, RpClump *c
     container[ item->szName ] = this;
 }
 
-static bool RwObjectDestroyAll( RwObject *obj, int )
+static int RwObjectDestroyAll( RwObject *obj, int )
 {
     if ( obj->type == RW_ATOMIC )
     {
@@ -77,7 +77,7 @@ const CVector& CVehicleComponentSA::GetWorldPosition() const
     return m_frame->GetLTM().vPos;
 }
 
-static bool RwObjectSetActive( RwObject *obj, bool visible )
+static int RwObjectSetActive( RwObject *obj, bool visible )
 {
     obj->SetVisible( visible );
     return true;

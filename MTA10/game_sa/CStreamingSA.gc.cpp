@@ -115,7 +115,7 @@ struct GarbageCollectStreamingEntities
         if ( !loadInfo.IsOnLoader() || loadInfo.m_flags & m_ignoreFlags )
             return true;
 
-        if ( player && player->m_pedFlags.bInVehicle && player->CurrentObjective == entity )
+        if ( player && player->pedFlags.bInVehicle && player->CurrentObjective == entity )
             return true;
 
         entity->DeleteRwObject();

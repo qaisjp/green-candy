@@ -68,7 +68,7 @@ static bool RpMaterialSetAlpha( RpMaterial *mat, unsigned char alpha )
     return true;
 }
 
-static bool RpAtomicMaterialSetAlpha( RpAtomic *atom, unsigned char alpha )
+static int RpAtomicMaterialSetAlpha( RpAtomic *atom, unsigned char alpha )
 {
     atom->geometry->ForAllMateria( RpMaterialSetAlpha, alpha );
     return true;

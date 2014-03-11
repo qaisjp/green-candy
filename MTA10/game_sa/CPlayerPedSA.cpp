@@ -128,8 +128,8 @@ CPlayerPedSA::CPlayerPedSA( CPlayerPedSAInterface *ped, unsigned short modelId, 
     SetCanBeShotInVehicle( true );
     SetTestForShotInVehicle( true );
     // Stop remote players targeting eachother, this also stops the local player targeting them (needs to be fixed)
-    GetInterface()->m_pedFlags.bNeverEverTargetThisPed = true;
-    GetInterface()->m_pedFlags.bIsLanding = false;
+    GetInterface()->pedFlags.bNeverEverTargetThisPed = true;
+    GetInterface()->pedFlags.bIsLanding = false;
     GetInterface()->m_rotationSpeed = 7.5;
 
     if ( !isLocal )
@@ -191,7 +191,7 @@ void CPlayerPedSA::SetInitialState()
     }
 
     // Avoid direction locks for respawning after a jump
-    GetInterface()->m_pedFlags.bIsLanding = false;
+    GetInterface()->pedFlags.bIsLanding = false;
     // Avoid direction locks for respawning after a sprint stop
     GetInterface()->m_rotationSpeed = 7.5;
     // This seems to also be causing some movement / direction locks

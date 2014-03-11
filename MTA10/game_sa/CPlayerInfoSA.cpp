@@ -62,7 +62,7 @@ CVehicleSAInterface* __cdecl GetPlayerVehicle( int id, bool excludeRemote )
 
     CPlayerPedSAInterface *ped = info.pPed;
 
-    if ( !ped || !ped->m_pedFlags.bInVehicle )
+    if ( !ped || !ped->pedFlags.bInVehicle )
         return NULL;
 
     if ( excludeRemote && info.pRemoteVehicle )
@@ -102,7 +102,7 @@ const CVector& __cdecl FindPlayerCoords( CVector& pos, int id )
 
     // If the player is inside of a vehicle,
     // use its position instead.
-    if ( ped->m_pedFlags.bInVehicle )
+    if ( ped->pedFlags.bInVehicle )
     {
         CEntitySAInterface *veh = ped->m_objective;
 

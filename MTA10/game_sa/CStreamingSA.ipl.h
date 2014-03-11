@@ -126,8 +126,8 @@ struct CIPLSectorManagerSA
         {
             if ( obj->m_iplIndex == m_iplIndex )
             {
-                if ( CEntitySAInterface *highLOD = obj->m_highLOD )
-                    World::AddEntity( highLOD );
+                if ( CEntitySAInterface *dummy = obj->pGarageDoorDummy )
+                    World::AddEntity( dummy );
 
                 World::RemoveEntity( obj );
 

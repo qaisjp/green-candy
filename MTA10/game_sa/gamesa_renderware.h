@@ -108,7 +108,6 @@ typedef void                    (__cdecl *RwCameraDestroy_t)                    
 typedef RpClump*                (__cdecl *RpClumpClone_t)                       (const RpClump *clone);
 typedef void                    (__cdecl *RpClumpGetBoneTransform_t)            (RpClump *clump, CVector *offsets);
 typedef void                    (__cdecl *RpClumpSetupFrameCallback_t)          (RpClump *clump, unsigned int hierarchyId);
-typedef void                    (__cdecl *RpClumpRender_t)                      (RpClump *clump);
 typedef RpClump*                (__cdecl *RpClumpStreamRead_t)                  (RwStream *stream);
 typedef int                     (__cdecl *RpClumpDestroy_t)                     (RpClump *clump);
 
