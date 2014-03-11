@@ -195,7 +195,7 @@ void CTxdInstanceSA::InitParent( void )
     unsigned short id = txdPool->GetIndex( this );
 
     // Notify the shader system
-    OnStreamingAddTxd( id );
+    OnStreamingAddedTxd( id );
 
     CTxdInstanceSA *parent = txdPool->Get( m_parentTxd );
 

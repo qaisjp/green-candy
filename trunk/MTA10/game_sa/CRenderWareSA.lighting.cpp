@@ -2308,7 +2308,7 @@ int __cdecl RpD3D9InitializeLighting( void )
     // Clear activity status.
     RpD3D9ShutdownLighting();
 
-    unsigned int maxGPULights = pRwDeviceInfo->maxLights;
+    unsigned int maxGPULights = RenderWare::GetDeviceInformation().maxLights;
 
     D3D9Lighting::maxNumberOfActiveLights = ( maxGPULights != 0 ) ? maxGPULights : 0xFFFFFFFF;
 

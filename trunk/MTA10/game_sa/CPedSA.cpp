@@ -304,7 +304,7 @@ CVehicle* CPedSA::GetVehicle() const
 {
     DEBUG_TRACE("CVehicle* CPedSA::GetVehicle() const");
 
-    if ( !GetInterface()->m_pedFlags.bInVehicle )
+    if ( !GetInterface()->pedFlags.bInVehicle )
         return NULL;
 
     CVehicleSAInterface *vehicle = (CVehicleSAInterface*)GetInterface()->m_objective;
@@ -912,7 +912,7 @@ void CPedSA::RemoveBodyPart( int i, char c )
 void CPedSA::SetFootBlood( unsigned int density )
 {
     // Adjust the footBlood flag
-    GetInterface()->m_pedFlags.bDoBloodyFootprints = density != 0;
+    GetInterface()->pedFlags.bDoBloodyFootprints = density != 0;
 
     // Set the amount of foot blood
     GetInterface()->m_footBloodDensity = density;
@@ -920,7 +920,7 @@ void CPedSA::SetFootBlood( unsigned int density )
 
 unsigned int CPedSA::GetFootBlood() const
 {
-    if ( !GetInterface()->m_pedFlags.bDoBloodyFootprints )
+    if ( !GetInterface()->pedFlags.bDoBloodyFootprints )
         return 0;
 
     return GetInterface()->m_footBloodDensity;

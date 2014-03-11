@@ -30,7 +30,6 @@
 *****************************************************************************/
 
 RwScene *const *p_gtaScene = (RwScene**)0x00C17038;
-RwDeviceInformation *const pRwDeviceInfo = (RwDeviceInformation*)0x00C9BF00;
 
 /*=========================================================
     RwObjectFrame::AddToFrame

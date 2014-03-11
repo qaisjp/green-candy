@@ -475,11 +475,11 @@ const SString& CRenderWareSA::GetTextureName ( CD3DDUMMY* pD3DData )
 //
 ////////////////////////////////////////////////////////////////
 
-void _cdecl OnStreamingAddTxd( unsigned short id )
+void _cdecl OnStreamingAddedTxd( unsigned short id )
 {
     STxdAction action;
     action.bAdd = true;
-    action.usTxdId = id;
+    action.usTxdId = id ;
     ms_txdActionList.push_back ( action );
 }
 
@@ -487,7 +487,7 @@ void _cdecl OnStreamingRemoveTxd( unsigned short id )
 {
     STxdAction action;
     action.bAdd = false;
-    action.usTxdId = id;
+    action.usTxdId = id - 20000;
     ms_txdActionList.push_back ( action );
 }
 

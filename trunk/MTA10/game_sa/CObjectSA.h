@@ -44,7 +44,7 @@ public:
     dynamicObjectData*          m_dynData;              // 352
     BYTE                        m_pad[12];              // 356
 
-    CEntitySAInterface*         m_highLOD;              // 368
+    CEntitySAInterface*         pGarageDoorDummy;       // 368
     BYTE                        m_pad5[40];             // 372
 };
 

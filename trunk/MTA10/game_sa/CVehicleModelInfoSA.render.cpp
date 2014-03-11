@@ -923,7 +923,7 @@ static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C7AA0
 =========================================================*/
-static bool RwAtomicRegisterTrain( RpAtomic *child, int )
+static int RwAtomicRegisterTrain( RpAtomic *child, int )
 {
     if ( strstr( child->parent->szName, "_vlo" ) )
     {
@@ -950,7 +950,7 @@ static bool RwAtomicRegisterTrain( RpAtomic *child, int )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C79A0
 =========================================================*/
-static bool RwAtomicRegisterBoat( RpAtomic *child, int )
+static int RwAtomicRegisterBoat( RpAtomic *child, int )
 {
     if ( strcmp( child->parent->szName, "boat_hi" ) == 0 )
         child->SetRenderCallback( RwAtomicRenderBoat );         // boat_hi does not support alpha?
@@ -976,7 +976,7 @@ static bool RwAtomicRegisterBoat( RpAtomic *child, int )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C7870
 =========================================================*/
-static bool RwAtomicRegisterHeli( RpAtomic *child, int )
+static int RwAtomicRegisterHeli( RpAtomic *child, int )
 {
     if ( strcmp( child->parent->szName, "moving_rotor" ) == 0 )
         child->SetRenderCallback( RwAtomicRenderHeliMovingRotor );
@@ -1004,7 +1004,7 @@ static bool RwAtomicRegisterHeli( RpAtomic *child, int )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C7930
 =========================================================*/
-static bool RwAtomicRegisterPlane( RpAtomic *child, int )
+static int RwAtomicRegisterPlane( RpAtomic *child, int )
 {
     if ( strstr( child->parent->szName, "_vlo" ) )
     {
@@ -1031,7 +1031,7 @@ static bool RwAtomicRegisterPlane( RpAtomic *child, int )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C77E0
 =========================================================*/
-static bool RwAtomicRegisterDefaultVehicle( RpAtomic *child, int )
+static int RwAtomicRegisterDefaultVehicle( RpAtomic *child, int )
 {
     if ( strstr( child->parent->szName, "_vlo" ) )
         child->SetRenderCallback( RwAtomicRenderDefaultVehicleLOD );
@@ -1355,7 +1355,7 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
 =========================================================*/
 static unsigned char vehAlpha = 255;
 
-static bool RpClumpAtomicSetupVehicleMaterials( RpAtomic *atomic, _colorTextureStorage **storage )
+static int RpClumpAtomicSetupVehicleMaterials( RpAtomic *atomic, _colorTextureStorage **storage )
 {
     if ( !atomic->IsVisible() )
         return true;

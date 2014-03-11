@@ -411,7 +411,7 @@ CVehicleComponent* CVehicleSA::GetComponent( const char *name )
     return new CVehicleComponentSA( m_compContainer, clump, frame );
 }
 
-static bool RwFrameListNames( RwFrame *child, std::vector <std::string> *list )
+static int RwFrameListNames( RwFrame *child, std::vector <std::string> *list )
 {
     child->ForAllChildren( RwFrameListNames, list );
 

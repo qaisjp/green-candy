@@ -300,7 +300,7 @@ void CVehicleComponentInfoSAInterface::AddAtomic( RpAtomic *atomic )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C8E30
 =========================================================*/
-static bool RwFrameChildBaseHierarchy( RwFrame *child, RwFrame *root )
+static int RwFrameChildBaseHierarchy( RwFrame *child, RwFrame *root )
 {
     child->ForAllChildren( RwFrameChildBaseHierarchy, root );
 
@@ -438,7 +438,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
 
     info = ((CComponentHierarchySAInterface**)0x008A7740)[ GetVehicleType() ];
 
-    for (info; info->m_name; info++)
+    for ( info; info->m_name; info++ )
     {
         if ( info->m_flags & (ATOMIC_HIER_FRONTSEAT | ATOMIC_HIER_SEAT | ATOMIC_HIER_UNKNOWN3) )
             continue;
@@ -580,7 +580,7 @@ void CVehicleModelInfoSAInterface::SetComponentFlags( RwFrame *frame, unsigned i
     Note:
         We should analyze RpAtomicSetupVehiclePipeline someday.
 =========================================================*/
-static bool RwClumpAtomicSetupVehiclePipeline( RpAtomic *child, int )
+static int RwClumpAtomicSetupVehiclePipeline( RpAtomic *child, int )
 {
     RpAtomicSetupVehiclePipeline( child );
     return true;
@@ -734,7 +734,7 @@ static bool RwMaterialSetLicensePlate( RpMaterial *mat, _licensePlate *plate )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x006FE0D0
 =========================================================*/
-static bool RwAtomicSetLicensePlate( RpAtomic *child, _licensePlate *plate )
+static int RwAtomicSetLicensePlate( RpAtomic *child, _licensePlate *plate )
 {
     child->geometry->ForAllMateria( RwMaterialSetLicensePlate, plate );
     return true;
