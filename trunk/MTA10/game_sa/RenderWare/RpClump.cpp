@@ -146,6 +146,28 @@ RwStaticGeometry* RpClump::CreateStaticGeometry( void )
 }
 
 /*=========================================================
+    RpClump::GetNumAtomics
+
+    Purpose:
+        Returns the number of atomics that are registered
+        in this clump.
+    Binary offsets:
+        (1.0 US): 0x007498E0
+        (1.0 EU): 0x00749930
+=========================================================*/
+int RpClump::GetNumAtomics( void )
+{
+    int count = 0;
+
+    LIST_FOREACH_BEGIN( RpAtomic, atomics.root, atomics )
+        count++;
+    LIST_FOREACH_END
+
+    return count;
+}
+
+int __cdecl RpClumpGetNumAtomics( RpClump *clump )      { return clump->GetNumAtomics(); }
+/*=========================================================
     RpClump::GetAtomicAnimHierarchy
 
     Purpose:

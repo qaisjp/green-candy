@@ -109,6 +109,8 @@ void RwFrame::Link( RwFrame *frame )
     frame->Update();
 }
 
+RwFrame* __cdecl RwFrameLink( RwFrame *frame, RwFrame *child )          { frame->Link( child ); return frame; }
+RwFrame* __cdecl RwFrameAddChild( RwFrame *frame, RwFrame *child )      { RwFrameLink( frame, child ); return frame; }
 /*=========================================================
     RwFrame::Unlink
 
@@ -146,6 +148,7 @@ void RwFrame::Unlink( void )
     Update();
 }
 
+RwFrame* __cdecl RwFrameRemoveChild( RwFrame *child )           { child->Unlink(); return child; }
 /*=========================================================
     RwFrame::SetRootForHierarchy
 

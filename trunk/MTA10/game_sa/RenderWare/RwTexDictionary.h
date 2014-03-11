@@ -21,7 +21,7 @@ struct RwTexDictionary : public RwObject
     RwTexDictionary*                m_parentTxd;
 
     template <class type>
-    bool                    ForAllTextures( bool (*callback)( RwTexture *tex, type ud ), type ud )
+    bool                    ForAllTextures( int (*callback)( RwTexture *tex, type ud ), type ud )
     {
         RwListEntry <RwTexture> *child;
 
@@ -59,6 +59,30 @@ struct RwTexDictionary : public RwObject
 };
 
 // TexDictionary API.
-RwTexDictionary*    RwTexDictionaryCreate( void );      // US exe: 0x007F3600
+RwTexture* __cdecl          RwTexDictionaryAddTexture       ( RwTexDictionary *texDict, RwTexture *texture );   // US exe: 0x007F3980
+RwTexture* __cdecl          RwTexDictionaryFindNamedTexture ( RwTexDictionary *texDict, const char *name );     // US exe: 0x007F39F0
+RwTexDictionary* __cdecl    RwTexDictionaryForAllTextures   ( RwTexDictionary *texDict, int (*callback)( RwTexDictionary *texture, void *data ), void *data );  // US exe: 0x007F3730
+RwTexDictionary* __cdecl    RwTexDictionarySetCurrent       ( RwTexDictionary *texDict );                       // US exe: 0x007F3A70
+RwTexDictionary* __cdecl    RwTexDictionaryGetCurrent       ( void );                                           // US exe: 0x007F3A90
+RwTexDictionary*            RwTexDictionaryCreate           ( void );                                           // US exe: 0x007F3600
+
+// Swap the current txd with another
+class RwTxdStack
+{
+public:
+    AINLINE RwTxdStack( RwTexDictionary *txd )
+    {
+        m_txd = RwTexDictionaryGetCurrent();
+        RwTexDictionarySetCurrent( txd );
+    }
+
+    AINLINE ~RwTxdStack( void )
+    {
+        RwTexDictionarySetCurrent( m_txd );
+    }
+
+private:
+    RwTexDictionary*    m_txd;
+};
 
 #endif //_RENDERWARE_TEXDICTIONARY_

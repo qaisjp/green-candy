@@ -22,9 +22,19 @@ int __cdecl     RpD3D9LocalLightEnable      ( RpLight *light );
 int __cdecl     RpD3D9EnableLight           ( int lightIndex, int phase );
 int __cdecl     RpD3D9GlobalLightsEnable    ( unsigned char flags );
 bool            RpD3D9GlobalLightingPrePass ( void );
-void            RpD3D9CacheLighting( void );
+void            RpD3D9CacheLighting         ( void );
 void __cdecl    RpD3D9ResetLightStatus      ( void );
 void __cdecl    RpD3D9EnableLights          ( bool enable, int unused );
+
+// API exports.
+void __cdecl                RpLightSetAttenuation   ( RpLight *light, const CVector& atten );
+const CVector& __cdecl      RpLightGetAttenuation   ( const RpLight *light );
+
+void __cdecl                RpLightSetFalloff       ( RpLight *light, float falloff );
+float __cdecl               RpLightGetFalloff       ( const RpLight *light );
+
+void __cdecl                RpLightSetLightIndex    ( RpLight *light, int index );
+int __cdecl                 RpLightGetLightIndex    ( const RpLight *light );
 
 // Utility namespace.
 namespace D3D9Lighting
@@ -342,7 +352,7 @@ namespace D3D9Lighting
 
         inline int GetLightIndex( RpLight *light )
         {
-            int preferedLightIndex = light->GetLightIndex();
+            int preferedLightIndex = RpLightGetLightIndex( light );
             unsigned int foundAt = 0;
 
             return ( preferedLightIndex < 0 || !activeGlobalLights.Find( preferedLightIndex, foundAt ) ) ? GetFreeLightIndex() : preferedLightIndex;

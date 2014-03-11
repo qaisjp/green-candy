@@ -43,7 +43,7 @@ void RwTexture::SetName( const char *name )
     RwTexture::AddToDictionary
 
     Arguments:
-        _txd - the new TXD to apply this texture to
+        txd - the new TXD to apply this texture to
     Purpose:
         Assigns this texture to another TXD container.
         It unlinks this texture from the previous TXD.
@@ -64,6 +64,7 @@ void RwTexture::AddToDictionary( RwTexDictionary *txd )
     this->txd = txd;
 }
 
+RwTexture* __cdecl RwTexDictionaryAddTexture( RwTexDictionary *texDict, RwTexture *texture )    { texture->AddToDictionary( texDict ); return texture; }
 /*=========================================================
     RwTexture::RemoveFromDictionary
 

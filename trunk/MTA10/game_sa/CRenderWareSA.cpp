@@ -60,8 +60,6 @@ RwFrameGetLTM_t                         RwFrameGetLTM                           
 RwFrameSetIdentity_t                    RwFrameSetIdentity                      = (RwFrameSetIdentity_t)                    invalid_ptr;
 RwFrameTranslate_t                      RwFrameTranslate                        = (RwFrameTranslate_t)                      invalid_ptr;
 RwFrameCloneHierarchy_t                 RwFrameCloneHierarchy                   = (RwFrameCloneHierarchy_t)                 invalid_ptr;
-RwFrameAddChild_t                       RwFrameAddChild                         = (RwFrameAddChild_t)                       invalid_ptr;
-RwFrameRemoveChild_t                    RwFrameRemoveChild                      = (RwFrameRemoveChild_t)                    invalid_ptr;
 RwFrameScale_t                          RwFrameScale                            = (RwFrameScale_t)                          invalid_ptr;
 RwFrameOrient_t                         RwFrameOrient                           = (RwFrameOrient_t)                         invalid_ptr;
 RwFrameDestroy_t                        RwFrameDestroy                          = (RwFrameDestroy_t)                        invalid_ptr;
@@ -89,7 +87,6 @@ RW_PLUGIN_INTERFACE_INST( RpGeometry );
 // Atomic functions
 RpAtomicCreate_t                        RpAtomicCreate                          = (RpAtomicCreate_t)                        invalid_ptr;
 RpAtomicClone_t                         RpAtomicClone                           = (RpAtomicClone_t)                         invalid_ptr;
-RpAtomicSetFrame_t                      RpAtomicSetFrame                        = (RpAtomicSetFrame_t)                      invalid_ptr;
 RpAtomicGetWorldBoundingSphere_t        RpAtomicGetWorldBoundingSphere          = (RpAtomicGetWorldBoundingSphere_t)        invalid_ptr;
 RpAtomicSetupObjectPipeline_t           RpAtomicSetupObjectPipeline             = (RpAtomicSetupObjectPipeline_t)           invalid_ptr;
 RpAtomicSetupVehiclePipeline_t          RpAtomicSetupVehiclePipeline            = (RpAtomicSetupVehiclePipeline_t)          invalid_ptr;
@@ -112,12 +109,8 @@ RW_PLUGIN_INTERFACE_INST( RwCamera );
 // Clump functions
 RpClumpClone_t                          RpClumpClone                            = (RpClumpClone_t)                          invalid_ptr;
 RpClumpStreamRead_t                     RpClumpStreamRead                       = (RpClumpStreamRead_t)                     invalid_ptr;
-RpClumpAddAtomic_t                      RpClumpAddAtomic                        = (RpClumpAddAtomic_t)                      invalid_ptr;
-RpClumpRemoveAtomic_t                   RpClumpRemoveAtomic                     = (RpClumpRemoveAtomic_t)                   invalid_ptr;
-RpClumpAddLight_t                       RpClumpAddLight                         = (RpClumpAddLight_t)                       invalid_ptr;
 RpClumpGetBoneTransform_t               RpClumpGetBoneTransform                 = (RpClumpGetBoneTransform_t)               invalid_ptr;
 RpClumpSetupFrameCallback_t             RpClumpSetupFrameCallback               = (RpClumpSetupFrameCallback_t)             invalid_ptr;
-RpClumpGetNumAtomics_t                  RpClumpGetNumAtomics                    = (RpClumpGetNumAtomics_t)                  invalid_ptr;
 RpClumpDestroy_t                        RpClumpDestroy                          = (RpClumpDestroy_t)                        invalid_ptr;
 RW_PLUGIN_INTERFACE_INST( RpClump );
 
@@ -136,11 +129,6 @@ RW_PLUGIN_INTERFACE_INST( RwTexture );
 
 // TexDictionary functions
 RwTexDictionaryStreamRead_t             RwTexDictionaryStreamRead               = (RwTexDictionaryStreamRead_t)             invalid_ptr;
-RwTexDictionaryGetCurrent_t             RwTexDictionaryGetCurrent               = (RwTexDictionaryGetCurrent_t)             invalid_ptr;
-RwTexDictionarySetCurrent_t             RwTexDictionarySetCurrent               = (RwTexDictionarySetCurrent_t)             invalid_ptr;
-RwTexDictionaryForAllTextures_t         RwTexDictionaryForAllTextures           = (RwTexDictionaryForAllTextures_t)         invalid_ptr;
-RwTexDictionaryFindNamedTexture_t       RwTexDictionaryFindNamedTexture         = (RwTexDictionaryFindNamedTexture_t)       invalid_ptr;
-RwTexDictionaryAddTexture_t             RwTexDictionaryAddTexture               = (RwTexDictionaryAddTexture_t)             invalid_ptr;
 RwTexDictionaryDestroy_t                RwTexDictionaryDestroy                  = (RwTexDictionaryDestroy_t)                invalid_ptr;
 RW_PLUGIN_INTERFACE_INST( RwTexDictionary );
 
@@ -227,8 +215,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwFrameCloneHierarchy               = (RwFrameCloneHierarchy_t)                 0x007F0290;
         RwFrameGetLTM                       = (RwFrameGetLTM_t)                         0x007F09D0;
         RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10F0;
-        RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B40;
-        RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0D10;
         RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E70;
         RwFrameOrient                       = (RwFrameOrient_t)                         0x007F2010;
         RwFrameScale                        = (RwFrameScale_t)                          0x007F0F10;
@@ -258,7 +244,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         // Atomic functions
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749CA0;
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749EB0;
-        RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF70;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D90;
         RpAtomicGetWorldBoundingSphere      = (RpAtomicGetWorldBoundingSphere_t)        0x00749380;
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
@@ -283,10 +268,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
 
         // Clump functions
         RpClumpClone                        = (RpClumpClone_t)                          0x00749FC0;
-        RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A4E0;
-        RpClumpRemoveAtomic                 = (RpClumpRemoveAtomic_t)                   0x0074A510;
-        RpClumpAddLight                     = (RpClumpAddLight_t)                       0x0074A540;
-        RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x00749930;
         RpClumpGetBoneTransform             = (RpClumpGetBoneTransform_t)               0x00735360;
         RpClumpSetupFrameCallback           = (RpClumpSetupFrameCallback_t)             0x00733750;
         RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B470;
@@ -310,11 +291,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
 
         // TexDictionary functions
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C70;
-        RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3AD0;
-        RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3AB0;
-        RwTexDictionaryForAllTextures       = (RwTexDictionaryForAllTextures_t)         0x007F3770;
-        RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F3A30;
-        RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F39C0;
         RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36E0;
         RwTexDictionaryRegisterPlugin       = (RwTexDictionaryRegisterPlugin_t)         0x007F3C50;
         RwTexDictionaryRegisterPluginStream = (RwTexDictionaryRegisterPluginStream_t)   0x00804920;
@@ -379,8 +355,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RwFrameGetLTM                       = (RwFrameGetLTM_t)                         0x007F0990;
         RwFrameScale                        = (RwFrameScale_t)                          0x007F0ED0;
         RwFrameTranslate                    = (RwFrameTranslate_t)                      0x007F0E30;
-        RwFrameAddChild                     = (RwFrameAddChild_t)                       0x007F0B00;
-        RwFrameRemoveChild                  = (RwFrameRemoveChild_t)                    0x007F0CD0;
         RwFrameSetIdentity                  = (RwFrameSetIdentity_t)                    0x007F10B0;
         RwFrameOrient                       = (RwFrameOrient_t)                         0x007F2010;
         RwFrameDestroy                      = (RwFrameDestroy_t)                        0x007F05A0;
@@ -411,7 +385,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         RpAtomicCreate                      = (RpAtomicCreate_t)                        0x00749C50;
         RpAtomicClone                       = (RpAtomicClone_t)                         0x00749E60;
         RpAtomicSetGeometry                 = (RpAtomicSetGeometry_t)                   0x00749D40;
-        RpAtomicSetFrame                    = (RpAtomicSetFrame_t)                      0x0074BF20;
         RpAtomicGetWorldBoundingSphere      = (RpAtomicGetWorldBoundingSphere_t)        0x00749330;
         RpAtomicSetupObjectPipeline         = (RpAtomicSetupObjectPipeline_t)           0x005D7F00;
         RpAtomicSetupVehiclePipeline        = (RpAtomicSetupVehiclePipeline_t)          0x005D5B20;
@@ -435,10 +408,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
 
         // Clump functions
         RpClumpClone                        = (RpClumpClone_t)                          0x00749F70;
-        RpClumpAddLight                     = (RpClumpAddLight_t)                       0x0074A4F0;
-        RpClumpAddAtomic                    = (RpClumpAddAtomic_t)                      0x0074A490;
-        RpClumpRemoveAtomic                 = (RpClumpRemoveAtomic_t)                   0x0074A4C0;
-        RpClumpGetNumAtomics                = (RpClumpGetNumAtomics_t)                  0x007498E0;
         RpClumpGetBoneTransform             = (RpClumpGetBoneTransform_t)               0x00735360;
         RpClumpSetupFrameCallback           = (RpClumpSetupFrameCallback_t)             0x00733750;
         RpClumpStreamRead                   = (RpClumpStreamRead_t)                     0x0074B420;
@@ -462,11 +431,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
 
         // TexDictionary functions
         RwTexDictionaryStreamRead           = (RwTexDictionaryStreamRead_t)             0x00804C30;
-        RwTexDictionaryGetCurrent           = (RwTexDictionaryGetCurrent_t)             0x007F3A90;
-        RwTexDictionarySetCurrent           = (RwTexDictionarySetCurrent_t)             0x007F3A70;
-        RwTexDictionaryForAllTextures       = (RwTexDictionaryForAllTextures_t)         0x007F3730;
-        RwTexDictionaryFindNamedTexture     = (RwTexDictionaryFindNamedTexture_t)       0x007F39F0;
-        RwTexDictionaryAddTexture           = (RwTexDictionaryAddTexture_t)             0x007F3980;
         RwTexDictionaryDestroy              = (RwTexDictionaryDestroy_t)                0x007F36A0;
         RwTexDictionaryRegisterPlugin       = (RwTexDictionaryRegisterPlugin_t)         0x007F3C10;
         RwTexDictionaryRegisterPluginStream = (RwTexDictionaryRegisterPluginStream_t)   0x008048E0;

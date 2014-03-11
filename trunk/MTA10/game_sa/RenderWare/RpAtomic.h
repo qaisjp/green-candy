@@ -102,4 +102,7 @@ struct RpAtomicContainer
     char        szName[17];
 };
 
+// Atomic API.
+RpAtomic* __cdecl RpAtomicSetFrame( RpAtomic *atomic, RwFrame *frame );
+
 #endif //_RENDERWARE_ATOMIC_

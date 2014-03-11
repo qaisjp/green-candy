@@ -157,6 +157,24 @@ static LUA_DECLARE( getAttenuation )
     return 3;
 }
 
+static LUA_DECLARE( setFalloff )
+{
+    float falloff;
+
+    LUA_ARGS_BEGIN;
+    argStream.ReadNumber( falloff );
+    LUA_ARGS_END;
+
+    ((CClientLight*)lua_getmethodtrans( L ))->m_light.SetFalloff( falloff );
+    LUA_SUCCESS;
+}
+
+static LUA_DECLARE( getFalloff )
+{
+    lua_pushnumber( L, ((CClientLight*)lua_getmethodtrans( L ))->m_light.GetFalloff() );
+    return 1;
+}
+
 static LUA_DECLARE( setLightIndex )
 {
     unsigned int idx;
@@ -209,6 +227,8 @@ static luaL_Reg light_interface_trans[] =
     LUA_METHOD( getColor ),
     LUA_METHOD( setAttenuation ),
     LUA_METHOD( getAttenuation ),
+    LUA_METHOD( setFalloff ),
+    LUA_METHOD( getFalloff ),
     LUA_METHOD( setLightIndex ),
     LUA_METHOD( getLightIndex ),
     LUA_METHOD( addToScene ),

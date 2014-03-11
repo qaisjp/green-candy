@@ -263,10 +263,10 @@ const CBoundingBox* CModelInfoSA::GetBoundingBox( void ) const
     if ( !info )
         return NULL;
 
-    if ( info->pColModel )
+    if ( !info->pColModel )
         return NULL;
 
-    return &ppModelInfo[m_modelID]->pColModel->m_bounds;
+    return &info->pColModel->m_bounds;
 }
 
 bool CModelInfoSA::IsValid( void )
