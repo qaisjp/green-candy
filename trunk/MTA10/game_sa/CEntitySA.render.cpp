@@ -103,7 +103,7 @@ inline void EntityRender_Global( CEntitySAInterface *entity )
     RenderEntityNative( entity );
 }
 
-void __cdecl RenderEntity( CEntitySAInterface *entity )
+void __cdecl _RenderEntity( CEntitySAInterface *entity )
 {
     using namespace EntityRender;
 
@@ -130,8 +130,10 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
             alpha = ((CVehicleSA*)mtaEntity)->GetAlpha();
         else if ( entity->nType == ENTITY_TYPE_OBJECT )
             alpha = ((CObjectSA*)mtaEntity)->GetAlpha();
+#ifndef _MTA_BLUE
         else if ( entity->nType == ENTITY_TYPE_PED )
             alpha = ((CPedSA*)mtaEntity)->GetAlpha();
+#endif //_MTA_BLUE
     }
     else if ( entity->GetRwObject() && entity->GetRwObject()->type == RW_CLUMP )    // the entity may not have a RenderWare object?!
     {
@@ -213,6 +215,23 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
     }
 
     entity->RemoveLighting( id );
+}
+
+// Wiring in some MTA team fixes.
+void __cdecl RenderEntity( CEntitySAInterface *entity )
+{
+#ifdef _MTA_BLUE
+    // FIX BEGIN
+    OnMY_CEntity_RenderOneNonRoad_Pre( entity );
+#endif //_MTA_BLUE
+
+    // Call the actual method.
+    _RenderEntity( entity );
+
+#ifdef _MTA_BLUE
+    // FIX END
+    OnMY_CEntity_RenderOneNonRoad_Post( entity );
+#endif //_MTA_BLUE
 }
 
 /*=========================================================
@@ -306,7 +325,7 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
         // This is to make sure that we do not crash due to deep render links.
         ReferenceEntityForRendering( entity );
 
-        unsigned int alpha = (unsigned char)CalculateFadingAlpha( info, entity, camDistance, *(float*)0x00B76848 );
+        unsigned int alpha = (unsigned char)CalculateFadingAlpha( info, entity, camDistance, Streamer::GetWorldFarclip() );
 
         unsigned int flags = entity->m_entityFlags;
         flags |= ENTITY_RENDERING;
@@ -490,7 +509,7 @@ void __cdecl SetupWorldRender( void )
     *(CVector*)0x00B76870 = camPos;
     *(float*)0x00B7684C = camera.Placeable.GetHeading();
 
-    *(float*)0x00B76848 = camera.m_pRwCamera->farplane;
+    Streamer::GetWorldFarclip() = camera.m_pRwCamera->farplane;
 
     *(void**)0x00B745D0 = (void*)0x00C8E0E0;
     *(void**)0x00B745CC = (void*)0x00C900C8;
@@ -518,7 +537,7 @@ void __cdecl SetupWorldRender( void )
 =========================================================*/
 struct PostProcessEntities
 {
-     bool __forceinline OnEntry( unorderedEntityRenderChainInfo& info )
+    bool __forceinline OnEntry( unorderedEntityRenderChainInfo& info )
     {
         CEntitySAInterface *entity = info.entity;
 
@@ -862,6 +881,7 @@ void EntityRender_Init( void )
     HookInstall( 0x00553260, (DWORD)RenderEntity, 5 );
     HookInstall( 0x00734570, (DWORD)QueueEntityForRendering, 5 );
     HookInstall( 0x00554230, (DWORD)SetupEntityVisibility, 5 );
+    HookInstall( 0x00553F60, (DWORD)RequestEntityModelInVision, 5 );
 
     HookInstall( 0x005556E0, (DWORD)SetupWorldRender, 5 );
     HookInstall( 0x005534B0, (DWORD)PushEntityOnRenderQueue, 5 );

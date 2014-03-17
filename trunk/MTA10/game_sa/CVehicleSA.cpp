@@ -222,7 +222,7 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
     m_unk26 = 0;
     m_unk27 = 0;
 
-    m_handling = NULL;
+    pHandlingData = NULL;
     m_handlingFlags = 0;
 
     m_control.m_unk14 = 0;
@@ -792,7 +792,7 @@ void CVehicleSA::SetHandlingData( CHandlingEntry *handling )
     // Store the handling and recalculate it
     m_pHandlingData = (CHandlingEntrySA*)handling;
 
-    GetInterface()->m_handling = m_pHandlingData->GetInterface();
+    GetInterface()->pHandlingData = m_pHandlingData->GetInterface();
 
     RecalculateHandling();
 }

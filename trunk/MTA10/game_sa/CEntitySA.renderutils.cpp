@@ -62,6 +62,32 @@ void __cdecl EntityRender::RestoreDayNight( void )
 }
 
 /*=========================================================
+    EntityRender:SetGlobalDrawDistanceScale
+
+    Arguments:
+        scale - floating point scalar for the global draw distance
+    Purpose:
+       Modifies the global draw distance. This distance is
+       used for fading in and out the ingame objects.
+=========================================================*/
+static float _globalDrawDistanceScale = 1.0f;
+
+void EntityRender::SetGlobalDrawDistanceScale( float scale )
+{
+    _globalDrawDistanceScale = scale;
+}
+
+float EntityRender::GetGlobalDrawDistanceScale( void )
+{
+    return _globalDrawDistanceScale;
+}
+
+float EntityRender::GetGlobalDrawDistance( void )
+{
+    return 300.0f * _globalDrawDistanceScale;
+}
+
+/*=========================================================
     EntityRender::GetComplexCameraEntityDistance
 
     Arguments:
@@ -83,14 +109,17 @@ float EntityRender::GetComplexCameraEntityDistance( const CEntitySAInterface *en
     
     float camDistance = ( camPos - pos ).Length();
 
-    if ( camDistance > 300.0f )
+    // Take the global draw distance into account.
+    float globalDrawDistance = GetGlobalDrawDistance();
+
+    if ( camDistance > globalDrawDistance )
     {
         CBaseModelInfoSAInterface *info = entity->GetModelInfo();
         float scaledLODDistance = info->fLodDistanceUnscaled * camera.LODDistMultiplier;
 
-        if ( 300.0f < scaledLODDistance && ( scaledLODDistance + 20.0f ) > camDistance )
+        if ( globalDrawDistance < scaledLODDistance && ( scaledLODDistance + 20.0f ) > camDistance )
         {
-            return scaledLODDistance - 300.0f + camDistance;
+            return scaledLODDistance - globalDrawDistance + camDistance;
         }
     }
 
@@ -116,32 +145,16 @@ float EntityRender::GetComplexCameraEntityDistance( const CEntitySAInterface *en
 =========================================================*/
 float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip )
 {
+#ifdef _MTA_BLUE
+    // Wire in a MTA team fix.
+    int iCustomRet = OnMY_CVisibilityPlugins_CalculateFadingAtomicAlpha_Pre( info, entity, camDistance );
+
+    if ( iCustomRet != -1 )
+        return (float)iCustomRet / 255.0f;
+#endif //_MTA_BLUE
+
     float sectorDivide = 20.0f;
-    float lodScale = pGame->GetCamera()->GetInterface()->LODDistMultiplier;
-    float distAway = entity->GetColModel()->m_bounds.fRadius + camFarClip;
-    float unscaledLODDistance = info->fLodDistanceUnscaled;
-    float scaledLODDistance = unscaledLODDistance * lodScale;
-
-    float useDist = distAway;
-
-    if ( scaledLODDistance < distAway )
-        useDist = scaledLODDistance;
-
-    if ( !entity->m_pLod )
-    {
-        float useDist2 = unscaledLODDistance;
-
-        if ( unscaledLODDistance > useDist )
-            useDist2 = useDist;
-
-        if ( useDist2 > 150.0f )
-            sectorDivide = useDist2 * 0.06666667f + 10.0f;
-
-        if ( entity->m_entityFlags & ENTITY_BIG )
-        {
-            useDist *= *(float*)0x008CD804;
-        }
-    }
+    float useDist = CalculateComplexEntityFadingDistance( info, entity, camFarClip, sectorDivide );
 
     useDist += 20.0f;
     useDist -= camDistance;

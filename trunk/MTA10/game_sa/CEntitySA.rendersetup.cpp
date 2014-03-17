@@ -364,7 +364,7 @@ void __cdecl EntityRender::PushEntityOnRenderQueue( CEntitySAInterface *entity, 
     else if ( QueueEntityForRendering( entity, camDistance ) )
         return;
 
-    if ( entity->m_numLOD > 0 && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_UNDERWATER ) )
+    if ( entity->numLodChildren > 0 && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_UNDERWATER ) )
     {
         AllocateEntityRenderSlot( groundAlphaEntities, entity );
     }
@@ -486,9 +486,9 @@ inline bool IsEntityValidForDisplay( CEntitySAInterface *entity )
 
 inline bool GetEntityTunnelOptimization( CEntitySAInterface *entity )
 {
-    return IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNELTRANSITION ) && (
-           *(bool*)0x00B745C0 && IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNEL ) ||
-           *(bool*)0x00B745C1 && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNEL ) );
+    return !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNELTRANSITION ) && (
+           !*(bool*)0x00B745C0 && IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNEL ) ||
+           !*(bool*)0x00B745C1 && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNEL ) );
 }
 
 eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *entity, float& camDistance )
@@ -500,7 +500,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
 
     bool unkBoolean = true;
 
-    if ( entity->nType == ENTITY_TYPE_VEHICLE && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNELTRANSITION ) )
+    if ( entity->nType == ENTITY_TYPE_VEHICLE )
     {
         // Exclude inside-tunnel or outside-tunnel entities depending on game settings.
         // Should optimize FPS a little.
@@ -523,7 +523,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
             if ( playerVehicle == entity && *(bool*)0x00B6EC20 && !*(bool*)0x00A43088 )
             {
                 unsigned int camIndex = camera.ActiveCam;
-                CCamSAInterface& activeCam = camera.m_cams[camIndex];
+                CCamSAInterface& activeCam = camera.Cams[camIndex];
 
                 eVehicleType vehicleType = playerVehicle->m_vehicleType;
 
@@ -540,7 +540,7 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
                         return ENTITY_RENDER_CONTROVERIAL;
                     }
 
-                    if ( IS_ANY_FLAG( playerVehicle->m_handling->uiModelFlags, MODEL_NOREARWINDOW ) )
+                    if ( IS_ANY_FLAG( playerVehicle->pHandlingData->uiModelFlags, MODEL_NOREARWINDOW ) )
                         return ENTITY_RENDER_CONTROVERIAL;
 
                     if ( vehicleType != VEHICLE_BOAT || modelIndex == VT_REEFER || modelIndex == VT_TROPIC || modelIndex == VT_PREDATOR || modelIndex == VT_SKIMMER )
@@ -620,5 +620,155 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
 
     camDistance = GetComplexCameraEntityDistance( entity->m_pLod ? entity->m_pLod : entity, *(const CVector*)0x00B76870 );
 
-    return ((eRenderType (__cdecl*)( CEntitySAInterface*, CBaseModelInfoSAInterface *model, float camDist, bool ))0x00553F60)( entity, info, camDistance, unkBoolean );
+    return RequestEntityModelInVision( entity, info, camDistance, unkBoolean );
+}
+
+// todo: should not be here, as it is a system by itself.
+struct _delayedStreamingInfo
+{
+    CEntitySAInterface *entity;
+    float camDistance;
+};
+
+void __cdecl RegisterDelayedStreamingEntity( CEntitySAInterface *entity, float camDistance )
+{
+    _delayedStreamingInfo *info = *(_delayedStreamingInfo**)0x00B745D0;
+
+    info->entity = entity;
+    info->camDistance = camDistance;
+
+    // Advance the pointer.
+    *(_delayedStreamingInfo**)0x00B745D0 = info + 1;
+}
+
+inline eRenderType __cdecl RequestEntityRender( CEntitySAInterface *entity, CBaseModelInfoSAInterface *model, float camDistance )
+{
+    if ( !entity->m_pRwObject )
+    {
+        entity->CreateRwObject();
+        
+        if ( !entity->m_pRwObject )
+            return ENTITY_RENDER_CROSS_ZONES;
+    }
+
+    if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_VISIBLE ) )
+        return ENTITY_RENDER_CROSS_ZONES;
+
+    if ( !IsEntityValidForDisplay( entity ) )
+    {
+        if ( !model->bHasBeenPreRendered )
+            model->ucAlpha = 0xFF;
+
+        model->bHasBeenPreRendered = false;
+        return ENTITY_RENDER_CONTROVERIAL;
+    }
+
+    BOOL_FLAG( entity->m_entityFlags, ENTITY_FADE, model->ucAlpha != 255 );
+
+    if ( CEntitySAInterface *lodEntity = entity->m_pLod )
+    {
+        if ( model->ucAlpha == 0xFF )
+            lodEntity->numLodChildrenRendered++;
+
+        if ( lodEntity->numLodChildren > 1 )
+        {
+            RegisterDelayedStreamingEntity( entity, camDistance );
+            return ENTITY_RENDER_CROSS_ZONES;
+        }
+    }
+
+    return ENTITY_RENDER_DEFAULT;
+}
+
+float __cdecl EntityRender::CalculateComplexEntityFadingDistance( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camFarClip, float& sectorDivide )
+{
+    float lodScale = Camera::GetInterface().LODDistMultiplier;
+    float distAway = entity->GetColModel()->m_bounds.fRadius + camFarClip;
+    float unscaledLODDistance = info->fLodDistanceUnscaled;
+    float scaledLODDistance = unscaledLODDistance * lodScale;
+
+    float useDist = std::min( scaledLODDistance, distAway );
+
+    if ( !entity->m_pLod )
+    {
+        float useDist2 = std::min( unscaledLODDistance, useDist );
+
+        if ( useDist2 > 150.0f )
+            sectorDivide = useDist2 * 0.06666667f + 10.0f;
+
+        if ( entity->m_entityFlags & ENTITY_BIG )
+        {
+            useDist *= *(float*)0x008CD804;
+        }
+    }
+
+    return useDist;
+}
+
+/*=========================================================
+    EntityRender::RequestEntityModelInVision
+
+    Arguments:
+        entity - entity to set up for rendering
+        model - base model information of the entity
+        camDistance - optimized distance from camera to entity
+        reqModel - if false, the entity is not allowed to request its model
+    Purpose:
+        Returns the entity render setting that should be executed
+        when the entity is streaming in. The entity may not have
+        a loaded model yet.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x00553F60
+=========================================================*/
+eRenderType __cdecl EntityRender::RequestEntityModelInVision( CEntitySAInterface *entity, CBaseModelInfoSAInterface *model, float camDistance, bool reqModel )
+{
+    CEntitySAInterface *lodEntity = entity->m_pLod;
+
+    CCameraSAInterface& camera = Camera::GetInterface();
+
+    if ( GetEntityTunnelOptimization( entity ) )
+    {
+        return ENTITY_RENDER_CROSS_ZONES;
+    }
+
+    float sectorDivide = 20.0f;
+    float fadingDist = EntityRender::CalculateComplexEntityFadingDistance( model, entity, Streamer::GetWorldFarclip(), sectorDivide );
+
+    if ( model->pRwObject )
+    {
+        if ( sectorDivide + camDistance - 20.0f < fadingDist )
+        {
+            return RequestEntityRender( entity, model, camDistance );
+        }
+    }
+    else if ( lodEntity && lodEntity->numLodChildren > 1 )
+    {
+        if ( sectorDivide + camDistance - 20.0f < fadingDist )
+        {
+            RegisterDelayedStreamingEntity( entity, camDistance );
+            return ENTITY_RENDER_REQUEST_MODEL;
+        }
+    }
+
+    if ( !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_NOSTREAM ) )
+    {
+        if ( model->pRwObject && camDistance - 20.0f < fadingDist )
+        {
+            eRenderType actualResult = RequestEntityRender( entity, model, camDistance );
+
+            if ( actualResult == ENTITY_RENDER_DEFAULT )
+                EntityRender::PushEntityOnRenderQueue( entity, camDistance );
+        }
+        else if ( camDistance - 50.0f < fadingDist && reqModel && IS_ANY_FLAG( entity->m_entityFlags, ENTITY_VISIBLE ) )
+        {
+            if ( !entity->m_pRwObject )
+            {
+                entity->CreateRwObject();
+            }
+
+            return ENTITY_RENDER_REQUEST_MODEL;
+        }
+    }
+
+    return ENTITY_RENDER_CROSS_ZONES;
 }
