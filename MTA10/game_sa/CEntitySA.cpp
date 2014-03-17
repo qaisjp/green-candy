@@ -38,8 +38,8 @@ CEntitySAInterface::CEntitySAInterface()
     m_references = NULL;
     m_streamingRef = NULL;
     
-    m_numLOD = 0;
-    m_numRenderedLOD = 0;
+    numLodChildren = 0;
+    numLodChildrenRendered = 0;
     m_pLod = NULL;
 }
 

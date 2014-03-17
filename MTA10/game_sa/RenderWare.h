@@ -510,8 +510,9 @@ struct RwInterface   // size: 1456
 
     BYTE                    m_pad[8];                                       // 24
     void                    (*m_deviceCommand)( eRwDeviceCmd cmd, int param );  // 32
+    void                    (*m_getDeviceCommand)( eRwDeviceCmd cmd, int& param );  // 36
+    BYTE                    m_pad20[72];                                    // 40
 
-    BYTE                    m_pad20[76];                                    // 36
     RwStructInfo*           m_sceneInfo;                                    // 112
 
     BYTE                    m_pad14[60];                                    // 116
@@ -638,6 +639,9 @@ inline void __declspec(naked)    invalid_ptr()
     // unimplemented functionality was called.
     __asm int 3;
 }
+
+#define RW_JUSTDEF( name )          name##_t name = (##name##_t)invalid_ptr
+#define RW_JUSTSET( name, ptr )     name = (name##_t)ptr
 
 // RenderWare method helpers
 #define RWP_METHOD_NAME( className, methodName )    className##methodName

@@ -97,7 +97,7 @@ public:
 
     int __thiscall          GetFadeDirection            ( void ) const;
 
-    CCamSAInterface&        GetActiveCam                ( void )                    { return m_cams[ActiveCam]; }
+    CCamSAInterface&        GetActiveCam                ( void )                    { return Cams[ActiveCam]; }
 
     int __thiscall          GetActiveCamLookDirection   ( void );
 
@@ -286,7 +286,7 @@ public:
     static  float m_f3rdPersonCHairMultX;
     static  float m_f3rdPersonCHairMultY;
 
-    CCamSAInterface m_cams[3];                              // 372
+    CCamSAInterface Cams[3];                                // 372
     // The actual cameras (usually only one of the two is active)
     // And to complicate this we have a third camera, this camera is 
     // used for debugging when we want to have a look at the world.

@@ -20,6 +20,8 @@
 #ifndef __CGAMESA
 #define __CGAMESA
 
+#include <game/CGame.h>
+
 #define     MAX_MEMORY_OFFSET_1_0           0xCAF008
 
 #define     CLASS_CCamera                   0xB6F028    // ##SA##

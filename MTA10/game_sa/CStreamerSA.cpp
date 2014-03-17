@@ -405,7 +405,7 @@ namespace Streamer
 
     void __cdecl RequestSquaredSectorEntities( const CVector& reqPos, unsigned int reqFlags )
     {
-        LoopArrayWorldSectors( reqPos.fX, reqPos.fY, *(float*)0x00B76848, _requestSquared( reqFlags, reqPos ) );
+        LoopArrayWorldSectors( reqPos.fX, reqPos.fY, Streamer::GetWorldFarclip(), _requestSquared( reqFlags, reqPos ) );
     }
 
     /*=========================================================
@@ -655,7 +655,7 @@ namespace Streamer
 
                 float unkDist = 30.0f;
 
-                if ( entity->nType == ENTITY_TYPE_VEHICLE && IS_ANY_FLAG( ((CVehicleSAInterface*)entity)->m_genericFlags, VEHGENERIC_FIREGUN ) )
+                if ( entity->nType == ENTITY_TYPE_VEHICLE && ((CVehicleSAInterface*)entity)->m_nVehicleFlags.bFireGun )
                     unkDist = 200.0f;
 
                 if ( CBounds2D( unkDist, -unkDist, -unkDist, unkDist ).IsInside( CVector2D( camDist.fX - entityPos.fX, camDist.fY - entityPos.fY ) ) )

@@ -1086,6 +1086,9 @@ struct AlphaTexturedVideoPassRender
 // after all, every pipeline is stand-alone.
 void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags )
 {
+    if ( !RenderCallbacks::IsRenderingEnabled() )
+        return;
+
     RwRenderCallbackTraverseImpl *rtinfo = &rtnative->m_impl;
 
     // Make sure we are not rendering using any pixel shader.

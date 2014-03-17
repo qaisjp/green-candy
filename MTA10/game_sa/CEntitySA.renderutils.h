@@ -22,6 +22,10 @@ namespace EntityRender
     void __cdecl    NormalizeDayNight               ( void );
     void __cdecl    RestoreDayNight                 ( void );
 
+    void            SetGlobalDrawDistanceScale      ( float scale );
+    float           GetGlobalDrawDistanceScale      ( void );
+    float           GetGlobalDrawDistance           ( void );
+
     float           CalculateFadingAlpha            ( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip );
     float           GetComplexCameraEntityDistance  ( const CEntitySAInterface *entity, const CVector& camPos );
 

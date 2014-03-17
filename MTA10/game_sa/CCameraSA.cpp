@@ -219,7 +219,7 @@ CCameraSA::CCameraSA( CCameraSAInterface *cam )
     m_interface = cam;
 
     for( unsigned int i = 0; i<MAX_CAMS; i++ )
-        m_cams[i] = new CCamSA( &m_interface->m_cams[i] );
+        m_cams[i] = new CCamSA( &m_interface->Cams[i] );
 
     bCameraClipObjects = true;
     bCameraClipVehicles = true;

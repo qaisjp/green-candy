@@ -27,7 +27,10 @@ namespace EntityRender
 
     void                RegisterLowPriorityRenderEntity     ( CEntitySAInterface *entity );
 
+    float __cdecl       CalculateComplexEntityFadingDistance( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camFarClip, float& sectorDivide );
+
     eRenderType __cdecl SetupEntityVisibility               ( CEntitySAInterface *entity, float& camDistance );
+    eRenderType __cdecl RequestEntityModelInVision          ( CEntitySAInterface *entity, CBaseModelInfoSAInterface *model, float camDistance, bool reqModel );
 };
 
 #endif //_ENTITY_RENDER_SETUP_

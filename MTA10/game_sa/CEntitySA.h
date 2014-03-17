@@ -175,32 +175,32 @@ public:
     bool                            Reference               ( void );
     void                            Dereference             ( void );
 
-    RwObject*               m_pRwObject;        // 24
+    RwObject*               m_pRwObject;            // 24
 
-    unsigned int            m_entityFlags;      // 28
+    unsigned int            m_entityFlags;          // 28
 
-    unsigned short          m_randomSeed;       // 32
-    short                   m_nModelIndex;      // 34
-    CReferences*            m_references;       // 36
+    unsigned short          m_randomSeed;           // 32
+    short                   m_nModelIndex;          // 34
+    CReferences*            m_references;           // 36
 
     struct streamingEntityReference_t;
     
-    streamingEntityReference_t* m_streamingRef; // 40
+    streamingEntityReference_t* m_streamingRef;     // 40
     
-    unsigned short          m_nScanCode;        // 44
-    unsigned char           m_iplIndex;         // 46, used to define which IPL file object is in
-    unsigned char           m_areaCode;         // 47, used to define what objects are visible at this point
+    unsigned short          m_nScanCode;            // 44
+    unsigned char           m_iplIndex;             // 46, used to define which IPL file object is in
+    unsigned char           m_areaCode;             // 47, used to define what objects are visible at this point
     
-    CEntitySAInterface*     m_pLod;             // 48
-    unsigned char           m_numLOD;           // 52
-    unsigned char           m_numRenderedLOD;   // 53
+    CEntitySAInterface*     m_pLod;                 // 48
+    unsigned char           numLodChildren;         // 52
+    unsigned char           numLodChildrenRendered; // 53
 
     //********* BEGIN CEntityInfo **********//
-    BYTE                    nType : 3;          // 54 ( see ENTITY_TYPE_* )
+    BYTE                    nType : 3;              // 54 ( see ENTITY_TYPE_* )
     BYTE                    nStatus : 5;  
     //********* END CEntityInfo **********//
 
-    unsigned char           m_pad;              // 55
+    unsigned char           m_pad;                  // 55
 
     /* IMPORTANT: Do not mess with interfaces. */
 };

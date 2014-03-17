@@ -13,6 +13,13 @@
 #include <StdInc.h>
 #include "RenderWare/RwRenderTools.hxx"
 
+// todo: reverse these render passes.
+typedef void (__cdecl*RpMatFXD3D9AtomicMatFXEnvRender_t)( RwRenderCallbackTraverseImpl*, RwRenderPass*, unsigned int, bool, RwTexture*, RwTexture* );
+typedef void (__cdecl*RpMatFXD3D9AtomicMatFXBumpMapRender_t)( RwRenderCallbackTraverseImpl*, RwRenderPass*, unsigned int, RwTexture*, RwTexture*, RwTexture* );
+
+static RW_JUSTDEF( RpMatFXD3D9AtomicMatFXEnvRender );
+static RW_JUSTDEF( RpMatFXD3D9AtomicMatFXBumpMapRender );
+
 /*=========================================================
     _GenericGamePreTexturedRenderPass
 
@@ -57,6 +64,592 @@ inline void _GenericGameTexturedRenderPass( RwRenderCallbackTraverseImpl *rtinfo
     RwD3D9SetTexturedRenderStates( needTexture );
 
     _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+}
+
+/*=========================================================
+    _SpecialFXDefaultRenderPass
+
+    Arguments:
+        rtinfo - RenderWare video data structure
+        rtPass - current render pass
+        renderFlags - rendering flags passed to rt callback
+        useTexture - texture to use for this rendering pass
+    Purpose:
+        Renders a mesh whose material has special effects
+        attached to it. This callback is called directly
+        when no special effect is active at the material.
+    Binary offsets:
+        (1.0 US): 0x00812AC0
+        (1.0 EU): 0x00812B00
+=========================================================*/
+inline D3DMATRIX& GetEffectMatrix( void )
+{
+    return *(D3DMATRIX*)0x008E29C8;
+}
+
+inline void _SetupFXTextureMatrix( unsigned int stageIndex, RwMatrix *fxMatrix )
+{
+    if ( !IS_ANY_FLAG( fxMatrix->a, 0x20000 ) )
+    {
+        // Set transformation flags to include the matrix.
+        RwD3D9SetTextureStageState( stageIndex, D3DTSS_TEXTURETRANSFORMFLAGS, 0x2 );
+
+        D3DMATRIX& effectMat = GetEffectMatrix();
+        effectMat.m[0][0] = fxMatrix->vRight.fX;
+        effectMat.m[0][1] = fxMatrix->vRight.fY;
+
+        effectMat.m[1][0] = fxMatrix->vFront.fX;
+        effectMat.m[1][1] = fxMatrix->vFront.fY;
+
+        effectMat.m[2][0] = fxMatrix->vPos.fX;
+        effectMat.m[2][1] = fxMatrix->vPos.fY;
+
+        RwD3D9SetTransform( (D3DTRANSFORMSTATETYPE)( D3DTS_TEXTURE0 + stageIndex ), &effectMat );
+    }
+}
+
+inline void _SpecialFXDefaultRenderPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass, unsigned int renderFlags, RwTexture *useTexture )
+{
+    CSpecialFXMatSA *usedSpecialFX = NULL;
+
+    bool needTexture = IS_ANY_FLAG( renderFlags, 0x84 );
+
+    RwD3D9SetTexture( ( needTexture ) ? useTexture : NULL, 0 );
+
+    if ( needTexture )
+    {
+        CSpecialFXMatSA *specialFX = rtPass->m_useMaterial->specialFX;
+
+        if ( specialFX && specialFX->effectType == 5 )
+        {
+            usedSpecialFX = specialFX;
+
+            _SetupFXTextureMatrix( 0, specialFX->effect5.fxMatrix );
+        }
+    }
+
+    RwD3D9SetTexturedRenderStates( needTexture );
+
+    _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+
+    // Clean up transformation flags.
+    if ( usedSpecialFX )
+    {
+        RwD3D9SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 0 );
+    }
+}
+
+/*=========================================================
+    _SpecialFXDualBlendRenderPass
+    (RpMatFXD3D9AtomicMatFXDualPassRender)
+
+    Arguments:
+        rtinfo - RenderWare video data structure
+        rtPass - current render pass
+        renderFlags - rendering flags passed to rt callback
+        useTexture - texture to use for this rendering pass
+        blendTexture - texture to use for special effects
+    Purpose:
+        Renders a mesh whose material has special effects
+        attached to it.
+    Binary offsets:
+        (1.0 US): 0x00812D40
+        (1.0 EU): 0x00812D80
+=========================================================*/
+void __cdecl RwD3D9RasterConvertToNonPalettized( RwRaster *raster )
+{
+    ((void (__cdecl*)( RwRaster* ))0x004CD250)( raster );
+}
+
+inline unsigned int GetNumTextureStages( void )
+{
+    return *(unsigned int*)0x00C9ABBC;
+}
+
+inline void _SpecialFXDualBlendRenderPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass, unsigned int renderFlags, RwTexture *useTexture, RwTexture *blendTexture )
+{
+    if ( !blendTexture || !blendTexture->raster )
+    {
+        _SpecialFXDefaultRenderPass( rtinfo, rtPass, renderFlags, useTexture );
+        return;
+    }
+
+    matFXBlendData *blendData = NULL;
+    CSpecialFXMatSA *useSpecialFX = NULL;
+
+    {
+        CSpecialFXMatSA *eff = rtPass->m_useMaterial->specialFX;
+
+        if ( eff->effectType != 6 )
+        {
+            blendData = &eff->effect4;
+        }
+        else
+        {
+            blendData = &eff->effect6.fxBlend;
+            useSpecialFX = eff;
+        }
+    }
+
+    unsigned int unkBoolean = true;
+
+    bool needTexture = IS_ANY_FLAG( renderFlags, 0x84 );
+
+    RwD3D9SetTexture( ( needTexture ) ? useTexture : NULL, 0 );
+    RwD3D9SetTexturedRenderStates( needTexture );
+
+    if ( useSpecialFX )
+    {
+        _SetupFXTextureMatrix( 0, useSpecialFX->effect6.fxMatrix );
+    }
+
+    if ( useTexture )
+    {
+        RwRaster *useRaster = useTexture->raster;
+        RwRaster *effRaster = blendTexture->raster;
+
+        if ( IS_ANY_FLAG( useRaster->format, 0x20 ) && IS_ANY_FLAG( effRaster->format, 0x20 ) && useTexture != blendTexture )
+        {
+            RwD3D9RasterConvertToNonPalettized( effRaster );
+        }
+    }
+
+    if ( *(unsigned int*)0x00C9ABAC )
+    {
+        bool setupTextureMatrixSecondStage = false;
+
+        if ( blendData->srcBlend == 9 && blendData->dstBlend == 1 || blendData->srcBlend == 1 && blendData->dstBlend == 3 )
+        {
+            if ( useTexture )
+            {
+                RwD3D9SetTexture( blendTexture, 1 );
+
+                unsigned int texStages = GetNumTextureStages();
+
+                if ( texStages == 3 )
+                {
+                    // Stage 1
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                    
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+                }
+
+                // Stage 2
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                if ( texStages == 3 )
+                {
+                    // Stage 3
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+                }
+            }
+            else
+            {
+                RwD3D9SetTexture( blendTexture, 0 );
+
+                RwD3D9SetTexturedRenderStates( true );
+            }
+
+            unkBoolean = false;
+            setupTextureMatrixSecondStage = true;
+        }
+        else if ( blendData->srcBlend == 5 && blendData->dstBlend == 6 )
+        {
+            if ( useTexture )
+            {
+                if ( GetNumTextureStages() >= 3 )
+                {
+                    RwD3D9SetTexture( blendTexture, 1 );
+
+                    // Stage 1
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+
+                    // Stage 2
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_BLENDTEXTUREALPHA );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_BLENDTEXTUREALPHA );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                    // Stage 3
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                    unkBoolean = false;
+                    setupTextureMatrixSecondStage = true;
+                }
+            }
+            else
+            {
+                HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFFFFFFFF );
+
+                RwD3D9SetTexture( blendTexture, 0 );
+
+                // Stage 1
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_BLENDTEXTUREALPHA );
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TFACTOR );
+
+                // Is this an actual bug? Yes it is! (1.0 US): 0x0081316B
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_BLENDTEXTUREALPHA );
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TFACTOR );
+
+                // Stage 2
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                unkBoolean = false;
+                setupTextureMatrixSecondStage = true;
+            }
+        }
+        else if ( blendData->srcBlend == 9 && blendData->dstBlend == 3 )
+        {
+            if ( *(unsigned int*)0x00C9ABB4 )
+            {
+                if ( useTexture )
+                {
+                    RwD3D9SetTexture( blendTexture, 1 );
+
+                    // Stage 2
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE2X );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                    if ( GetNumTextureStages() == 3 )
+                    {
+                        // Stage 1
+                        RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+                        RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+
+                        RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+                        RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+
+                        // Stage 2
+                        RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                        RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                        // Stage 3
+                        RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                        RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                        RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                        RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+                        RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                        RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT );
+                    }
+                    else
+                    {
+                        // Stage 2
+                        RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                        RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+                    }
+                }
+                else
+                {
+                    RwD3D9SetTexture( blendTexture, 0 );
+
+                    // Stage 1
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE2X );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TFACTOR );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
+                }
+
+                // Check for any errors.
+                if ( *(unsigned int*)0x008E29C0 )
+                {
+                    DWORD numPasses = 0;
+
+                    RwD3D9ApplyDeviceStates();
+
+                    HRESULT validateResult = GetRenderDevice()->ValidateDevice( &numPasses );
+
+                    if ( validateResult < 0 || numPasses != 1 )
+                    {
+                        *(unsigned int*)0x00C9ABB4 = 0;
+
+                        // Reset the first stage texture.
+                        RwD3D9SetTexture( useTexture, 0 );
+
+                        // Return to default rendering method.
+                        RwD3D9SetTexturedRenderStates( true );
+
+                        // Disable second and third stage.
+                        RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
+                        RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+
+                        RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE );
+                        RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+
+                        // Remove texture link from second stage.
+                        RwD3D9SetTexture( NULL, 1 );
+                    }
+                    else
+                        unkBoolean = false;
+
+                    *(unsigned int*)0x008E29C0 = false;
+
+                    if ( !unkBoolean )
+                        setupTextureMatrixSecondStage = true;
+                }
+                else
+                {
+                    unkBoolean = false;
+                    setupTextureMatrixSecondStage = true;
+                }
+            }
+        }
+        else if ( blendData->srcBlend == 2 && blendData->dstBlend == 2 )
+        {
+            if ( useTexture )
+            {
+                if ( *(unsigned int*)0x00C9ABB0 )
+                {
+                    RwD3D9SetTexture( blendTexture, 1 );
+
+                    // Stage 2
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG0, D3DTA_CURRENT );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
+
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                    unkBoolean = false;
+                    setupTextureMatrixSecondStage = true;
+                }
+            }
+            else
+            {
+                RwD3D9SetTexture( blendTexture, 0 );
+
+                // Stage 1
+                RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
+
+                // Stage 2
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_ADD );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                unkBoolean = false;
+                setupTextureMatrixSecondStage = true;
+            }
+        }
+        else if ( blendData->srcBlend == 1 && blendData->dstBlend == 5 )
+        {
+            if ( useTexture )
+            {
+                RwD3D9SetTexture( blendTexture, 1 );
+
+                if ( GetNumTextureStages() == 3 )
+                {
+                    // Stage 1
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
+                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
+                }
+
+                // Stage 2
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_ALPHAREPLICATE | D3DTA_TEXTURE );
+                RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+
+                if ( GetNumTextureStages() == 3 )
+                {
+                    // Stage 3
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_COLORARG2, D3DTA_CURRENT );
+
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAOP, D3DTOP_MODULATE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE );
+                    RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAARG2, D3DTA_CURRENT );
+                }
+
+                unkBoolean = false;
+                setupTextureMatrixSecondStage = true;
+            }
+            else
+            {
+                RwD3D9SetTexture( blendTexture, 0 );
+
+                // Stage 1
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_ALPHAREPLICATE | D3DTA_TEXTURE );
+                RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
+
+                RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG2 );
+                RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
+
+                unkBoolean = false;
+                setupTextureMatrixSecondStage = true;
+            }
+        }
+
+        if ( setupTextureMatrixSecondStage )
+        {
+            if ( IS_ANY_FLAG( renderFlags, 0x80 ) )
+            {
+                RwD3D9SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 0 );
+            }
+
+            if ( useSpecialFX )
+            {
+                RwMatrix *fxMatrix = useSpecialFX->effect6.fxMatrix2;
+
+                if ( fxMatrix )
+                    _SetupFXTextureMatrix( 1, fxMatrix );
+            }
+        }
+    }
+
+    _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+
+    if ( unkBoolean )
+    {
+        RwD3D9SetTexture( blendTexture, 0 );
+
+        if ( useSpecialFX )
+        {
+            RwMatrix *fxMatrix = useSpecialFX->effect6.fxMatrix2;
+
+            if ( fxMatrix )
+                _SetupFXTextureMatrix( 0, fxMatrix );
+        }
+
+        if ( !RwD3D9RenderStateIsVertexAlphaEnabled() )
+        {
+            RwD3D9RenderStateSetVertexAlphaEnabled( true );
+        }
+
+        if ( blendData->srcBlend == 9 && blendData->dstBlend == 1 ||
+             blendData->srcBlend == 1 && blendData->dstBlend == 3 ||
+             blendData->srcBlend == 9 && blendData->dstBlend == 3 )
+        {
+            HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, false );
+        }
+
+        RwInterface *rwInterface = RenderWare::GetInterface();
+
+        int unkStatus1, unkStatus2;
+
+        rwInterface->m_getDeviceCommand( (eRwDeviceCmd)10, unkStatus1 );
+        rwInterface->m_getDeviceCommand( (eRwDeviceCmd)11, unkStatus2 );
+
+        RwD3D9SetSrcBlend( blendData->srcBlend );
+        RwD3D9SetDstBlend( blendData->dstBlend );
+
+        DWORD zwriteStatus;
+        HOOK_RwD3D9GetRenderState( D3DRS_ZWRITEENABLE, zwriteStatus );
+        HOOK_RwD3D9SetRenderState( D3DRS_ZWRITEENABLE, false );
+
+        DWORD fogEnableStatus;
+        HOOK_RwD3D9GetRenderState( D3DRS_FOGENABLE, fogEnableStatus );
+
+        DWORD fogColor;
+
+        if ( fogEnableStatus )
+        {
+            HOOK_RwD3D9GetRenderState( D3DRS_FOGCOLOR, fogColor );
+
+            if ( blendData->dstBlend == 2 )
+            {
+                HOOK_RwD3D9SetRenderState( D3DRS_FOGCOLOR, 0 );
+            }
+            else if ( blendData->srcBlend == 9 || blendData->dstBlend == 3 )
+            {
+                HOOK_RwD3D9SetRenderState( D3DRS_FOGCOLOR, 0xFFFFFFFF );
+            }
+        }
+
+        if ( IS_ANY_FLAG( renderFlags, 0x80 ) )
+        {
+            RwD3D9SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 1 );
+        }
+
+        RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
+
+        HOOK_RwD3D9SetRenderState( D3DRS_ZWRITEENABLE, zwriteStatus );
+
+        if ( fogEnableStatus )
+        {
+            HOOK_RwD3D9SetRenderState( D3DRS_FOGCOLOR, fogColor );
+        }
+
+        if ( IS_ANY_FLAG( renderFlags, 0x80 ) )
+        {
+            RwD3D9SetTextureStageState( 0, D3DTSS_TEXCOORDINDEX, 0 );
+        }
+
+        RwD3D9RenderStateSetVertexAlphaEnabled( false );
+
+        rwInterface->m_deviceCommand( (eRwDeviceCmd)10, unkStatus1 );
+        rwInterface->m_deviceCommand( (eRwDeviceCmd)11, unkStatus2 );
+    }
+    else
+    {
+        // Stage 1
+        RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_MODULATE );
+        RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
+        RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_DIFFUSE );
+
+        RwD3D9SetTexture( NULL, 1 );
+
+        // Stage 3
+        RwD3D9SetTextureStageState( 2, D3DTSS_COLOROP, D3DTOP_DISABLE );
+        RwD3D9SetTextureStageState( 2, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
+
+        if ( IS_ANY_FLAG( renderFlags, 0x80 ) )
+        {
+            // Stage 2
+            RwD3D9SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1 );
+        }
+    }
+
+    if ( useSpecialFX )
+    {
+        RwD3D9SetTextureStageState( 0, D3DTSS_TEXTURETRANSFORMFLAGS, 0 );
+        RwD3D9SetTextureStageState( 1, D3DTSS_TEXTURETRANSFORMFLAGS, 1 );
+    }
 }
 
 static bool enableEnvMapRendering = true;
@@ -167,11 +760,11 @@ __forceinline void GameRenderPassGeneric( RwRenderCallbackTraverseImpl *rtinfo, 
     {
         cb.OnRenderSurfacePrepare( rtPass, lightingEnabled, curMat, renderFlags );
 
-        _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, curMat->texture );
+        cb.OnTexturedPass( rtinfo, rtPass, renderFlags, curMat );
     }
     else
     {
-        _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+        cb.OnQuickPass( rtinfo, rtPass );
     }
 
     cb.OnPostRenderPass();
@@ -203,7 +796,7 @@ struct GameMeshRenderCallback
             bool passRequiresAlpha = RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial );
 
             // Check whether we can process this pass.
-            // Depends on this mesh allows alpha and the current render type.
+            // Depends on whether this mesh allows alpha and the current render type.
             if ( !CanProcessPass( passRequiresAlpha, renderType ) )
                 continue;
 
@@ -260,13 +853,6 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
 
     // Notify the render manager that we quit.
     cb.OnRenderFinish();
-
-    // Restore into a safe status.
-    RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
-    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
-
-    RwD3D9SetTextureStageState( 1, D3DTSS_TEXCOORDINDEX, 1 );
-    RwD3D9SetTextureStageState( 1, D3DTSS_TEXTURETRANSFORMFLAGS, 0 );
 }
 
 __forceinline void RwD3D9ResetCommonColorChannels( void )
@@ -357,6 +943,16 @@ struct ReflectiveGeneralRenderManager
         return RwD3D9UpdateRenderPassSurfaceProperties( rtPass, lightValue, curMat, renderFlags );
     }
 
+    __forceinline void OnTexturedPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass, unsigned int renderFlags, RpMaterial *useMat )
+    {
+        _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, useMat->texture );
+    }
+
+    __forceinline void OnQuickPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+    {
+        _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+    }
+
     __forceinline void OnPostRenderPass( void )
     {
         return;
@@ -364,7 +960,7 @@ struct ReflectiveGeneralRenderManager
 
     __forceinline void OnRenderFinish( void )
     {
-        return;
+        RwD3D9DisableSecondTextureStage();
     }
 
     __forceinline bool IsProperlyDepthSorted( void )
@@ -823,6 +1419,16 @@ struct ReflectiveVehicleRenderManager
         return true;
     }
 
+    __forceinline void OnTexturedPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass, unsigned int renderFlags, RpMaterial *useMat )
+    {
+        _GenericGameTexturedRenderPass( rtinfo, rtPass, renderFlags, useMat->texture );
+    }
+
+    __forceinline void OnQuickPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+    {
+        _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+    }
+
     __forceinline void OnPostRenderPass( void )
     {
         if ( m_unk3 && lightValue )
@@ -837,6 +1443,9 @@ struct ReflectiveVehicleRenderManager
     {
         // Normalize surface settings (?)
         RpD3D9SetSurfaceProperties( *(RpMaterialLighting*)0x008D131C, *(RwColor*)0x008D1328, 0x20 );
+
+        // Restore some rendering settings.
+        RwD3D9DisableSecondTextureStage();
     }
 
     __forceinline bool IsProperlyDepthSorted( void )
@@ -891,13 +1500,138 @@ void __cdecl HOOK_VehicleAtomicRenderCallback( RwRenderCallbackTraverse *rtnativ
     GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, ReflectiveVehicleRenderManager( (RpAtomic*&)renderObject ) );
 }
 
+struct FXAtomicRenderManager
+{
+    __forceinline FXAtomicRenderManager( void )
+    {
+        return;
+    }
+
+    __forceinline void OnRenderPrepare( DWORD _lightValue )
+    {
+        return;
+    }
+
+    __forceinline void OnRenderPass( RwRenderPass *rtPass, RpMaterial *curMat )
+    {
+        return;
+    }
+
+    __forceinline bool OnRenderSurfacePrepare( RwRenderPass *rtPass, DWORD lightValue, RpMaterial *curMat, unsigned int renderFlags )
+    {
+        return RwD3D9UpdateRenderPassSurfaceProperties( rtPass, lightValue, curMat, renderFlags );
+    }
+
+    __forceinline void OnTexturedPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass, unsigned int renderFlags, RpMaterial *useMat )
+    {
+        CSpecialFXMatSA *specialFX = useMat->specialFX;
+
+        unsigned int effectType = 0;
+
+        if ( specialFX )
+        {
+            effectType = specialFX->effectType;
+        }
+
+        switch( effectType )
+        {
+        // todo: reverse the remainder.
+        case 1:
+            RpMatFXD3D9AtomicMatFXBumpMapRender( rtinfo, rtPass, renderFlags, useMat->texture, specialFX->bumpMapEffect.bumpTexture, NULL );
+            break;
+        case 2:
+            RpMatFXD3D9AtomicMatFXEnvRender( rtinfo, rtPass, renderFlags, false, useMat->texture, specialFX->bumpMapEffect.bumpTexture );
+            break;
+        case 3:
+            RpMatFXD3D9AtomicMatFXBumpMapRender( rtinfo, rtPass, renderFlags, useMat->texture, specialFX->bumpMapEffect.bumpTexture, specialFX->bumpMapEffect.bumpTexture2 );
+            break;
+        case 4:
+            _SpecialFXDualBlendRenderPass( rtinfo, rtPass, renderFlags, useMat->texture, specialFX->effect4.fxTexture );
+            break;
+        case 6:
+            _SpecialFXDualBlendRenderPass( rtinfo, rtPass, renderFlags, useMat->texture, specialFX->effect6.fxBlend.fxTexture );
+            break;
+        default:
+            _SpecialFXDefaultRenderPass( rtinfo, rtPass, renderFlags, useMat->texture );
+            break;
+        }
+    }
+
+    __forceinline void OnQuickPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+    {
+        _GenericGamePreTexturedRenderPass( rtinfo, rtPass );
+    }
+
+    __forceinline void OnPostRenderPass( void )
+    {
+        return;
+    }
+
+    __forceinline void OnRenderFinish( void )
+    {
+        return;
+    }
+
+    __forceinline bool IsProperlyDepthSorted( void )
+    {
+        // Since this template is used for any world model, we assume by default that they
+        // are not properly depth sorted, as seen on the GTA:SA trees. We ask the mod whether
+        // it wants to have these instances alpha fixed.
+        // todo: since this process is expensive, it'd be cool if we somehow knew which
+        // models are totally opaque using a geometry flag.
+        return !AlphaSort_IsEnabled();
+    }
+
+    __forceinline bool CanRenderOpaque( void )
+    {
+        return AlphaSort_CanRenderOpaquePrimitives();
+    }
+
+    __forceinline bool CanRenderTranslucent( void )
+    {
+        return AlphaSort_CanRenderTranslucentPrimitives();
+    }
+
+    __forceinline bool CanRenderDepth( void )
+    {
+        return AlphaSort_CanRenderDepthLayer();
+    }
+
+    __forceinline unsigned int GetRenderAlphaClamp( void )
+    {
+        // todo: allow the user to define this value.
+        return 100;
+    }
+};
+
+void __cdecl HOOK_FXAtomicRenderCallback( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags )
+{
+#if 1
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, FXAtomicRenderManager() );
+#else
+    ((void (__cdecl*)( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags))0x00815C20)( rtnative, renderObject, renderType, renderFlags );
+#endif
+}
+
 void RenderCallbacks_Init( void )
 {
     switch( pGame->GetGameVersion() )
     {
     case VERSION_EU_10:
+        MemPut( 0x00815F1F, HOOK_FXAtomicRenderCallback );
+        MemPut( 0x00815FA5, HOOK_FXAtomicRenderCallback );
+
+        // Initialize pointers.
+        RW_JUSTSET( RpMatFXD3D9AtomicMatFXEnvRender, 0x00813A50 );
+        RW_JUSTSET( RpMatFXD3D9AtomicMatFXBumpMapRender, 0x008144A0 );
         break;
     case VERSION_US_10:
+        MemPut( 0x00815EDF, HOOK_FXAtomicRenderCallback );
+        MemPut( 0x00815F65, HOOK_FXAtomicRenderCallback );
+
+        // Initialize pointers.
+        RW_JUSTSET( RpMatFXD3D9AtomicMatFXEnvRender, 0x00813A10 );
+        RW_JUSTSET( RpMatFXD3D9AtomicMatFXBumpMapRender, 0x00814460 );
         break;
     }
 
