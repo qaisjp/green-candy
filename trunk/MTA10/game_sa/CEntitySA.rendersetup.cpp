@@ -615,12 +615,14 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
         return ENTITY_RENDER_CROSS_ZONES;
     }
 
-    if ( !entity->IsInStreamingArea() )
-        return ENTITY_RENDER_CROSS_ZONES;
+    if ( entity->IsInStreamingArea() )
+    {
+        camDistance = GetComplexCameraEntityDistance( entity->m_pLod ? entity->m_pLod : entity, *(const CVector*)0x00B76870 );
 
-    camDistance = GetComplexCameraEntityDistance( entity->m_pLod ? entity->m_pLod : entity, *(const CVector*)0x00B76870 );
+        return RequestEntityModelInVision( entity, info, camDistance, unkBoolean );
+    }
 
-    return RequestEntityModelInVision( entity, info, camDistance, unkBoolean );
+    return ENTITY_RENDER_CROSS_ZONES;
 }
 
 // todo: should not be here, as it is a system by itself.
