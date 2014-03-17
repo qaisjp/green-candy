@@ -150,7 +150,7 @@ float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const
     int iCustomRet = OnMY_CVisibilityPlugins_CalculateFadingAtomicAlpha_Pre( info, entity, camDistance );
 
     if ( iCustomRet != -1 )
-        return (float)iCustomRet / 255.0f;
+        return (float)iCustomRet;
 #endif //_MTA_BLUE
 
     float sectorDivide = 20.0f;
