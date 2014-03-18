@@ -21,3 +21,7 @@ function createLogger(path)
 		end
 	);
 end
+
+function getUniqueLogFilename()
+    return "log.txt";
+end

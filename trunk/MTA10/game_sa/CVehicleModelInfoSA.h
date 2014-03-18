@@ -81,6 +81,9 @@ public:
     void                            AssignPaintjob                  ( unsigned short txdId );
     unsigned short                  GetNumberOfValidPaintjobs       ( void ) const;
 
+    void __thiscall                 SetPlateText                    ( const char *plateText );
+    const char* __thiscall          GetPlateText                    ( void ) const;
+
     void __thiscall                 SetRenderColor                  ( unsigned char color1, unsigned char color2, unsigned char color3, unsigned char color4 );
 
     eVehicleType                    GetVehicleType                  ( void )        { return vehicleType; }

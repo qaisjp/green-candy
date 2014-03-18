@@ -134,6 +134,10 @@ static int lua_obj_dealloc_fail_event( lua_State *L )
             if ( topTransmit != -1 )
             {
                 // We definately cannot continue.
+                // topTransmit is the class id of the class that faulted.
+                // To debug this crash, look at the class code and make out why
+                // it has been reference-locked (refcount stays above 0 although
+                // all links have been destroyed).
                 __asm int 3
             }
         }

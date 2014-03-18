@@ -159,6 +159,7 @@ CGameSA::CGameSA( void )
     Streamer_Init();
     ModelInfo_Init();
     VehicleModels_Init();
+    VehicleRender_Init();
     PlayerInfo_Init();
     HUD_Init();
 
@@ -217,6 +218,7 @@ CGameSA::~CGameSA( void )
 
     HUD_Shutdown();
     PlayerInfo_Shutdown();
+    VehicleRender_Shutdown();
     VehicleModels_Shutdown();
     ModelInfo_Shutdown();
     Streamer_Shutdown();

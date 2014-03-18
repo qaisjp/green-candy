@@ -935,6 +935,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CVehicleSA.customplate.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CVehicleSA.render.cpp"
 				>
 			</File>
@@ -1893,6 +1897,10 @@
 			</File>
 			<File
 				RelativePath=".\CVehicleModelInfoSA.render.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CVehicleSA.customplate.h"
 				>
 			</File>
 			<File
