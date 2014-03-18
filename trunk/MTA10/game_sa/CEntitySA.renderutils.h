@@ -26,6 +26,7 @@ namespace EntityRender
     float           GetGlobalDrawDistanceScale      ( void );
     float           GetGlobalDrawDistance           ( void );
 
+    float           CalculateFadingAlphaEx          ( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip, float sectorDivide, float useDist );
     float           CalculateFadingAlpha            ( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip );
     float           GetComplexCameraEntityDistance  ( const CEntitySAInterface *entity, const CVector& camPos );
 

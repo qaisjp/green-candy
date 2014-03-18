@@ -643,7 +643,7 @@ void __cdecl RegisterDelayedStreamingEntity( CEntitySAInterface *entity, float c
     *(_delayedStreamingInfo**)0x00B745D0 = info + 1;
 }
 
-inline eRenderType __cdecl RequestEntityRender( CEntitySAInterface *entity, CBaseModelInfoSAInterface *model, float camDistance )
+inline eRenderType __cdecl RequestEntityRender( CEntitySAInterface *entity, CBaseModelInfoSAInterface *model, float camDistance, float fadingDist, float sectorDivide )
 {
     if ( !entity->m_pRwObject )
     {
@@ -665,11 +665,18 @@ inline eRenderType __cdecl RequestEntityRender( CEntitySAInterface *entity, CBas
         return ENTITY_RENDER_CONTROVERIAL;
     }
 
-    BOOL_FLAG( entity->m_entityFlags, ENTITY_FADE, model->ucAlpha != 255 );
+    // MTA extension: calculate whether the entity has to fade or not.
+    CEntitySAInterface *lodEntity = entity->m_pLod;
 
-    if ( CEntitySAInterface *lodEntity = entity->m_pLod )
+    float fadingAlpha = EntityRender::CalculateFadingAlphaEx( model, entity, camDistance, Streamer::GetWorldFarclip(), sectorDivide, fadingDist );
+
+    bool hasToFade = fadingAlpha != 255.0f || model->ucAlpha != 255;
+
+    BOOL_FLAG( entity->m_entityFlags, ENTITY_FADE, hasToFade );
+
+    if ( lodEntity )
     {
-        if ( model->ucAlpha == 0xFF )
+        if ( !hasToFade )
             lodEntity->numLodChildrenRendered++;
 
         if ( lodEntity->numLodChildren > 1 )
@@ -740,7 +747,7 @@ eRenderType __cdecl EntityRender::RequestEntityModelInVision( CEntitySAInterface
     {
         if ( sectorDivide + camDistance - 20.0f < fadingDist )
         {
-            return RequestEntityRender( entity, model, camDistance );
+            return RequestEntityRender( entity, model, camDistance, fadingDist, sectorDivide );
         }
     }
     else if ( lodEntity && lodEntity->numLodChildren > 1 )
@@ -756,7 +763,7 @@ eRenderType __cdecl EntityRender::RequestEntityModelInVision( CEntitySAInterface
     {
         if ( model->pRwObject && camDistance - 20.0f < fadingDist )
         {
-            eRenderType actualResult = RequestEntityRender( entity, model, camDistance );
+            eRenderType actualResult = RequestEntityRender( entity, model, camDistance, fadingDist, sectorDivide );
 
             if ( actualResult == ENTITY_RENDER_DEFAULT )
                 EntityRender::PushEntityOnRenderQueue( entity, camDistance );

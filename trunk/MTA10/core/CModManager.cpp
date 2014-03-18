@@ -191,6 +191,8 @@ void CModManager::Unload ( void )
         // Destroy mod root
         delete CCore::GetSingleton().m_modRoot;
 
+        CCore::GetSingleton().m_modRoot = NULL;
+
         // Unregister the commands it had registered
         CCore::GetSingleton ().GetCommands ()->DeleteAll ();
 

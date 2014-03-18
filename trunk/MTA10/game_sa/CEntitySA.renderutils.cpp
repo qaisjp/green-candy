@@ -143,7 +143,7 @@ float EntityRender::GetComplexCameraEntityDistance( const CEntitySAInterface *en
     Binary offsets:
         (1.0 US and 1.0 EU): 0x00732500 (based on)
 =========================================================*/
-float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip )
+float EntityRender::CalculateFadingAlphaEx( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip, float sectorDivide, float useDist )
 {
 #ifdef _MTA_BLUE
     // Wire in a MTA team fix.
@@ -152,9 +152,6 @@ float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const
     if ( iCustomRet != -1 )
         return (float)iCustomRet;
 #endif //_MTA_BLUE
-
-    float sectorDivide = 20.0f;
-    float useDist = CalculateComplexEntityFadingDistance( info, entity, camFarClip, sectorDivide );
 
     useDist += 20.0f;
     useDist -= camDistance;
@@ -167,6 +164,14 @@ float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const
         useDist = 1;
 
     return useDist * info->ucAlpha;
+}
+
+float EntityRender::CalculateFadingAlpha( CBaseModelInfoSAInterface *info, const CEntitySAInterface *entity, float camDistance, float camFarClip )
+{
+    float sectorDivide = 20.0f;
+    float useDist = CalculateComplexEntityFadingDistance( info, entity, camFarClip, sectorDivide );
+
+    return CalculateFadingAlphaEx( info, entity, camDistance, camFarClip, sectorDivide, useDist );
 }
 
 /*=========================================================

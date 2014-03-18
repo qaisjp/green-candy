@@ -1096,6 +1096,10 @@ void luaC_shutdown( global_State *g )
 {
     lua_Thread *L = g->GCthread;
 
+    // Finish a pending garbage collection cycle.
+    // We must do that to not break the integrity of the GC thread.
+    luaC_finish( L );
+
     // Terminate all threads (GC should be last)
     // This disables their runtime environments.
     LIST_FOREACH_BEGIN( lua_Thread, g->threads.root, threadNode )
@@ -1111,10 +1115,14 @@ void luaC_shutdown( global_State *g )
     // Grab all objects and attempt another deallocation.
     if ( dfail )
     {
+        bool nonFinalizedObject = false;
+
         for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
         {
             if ( !isfinalized( iter ) )
             {
+                nonFinalizedObject = true;
+
                 try
                 {
                     // Since we are running on the GC thread, collection is disabled by design.
@@ -1133,8 +1141,11 @@ void luaC_shutdown( global_State *g )
             }
         }
 
-        // Attempt to finalize more objects.
-        luaC_separatefinalization( L, true );
+        if ( nonFinalizedObject )
+        {
+            // Attempt to finalize more objects.
+            luaC_separatefinalization( L, true );
+        }
     }
 
     // If there still are objects left, the runtime is experiencing undefined behavior.
