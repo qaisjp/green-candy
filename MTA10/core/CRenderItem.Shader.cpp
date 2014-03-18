@@ -293,6 +293,9 @@ void CShaderItem::SetTransform ( const SShaderTransform& transform )
 void CShaderItem::Begin( unsigned int& numPasses )
 {
     assert( m_pShaderInstance->m_isComputing == false );
+    assert( g_forceShader == NULL );
+
+    g_forceShader = this;
 
     m_pShaderInstance->m_isComputing = true;
 
@@ -353,6 +356,9 @@ bool CShaderItem::IsComputing( void )
 void CShaderItem::End( void )
 {
     assert( m_pShaderInstance->m_isComputing == true );
+    assert( g_forceShader == this );
+
+    g_forceShader = NULL;
 
     m_pShaderInstance->m_isComputing = false;
 

@@ -711,8 +711,6 @@ struct lightPassManager
                 activeShader->EndPass();
                 activeShader->End();
 
-                core->GetGraphics()->GetRenderItemManager()->SetForceShader( NULL );
-
                 activeShader = NULL;
             }
 
@@ -1085,8 +1083,6 @@ struct lightPassManager
             
             if ( numLightShaderPasses > 0 )
             {
-                core->GetGraphics()->GetRenderItemManager()->SetForceShader( shader );
-
                 activeShader = shader;
 
                 shader->BeginPass( 0 );
