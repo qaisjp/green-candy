@@ -16,7 +16,19 @@
 #define CLASS_CTransformation       0x00B74288
 #define FUNC_InitTransformation     0x0054F3A0
 
-class CTransformSAInterface : public RwMatrix
+class CMatrixEx : public RwMatrix
+{
+public:
+    void operator =( const RwMatrix& mat )
+    {
+        assign( mat );
+    }
+
+    void*                                   m_unk;          // 64
+    RwMatrix*                               m_unk2;         // 68, confirmed to be a dynamically allocated RwMatrix*
+};
+
+class CTransformSAInterface : public CMatrixEx
 {
 public:
                             CTransformSAInterface( void );
@@ -27,8 +39,6 @@ public:
         assign( mat );
     }
 
-    CTransformSAInterface*                  m_unk;          // 64
-    RwMatrix*                               m_unk2;         // 68, confirmed to be a dynamically allocated RwMatrix*
     class CPlaceableSAInterface*            m_entity;       // 72
 
     CTransformSAInterface*                  next;           // 76

@@ -473,11 +473,12 @@ public:
     RpClump*                    GetRwObject()                               { return (RpClump*)CEntitySAInterface::GetRwObject(); }
     const RpClump*              GetRwObject() const                         { return (const RpClump*)CEntitySAInterface::GetRwObject(); }
 
-    void __thiscall             RenderPassengers( void );
-    void __thiscall             SetupRender( CVehicleSA *mtaVeh );
-    void __thiscall             SetPlateTextureForRendering( CVehicleModelInfoSAInterface *info );
-    void __thiscall             RestoreLicensePlate( CVehicleModelInfoSAInterface *info );
-    void __thiscall             LeaveRender( void );
+    void __thiscall             RenderPassengers                ( void );
+    void __thiscall             CreateLicensePlate              ( CVehicleModelInfoSAInterface *info );
+    void __thiscall             SetupRender                     ( CVehicleSA *mtaVeh );
+    void __thiscall             SetPlateTextureForRendering     ( CVehicleModelInfoSAInterface *info );
+    void __thiscall             RestoreLicensePlate             ( CVehicleModelInfoSAInterface *info );
+    void __thiscall             LeaveRender                     ( void );
 
     inline bool                 IsLocked() const                            { return IS_FLAG( m_vehicleFlags, VEHICLE_LOCKED ); }
     inline bool                 IsDamaged() const                           { return IS_FLAG( m_vehicleFlags, VEHICLE_DAMAGED ); }
@@ -552,8 +553,8 @@ public:
     unsigned short              m_alarmState;                           // 1116
     unsigned short              m_forcedRandomSeed;                     // 1118, if this is non-zero the random wander gets deterministic
     
-    CPedSAInterface*            m_driver;                               // 1120
-    CPedSAInterface*            m_passengers[MAX_PASSENGERS];           // 1124
+    CPedSAInterface*            pDriver;                                // 1120
+    CPedSAInterface*            pPassengers[MAX_PASSENGERS];            // 1124
     unsigned char               m_numPassengers;                        // 1156
     unsigned char               m_numGettingIn;                         // 1157
     unsigned char               m_gettingInFlags;                       // 1158
@@ -658,7 +659,7 @@ public:
 
     unsigned int                m_lightFlags;                           // 1412
 
-    RwTexture*                  m_plateTexture;                         // 1416
+    RwTexture*                  m_pCustomPlateTexture;                  // 1416
 
     float                       m_unk;                                  // 1420
 
@@ -671,6 +672,7 @@ public:
 };
 
 #include "CVehicleSA.render.h"
+#include "CVehicleSA.customplate.h"
 
 class CVehicleSA : public virtual CVehicle, public CPhysicalSA
 {
@@ -761,7 +763,7 @@ public:
 
     CPed*                       GetDriver() const;
     CPed*                       GetPassenger( unsigned char ucSlot ) const;
-    bool                        IsBeingDriven() const                                   { return GetInterface()->m_driver != NULL; }
+    bool                        IsBeingDriven() const                                   { return GetInterface()->pDriver != NULL; }
     bool                        IsPassenger( CPed *ped ) const;
     bool                        IsSphereTouchingVehicle( const CVector& pos, float fRadius ) const;
     bool                        IsUpsideDown() const                                    { return GetInterface()->Placeable.matrix->vUp.fZ <= -0.9; }

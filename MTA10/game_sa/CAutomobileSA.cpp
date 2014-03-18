@@ -144,8 +144,8 @@ void CAutomobileSAInterface::UpdateNitrous( unsigned char rounds )
 {
     CPadSAInterface *pad;
 
-    if ( !nStatus && m_driver->IsPlayer() )
-        pad = m_driver->GetJoypad();
+    if ( !nStatus && pDriver->IsPlayer() )
+        pad = pDriver->GetJoypad();
 
     if ( !rounds )
     {
@@ -379,10 +379,10 @@ bool CAutomobileSA::UpdateMovingCollision( float fAngle )
     // If we dont have a driver, use the local player for this function
     // It will check a few key-states which shouldn't make any difference as we've specified an angle.
     CAutomobileSAInterface *veh = GetInterface();
-    CPedSAInterface *driver = veh->m_driver;
+    CPedSAInterface *driver = veh->pDriver;
 
-    if ( !veh->m_driver )
-        veh->m_driver = pGame->GetPlayerInfo()->GetPlayerPed()->GetInterface();
+    if ( !veh->pDriver )
+        veh->pDriver = pGame->GetPlayerInfo()->GetPlayerPed()->GetInterface();
 
     bool bReturn;
     DWORD dwFunc = FUNC_CAutomobile__UpdateMovingCollision;
@@ -395,6 +395,6 @@ bool CAutomobileSA::UpdateMovingCollision( float fAngle )
     }
 
     // Restore our driver
-    veh->m_driver = driver;
+    veh->pDriver = driver;
     return bReturn;
 }

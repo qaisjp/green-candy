@@ -644,128 +644,6 @@ void CVehicleModelInfoSAInterface::SetupMateria( void )
 }
 
 /*=========================================================
-    GetRandomNameplateText
-
-    Arguments:
-        buffer - output memory allocation for nameplate text
-                 generation
-        max - size of the buffer, preferably (i * 3 + 4)
-    Purpose:
-        Generates a nameplate text message for the nameplate
-        material routine.
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x006FD5B0
-=========================================================*/
-#define RAND        (double)(rand() & 0xFFFF) / 0x7FFF
-#define RANDCHAR    (char)( RAND * 0.23 )
-#define RANDNUM     (char)( RAND * -9 )
-
-static bool GetRandomNameplateText( char *buffer, size_t max )
-{
-    if ( max < 4 )
-        return false;
-
-    buffer[0] = 'A' - RANDCHAR;
-    buffer[1] = 'A' - RANDCHAR;
-    buffer[2] = '0' - RANDNUM;
-    buffer[3] = '0' - RANDNUM;
-
-    for ( unsigned int n = 4; n < max; )
-    {
-        buffer[n++] = '0' - RANDNUM;
-        buffer[n++] = 'A' - RANDCHAR;
-        buffer[n++] = 'A' - RANDCHAR;
-    }
-
-    return true;
-}
-
-/*=========================================================
-    RwMaterialSetLicensePlate
-
-    Arguments:
-        mat - vehicle atomic geometry material
-        plate - contains name and style information
-    Purpose:
-        Scans through all materials of the vehicle model
-        and updates the ones named "carplate" and "carpback".
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x006FE060
-=========================================================*/
-struct _licensePlate
-{
-    char text[8];
-    unsigned char style;
-    RpMaterial *plate;  // ext
-};
-
-typedef RpMaterial*     (*HandleVehicleFrontNameplate_t)    ( RpMaterial *mat, _licensePlate *info, unsigned char design );
-typedef RpMaterial*     (*HandleVehicleBackNameplate_t)     ( RpMaterial *mat, unsigned char design );
-
-HandleVehicleFrontNameplate_t   HandleVehicleFrontNameplate         = ( HandleVehicleFrontNameplate_t )         0x006FE020;
-HandleVehicleBackNameplate_t    HandleVehicleBackNameplate          = ( HandleVehicleBackNameplate_t )          0x006FDE50;
-
-static bool RwMaterialSetLicensePlate( RpMaterial *mat, _licensePlate *plate )
-{
-    if ( !mat->texture )
-        return true;
-
-    if ( strcmp( mat->texture->name, "carplate" ) == 0 )
-    {
-        plate->plate = mat;
-
-        HandleVehicleFrontNameplate( mat, plate, *(unsigned char*)0x00C3EF80 );
-    }
-    else if ( strcmp( mat->texture->name, "carpback" ) == 0 )
-        HandleVehicleBackNameplate( mat, *(unsigned char*)0x00C3EF80 );
-
-    return true;
-}
-
-/*=========================================================
-    RwAtomicSetLicensePlate
-
-    Arguments:
-        child - atomic of the vehicle model
-        plate - license plate generation details
-    Purpose:
-        Generates the license plate for specific materials of
-        the atomic's geometry.
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x006FE0D0
-=========================================================*/
-static int RwAtomicSetLicensePlate( RpAtomic *child, _licensePlate *plate )
-{
-    child->geometry->ForAllMateria( RwMaterialSetLicensePlate, plate );
-    return true;
-}
-
-/*=========================================================
-    CVehicleModelInfoSAInterface::InitNameplate
-
-    Purpose:
-        Initializes the custom license plate which is shared
-        for all vehicles of this model.
-    Binary offsets:
-        (1.0 US and 1.0 EU): 0x004C9450
-=========================================================*/
-void CVehicleModelInfoSAInterface::InitNameplate( void )
-{
-    _licensePlate plate;
-
-    // Get some random stuff into nameplate
-    GetRandomNameplateText( plate.text, 8 );
-
-    plate.style = plateDesign;
-    plate.plate = NULL;
-
-    GetRwObject()->ForAllAtomics( RwAtomicSetLicensePlate, &plate );
-
-    if ( plate.plate )
-        pPlateMaterial = plate.plate;
-}
-
-/*=========================================================
     CVehicleModelInfoSAInterface::AssignPaintjob
 
     Arguments:
@@ -804,4 +682,43 @@ unsigned short CVehicleModelInfoSAInterface::GetNumberOfValidPaintjobs( void ) c
             break;
     
     return n;
+}
+
+/*=========================================================
+    CVehicleModelInfoSAInterface::SetPlateText
+
+    Arguments:
+        plateText - the new plate text to assign to this
+                    vehicle model info (can be NULL)
+    Purpose:
+        Attempts to assign a new plate text string to this
+        vehicle model info.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C8980
+=========================================================*/
+void CVehicleModelInfoSAInterface::SetPlateText( const char *plateText )
+{
+    if ( !plateText )
+    {
+        // If no plate text given, we simply terminate the string.
+        this->plateText[0] = '\0';
+    }
+    else
+    {
+        // Otherwise we copy it into our local buffer.
+        strncpy( this->plateText, plateText, 8 );
+    }
+}
+
+/*=========================================================
+    CVehicleModelInfoSAInterface::GetPlateText
+
+    Purpose:
+        Returns a pointer to the plate text if it is valid.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x004C8970
+=========================================================*/
+const char* CVehicleModelInfoSAInterface::GetPlateText( void ) const
+{
+    return ( *plateText != 0 ) ? ( plateText ) : ( NULL );
 }

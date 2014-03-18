@@ -161,7 +161,7 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
 
     m_health = 1000;
 
-    m_driver = NULL;
+    pDriver = NULL;
     m_numPassengers = 0;
     m_numGettingIn = 0;
     m_gettingInFlags = 0;
@@ -169,8 +169,8 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
 
     m_maxPassengers = MAX_PASSENGERS;
 
-    for (n=0; n<MAX_PASSENGERS; n++)
-        m_passengers[n] = NULL;
+    for ( n = 0; n < MAX_PASSENGERS; n++ )
+        pPassengers[n] = NULL;
 
     m_ammoInClip &= ~0x10;
 
@@ -237,9 +237,9 @@ CVehicleSAInterface::CVehicleSAInterface( unsigned char createdBy )
     m_unk31 = 0;
     m_unk32 = 0;
     m_unk33 = 0;
-    m_plateTexture = NULL;
+    m_pCustomPlateTexture = NULL;
 
-    for (n=0; n<MAX_UPGRADES_ATTACHED; n++)
+    for ( n = 0; n < MAX_UPGRADES_ATTACHED; n++ )
         m_upgrades[n] = -1;
 
     m_usedForCover &= ~0x60;
@@ -609,7 +609,7 @@ bool CVehicleSA::IsPassenger( CPed *ped ) const
 
     while ( n-- )
     {
-        if ( GetInterface()->m_passengers[n] == pedInt )
+        if ( GetInterface()->pPassengers[n] == pedInt )
             return true;
     }
 
@@ -672,7 +672,7 @@ CPed* CVehicleSA::GetDriver() const
 {
     DEBUG_TRACE("CPed* CVehicleSA::GetDriver() const");
 
-    CPedSAInterface *driver = GetInterface()->m_driver;
+    CPedSAInterface *driver = GetInterface()->pDriver;
     
     if ( !driver )
         return NULL;
@@ -687,7 +687,7 @@ CPed* CVehicleSA::GetPassenger( unsigned char ucSlot ) const
     if ( ucSlot > 7 )
         return NULL;
 
-    CPedSAInterface *ped = GetInterface()->m_passengers[ucSlot];
+    CPedSAInterface *ped = GetInterface()->pPassengers[ucSlot];
 
     if ( !ped )
         return NULL;
