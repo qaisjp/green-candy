@@ -432,6 +432,10 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
         Makes sure that the RenderWare states match the states
         that they are meant to have. This function should be
         used to debug MTA and GTA:SA renderstate interactions.
+
+        Define DEBUG_DEVICE_STATE_INTEGRITY to use breakpoint
+        on device state integrity violation. These violations
+        are caused by MTA and have to be debugged.
 =========================================================*/
 void __cdecl RwD3D9ValidateDeviceStates( void )
 {
@@ -449,7 +453,9 @@ void __cdecl RwD3D9ValidateDeviceStates( void )
         {
             if ( currentState != realCurrent )
             {
+#ifdef DEBUG_DEVICE_STATE_INTEGRITY
                 __asm int 3
+#endif //DEBUG_DEVICE_STATE_INTEGRITY
 
                 currentState = realCurrent;
             }
@@ -470,7 +476,9 @@ void __cdecl RwD3D9ValidateDeviceStates( void )
             {
                 if ( currentState != realCurrent )
                 {
+#ifdef DEBUG_DEVICE_STATE_INTEGRITY
                     __asm int 3
+#endif //DEBUG_DEVICE_STATE_INTEGRITY
 
                     currentState = realCurrent;
                 }

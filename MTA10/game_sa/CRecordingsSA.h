@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CRecordingsSA.h
 *  PURPOSE:     GTA:SA car replay recordings
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -27,10 +26,10 @@ struct recordingEntry
 class CRecordingsSA
 {
 public:
-                            CRecordingsSA();
-                            ~CRecordingsSA();
+                            CRecordingsSA       ( void );
+                            ~CRecordingsSA      ( void );
 
-    unsigned int            Register( const char *name );
+    unsigned int            Register            ( const char *name );
 };
 
 #endif //_RECORDINGS_SA_

@@ -109,7 +109,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
     else
         SetColourRemapping( false );
 
-    info->SetRenderColor( m_color1, m_color2, m_color3, m_color4 );
+    info->SetRenderColor( m_colour1, m_colour2, m_colour3, m_colour4 );
     SetVehicleLightsFlags( this );
 
     // Store the body texture for rendering

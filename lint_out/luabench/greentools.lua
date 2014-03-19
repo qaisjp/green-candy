@@ -348,6 +348,8 @@ local function getSVNCommit(sourceSVN, targetSVN)
         end
         
         function info.commit()
+            if not ( hasChanged ) then return; end;
+        
             -- If the target has not existed before, we create it
             if not ( targetHandle ) then
                 targetHandle = targetSVN.open( n, "wb+" );

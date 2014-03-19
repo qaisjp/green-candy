@@ -30,6 +30,8 @@ public:
 
     eHandlingProperty           GetPropertyEnumFromName         ( std::string strName );
 
+    static tHandlingDataSA      m_OriginalHandlingData [HT_MAX];
+
 private:
     void                        InitializeDefaultHandlings      ( void );
 
@@ -40,8 +42,5 @@ private:
 
     std::map < std::string, eHandlingProperty > m_HandlingNames;
 };
-
-// We require this data globally
-extern tHandlingDataSA          m_OriginalHandlingData [HT_MAX];
 
 #endif

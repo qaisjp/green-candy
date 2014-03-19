@@ -107,7 +107,7 @@ RwTexDictionary* __cdecl RwTexDictionaryForAllTextures( RwTexDictionary *texDict
     return texDict;
 }
 
-RwTexDictionary* __cdecl RwTexDictionaryForAllTexture( RwTexDictionary *texDict, void *callback, void *data )
+RwTexDictionary* __cdecl RwTexDictionaryForAllTextures( RwTexDictionary *texDict, void *callback, void *data )
 {
     return RwTexDictionaryForAllTextures( texDict, (texdictTextureIterator_t)callback, data );
 }
