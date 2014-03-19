@@ -491,8 +491,10 @@ inline bool GetEntityTunnelOptimization( CEntitySAInterface *entity )
            !*(bool*)0x00B745C1 && !IS_ANY_FLAG( entity->m_entityFlags, ENTITY_TUNNEL ) );
 }
 
-eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *entity, float& camDistance )
+eRenderType __cdecl _SetupEntityVisibility( CEntitySAInterface *entity, float& camDistance )
 {
+    using namespace EntityRender;
+
     modelId_t modelIndex = entity->GetModelIndex();
     CBaseModelInfoSAInterface *info = entity->GetModelInfo();
 
@@ -623,6 +625,24 @@ eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *ent
     }
 
     return ENTITY_RENDER_CROSS_ZONES;
+}
+
+// MTA team fix.
+eRenderType __cdecl EntityRender::SetupEntityVisibility( CEntitySAInterface *entity, float& camDistance )
+{
+#ifdef _MTA_BLUE
+    // FIX BEGIN
+    OnMY_CRenderer_SetupEntityVisibility_Pre( entity, camDistance );
+#endif //_MTA_BLUE
+
+    eRenderType result = _SetupEntityVisibility( entity, camDistance );
+
+#ifdef _MTA_BLUE
+    // FIX END
+    OnMY_CRenderer_SetupEntityVisibility_Post( (int)result, entity, camDistance );
+#endif //_MTA_BLUE
+
+    return result;
 }
 
 // todo: should not be here, as it is a system by itself.

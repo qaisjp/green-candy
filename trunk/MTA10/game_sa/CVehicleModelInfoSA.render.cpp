@@ -1290,7 +1290,7 @@ static bool RpGeometryMaterialApplyVehicleColor( RpMaterial *mat, _colorTextureS
         {
             SColor useColor;
             SColor color1, color2, color3, color4;
-            gameVehicle->GetColor( color1, color2, color3, color4, 0 );
+            gameVehicle->GetColor( &color1, &color2, &color3, &color4, 0 );
 
             // Each material seems to be individually colored
             if ( color == VEHICLE_COLOR_USECOLOR1 )

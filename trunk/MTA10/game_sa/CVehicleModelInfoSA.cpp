@@ -367,7 +367,7 @@ static __forceinline RpAtomic* RpAtomicCloneInherit( RpAtomic *orig, RpClump *ba
 
 void CVehicleModelInfoSAInterface::Setup( void )
 {
-    tHandlingDataSA *handling = &m_OriginalHandlingData[ handlingID ];
+    tHandlingDataSA *handling = &CHandlingManagerSA::m_OriginalHandlingData[ handlingID ];
     CComponentHierarchySAInterface *info = ((CComponentHierarchySAInterface**)0x008A7740)[ GetVehicleType() ];
     RpAtomic *obj1 = NULL;
     RpAtomic *obj2 = NULL;
@@ -532,7 +532,7 @@ void CVehicleModelInfoSAInterface::Setup( void )
 =========================================================*/
 void CVehicleModelInfoSAInterface::SetComponentFlags( RwFrame *frame, unsigned int flags )
 {
-    tHandlingDataSA *handling = &m_OriginalHandlingData[ handlingID ];
+    tHandlingDataSA *handling = &CHandlingManagerSA::m_OriginalHandlingData[ handlingID ];
     unsigned short compFlags = 0;
 
     if ( flags & 0x1000 )

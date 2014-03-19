@@ -13,6 +13,8 @@
 #ifndef _PLACEABLE_SA_
 #define _PLACEABLE_SA_
 
+#include "CTransformationSA.h"
+
 class CPlaceableSAInterface // 24 bytes
 {
 public:

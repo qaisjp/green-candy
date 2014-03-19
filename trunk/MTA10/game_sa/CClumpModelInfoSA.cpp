@@ -142,8 +142,10 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObject( void )
 
             clump->ForAllAtomics( RpSetAtomicAnimHierarchy, anim );
 
+#ifdef todo
             // Set up the animation
             RwAnimationInit( anim->anim, pGame->GetAnimManager()->CreateAnimation( anim ) );
+#endif
 
             anim->flags = 0x3000;
         }
@@ -154,9 +156,11 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObject( void )
         // Cache the animation and skeleton
         clump->InitStaticSkeleton();
 
+#ifdef todo
         // Set idle animation
         if ( CAnimBlendHierarchySAInterface *anim = pGame->GetAnimManager()->GetAnimBlock( m_animBlock )->GetAnimation( GetHashKey() ) )
             pGame->GetAnimManager()->BlendAnimation( clump, anim, 2, 1.0 );
+#endif
     }
 
     Dereference();

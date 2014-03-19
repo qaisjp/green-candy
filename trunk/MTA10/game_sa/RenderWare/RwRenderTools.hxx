@@ -17,16 +17,20 @@
 
 #include "../gamesa_renderware.h"
 
-inline IDirect3DDevice9* GetRenderDevice( void )
-{
-    return core->GetGraphics()->GetDevice();
-}
-
 inline IDirect3DDevice9* GetRenderDevice_Native( void )
 {
     // Required for callback operations using dummy interfaces.
     // This has been introduced by Core module.
     return *(IDirect3DDevice9**)0x00C97C28;
+}
+
+inline IDirect3DDevice9* GetRenderDevice( void )
+{
+#ifdef OPTIMIZE_DIRECT3D_DEVICE
+    return core->GetGraphics()->GetDevice();
+#else
+    return GetRenderDevice_Native();
+#endif //OPTIMIZE_DIRECT3D_DEVICE
 }
 
 struct RwD3D9StreamInfo //size: 16 bytes

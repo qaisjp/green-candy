@@ -21,7 +21,7 @@
 
 DWORD CHandlingManagerSA::m_dwStore_LoadHandlingCfg = 0;
 
-tHandlingDataSA     m_OriginalHandlingData [HT_MAX];
+tHandlingDataSA     CHandlingManagerSA::m_OriginalHandlingData [HT_MAX];
 CHandlingEntrySA*   CHandlingManagerSA::m_pOriginalEntries [HT_MAX];  
 
 // Use the following code to dump handling data unrecalculated on GTA load.

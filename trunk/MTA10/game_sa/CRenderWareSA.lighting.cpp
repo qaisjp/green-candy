@@ -610,7 +610,13 @@ inline CShaderItem* _NewLightShaderInstance( const char *name )
 
     SString outStatus;
 
-    CShaderItem *shader = core->GetGraphics()->GetRenderItemManager()->CreateShader( shaderPath, rootPath, outStatus, 1.0, 0.0, true );
+    CShaderItem *shader = core->GetGraphics()->GetRenderItemManager()->CreateShader( shaderPath, rootPath, outStatus, 1.0, 0.0,
+#ifdef _MTA_BLUE
+        false, true, false
+#else
+        true
+#endif //_MTA_BLUE
+    );
 
     if ( !shader )
         core->GetConsole()->Print( outStatus );

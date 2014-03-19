@@ -4,7 +4,6 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        game_sa/CRecordingsSA.cpp
 *  PURPOSE:     GTA:SA car replay recordings
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
@@ -15,11 +14,11 @@
 static recordingEntry *VAR_RecordingEntries = (recordingEntry*)ARRAY_RecordingEntries;
 static unsigned int *VAR_NumRecordings = (unsigned int*)LOC_NumRecordings;
 
-CRecordingsSA::CRecordingsSA()
+CRecordingsSA::CRecordingsSA( void )
 {
 }
 
-CRecordingsSA::~CRecordingsSA()
+CRecordingsSA::~CRecordingsSA( void )
 {
 }
 

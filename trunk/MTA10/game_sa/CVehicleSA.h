@@ -544,7 +544,7 @@ public:
 
     unsigned int                m_timeOfCreation;                       // 1072, GetTimeInMilliseconds when this vehicle was created.
 
-    unsigned char               m_color1, m_color2, m_color3, m_color4; // 1076
+    unsigned char               m_colour1, m_colour2, m_colour3, m_colour4; // 1076
     char                        m_comp1, m_comp2;                       // 1080
     short                       m_upgrades[MAX_UPGRADES_ATTACHED];      // 1082
     unsigned short              m_numUpgrades;                          // 1110, No idea whether this is true
@@ -710,6 +710,7 @@ public:
     inline unsigned char        GetAlpha() const                                        { return m_alpha; }
     void                        SetColor( SColor color1, SColor color2, SColor color3, SColor color4, int );
     void                        GetColor( SColor& color1, SColor& color2, SColor& color3, SColor& color4, int ) const;
+    void                        GetColor( SColor* color1, SColor* color2, SColor* color3, SColor* color4, int ) const;
 
     CModel*                     CloneClump() const;
     CVehicleComponent*          GetComponent( const char *name );

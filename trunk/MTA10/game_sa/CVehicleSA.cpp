@@ -349,10 +349,10 @@ void CVehicleSA::Init()
     m_alpha = 255;
     m_vecGravity = CVector ( 0.0f, 0.0f, -1.0f );
 
-    m_RGBColors[0] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_color1 );
-    m_RGBColors[1] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_color2 );
-    m_RGBColors[2] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_color2 );
-    m_RGBColors[3] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_color3 );
+    m_RGBColors[0] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_colour1 );
+    m_RGBColors[1] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_colour2 );
+    m_RGBColors[2] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_colour3 );
+    m_RGBColors[3] = CVehicleColor::GetRGBFromPaletteIndex( GetInterface()->m_colour4 );
 }
 
 CVehicleSA::~CVehicleSA()
@@ -387,6 +387,11 @@ void CVehicleSA::GetColor( SColor& color1, SColor& color2, SColor& color3, SColo
     color2 = m_RGBColors[1];
     color3 = m_RGBColors[2];
     color4 = m_RGBColors[3];
+}
+
+void CVehicleSA::GetColor( SColor* color1, SColor* color2, SColor* color3, SColor* color4, int ) const
+{
+    GetColor( *color1, *color2, *color3, *color4, 0 );
 }
 
 CModel* CVehicleSA::CloneClump() const
