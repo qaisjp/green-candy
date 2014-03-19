@@ -1,4 +1,5 @@
 #include "../StdInc.h"
+#include "../resources.h"
 
 enum eStreamMethod
 {
@@ -991,127 +992,38 @@ static const char *pMetaEnd=
 	"</meta>\n";
 
 
-static const char *txdNames[65536];
-static const char *txdName;
-static const char *colName;
-static unsigned short usTxdNames = 0;
 static char lodBuffer[128];
 static CFile *pMetaFile = NULL;
 
-inline bool _CopyOnlyIfRequired( const char *src, const char *dst )
+struct blueResourceDispatch
 {
-    if ( fileRoot->Exists( dst ) )
-        return false;
+    inline bool requireCollision( const char *name, bool lod )
+    {
+        return !lod || !forceLODInherit;
+    }
 
-    return fileRoot->Copy( src, dst );
-}
+    inline void OnModelEntry( const char *name )
+    {
+	    pMetaFile->Printf(
+		    "	<file src=\"models\\%s.dff\" type=\"client\" />\n", name
+	    );
+    }
 
-static inline bool AllocateResources( const char *name, bool lod )
-{
-	char buffer[1024];
-	char copyBuffer[1024];
-	unsigned int k;
-
-	// Copy the model file
-	_snprintf(buffer, 1023, "resources\\%s.dff", name);
-
-	if (!fileRoot->Exists(buffer))
-	{
-		printf("error: model missing (%s)\n", buffer);
-		return false;
-	}
-
-	_snprintf(copyBuffer, 1023, "output\\models\\%s.dff", name);
-
-	if (_CopyOnlyIfRequired(buffer, copyBuffer))
-		printf("copying model '%s'\n", name);
-
-	if ( !lod || !forceLODInherit )
-	{
-		// Now the collision
-		_snprintf(buffer, 1023, "resources\\%s.col", name);
-
-		if ( !fileRoot->Exists(buffer) )
-		{
-			if ( !lod )
-			{
-				printf("error: collision missing (%s)\n", buffer);
-				return false;
-			}
-
-			colName = NULL;
-		}
-		else
-		{
-			colName = name;
-
-			_snprintf(copyBuffer, 1023, "output\\coll\\%s.col", colName);
-
-			if (_CopyOnlyIfRequired(buffer, copyBuffer))
-				printf("copying collision '%s'\n", colName);
-		}
-	}
-	else
-		colName = NULL;
-
-	CObject *txdObj = GetObjectByModel(name);
-
-	if (!txdObj)
-	{
-		printf("could not find object def for '%s'\n", name);
-		return false;
-	}
-
-	if (lodSupport)
-		_snprintf(lodBuffer, 127, "%.0f", txdObj->m_drawDistance);
-	else
-		strcpy(lodBuffer, "500");
-
-	txdName = txdObj->m_textureName;
-
-	for (k=0; k < usTxdNames; k++)
-		if (strcmp(txdNames[k], txdName) == 0)
-			break;
-
-	// Little hack
-	if (k == usTxdNames)
-	{
-		// Copy over resources
-		_snprintf(buffer, 1023, "resources\\%s.txd", txdName);
-
-		if (!fileRoot->Exists(buffer))
-			printf("texture missing: %s (ignoring)\n", buffer);
-		else
-		{
-			_snprintf(copyBuffer, 1023, "output\\textures\\%s.txd", txdName);
-
-			// Copy the resource over
-			if (_CopyOnlyIfRequired(buffer, copyBuffer))
-				printf("copying texture '%s'\n", txdName);
-
-			pMetaFile->Printf(
-				"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", txdName
-			);
-		}
-
-		txdNames[usTxdNames++] = txdName;
-	}
-
-	names[usNames++] = name;
-
-	pMetaFile->Printf(
-		"	<file src=\"models\\%s.dff\" type=\"client\" />\n", name
-	);
-
-	if ( colName )
-	{
+    inline void OnTxdEntry( const char *name )
+    {
 		pMetaFile->Printf(
-			"	<file src=\"coll\\%s.col\" type=\"client\" />\n", colName
+			"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", name
 		);
-	}
+    }
 
-	return true;
-}
+    inline void OnCOLEntry( const char *name )
+    {
+		pMetaFile->Printf(
+			"	<file src=\"coll\\%s.col\" type=\"client\" />\n", name
+		);
+    }
+};
+typedef ResourceManager <blueResourceDispatch> blueResourceManager;
 
 bool bundleForBLUE( CINI *config )
 {
@@ -1120,6 +1032,9 @@ bool bundleForBLUE( CINI *config )
 	CFile *pLuaServer;
 	CINI::Entry *mainEntry;
 	instanceList_t::iterator iter;
+
+    // Instance of resource allocation.
+    blueResourceManager resManager( 0, blueResourceDispatch() );
 
 	printf( "Mode: MTA:BLUE\n" );
 
@@ -1170,12 +1085,12 @@ bool bundleForBLUE( CINI *config )
 
 nonotify:
 	// Create the .lua file
-	pLuaFile=g_outputRoot->Open("script.lua","w");
-	pMetaFile=g_outputRoot->Open("meta.xml","w");
+	pLuaFile = resManager.outputRoot->Open("script.lua","w");
+	pMetaFile = resManager.outputRoot->Open("meta.xml","w");
 #if (MAP_METHOD==MAP_XML)
-	pMapFile=g_outputRoot->Open("gta3.map","w");
+	pMapFile = resManager.outputRoot->Open("gta3.map","w");
 #endif
-	pLuaServer=g_outputRoot->Open("main_server.lua","w");
+	pLuaServer = resManager.outputRoot->Open("main_server.lua","w");
 
 	// Init files first
 	luaBegin( pLuaFile );
@@ -1217,7 +1132,7 @@ nonotify:
 			if (m != usNames)
 				continue;
 
-			if ( !AllocateResources( (*objIter)->m_modelName, true ) )
+			if ( !resManager.AllocateResources( (*objIter)->m_modelName, true ) )
 				continue;
 
 			_snprintf( lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
@@ -1228,7 +1143,7 @@ nonotify:
 			luaModelLODEntry( pLuaFile,
 				(*objIter)->m_realModelID,
 				(*objIter)->m_modelName,
-				colName,
+				resManager.colName,
 				(*objIter)->m_textureName,
 				lodBuffer,
 				obj ? obj->m_realModelID : 0
@@ -1267,7 +1182,7 @@ nonotify:
 			continue;
 		}
 
-		if ( !AllocateResources( name, false ) )
+		if ( !resManager.AllocateResources( name, false ) )
 			continue;
 
 #if (MAP_METHOD==MAP_XML)
@@ -1286,7 +1201,7 @@ nonotify:
 			lod = lodObj->m_realModelID;
 
 		// Now LUA
-		luaModelLoadEntry( pLuaFile, name, txdName, modelIDs[(*iter)->m_modelID], lodBuffer, lod );
+		luaModelLoadEntry( pLuaFile, name, resManager.txdName, modelIDs[(*iter)->m_modelID], lodBuffer, lod );
 	}
 
 	luaModelLoadEnd( pLuaFile );
@@ -1308,6 +1223,7 @@ nonotify:
 #if (MAP_METHOD==MAP_XML)
 	delete pMapFile;
 #endif
+    delete pLuaServer;
 
 	if ( doCompile )
 	{
@@ -1315,7 +1231,7 @@ nonotify:
 		system("luac5.1.exe -s -o output/script.luac output/script.lua");
 #endif //OS DEPENDANT CODE
 
-		g_outputRoot->Delete( "script.lua" );
+		resManager.outputRoot->Delete( "script.lua" );
 	}
 
 	return true;

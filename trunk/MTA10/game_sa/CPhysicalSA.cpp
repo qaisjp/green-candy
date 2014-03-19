@@ -65,13 +65,13 @@ CPhysicalSAInterface::CPhysicalSAInterface( void )
     m_unk11 = 0;
     m_unk12 = 0;
 
-    m_lighting2 = 0;
-    m_lighting3 = 0;
+    m_fLighting2 = 0;
+    m_fLighting3 = 0;
 
     m_unk13 = 10;
     physicalFlags = 2;
 
-    m_lighting = 0;
+    m_fLighting = 0;
 }
 
 CPhysicalSAInterface::~CPhysicalSAInterface( void )

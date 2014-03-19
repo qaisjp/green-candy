@@ -53,7 +53,7 @@ CINI::CINI(const char *buffer)
 				name = (char*)malloc( tokLen + 1 );
 				strncpy( name, token + 1, tokLen );
 
-				name[len] = 0;
+				name[tokLen] = 0;
 
 				section = new Entry( name );
 

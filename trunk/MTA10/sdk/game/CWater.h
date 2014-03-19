@@ -20,8 +20,8 @@ enum EWaterPolyType
     WATER_POLY_LIST
 };
 
-#define WATER_VISIBLE 1
-#define WATER_SHALLOW 2
+#define _WATER_VISIBLE 1
+#define _WATER_SHALLOW 2
 
 class CWaterVertex abstract
 {
