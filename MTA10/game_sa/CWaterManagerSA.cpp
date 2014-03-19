@@ -559,9 +559,9 @@ CWaterPoly* CWaterManagerSA::CreateQuad ( CVector& vecBL, CVector& vecBR, CVecto
     pInterface->m_wVertexIDs [ 1 ] = pV2->GetID ();
     pInterface->m_wVertexIDs [ 2 ] = pV3->GetID ();
     pInterface->m_wVertexIDs [ 3 ] = pV4->GetID ();
-    pInterface->m_wFlags = WATER_VISIBLE;
+    pInterface->m_wFlags = _WATER_VISIBLE;
     if ( bShallow )
-        pInterface->m_wFlags |= WATER_SHALLOW;
+        pInterface->m_wFlags |= _WATER_SHALLOW;
 
     WORD wID = (WORD)(pInterface - g_pWaterManager->m_QuadPool);
     std::vector < CWaterZoneSA* >::iterator it;
@@ -605,9 +605,9 @@ CWaterPoly* CWaterManagerSA::CreateTriangle ( CVector& vec1, CVector& vec2, CVec
     pInterface->m_wVertexIDs [ 0 ] = pV1->GetID ();
     pInterface->m_wVertexIDs [ 1 ] = pV2->GetID ();
     pInterface->m_wVertexIDs [ 2 ] = pV3->GetID ();
-    pInterface->m_wFlags = WATER_VISIBLE;
+    pInterface->m_wFlags = _WATER_VISIBLE;
     if ( bShallow )
-        pInterface->m_wFlags |= WATER_SHALLOW;
+        pInterface->m_wFlags |= _WATER_SHALLOW;
 
     WORD wID = (WORD)(pInterface - g_pWaterManager->m_TrianglePool);
     std::vector < CWaterZoneSA* >::iterator it;

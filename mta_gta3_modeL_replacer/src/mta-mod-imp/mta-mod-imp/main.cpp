@@ -34,6 +34,10 @@ short usYoffset=0;
 short usXoffset=0;
 short usZoffset=500;
 
+static bool zipOutput = false;
+const char *zipName = NULL;
+static bool zipResources = false;
+
 CFileTranslator *g_resourceRoot = NULL;
 CFileTranslator *g_outputRoot = NULL;
 
@@ -201,6 +205,9 @@ int		main (int argc, char *argv[])
 		usXoffset = mainEntry->GetInt("xOffset");
 		usYoffset = mainEntry->GetInt("yOffset");
 		usZoffset = mainEntry->GetInt("zOffset");
+        zipOutput = mainEntry->GetBool("zipOutput");
+        zipName = mainEntry->Get("zipName");
+        zipResources = mainEntry->GetBool("zipResources");
 	}
 	else
 	{
@@ -210,6 +217,9 @@ int		main (int argc, char *argv[])
 		mode = "green";
 		lodSupport = true;
 		preserveMainWorldIntegrity = false;
+        zipOutput = false;
+        zipName = NULL;
+        zipResources = false;
 	}
 
 	if ( preserveMainWorldIntegrity )
@@ -299,27 +309,165 @@ int		main (int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	// Set up the directory scheme
-    fileRoot->CreateDir( "output/" );
-
     // Acquire access.
-    g_resourceRoot = fileSystem->CreateTranslator( "resources/" );
-	g_outputRoot = fileSystem->CreateTranslator( "output/" );
+    CFile *archiveOutputStream = NULL;
+    CArchiveTranslator *archiveOutputRoot = NULL;
+    CFileTranslator *outputRoot = NULL;
 
-    g_outputRoot->CreateDir( "models/" );
-    g_outputRoot->CreateDir( "textures/" );
-    g_outputRoot->CreateDir( "coll/" );
+    // Attempt to create a .zip archive.
+    if ( zipOutput )
+    {
+        const char *outputZipName = zipName;
 
-	// Branch to the handler
-	bool success;
+        if ( !outputZipName )
+            outputZipName = "output.zip";
 
-	if ( stricmp( mode, "green" ) == 0 )
-		success = bundleForGREEN( config );
+        archiveOutputStream = fileRoot->Open( outputZipName, "rb" );
+
+        if ( archiveOutputStream )
+        {
+            archiveOutputRoot = fileSystem->OpenArchive( *archiveOutputStream );
+
+            if ( !archiveOutputRoot )
+            {
+                delete archiveOutputStream;
+
+                archiveOutputStream = NULL;
+            }
+        }
+
+        if ( !archiveOutputStream )
+        {
+            archiveOutputStream = fileRoot->Open( outputZipName, "wb" );
+
+            if ( archiveOutputStream )
+            {
+                archiveOutputRoot = fileSystem->CreateZIPArchive( *archiveOutputStream );
+            }
+        }
+
+        // Attempt to set the output root.
+        outputRoot = archiveOutputRoot;
+    }
+
+    // If we do not have an output root already.
+    if ( !outputRoot )
+    {
+	    // Set up the directory scheme
+        fileRoot->CreateDir( "output/" );
+
+        outputRoot = fileSystem->CreateTranslator( "output/" );
+    }
+
+    CFile *archiveResourceStream = NULL;
+    CArchiveTranslator *archiveResourceRoot = NULL;
+    CFileTranslator *resourceRoot = NULL;
+
+    // Try to find zipped resources (if the config allows their loading).
+    if ( zipResources )
+    {
+        archiveResourceStream = fileRoot->Open( "resources.zip", "rb" );
+
+        if ( archiveResourceStream )
+        {
+            archiveResourceRoot = fileSystem->OpenArchive( *archiveResourceStream );
+
+            if ( !archiveResourceRoot )
+            {
+                delete archiveResourceStream;
+
+                archiveResourceStream = NULL;
+            }
+        }
+
+        resourceRoot = archiveResourceRoot;
+    }
+
+    // Default to a directory on the root filesystem.
+    if ( !resourceRoot )
+    {
+        resourceRoot = fileSystem->CreateTranslator( "resources/" );
+    }
+
+    g_resourceRoot = resourceRoot;
+	g_outputRoot = outputRoot;
+
+    if ( !g_resourceRoot )
+    {
+        printf( "warning: resource root could not be found\n" );
+    }
+
+    bool success = false;
+
+    if ( g_outputRoot )
+    {
+        g_outputRoot->CreateDir( "models/" );
+        g_outputRoot->CreateDir( "textures/" );
+        g_outputRoot->CreateDir( "coll/" );
+
+	    // Branch to the handler
+	    if ( stricmp( mode, "green" ) == 0 )
+		    success = bundleForGREEN( config );
+        else
+            success = bundleForBLUE( config );
+    }
     else
-        success = bundleForBLUE( config );
+    {
+        printf( "error: failed to acquire output folder link" );
+    }
+
+    // Save output data (if necessary)
+    if ( archiveOutputRoot )
+    {
+        printf( "writing to .zip archive (do not close)...\n" );
+
+        archiveOutputRoot->Save();
+
+        printf( "finished!\n" );
+    }
+
+    // Clean up FileSystem links.
+    if ( g_resourceRoot )
+    {
+        delete g_resourceRoot;
+
+        g_resourceRoot = NULL;
+    }
+
+    if ( g_outputRoot )
+    {
+        delete g_outputRoot;
+
+        g_outputRoot = NULL;
+    }
+
+    // Clean up special links.
+    if ( archiveResourceStream )
+    {
+        delete archiveResourceStream;
+
+        archiveResourceStream = NULL;
+    }
+
+    if ( archiveOutputStream )
+    {
+        delete archiveOutputStream;
+
+        archiveOutputStream = NULL;
+    }
 
     // Clean up the fileSystem module activity.
     delete fileSystem;
 
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+CFileTranslator* AcquireResourceRoot( void )
+{
+    return g_resourceRoot;
+}
+
+CFileTranslator* AcquireOutputRoot( void )
+{
+    return g_outputRoot;
 }

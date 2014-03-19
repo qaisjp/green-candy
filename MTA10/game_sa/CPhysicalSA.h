@@ -93,9 +93,9 @@ public:
     unsigned int            m_unk9;                     // 292
     unsigned int            m_unk8;                     // 296
 
-    float                   m_lighting;                 // 300, col lighting? CPhysical::GetLightingFromCol
-    float                   m_lighting2;                // 304, added to col lighting in CPhysical::GetTotalLighting
-    float                   m_lighting3;                // 308
+    float                   m_fLighting;                // 300, col lighting? CPhysical::GetLightingFromCol
+    float                   m_fLighting2;               // 304, added to col lighting in CPhysical::GetTotalLighting
+    float                   m_fLighting3;               // 308
 };
 
 void Physical_Init();
@@ -139,8 +139,8 @@ public:
 
     void            GetImmunities( bool& bNoClip, bool& bFrozen, bool& bBulletProof, bool& bFlameProof, bool& bUnk, bool& bUnk2, bool& bCollisionProof, bool& bExplosionProof ) const;
 
-    float           GetLighting() const                                         { return GetInterface()->m_lighting; }
-    void            SetLighting( float fLighting )                              { GetInterface()->m_lighting = fLighting; }
+    float           GetLighting() const                                         { return GetInterface()->m_fLighting; }
+    void            SetLighting( float fLighting )                              { GetInterface()->m_fLighting = fLighting; }
 };
 
 #endif

@@ -19,28 +19,19 @@
 class CColPointSAInterface
 {
 public:
-    CVector Position;
-    FLOAT fUnknown1;
-    CVector Normal;
-    FLOAT fUnknown2;
-    BYTE bSurfaceTypeA;
-    BYTE bPieceTypeA;
-    BYTE bLightingA;
-    BYTE bSurfaceTypeB;
-    BYTE bPieceTypeB;
-    BYTE bLightingB;
-    FLOAT fDepth;
-/*
-    +0 Position (12 Bytes  Vector)
-    +12?
-    +16 Normal (12 Bytes  Vector)
-    +32 SurfaceTypeA
-    +33 PieceTypeA
-    +34 LightingA (assumed)
-    +35 SurfaceTypeB 
-    +36 PieceTypeB
-    +37 LightingB 
-    +40 Depth (float)*/
+	CVector         Position;       // 0
+	float           fUnknown1;      // 12 
+	CVector         Normal;         // 16
+	float           fUnknown2;      // 28
+	EColSurface     ucSurfaceTypeA; // 32
+	uint8           ucPieceTypeA;   // 33
+	CColLighting    lightingA;      // 34
+	EColSurface     ucSurfaceTypeB; // 35
+	uint8           ucPieceTypeB;   // 36
+	CColLighting    lightingB;      // 37
+	uint8           pad1;           // 38
+	uint8           pad2;           // 39
+	float           fDepth;         // 40
 };
 
 class CColPointSA : public CColPoint
@@ -58,23 +49,23 @@ public:
     CVector * GetNormal() { return &this->GetInterface()->Normal; };
     VOID SetNormal(CVector * vecNormal) { MemCpyFast (&this->GetInterface()->Normal, vecNormal, sizeof(CVector)); };
 
-    BYTE GetSurfaceTypeA() { return this->GetInterface()->bSurfaceTypeA; };
-    BYTE GetSurfaceTypeB() { return this->GetInterface()->bSurfaceTypeB; };
+    BYTE GetSurfaceTypeA() { return this->GetInterface()->ucSurfaceTypeA; };
+    BYTE GetSurfaceTypeB() { return this->GetInterface()->ucSurfaceTypeB; };
 
-    VOID SetSurfaceTypeA(BYTE bSurfaceType) { this->GetInterface()->bSurfaceTypeA = bSurfaceType; };
-    VOID SetSurfaceTypeB(BYTE bSurfaceType) { this->GetInterface()->bSurfaceTypeB = bSurfaceType; };
+    VOID SetSurfaceTypeA(BYTE bSurfaceType) { this->GetInterface()->ucSurfaceTypeA = (EColSurfaceValue)bSurfaceType; };
+    VOID SetSurfaceTypeB(BYTE bSurfaceType) { this->GetInterface()->ucSurfaceTypeB = (EColSurfaceValue)bSurfaceType; };
 
-    BYTE GetPieceTypeA() { return this->GetInterface()->bPieceTypeA; };
-    BYTE GetPieceTypeB() { return this->GetInterface()->bPieceTypeB; };
+    BYTE GetPieceTypeA() { return this->GetInterface()->ucPieceTypeA; };
+    BYTE GetPieceTypeB() { return this->GetInterface()->ucPieceTypeB; };
 
-    VOID SetPieceTypeA(BYTE bPieceType) { this->GetInterface()->bPieceTypeA = bPieceType; };
-    VOID SetPieceTypeB(BYTE bPieceType) { this->GetInterface()->bPieceTypeB = bPieceType; };
+    VOID SetPieceTypeA(BYTE bPieceType) { this->GetInterface()->ucPieceTypeA = bPieceType; };
+    VOID SetPieceTypeB(BYTE bPieceType) { this->GetInterface()->ucPieceTypeB = bPieceType; };
 
-    BYTE GetLightingA() { return this->GetInterface()->bLightingA; };
-    BYTE GetLightingB() { return this->GetInterface()->bLightingB;};
+    BYTE GetLightingA() { return *(BYTE*)&this->GetInterface()->lightingA; };
+    BYTE GetLightingB() { return *(BYTE*)&this->GetInterface()->lightingB; };
 
-    VOID SetLightingA(BYTE bLighting) { this->GetInterface()->bLightingA = bLighting; };
-    VOID SetLightingB(BYTE bLighting) { this->GetInterface()->bLightingB = bLighting; };
+    VOID SetLightingA(BYTE bLighting) { *(BYTE*)&this->GetInterface()->lightingA = bLighting; };
+    VOID SetLightingB(BYTE bLighting) { *(BYTE*)&this->GetInterface()->lightingB = bLighting; };
 
     FLOAT GetDepth() { return this->GetInterface()->fDepth; };
     VOID SetDepth(FLOAT fDepth) { this->GetInterface()->fDepth = fDepth; };

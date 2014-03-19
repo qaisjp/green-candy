@@ -268,7 +268,7 @@ void CClientObject::SetAlpha( unsigned char ucAlpha )
 void CClientObject::SetScale( float fScale )
 {
     if ( m_pObject )
-        m_pObject->SetScale( fScale );
+        m_pObject->SetScaleValue( fScale );
 
     m_fScale = fScale;
 }

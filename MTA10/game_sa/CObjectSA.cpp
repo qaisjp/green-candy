@@ -45,6 +45,8 @@ CObjectSA::CObjectSA( CObjectSAInterface *obj )
     m_ucAlpha = 255;
     m_hasCustomAttributes = false;
 
+    m_hasScaleVector = false;
+
     CheckForGangTag ();
 }
 
@@ -91,6 +93,38 @@ void CObjectSA::Break()
         mov     ecx, dwThis
         call    dwFunc
     }
+}
+
+void CObjectSA::SetScaleValue( float val )
+{
+    GetInterface()->fScale = val;
+
+    m_hasScaleVector = false;
+}
+
+void CObjectSA::SetScale( const CVector *vec )
+{
+    if ( !vec )
+        m_hasScaleVector = false;
+    else
+    {
+        m_scaleVec = *vec;
+        
+        m_hasScaleVector = true;
+    }
+}
+
+const CVector* CObjectSA::GetScale( void ) const
+{
+    if ( m_hasScaleVector )
+        return &m_scaleVec;
+
+    return NULL;
+}
+
+float CObjectSA::GetScaleValue( void ) const
+{
+    return GetInterface()->fScale;
 }
 
 void CObjectSA::SetModelIndex( unsigned short ulModel )

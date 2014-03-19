@@ -36,6 +36,9 @@
     <ClInclude Include="StdInc.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="resources.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="csv.cpp" />

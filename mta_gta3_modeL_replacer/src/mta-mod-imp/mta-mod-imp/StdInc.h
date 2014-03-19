@@ -39,6 +39,10 @@
 
 typedef std::map <unsigned short, CInstance*> lodMap_t;
 
+// Utilities from main file.
+CFileTranslator* AcquireResourceRoot( void );
+CFileTranslator* AcquireOutputRoot( void );
+
 // Gay quats
 typedef struct quat_s
 {
@@ -87,9 +91,6 @@ extern short usZoffset;
 #define MODEL_TABLE 1
 #define MODEL_STATIC 2
 #define MODEL_METHOD MODEL_TABLE
-
-extern CFileTranslator *g_resourceRoot;
-extern CFileTranslator *g_outputRoot;
 
 #ifdef __linux__
 #define _snprintf snprintf

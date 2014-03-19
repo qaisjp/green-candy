@@ -1,4 +1,5 @@
 #include "../StdInc.h"
+#include "../resources.h"
 
 static const char *pServerHeader=
 	"-- Automatically generated server script by MTASA map IPL map converter\n" \
@@ -27,128 +28,38 @@ static const char *pMetaHeader2=
 static const char *pMetaEnd=
 	"</meta>\n";
 
-static const char *txdNames[65536];
-static const char *txdName;
-static const char *colName;
-static unsigned short usTxdNames = 0;
 static char lodBuffer[128];
-static CFile *pMetaFile;
+static CFile *pMetaFile = NULL;
 
-inline bool _CopyOnlyIfRequired( const char *src, const char *dst )
+struct greenResourceDispatch
 {
-    if ( fileRoot->Exists( dst ) )
-        return false;
+    inline bool requireCollision( const char *name, bool lod )
+    {
+        return !lod;
+    }
 
-    return fileRoot->Copy( src, dst );
-}
+    inline void OnModelEntry( const char *name )
+    {
+	    pMetaFile->Printf(
+		    "	<file src=\"models\\%s.dff\" type=\"client\" />\n", name
+	    );
+    }
 
-static inline bool AllocateResources( const char *name, bool lod )
-{
-	char buffer[1024];
-	char copyBuffer[1024];
-	unsigned int k;
-
-	// Copy the model file
-	_snprintf(buffer, 1023, "resources\\%s.dff", name);
-
-	if (!fileRoot->Exists(buffer))
-	{
-		printf("error: model missing (%s)\n", buffer);
-		return false;
-	}
-
-	_snprintf(copyBuffer, 1023, "output\\models\\%s.dff", name);
-
-	if (_CopyOnlyIfRequired(buffer, copyBuffer))
-		printf("copying model '%s'\n", name);
-
-	if ( !lod )
-	{
-		// Now the collision
-		_snprintf(buffer, 1023, "resources\\%s.col", name);
-
-		if ( !fileRoot->Exists(buffer) )
-		{
-			if ( !lod )
-			{
-				printf("error: collision missing (%s)\n", buffer);
-				return false;
-			}
-
-			colName = NULL;
-		}
-		else
-		{
-			colName = name;
-
-			_snprintf(copyBuffer, 1023, "output\\coll\\%s.col", colName);
-
-			if (_CopyOnlyIfRequired(buffer, copyBuffer))
-				printf("copying collision '%s'\n", colName);
-		}
-	}
-	else
-		colName = NULL;
-
-	CObject *txdObj = GetObjectByModel(name);
-
-	if (!txdObj)
-	{
-		printf("could not find object def for '%s'\n", name);
-		return false;
-	}
-
-	if (lodSupport)
-		_snprintf(lodBuffer, 127, "%.0f", txdObj->m_drawDistance);
-	else
-		strcpy(lodBuffer, "500");
-
-	txdName = txdObj->m_textureName;
-
-	for (k=0; k < usTxdNames; k++)
-		if (strcmp(txdNames[k], txdName) == 0)
-			break;
-
-	// Little hack
-	if (k == usTxdNames)
-	{
-		// Copy over resources
-		_snprintf(buffer, 1023, "resources\\%s.txd", txdName);
-
-		if (!fileRoot->Exists(buffer))
-			printf("texture missing: %s (ignoring)\n", buffer);
-		else
-		{
-			_snprintf(copyBuffer, 1023, "output\\textures\\%s.txd", txdName);
-
-			// Copy the resource over
-			if (_CopyOnlyIfRequired(buffer, copyBuffer))
-				printf("copying texture '%s'\n", txdName);
-
-			pMetaFile->Printf(
-				"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", txdName
-			);
-		}
-
-		txdNames[usTxdNames++] = txdName;
-	}
-
-	names[usNames++] = name;
-
-	pMetaFile->Printf(
-		"	<file src=\"models\\%s.dff\" type=\"client\" />\n", name
-	);
-
-	if ( colName )
-	{
+    inline void OnTxdEntry( const char *name )
+    {
 		pMetaFile->Printf(
-			"	<file src=\"coll\\%s.col\" type=\"client\" />\n", colName
+			"	<file src=\"textures\\%s.txd\" type=\"client\" />\n", name
 		);
-	}
+    }
 
-	return true;
-}
-
+    inline void OnCOLEntry( const char *name )
+    {
+		pMetaFile->Printf(
+			"	<file src=\"coll\\%s.col\" type=\"client\" />\n", name
+		);
+    }
+};
+typedef ResourceManager <greenResourceDispatch> greenResourceManager;
 
 bool bundleForGREEN( CINI *config )
 {
@@ -157,6 +68,9 @@ bool bundleForGREEN( CINI *config )
 	CFile *pLuaServer;
 	CINI::Entry *mainEntry;
 	instanceList_t::iterator iter;
+
+    // Create the resource manager that manages everything.
+    greenResourceManager resManager( 0, greenResourceDispatch() );
 
 	printf( "Mode: MTA:GREEN\n" );
 
@@ -170,10 +84,10 @@ bool bundleForGREEN( CINI *config )
 	}
 
 	// Create the .lua file
-	pLuaFile=g_outputRoot->Open("model_res.lua","w");
-	pMetaFile=g_outputRoot->Open("meta.xml","w");
-	pMapFile=g_outputRoot->Open("gta3.map","w");
-	pLuaServer=g_outputRoot->Open("main_server.lua","w");
+	pLuaFile = resManager.outputRoot->Open("model_res.lua","w");
+	pMetaFile = resManager.outputRoot->Open("meta.xml","w");
+	pMapFile = resManager.outputRoot->Open("gta3.map","w");
+	pLuaServer = resManager.outputRoot->Open("main_server.lua","w");
 
 	// Init files first
 	pMetaFile->Printf("%s", pMetaHeader);
@@ -193,7 +107,7 @@ bool bundleForGREEN( CINI *config )
 		);
 
 		objectList_t::iterator objIter;
-		CFile *lodRes = g_outputRoot->Open("lod_res.lua", "w");
+		CFile *lodRes = resManager.outputRoot->Open("lod_res.lua", "w");
 
 		// LODs are loaded and stay this way
 		lodRes->Printf( "return {\n" );
@@ -213,7 +127,7 @@ bool bundleForGREEN( CINI *config )
 			if (m != usNames)
 				continue;
 
-			if ( !AllocateResources( (*objIter)->m_modelName, true ) )
+			if ( !resManager.AllocateResources( (*objIter)->m_modelName, true ) )
 				continue;
 
 			_snprintf( lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
@@ -233,9 +147,9 @@ bool bundleForGREEN( CINI *config )
 				obj ? obj->m_realModelID : 0
 			);
 
-			if ( colName )
+			if ( resManager.colName )
 			{
-				lodRes->Printf( ", %s", colName );
+				lodRes->Printf( ", %s", resManager.colName );
 			}
 
 			lodRes->Printf( " }" );
@@ -272,7 +186,7 @@ bool bundleForGREEN( CINI *config )
 			continue;
 		}
 
-		if ( !AllocateResources( name, false ) )
+		if ( !resManager.AllocateResources( name, false ) )
 			continue;
 
 		// We add all map entries
@@ -289,7 +203,7 @@ bool bundleForGREEN( CINI *config )
 			pLuaFile->Printf( ",\n" );
 
 		pLuaFile->Printf(
-			"    { model=%u, model_file=\"%s\", txd_file=\"%s\", coll_file=\"%s\", lod=%s", modelIDs[(*iter)->m_modelID], name, txdName, name, lodBuffer
+			"    { model=%u, model_file=\"%s\", txd_file=\"%s\", coll_file=\"%s\", lod=%s", modelIDs[(*iter)->m_modelID], name, resManager.txdName, name, lodBuffer
 		);
 
 		if ( lodSupport && lod != 0 )
@@ -308,6 +222,7 @@ bool bundleForGREEN( CINI *config )
 	delete pLuaFile;
 	delete pMetaFile;
 	delete pMapFile;
+    delete pLuaServer;
 
 	// Copy over the appropriate model loader
 	fileRoot->Copy( "stockpile/green/lod_static.lua", "output/script.lua" );
@@ -318,7 +233,7 @@ bool bundleForGREEN( CINI *config )
 		system("luac5.1.exe -s -o output/script.luac output/script.lua");
 #endif //OS DEPENDANT CODE
 
-		g_outputRoot->Delete("script.lua");
+		resManager.outputRoot->Delete("script.lua");
 	}
 
 	return true;
