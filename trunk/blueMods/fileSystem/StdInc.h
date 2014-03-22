@@ -19,7 +19,7 @@
 /** MODULE SPECIFIC INFORMATION **/
 #define MODULE_NAME         "Eir/GREEN FileSystem"
 #define MODULE_AUTHOR       "The_GTA"
-#define MODULE_VERSION      1.2
+#define MODULE_VERSION      1.3
 
 #pragma warning(disable: 4996)
 

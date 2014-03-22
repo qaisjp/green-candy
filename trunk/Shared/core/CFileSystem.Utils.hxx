@@ -355,7 +355,11 @@ inline filePatternCommand_t* _File_CreatePatternCommand( filePatternCommand_t::e
     case filePatternCommand_t::FCMD_WILDCARD:
         {
             filePatternCommandWildcard_t *wildCmd = new (tokenLen) filePatternCommandWildcard_t;
-            memcpy( wildCmd->string, &tokenBuf[0], tokenLen );
+
+            if ( tokenLen != 0 )
+            {
+                memcpy( wildCmd->string, &tokenBuf[0], tokenLen );
+            }
             wildCmd->len = tokenLen;
 
             outCmd = wildCmd;
