@@ -1,6 +1,6 @@
 local relDir = file.createTranslator("C:/Program Files/MTA San Andreas 1.2/");
 
-local function writeFileList(list, path, root)
+local function writeFileList(list, path, root, dirList)
 	local zip_stream = root.open(root.absPath() .. path, "rb+");
 	local zip;
 
@@ -45,6 +45,13 @@ local function writeFileList(list, path, root)
 			print(n .. " does not exist");
 		end
 	end
+    
+    if (dirList) then
+        -- Create the directories.
+        for m,n in ipairs(dirList) do
+            zip.createDir(n);
+        end
+    end
 	
 	print("writing to .zip file... (do not close!)");
 	
@@ -166,4 +173,37 @@ function bundleServer(includeScenalizer)
     end
 	
 	writeFileList(impFiles, "green_server.zip", servDir);
+end
+
+local mapconvDir = file.createTranslator(
+    "C:/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/bin/"
+);
+
+function bundlemapconv()
+    local impFiles =
+    {
+        "ipl_mtaconv",
+        "ipl_mtaconv.exe",
+        "config.ini",
+        "luac5.1.exe"
+    };
+    
+    local impDirs =
+    {
+        "ipl/",
+        "resources/",
+        "rplide/",
+        "rplipl/"
+    };
+    
+	local function includeFile(path)
+		table.insert(impFiles, path);
+	end
+    
+    -- Include special directories.
+    mapconvDir.scanDirEx("stockpile/", "*", nil, includeFile, true);
+    mapconvDir.scanDirEx("rplipl/", "*", nil, includeFile, false);
+    mapconvDir.scanDirEx("rplide/", "*", nil, includeFile, false);
+    
+    writeFileList(impFiles, "scene2res.zip", mapconvDir, impDirs);
 end

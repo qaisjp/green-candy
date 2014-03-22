@@ -1,9 +1,11 @@
 /*
 	GTA model importer creator for mtasa dm.
-	This executable creates files which are needed due to limitation of mtasa dm.
+	This executable creates files which are needed due to limitations of mtasa dm.
 	Created by The_GTA
 */
 #include "StdInc.h"
+
+const char *compilator = NULL;
 
 bool doCompile = false;
 bool debug = false;
@@ -64,15 +66,17 @@ void	LoadTargetIPL(const char *filename)
 
 	for (i_iter = ipl->m_instances.begin(); i_iter != ipl->m_instances.end(); i_iter++, numInst++)
 	{
+        CInstance *inst = *i_iter;
+
 		if (!lodSupport)
 		{
 			if (ipl->IsLOD(numInst))
 				continue;
 		}
-		else if ( CInstance *lod = ipl->GetLod( *i_iter ) )
-			lodMap[lod->m_modelID] = *i_iter;
+		else if ( CInstance *lod = ipl->GetLod( inst ) )
+			lodMap[lod->m_modelID] = inst;
 
-		instances.push_back(*i_iter);
+		instances.push_back(inst);
 	}
 
 	ipls[numIPL++] = ipl;
@@ -197,6 +201,7 @@ int		main (int argc, char *argv[])
 	if (config && (mainEntry = config->GetEntry("General")))
 	{
 		// Apply configuration
+        compilator = mainEntry->Get("compilator");
 		doCompile = mainEntry->GetBool("compile");
 		debug = mainEntry->GetBool("debug");
 		mode = mainEntry->Get("mode");
@@ -212,6 +217,7 @@ int		main (int argc, char *argv[])
 	else
 	{
 		// Defaults
+        compilator = NULL;
 		doCompile = true;
 		debug = false;
 		mode = "green";
@@ -408,6 +414,8 @@ int		main (int argc, char *argv[])
 	    // Branch to the handler
 	    if ( stricmp( mode, "green" ) == 0 )
 		    success = bundleForGREEN( config );
+        else if ( stricmp( mode, "eirfork" ) == 0 )
+            success = bundleForEIRFORK( config );
         else
             success = bundleForBLUE( config );
     }
@@ -470,4 +478,17 @@ CFileTranslator* AcquireResourceRoot( void )
 CFileTranslator* AcquireOutputRoot( void )
 {
     return g_outputRoot;
+}
+
+const char* GetGenericScriptHeader( void )
+{
+    return "-- Compiled by Scene2Res, a MTA:SA GTA III engine map importer";
+}
+
+const char* GetCompilatorName( void )
+{
+    if ( compilator == NULL )
+        return "The_GTA";
+
+    return compilator;
 }

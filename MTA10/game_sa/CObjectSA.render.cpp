@@ -12,7 +12,7 @@
 #include <StdInc.h>
 #include "gamesa_renderware.h"
 
-static const float objLightingMod = ( 100.0f / 3.0f );
+static const float objLightingMod = ( 1.0f / 30.0f );
 
 void __thiscall CObjectSAInterface::_PreRender( void )
 {

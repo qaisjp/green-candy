@@ -1131,4 +1131,31 @@ namespace CLuaFunctionDefs
         lua_pushlstring( L, modeString.c_str(), modeString.size() );
         return 1;
     }
+
+    LUA_DECLARE( engineIsModelBeingUsed )
+    {
+        int modelIndex;
+
+        CScriptArgReader argStream( L );
+        argStream.ReadNumber( modelIndex );
+
+        if ( !argStream.HasErrors() )
+        {
+            if ( modelIndex >= 0 )
+            {
+                CModelInfo *modelInfo = g_pGame->GetModelInfo( modelIndex );
+
+                if ( modelInfo )
+                {
+                    lua_pushboolean( L, modelInfo->GetRefCount() > 0 );
+                    return 1;
+                }
+            }
+        }
+        else
+            m_pScriptDebugging->LogCustom( SString ( "Bad argument @ '%s' [%s]", __FUNCTION__, *argStream.GetErrorMessage () ) );
+
+        lua_pushboolean( L, false );
+        return 1;
+    }
 }

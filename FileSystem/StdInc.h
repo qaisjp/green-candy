@@ -8,6 +8,10 @@
 #pragma warning(disable: 4996)
 #endif //_WIN32
 
+// This is used to force case-insensitivity in ScanDir implementations.
+// Currently a compatibility setting.
+#define FILESYSTEM_FORCE_CASE_INSENSITIVE_GLOB
+
 #include <SharedUtil.h>
 #include <CFileSystemInterface.h>
 #include <CFileSystem.h>

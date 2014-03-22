@@ -638,6 +638,10 @@ public:
     virtual bool                Exists              ( const char *path ) = 0;
     virtual size_t              Size                ( const char *path ) = 0;
     virtual bool                ReadToBuffer        ( const char *path, std::vector <char>& output ) = 0;
+
+    // Settings.
+    virtual void                SetIncludeAllDirectoriesInScan  ( bool enable ) = 0;
+    virtual bool                GetIncludeAllDirectoriesInScan  ( void ) const = 0;
 };
 
 namespace FileSystem
@@ -649,7 +653,7 @@ namespace FileSystem
     // where the seek should reside at. This function is used by the .zip extension
     // To find where the .zip stream starts at.
     template <class t, typename F>
-    inline bool MappedReaderReverse( CFile& file, F f )
+    inline bool MappedReaderReverse( CFile& file, F& f )
     {
         t buf;
         long off;
@@ -660,7 +664,7 @@ namespace FileSystem
         {
             size_t readCount = file.Read( &buf, 1, sizeof( buf ) );
 
-            if ( f( buf, readCount, off ) )
+            if ( f.Perform( buf, readCount, off ) )
             {
                 file.Seek( -(long)readCount + off, SEEK_CUR );
                 return true;
@@ -739,7 +743,7 @@ namespace FileSystem
 
     // Parses the stream same as StreamParser, but limited to 'cnt' bytes of the
     // source stream.
-    template <class cb>
+    template <typename cb>
     inline void StreamParserCount( CFile& src, CFile& dst, size_t cnt, cb& f )
     {
         char buf[8096];

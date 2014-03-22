@@ -10,7 +10,7 @@
 *
 *****************************************************************************/
 
-#include <StdInc.h>
+#include "StdInc.h"
 #include "../gamesa_renderware.h"
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
@@ -112,7 +112,8 @@ bool CRpAtomicSA::Replace( unsigned short id )
     if ( !info )
         return false;
 
-    if ( info->GetRwModelType() != RW_ATOMIC )
+    // Make sure we are compatible with the model info.
+    if ( !info->ValidateResource( GetObject() ) )
         return false;
 
     if ( IsReplaced( id ) )

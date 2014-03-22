@@ -3,8 +3,7 @@
 
 enum eStreamMethod
 {
-	STREAM_STREAM,
-	STREAM_DISTANCE
+	STREAM_STREAM
 };
 
 static bool applyWorldConfig;
@@ -13,7 +12,6 @@ static bool staticCompile;
 static bool cached;
 static unsigned int streamerMemory;
 static bool autoCollect;
-static unsigned int runtimeCorrection;
 static eStreamMethod streamMethod;
 
 static inline void luaBegin( CFile *file )
@@ -109,24 +107,29 @@ static inline void luaBegin( CFile *file )
 	{
 		file->Printf(
 			"local function loadResources(model, size)\n" \
-			"	if not (model.impTxd) then\n" \
-			"		engineImportTXD(model.txd, model.id);\n\n" \
-			"		model.impTxd = true;\n" \
-			"	end\n\n" \
-			"	model.model = engineLoadDFF(model.model_file, model.id);\n\n" \
-			"	if not (model.model) then return false; end;\n\n"
+			"    if not (model.impTxd) then\n" \
+			"        engineImportTXD(model.txd, model.id);\n\n" \
+			"        model.impTxd = true;\n" \
+			"    end\n\n" \
+            "    if not (model.model) then\n" \
+			"        model.model = engineLoadDFF(model.model_file, model.id);\n\n" \
+			"        if not (model.model) then return false; end;\n\n" \
+            "    end\n\n"
 		);
 
 		if ( lodSupport )
 		{
 			file->Printf(
-				"	if not (model.col_file) then\n" \
-				"		if not (model.super) then return false; end\n\n" \
-				"		model.col = pModels[model.super].col;\n" \
-				"	else\n" \
-				"		model.col = engineLoadCOL(model.col_file, 0);\n\n" \
-				"		if not (model.col) then return false; end\n" \
-				"	end\n\n"
+				"    if not (model.col_file) then\n" \
+				"        if not (model.super) then return false; end\n\n" \
+                "        local superModel = pModels[model.super];\n\n" \
+                "        if (superModel) then\n" \
+				"            model.col = superModel.col;\n" \
+                "        end\n" \
+				"    else\n" \
+				"        model.col = engineLoadCOL(model.col_file, 0);\n\n" \
+				"        if not (model.col) then return false; end\n" \
+				"    end\n\n"
 			);
 		}
 		else
@@ -202,11 +205,14 @@ static inline void luaBegin( CFile *file )
 	if ( lodSupport )
 	{
 		file->Printf(
-			"	if (model.super) then\n" \
-			"		if not (loadModel(pModels[model.super])) then\n" \
-			"			return false;\n" \
-			"		end\n" \
-			"	end\n\n"
+			"    if (model.super) then\n" \
+            "        local superModel = pModels[model.super];\n\n" \
+            "        if (superModel) then\n" \
+			"            if not (loadModel(superModel)) then\n" \
+			"                return false;\n" \
+            "            end\n" \
+			"        end\n" \
+			"    end\n\n"
 		);
 	}
 
@@ -218,9 +224,22 @@ static inline void luaBegin( CFile *file )
 	}
 
 	file->Printf(
-		"	engineReplaceModel(model.model, model.id);\n" \
-		"	engineReplaceCOL(model.col, model.id);\n\n" \
-		"	model.loaded = true;\n"
+        "    if not (model.model) or not (model.col) then return false; end\n\n" \
+        "    local successModelReplace = engineReplaceModel(model.model, model.id);\n" \
+        "    local successCOLReplace = false;\n\n" \
+        "    if (successModelReplace) then\n" \
+        "        successCOLReplace = engineReplaceCOL(model.col, model.id);\n" \
+        "    end\n\n" \
+        "    if not (successModelReplace) or not (successCOLReplace) then\n" \
+        "        if (successModelReplace) then\n" \
+        "            engineRestoreModel(model.id);\n" \
+        "        end\n\n" \
+        "        if (successCOLReplace) then\n" \
+        "            engineRestoreCOL(model.id);\n" \
+        "        end\n" \
+        "        return false;\n" \
+        "    end\n\n" \
+        "    model.loaded = true;\n"
 	);
 
 	if ( debug )
@@ -279,8 +298,8 @@ static inline void luaBegin( CFile *file )
 static inline void luaMethodBegin( CFile *file )
 {
 	file->Printf(
-		"local function modelStreamOut ()\n" \
-		"	local pModel = pModels[getElementModel(source)];\n\n" \
+		"local function modelStreamOut (id)\n" \
+		"	local pModel = pModels[id];\n\n" \
 		"	if not (pModel) then return end;\n\n"
 	);
 
@@ -291,48 +310,11 @@ static inline void luaMethodBegin( CFile *file )
 		);
 	}
 
-	if ( streamMethod == STREAM_STREAM )
-	{
-		file->Printf(
-			"	if (pModel.isRequesting == 2) then\n" \
-			"		pModel.isRequesting = 1;\n" \
-			"		return true;\n" \
-			"	elseif (pModel.isRequesting == 3) then\n" \
-			"		pModel.isRequesting = 4;\n" \
-			"		return true;\n" \
-			"	elseif (pModel.isRequesting) then return true; end\n\n"
-		);
-	}
-
 	file->Printf(
-		"	pModel.numStream = pModel.numStream - 1;\n\n" \
-		"	if (pModel.numStream == 0) then\n"
-	);
-
-	if ( streamMethod == STREAM_STREAM )
-	{
-		file->Printf(
-			"		pModel.isRequesting = 3;\n\n"
-		);
-	}
-
-	file->Printf(
-		"		freeModel(pModel);\n"
-	);
-
-	if ( streamMethod == STREAM_STREAM )
-	{
-		file->Printf(
-			"\n" \
-			"		pModel.isRequesting = false;\n"
-		);
-	}
-
-	file->Printf(
-		"	end\n" \
+		"	freeModel(pModel);\n" \
 		"end\n\n" \
-		"local function modelStreamIn ()\n" \
-		"	local pModel = pModels[getElementModel(source)];\n\n" \
+		"local function modelStreamIn (id)\n" \
+		"	local pModel = pModels[id];\n\n" \
 		"	if not (pModel) then return end;\n\n"
 	);
 
@@ -343,56 +325,22 @@ static inline void luaMethodBegin( CFile *file )
 		);
 	}
 
-	if ( streamMethod == STREAM_STREAM )
-	{
-		file->Printf(
-			"	if (pModel.isRequesting == 1) then\n" \
-			"		pModel.isRequesting = false;\n" \
-			"		return true;\n" \
-			"	elseif (pModel.isRequesting) then return true; end\n\n"
-		);
-
-		if ( cached && runtimeCorrection )
-		{
-			file->Printf(
-				"	pModel.requestFrames = %u;\n", runtimeCorrection
-			);
-		}
-	}
-
 	file->Printf(
-		"	pModel.numStream = pModel.numStream + 1;\n\n" \
-		"	if not (pModel.numStream == 1) then return true; end\n\n"
-	);
-
-	if ( streamMethod == STREAM_STREAM )
-	{
-		file->Printf(
-			"	pModel.isRequesting = 2;\n\n"
-		);
-	}
-
-	file->Printf(
-		"	if not (loadModel(pModel)) then\n" \
-		"		setElementInterior(source, 123);\n" \
-		"		setElementCollisionsEnabled(source, false);\n" \
-		"	end\n"
-	);
-
-	if ( streamMethod == STREAM_STREAM )
-	{
-		file->Printf(
-			"\n" \
-			"	if (pModel.isRequesting == 2) then\n" \
-			"		outputDebugString(\"invalid model request '\"..pModel.name..\"'\");\n" \
-			"		freeModel(pModel);\n" \
-			"		pModel.isRequesting = false;\n\n" \
-			"		pModel.numStream = 0;\n" \
-			"	end\n"
-		);
-	}
-
-	file->Printf(
+		"    if not (loadModel(pModel)) then\n" \
+        "        for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
+        "            if (getElementModel(n) == pModel.id) then\n" \
+        "                setElementInterior(n, 255);\n" \
+        "                setElementCollisionsEnabled(n, false);\n" \
+        "            end\n" \
+        "        end\n" \
+        "    else\n" \
+        "        for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
+        "            if (getElementModel(n) == pModel.id) then\n" \
+        "                setElementInterior(n, 0);\n" \
+        "                setElementCollisionsEnabled(n, true);\n" \
+        "            end\n" \
+        "        end\n" \
+        "   end\n" \
 		"end\n\n"
 	);
 }
@@ -442,7 +390,6 @@ static inline void luaModelLoadEntry( CFile *file, const char *name, const char 
 		}
 
 		file->Printf(
-			"	pTable.numStream=0;\n" \
 			"	pTable.lod=%s;\n" \
 			"	pTable.id=%u;\n" \
 			"	engineSetModelLODDistance(%u, %s);\n", lod, id, id, lod
@@ -456,7 +403,7 @@ static inline void luaModelLoadEntry( CFile *file, const char *name, const char 
 				"		local x, y, z = getElementPosition(n);\n" \
 				"		local rx, ry, rz = getElementRotation(n);\n" \
 				"		setLowLODElement(n, createObject(%u, x, y, z, rx, ry, rz, true));\n" \
-				"	end\n\n", lodID
+				"	end\n", lodID
 			);
 		}
 	}
@@ -525,7 +472,6 @@ static inline void luaModelLODEntry( CFile *file, unsigned short id, const char 
 		);
 
 		file->Printf(
-			"		numStream = 0,\n" \
 			"		lod = %s\n", lod
 		);
 
@@ -589,7 +535,6 @@ static inline void luaModelLODEnd( CFile *file )
 			"			id = n[1],\n" \
 			"			name = n[2],\n" \
 			"			txd = requestTexture(false, \"textures/\"..n[3]..\".txd\"),\n" \
-			"			numStream = 0,\n" \
 			"			lod = n[4] / 5,\n" \
 			"			super = n[5]\n" \
 			"		};\n" \
@@ -648,7 +593,6 @@ static inline void luaModelLoadEnd( CFile *file )
 			"			id = m.model,\n" \
 			"			name = m.model_file,\n" \
 			"			txd = requestTexture(false, \"textures/\"..m.txd_file..\".txd\"),\n" \
-			"			numStream = 0,\n" \
 			"			lod = m.lod,\n" \
 			"			lodID = m.lodID\n" \
 			"		};\n" \
@@ -718,76 +662,19 @@ static inline void luaMethodEnd( CFile *file )
 {
 	switch( streamMethod )
 	{
-	case STREAM_DISTANCE:
-		file->Printf(
-			"addEventHandler(\"onClientPreRender\", root, function()\n" \
-			"		local m,n;\n" \
-			"		local objects = getElementsByType(\"object\", resourceRoot);\n" \
-			"		local x, y, z = getCameraMatrix();\n\n" \
-			"		for m,n in ipairs(objects) do\n" \
-			"			local model = pModels[getElementModel(n)];\n\n" \
-			"			if (model) then\n" \
-			"				local streamObject = streamedObjects[n];\n" \
-			"				local distance = getDistanceBetweenPoints3D(x, y, z, getElementPosition(n));\n\n" \
-			"				if not (streamObject) then\n" \
-			"					if (distance < model.lod) then\n" \
-			"						source = n;\n\n" \
-			"						modelStreamIn();\n\n" \
-			"						streamedObjects[n] = true;\n" \
-			"					end\n" \
-			"				elseif (distance > model.lod) then\n" \
-			"					source = n;\n\n" \
-			"					modelStreamOut();\n\n" \
-			"					streamedObjects[n] = nil;\n" \
-			"				end\n" \
-			"			end\n" \
-			"		end\n" \
-			"	end\n" \
-			");\n\n"
-		);
-		return;
 	case STREAM_STREAM:
-		if ( cached && runtimeCorrection )
-		{
-			file->Printf(
-				"addEventHandler(\"onClientPreRender\", root, function()\n" \
-				"		for m,n in pairs(pModels) do\n" \
-				"			if (n.isRequesting) then\n" \
-				"				n.requestFrames = n.requestFrames - 1;\n\n" \
-				"				if (n.requestFrames == 0) then\n" \
-				"					n.isRequesting = false;\n"
-			);
-
-			if ( debug )
-			{
-				file->Printf(
-					"					outputDebugString(\"model '\" .. n.name ..\"' timed out\");\n"
-				);
-			}
-
-			file->Printf(
-				"					freeModel(n);\n" \
-				"				end\n" \
-				"			end\n" \
-				"		end\n" \
-				"	end\n" \
-				");\n\n"
-			);
-		}
-
 		file->Printf(
-			"for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
-			"	if (isElementStreamedIn(n)) then\n" \
-			"		source = n;\n" \
-			"		modelStreamIn();\n" \
+			"for m,n in pairs(pModels) do\n" \
+			"	if (engineIsModelBeingUsed(m)) then\n" \
+			"		modelStreamIn(m);\n" \
 			"	end\n" \
 			"end\n\n" \
-			"addEventHandler(\"onClientElementStreamIn\", resourceRoot, function()\n" \
-			"		modelStreamIn();\n" \
+			"addEventHandler(\"onClientModelRequest\", root, function(id)\n" \
+			"		modelStreamIn(id);\n" \
 			"	end\n" \
 			");\n" \
-			"addEventHandler(\"onClientElementStreamOut\", resourceRoot, function()\n" \
-			"		modelStreamOut();\n" \
+			"addEventHandler(\"onClientModelFree\", root, function(id)\n" \
+			"		modelStreamOut(id);\n" \
 			"	end\n" \
 			");\n\n"
 		);
@@ -826,48 +713,18 @@ static inline void luaEnd( CFile *file )
 			"		local model = request.model;\n\n", streamerMemory
 		);
 
-		if ( streamMethod == STREAM_STREAM )
-		{
-			file->Printf(
-				"		if not ( model.numStream == 0 ) then\n" \
-				"			model.isRequesting = 2;\n" \
-				"		end\n\n"
-			);
-		}
-
 		file->Printf(
 			"		if not (loadModel(model)) then return false; end\n\n"
 		);
 
-		if ( streamMethod == STREAM_STREAM )
-		{
-			file->Printf(
-				"		if ( model.isRequesting == 2 ) then\n" \
-				"			outputDebugString(\"invalid model request '\" .. model.name ..\"'\");\n" \
-				"			freeModel(model);\n" \
-				"			model.isRequesting = false;\n\n" \
-				"			model.numStream = 0;\n" \
-				"		else\n" \
-				"			for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
-				"				if (getElementModel(n) == model.id) then\n" \
-				"					setElementInterior(n, 0);\n" \
-				"					setElementCollisionsEnabled(n, true);\n" \
-				"				end\n" \
-				"			end\n" \
-				"		end\n\n"
-			);
-		}
-		else
-		{
-			file->Printf(
-				"		for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
-				"			if (getElementModel(n) == model.id) then\n" \
-				"				setElementInterior(n, 0);\n" \
-				"				setElementCollisionsEnabled(n, true);\n" \
-				"			end\n" \
-				"		end\n"
-			);
-		}
+		file->Printf(
+			"		for m,n in ipairs(getElementsByType(\"object\", resourceRoot)) do\n" \
+			"			if (getElementModel(n) == model.id) then\n" \
+			"				setElementInterior(n, 0);\n" \
+			"				setElementCollisionsEnabled(n, true);\n" \
+			"			end\n" \
+			"		end\n"
+		);
 
 		file->Printf(
 			"	end\n" \
@@ -892,13 +749,12 @@ static inline void luaEnd( CFile *file )
 	{
 		file->Printf(
 			"addEventHandler(\"onClientResourceStop\", resourceRoot, function()\n" \
-			"		for m,n in pairs(pModels) do\n" \
-			"			if (isElement(n.col)) then destroyElement(n.col); end\n" \
-			"			if (isElement(n.model)) then destroyElement(n.model); end\n" \
-			"			engineRestoreCOL(m);\n" \
-			"			engineRestoreModel(m);\n" \
-			"		end\n" \
-			"	end\n" \
+			"        for m,n in pairs(pModels) do\n" \
+            "            freeModel(n);\n" \
+			"            if (isElement(n.col)) then destroyElement(n.col); end\n" \
+			"            if (isElement(n.model)) then destroyElement(n.model); end\n" \
+			"        end\n" \
+			"    end, false\n" \
 			");\n\n"
 		);
 	}
@@ -924,7 +780,7 @@ static inline void luaEnd( CFile *file )
 		file->Printf(
 			"		dxDrawText(\"Models loaded: \" .. #modelsLoaded, screenX - 300, screenY - 120);\n" \
 			"		for m,n in ipairs(modelsLoaded) do\n" \
-			"			dxDrawText(n.name .. \" (\" .. n.numStream .. \", \" .. tostring(n.isRequesting) .. \")\", 50, 160 + m * 15);\n" \
+			"			dxDrawText(n.name, 50, 160 + m * 15);\n" \
 			"		end\n" \
 			"	end\n" \
 			");\n\n" \
@@ -995,7 +851,7 @@ static const char *pMetaEnd=
 
 static CFile *pMetaFile = NULL;
 
-struct blueResourceDispatch
+struct eirforkResourceDispatch
 {
     inline bool requireCollision( const char *name, bool lod )
     {
@@ -1023,9 +879,9 @@ struct blueResourceDispatch
 		);
     }
 };
-typedef ResourceManager <blueResourceDispatch> blueResourceManager;
+typedef ResourceManager <eirforkResourceDispatch> eirforkResourceManager;
 
-bool bundleForBLUE( CINI *config )
+bool bundleForEIRFORK( CINI *config )
 {
 	CFile *pLuaFile;
 	CFile *pMapFile;
@@ -1034,13 +890,13 @@ bool bundleForBLUE( CINI *config )
 	instanceList_t::iterator iter;
 
     // Instance of resource allocation.
-    blueResourceDispatch dispatch;
+    eirforkResourceDispatch dispatch;
 
-    blueResourceManager resManager( 0, dispatch );
+    eirforkResourceManager resManager( 0, dispatch );
 
-	printf( "Mode: MTA:BLUE\n" );
+	printf( "Mode: EIRFORK\n" );
 
-	if (config && (mainEntry = config->GetEntry("MainBLUE")))
+	if (config && (mainEntry = config->GetEntry("MainEIRFORK")))
 	{
 		// Apply configuration
         applyWorldConfig = mainEntry->GetBool("applyWorldConfig");
@@ -1050,18 +906,13 @@ bool bundleForBLUE( CINI *config )
 		cached = mainEntry->GetBool("cached");
 		streamerMemory = (unsigned int)mainEntry->GetInt("streamerMemory") * 1024 * 1024;
 		autoCollect = mainEntry->GetBool("autoCollect");
-		runtimeCorrection = (unsigned int)mainEntry->GetInt("runtimeCorrection");
 
 		const char *method = mainEntry->Get("method");
 
 		if ( strcmp(method, "stream") == 0 )
 		{
 			streamMethod = STREAM_STREAM;
-
-			printf( "WARNING: This method might not work with asynchronous loading\n" );
 		}
-		else if ( strcmp(method, "distance") == 0 )
-			streamMethod = STREAM_DISTANCE;
 		else
 		{
 			printf( "Invalid streaming method; defaulting to stream\n" );
@@ -1082,7 +933,6 @@ bool bundleForBLUE( CINI *config )
 		staticCompile = false;
 		cached = false;
 		autoCollect = false;
-		runtimeCorrection = 0;
 	}
 
 nonotify:

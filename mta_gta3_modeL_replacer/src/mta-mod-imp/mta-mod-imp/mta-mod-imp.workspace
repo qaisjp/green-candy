@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_workspace_file>
+	<Workspace title="Workspace">
+		<Project filename="mta-mod-imp.cbp" />
+		<Project filename="../../../../FileSystem/FileSystem.cbp" />
+		<Project filename="../../../../vendor/zlib/zlib 2008.cbp" />
+	</Workspace>
+</CodeBlocks_workspace_file>

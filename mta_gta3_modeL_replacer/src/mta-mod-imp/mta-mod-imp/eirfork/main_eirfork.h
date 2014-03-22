@@ -1,0 +1,1 @@
+bool bundleForEIRFORK( CINI *config );

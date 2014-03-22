@@ -13,6 +13,7 @@ struct ResourceManager
     const char *txdName;
     const char *colName;
     unsigned short usTxdNames;
+    char lodBuffer[128];
 
     inline ResourceManager( int a, dispatchType& _dispatch ) : dispatch( _dispatch )
     {
@@ -25,8 +26,11 @@ struct ResourceManager
         colName = NULL;
     }
 
-    inline bool ResourceExists( const char *name )
+    inline bool ResourceExists( const char *name, const char *outputName )
     {
+        if ( outputRoot->Exists( outputName ) )
+            return true;
+
         if ( !resourceRoot )
             return false;
 
@@ -37,7 +41,7 @@ struct ResourceManager
     {
         if ( !resourceRoot )
             return false;
-        
+
         if ( outputRoot->Exists( dst ) )
             return false;
 
@@ -52,14 +56,13 @@ struct ResourceManager
 
 	    // Copy the model file
 	    _snprintf(buffer, 1023, "%s.dff", name);
+	    _snprintf(copyBuffer, 1023, "models\\%s.dff", name);
 
-	    if ( !ResourceExists(buffer) )
+	    if ( !ResourceExists(buffer, copyBuffer) )
 	    {
 		    printf("error: model missing (%s)\n", buffer);
 		    return false;
 	    }
-
-	    _snprintf(copyBuffer, 1023, "models\\%s.dff", name);
 
 	    if ( _CopyOnlyIfRequired(buffer, copyBuffer) )
 		    printf("copying model '%s'\n", name);
@@ -68,8 +71,9 @@ struct ResourceManager
 	    {
 		    // Now the collision
 		    _snprintf(buffer, 1023, "%s.col", name);
+		    _snprintf(copyBuffer, 1023, "coll\\%s.col", colName);
 
-		    if ( !ResourceExists(buffer) )
+		    if ( !ResourceExists(buffer, copyBuffer) )
 		    {
 			    if ( !lod )
 			    {
@@ -82,8 +86,6 @@ struct ResourceManager
 		    else
 		    {
 			    colName = name;
-
-			    _snprintf(copyBuffer, 1023, "coll\\%s.col", colName);
 
 			    if (_CopyOnlyIfRequired(buffer, copyBuffer))
 				    printf("copying collision '%s'\n", colName);
@@ -116,13 +118,12 @@ struct ResourceManager
 	    {
 		    // Copy over resources
 		    _snprintf(buffer, 1023, "%s.txd", txdName);
+		    _snprintf(copyBuffer, 1023, "textures\\%s.txd", txdName);
 
-		    if (!ResourceExists(buffer))
+		    if (!ResourceExists(buffer, copyBuffer))
 			    printf("texture missing: %s (ignoring)\n", buffer);
 		    else
 		    {
-			    _snprintf(copyBuffer, 1023, "textures\\%s.txd", txdName);
-
 			    // Copy the resource over
 			    if (_CopyOnlyIfRequired(buffer, copyBuffer))
 				    printf("copying texture '%s'\n", txdName);
