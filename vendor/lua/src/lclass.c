@@ -358,6 +358,8 @@ inline void class_runDestructor( lua_State *L, Class& j, Closure *cl )
 
         if ( handler )
         {
+            lua_checkstack( L, 2 );
+
             StkId func = L->top++;
 
             setclvalue( L, func, handler );
