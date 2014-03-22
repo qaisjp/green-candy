@@ -267,6 +267,7 @@ CClientDFF::~CClientDFF()
 
 bool CClientDFF::ReplaceModel( unsigned short id )
 {
+    // Do not allow replacement of the player model.
     if ( !m_model.Replace( id ) )
         return false;
 

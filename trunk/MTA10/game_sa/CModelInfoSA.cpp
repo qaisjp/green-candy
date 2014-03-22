@@ -352,11 +352,11 @@ void CModelInfoSA::RestreamIPL()
 // Used to validate an entity pointer
 static bool _ValidateEntity( CEntitySAInterface *entity )
 {
-   return (*ppBuildingPool)->Get( (*ppBuildingPool)->GetIndex( (CBuildingSAInterface*)entity ) ) != NULL ||
-          (*ppPedPool)->Get( (*ppPedPool)->GetIndex( (CPedSAInterface*)entity ) ) != NULL ||
-          (*ppVehiclePool)->Get( (*ppVehiclePool)->GetIndex( (CVehicleSAInterface*)entity ) ) != NULL ||
-          (*ppObjectPool)->Get( (*ppObjectPool)->GetIndex( (CObjectSAInterface*)entity ) ) != NULL ||
-          (*ppDummyPool)->Get( (*ppDummyPool)->GetIndex( (CDummySAInterface*)entity ) ) != NULL;
+    return Pools::GetBuildingPool()->Get( Pools::GetBuildingPool()->GetIndex( (CBuildingSAInterface*)entity ) ) != NULL ||
+           Pools::GetPedPool()->Get( Pools::GetPedPool()->GetIndex( (CPedSAInterface*)entity ) ) != NULL ||
+           Pools::GetVehiclePool()->Get( Pools::GetVehiclePool()->GetIndex( (CVehicleSAInterface*)entity ) ) != NULL ||
+           Pools::GetObjectPool()->Get( Pools::GetObjectPool()->GetIndex( (CObjectSAInterface*)entity ) ) != NULL ||
+           Pools::GetDummyPool()->Get( Pools::GetDummyPool()->GetIndex( (CDummySAInterface*)entity ) ) != NULL;
 }
 
 // Struct used to delete the models of all entities whose texture dictionary has changed.

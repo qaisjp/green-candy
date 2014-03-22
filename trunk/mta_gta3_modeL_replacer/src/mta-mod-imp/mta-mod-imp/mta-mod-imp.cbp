@@ -52,6 +52,8 @@
 		<Unit filename="blue/main_blue.h" />
 		<Unit filename="csv.cpp" />
 		<Unit filename="csv.h" />
+		<Unit filename="eirfork/main_eirfork.cpp" />
+		<Unit filename="eirfork/main_eirfork.h" />
 		<Unit filename="green/main_green.cpp" />
 		<Unit filename="green/main_green.h" />
 		<Unit filename="ide.cpp" />
@@ -61,6 +63,7 @@
 		<Unit filename="ipl.cpp" />
 		<Unit filename="ipl.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="resources.h" />
 		<Unit filename="syntax.cpp" />
 		<Unit filename="syntax.h" />
 		<Extensions>

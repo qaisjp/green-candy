@@ -36,12 +36,16 @@
 
 #include "blue/main_blue.h"
 #include "green/main_green.h"
+#include "eirfork/main_eirfork.h"
 
 typedef std::map <unsigned short, CInstance*> lodMap_t;
 
 // Utilities from main file.
 CFileTranslator* AcquireResourceRoot( void );
 CFileTranslator* AcquireOutputRoot( void );
+CObject* GetObjectByModel( const char *model );
+const char* GetGenericScriptHeader( void );
+const char* GetCompilatorName( void );
 
 // Gay quats
 typedef struct quat_s

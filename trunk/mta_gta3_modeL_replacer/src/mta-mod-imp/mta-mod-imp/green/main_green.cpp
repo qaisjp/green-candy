@@ -28,7 +28,6 @@ static const char *pMetaHeader2=
 static const char *pMetaEnd=
 	"</meta>\n";
 
-static char lodBuffer[128];
 static CFile *pMetaFile = NULL;
 
 struct greenResourceDispatch
@@ -70,7 +69,9 @@ bool bundleForGREEN( CINI *config )
 	instanceList_t::iterator iter;
 
     // Create the resource manager that manages everything.
-    greenResourceManager resManager( 0, greenResourceDispatch() );
+    greenResourceDispatch dispatch;
+
+    greenResourceManager resManager( 0, dispatch );
 
 	printf( "Mode: MTA:GREEN\n" );
 
@@ -130,7 +131,7 @@ bool bundleForGREEN( CINI *config )
 			if ( !resManager.AllocateResources( (*objIter)->m_modelName, true ) )
 				continue;
 
-			_snprintf( lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
+			_snprintf( resManager.lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
 
 			if ( tableCount++ != 0 )
 				lodRes->Printf( ",\n" );
@@ -143,7 +144,7 @@ bool bundleForGREEN( CINI *config )
 				(*objIter)->m_realModelID,
 				(*objIter)->m_modelName,
 				(*objIter)->m_textureName,
-				lodBuffer,
+				resManager.lodBuffer,
 				obj ? obj->m_realModelID : 0
 			);
 
@@ -203,7 +204,7 @@ bool bundleForGREEN( CINI *config )
 			pLuaFile->Printf( ",\n" );
 
 		pLuaFile->Printf(
-			"    { model=%u, model_file=\"%s\", txd_file=\"%s\", coll_file=\"%s\", lod=%s", modelIDs[(*iter)->m_modelID], name, resManager.txdName, name, lodBuffer
+			"    { model=%u, model_file=\"%s\", txd_file=\"%s\", coll_file=\"%s\", lod=%s", modelIDs[(*iter)->m_modelID], name, resManager.txdName, name, resManager.lodBuffer
 		);
 
 		if ( lodSupport && lod != 0 )

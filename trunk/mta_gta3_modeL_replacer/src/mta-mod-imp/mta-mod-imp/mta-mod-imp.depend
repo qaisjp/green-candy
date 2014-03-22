@@ -1,8 +1,9 @@
 # depslib dependency file v1.0
-1375705760 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/blue/main_blue.cpp
+1395401919 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/blue/main_blue.cpp
 	"../StdInc.h"
+	"../resources.h"
 
-1375415036 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/StdInc.h
+1395315898 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/StdInc.h
 	<stdlib.h>
 	<stdio.h>
 	<assert.h>
@@ -22,8 +23,9 @@
 	"ini.h"
 	"blue/main_blue.h"
 	"green/main_green.h"
+	"eirfork/main_eirfork.h"
 
-1375401401 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.h
+1391357755 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.h
 	"SharedUtil.Defines.h"
 	"SharedUtil.AllocTracking.h"
 	<list>
@@ -90,16 +92,16 @@
 
 1366058223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/sdk/SharedUtil.SysInfo.h
 
-1375399947 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystemInterface.h
+1395503223 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystemInterface.h
 	<sys/stat.h>
 
-1375693781 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.h
+1395503096 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.h
 	<direct.h>
 	<unistd.h>
 	<dirent.h>
 	"CFileSystem.zip.h"
 
-1375688230 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.h
+1387123468 /media/root/OS/Users/The_GTA/Desktop/mta_green/Shared/core/CFileSystem.zip.h
 	<time.h>
 
 1375146601 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/csv.h
@@ -113,29 +115,38 @@
 
 1353704825 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/syntax.h
 
-1353704824 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/blue/main_blue.h
+1395314842 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/blue/main_blue.h
 
-1353704825 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/green/main_green.h
+1395314848 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/green/main_green.h
 
-1375147380 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/csv.cpp
+1395255098 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/csv.cpp
 	"StdInc.h"
 
-1375704046 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/green/main_green.cpp
+1395332900 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/green/main_green.cpp
 	"../StdInc.h"
+	"../resources.h"
 
-1375147384 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/ide.cpp
+1382044650 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/ide.cpp
 	"StdInc.h"
 
-1375415115 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/ini.cpp
+1395261172 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/ini.cpp
 	"StdInc.h"
 	<sys/stat.h>
 
 1375214700 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/ipl.cpp
 	"StdInc.h"
 
-1375702933 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/main.cpp
+1395501259 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/main.cpp
 	"StdInc.h"
 
 1375425625 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/syntax.cpp
 	"StdInc.h"
+
+1395314820 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/eirfork/main_eirfork.h
+
+1395332499 /media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/resources.h
+
+1395492691 source:/media/root/OS/Users/The_GTA/Desktop/mta_green/mta_gta3_modeL_replacer/src/mta-mod-imp/mta-mod-imp/eirfork/main_eirfork.cpp
+	"../StdInc.h"
+	"../resources.h"
 

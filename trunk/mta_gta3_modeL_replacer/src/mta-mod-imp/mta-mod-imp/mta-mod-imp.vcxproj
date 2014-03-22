@@ -87,6 +87,7 @@
   <ItemGroup>
     <ClInclude Include="blue\main_blue.h" />
     <ClInclude Include="csv.h" />
+    <ClInclude Include="eirfork\main_eirfork.h" />
     <ClInclude Include="green\main_green.h" />
     <ClInclude Include="ide.h" />
     <ClInclude Include="ini.h" />
@@ -98,6 +99,7 @@
   <ItemGroup>
     <ClCompile Include="blue\main_blue.cpp" />
     <ClCompile Include="csv.cpp" />
+    <ClCompile Include="eirfork\main_eirfork.cpp" />
     <ClCompile Include="green\main_green.cpp" />
     <ClCompile Include="ide.cpp" />
     <ClCompile Include="ini.cpp" />
