@@ -29,7 +29,14 @@ CIDE::~CIDE()
 	objectList_t::iterator iter;
 
 	for (iter = m_objects.begin(); iter != m_objects.end(); iter++)
-		delete *iter;
+    {
+        CObject *object = *iter;
+
+        free( (void*)object->m_modelName );
+        free( (void*)object->m_textureName );
+
+		delete object;
+    }
 }
 
 void	CIDE::ReadObjects()
@@ -48,8 +55,8 @@ void	CIDE::ReadObjects()
 		object = new CObject();
 
 		object->m_modelID = atoi(row[0]);
-		object->m_modelName = row[1];
-		object->m_textureName = row[2];
+        object->m_modelName = strdup(row[1]);
+		object->m_textureName = strdup(row[2]);
 		object->m_drawDistance = atof(row[3]);
 		object->m_flags = atol(row[4]);
 

@@ -88,7 +88,8 @@ bool	CCSV::ReadNextRow()
 	char linebuff[65537];
 	char lastchr = 1;
 
-	m_numItems = 0;
+    // Free memory from last row.
+    FreeRow();
 
 	// Get a complete line, until a NULL termination appears, and check, how many seperation are in this line
 	while (seek < 65536 && lastchr != 0 && lastchr != '\n' && lastchr != -1)
@@ -127,14 +128,22 @@ bool	CCSV::ReadNextRow()
 		case ' ':
 			break;
 		case 0:
-		case CSV_SEPERATION:
-			itembuff[buffpos] = 0;
-			buffpos = 0;
+        case CSV_SEPERATION:
+            {
+			    itembuff[buffpos] = 0;
 
-			m_row[m_numItems] = (char*)malloc(strlen(itembuff) + 1);
-			memcpy(m_row[m_numItems], itembuff, strlen(itembuff) + 1);
+                size_t itemLen = buffpos;
+			    buffpos = 0;
 
-			m_numItems++;
+                char*& rowItem = m_row[m_numItems];
+
+			    rowItem = (char*)malloc(itemLen + 1);
+			    memcpy(rowItem, itembuff, itemLen);
+
+                rowItem[itemLen] = '\0';
+
+			    m_numItems++;
+            }
 			break;
 		default:
 			itembuff[buffpos++] = lastchr;

@@ -38,7 +38,9 @@ private:
 
 	CCSV*			m_csv;
 
-	bool			m_isLOD[10000];
+    typedef std::list <int> lodList_t;
+
+    lodList_t       m_isLod;
 };
 
 CIPL*	LoadIPL(const char *filename);

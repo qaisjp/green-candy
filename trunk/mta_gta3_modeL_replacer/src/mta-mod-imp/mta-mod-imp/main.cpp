@@ -40,6 +40,9 @@ static bool zipOutput = false;
 const char *zipName = NULL;
 static bool zipResources = false;
 
+// Collision registry for dynamic lookup.
+CCollisionRegistry *colRegistry = NULL;
+
 CFileTranslator *g_resourceRoot = NULL;
 CFileTranslator *g_outputRoot = NULL;
 
@@ -188,6 +191,11 @@ static void LoadTargetFileIDE( const filePath& path, void* )
     LoadTargetIDE( path.c_str() );
 }
 
+static void LoadCOLContainer( const filePath& path, void* )
+{
+    colRegistry->AddContainer( g_resourceRoot, path );
+}
+
 // Entry
 int		main (int argc, char *argv[])
 {
@@ -234,6 +242,9 @@ int		main (int argc, char *argv[])
 	// Reset the IDs
 	for ( n=0; n < 65536; n++ )
 		avalID[n] = NULL;
+
+    // Allocate a collision registry.
+    colRegistry = new CCollisionRegistry;
 
 	numIPL = 0;
 	numIDE = 0;
@@ -403,6 +414,16 @@ int		main (int argc, char *argv[])
         printf( "warning: resource root could not be found\n" );
     }
 
+    // Load all collision containers.
+    if ( resourceRoot )
+    {
+        printf( "Initializing collision containers...\n" );
+
+        resourceRoot->ScanDirectory( "@", "*.col", false, NULL, LoadCOLContainer, NULL );
+
+        printf( "done!\n" );
+    }
+
     bool success = false;
 
     if ( g_outputRoot )
@@ -413,11 +434,17 @@ int		main (int argc, char *argv[])
 
 	    // Branch to the handler
 	    if ( stricmp( mode, "green" ) == 0 )
+        {
 		    success = bundleForGREEN( config );
+        }
         else if ( stricmp( mode, "eirfork" ) == 0 )
+        {
             success = bundleForEIRFORK( config );
+        }
         else
+        {
             success = bundleForBLUE( config );
+        }
     }
     else
     {
@@ -463,6 +490,9 @@ int		main (int argc, char *argv[])
 
         archiveOutputStream = NULL;
     }
+
+    // Delete the collision registry.
+    delete colRegistry;
 
     // Clean up the fileSystem module activity.
     delete fileSystem;

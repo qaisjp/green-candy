@@ -70,10 +70,12 @@ struct ResourceManager
 	    if ( dispatch.requireCollision( name, lod ) )
 	    {
 		    // Now the collision
-		    _snprintf(buffer, 1023, "%s.col", name);
-		    _snprintf(copyBuffer, 1023, "coll\\%s.col", colName);
+            const Collision *colEntry = colRegistry->FindCollisionByModel( name );
 
-		    if ( !ResourceExists(buffer, copyBuffer) )
+		    _snprintf(buffer, 1023, "%s.col", name);
+		    _snprintf(copyBuffer, 1023, "coll\\%s.col", name);
+
+		    if ( !colEntry && !outputRoot->Exists( copyBuffer ) )
 		    {
 			    if ( !lod )
 			    {
@@ -83,12 +85,19 @@ struct ResourceManager
 
 			    colName = NULL;
 		    }
-		    else
+		    else if ( colEntry )
 		    {
 			    colName = name;
 
-			    if (_CopyOnlyIfRequired(buffer, copyBuffer))
-				    printf("copying collision '%s'\n", colName);
+			    // Write collision data.
+                CFile *outputStream = outputRoot->Open( copyBuffer, "wb" );
+
+                if ( outputStream )
+                {
+                    colEntry->WriteToFile( outputStream );
+
+                    delete outputStream;
+                }
 		    }
 	    }
 	    else

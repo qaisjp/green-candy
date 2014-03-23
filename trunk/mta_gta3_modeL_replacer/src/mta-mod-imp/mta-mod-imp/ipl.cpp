@@ -64,11 +64,6 @@ CIPL*	LoadIPL(const char *filename)
 
 CIPL::CIPL(CCSV *csv)
 {
-	unsigned int n;
-
-	for (n=0; n<10000; n++)
-		m_isLOD[n] = false;
-
 	m_csv = csv;
 
 	// We need to catch the inst instruction
@@ -86,7 +81,13 @@ CIPL::~CIPL()
 	instanceList_t::iterator iter;
 
 	for (iter = m_instances.begin(); iter != m_instances.end(); iter++)
-		delete *iter;
+    {
+        CInstance *inst = *iter;
+
+        free( inst->m_name );
+
+		delete inst;
+    }
 
 	delete m_csv;
 }
@@ -97,7 +98,7 @@ void	CIPL::ReadInstances()
 	{
 		const char **row = m_csv->GetRow();
 		CInstance *inst;
-		quat_t trans;
+        quat_t trans;
 
 		if (strcmp(row[0], "end") == 0)
 			break;
@@ -109,8 +110,7 @@ void	CIPL::ReadInstances()
 
 		inst->m_modelID = atoi(row[0]);
 
-		inst->m_name = (char*)malloc(strlen(row[1]) + 1);
-		memcpy(inst->m_name, row[1], strlen(row[1]) + 1);
+		inst->m_name = strdup( row[1] );
 
 		inst->m_interior = atoi(row[2]);
 
@@ -128,7 +128,7 @@ void	CIPL::ReadInstances()
 		inst->m_lod = atoi(row[10]);
 
 		if ( inst->m_lod != -1 )
-			m_isLOD[inst->m_lod] = true;
+			m_isLod.push_back( inst->m_lod );
 
 		m_instances.push_back(inst);
 	}
@@ -136,16 +136,13 @@ void	CIPL::ReadInstances()
 
 bool	CIPL::IsLOD(unsigned int id)
 {
-	if (id > 10000)
-		return false;
-
-	return m_isLOD[id];
+	return std::find( m_isLod.begin(), m_isLod.end(), id ) != m_isLod.end();
 }
 
 CInstance*	CIPL::GetLod(CInstance *scene)
 {
-	if ( scene->m_lod == -1 )
-		return NULL;
+	if ( scene->m_lod >= 0 && scene->m_lod < (int)m_instances.size() )
+		return m_instances.at( scene->m_lod );
 
-	return m_instances.at( scene->m_lod );
+    return NULL;
 }

@@ -111,7 +111,11 @@ void CPlaceableSAInterface::AcquaintMatrix( void )
 void CPlaceableSAInterface::FreeMatrix( void )
 {
     CTransformSAInterface *trans = Placeable.matrix;
-    
+
+    // Crashfix: do nothing if we have no transformation.
+    if ( !trans )
+        return;
+
     // Transform the entity
     Placeable.m_transform.m_translate = trans->vPos;
     Placeable.m_transform.m_heading = trans->ToHeading();

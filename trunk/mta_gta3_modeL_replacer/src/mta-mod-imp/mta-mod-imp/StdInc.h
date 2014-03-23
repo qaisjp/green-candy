@@ -32,6 +32,7 @@
 #include "ipl.h"
 #include "ide.h"
 #include "ini.h"
+#include "col.h"
 #pragma warning(disable: 4996)
 
 #include "blue/main_blue.h"
@@ -66,6 +67,8 @@ extern bool preserveMainWorldIntegrity;
 extern unsigned short modelIDs[65536];
 extern const char *names[65536];
 extern unsigned short usNames;
+
+extern CCollisionRegistry *colRegistry;
 
 extern CIPL *ipls[256];
 extern unsigned int numIPL;
