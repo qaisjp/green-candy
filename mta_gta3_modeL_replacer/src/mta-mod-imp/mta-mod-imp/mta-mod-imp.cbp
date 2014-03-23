@@ -50,6 +50,8 @@
 		<Unit filename="StdInc.h" />
 		<Unit filename="blue/main_blue.cpp" />
 		<Unit filename="blue/main_blue.h" />
+		<Unit filename="col.cpp" />
+		<Unit filename="col.h" />
 		<Unit filename="csv.cpp" />
 		<Unit filename="csv.h" />
 		<Unit filename="eirfork/main_eirfork.cpp" />

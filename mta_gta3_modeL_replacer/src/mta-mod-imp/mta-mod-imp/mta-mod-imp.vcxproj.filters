@@ -45,6 +45,9 @@
     <ClInclude Include="eirfork\main_eirfork.h">
       <Filter>eirfork</Filter>
     </ClInclude>
+    <ClInclude Include="col.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="csv.cpp" />
@@ -62,5 +65,6 @@
     <ClCompile Include="eirfork\main_eirfork.cpp">
       <Filter>eirfork</Filter>
     </ClCompile>
+    <ClCompile Include="col.cpp" />
   </ItemGroup>
 </Project>
