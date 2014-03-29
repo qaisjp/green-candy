@@ -72,12 +72,30 @@ static int luafile_read( lua_State *L )
     return 1;
 }
 
-inline bool IsUnsigned( unsigned char )     { return true; }
-inline bool IsUnsigned( char )              { return false; }
-inline bool IsUnsigned( unsigned short )    { return true; }
-inline bool IsUnsigned( short )             { return false; }
-inline bool IsUnsigned( unsigned int )      { return true; }
-inline bool IsUnsigned( int )               { return false; }
+inline bool IsUnsigned( unsigned char )
+{
+    return true;
+}
+inline bool IsUnsigned( char )
+{
+    return false;
+}
+inline bool IsUnsigned( unsigned short )
+{
+    return true;
+}
+inline bool IsUnsigned( short )
+{
+    return false;
+}
+inline bool IsUnsigned( unsigned int )
+{
+    return true;
+}
+inline bool IsUnsigned( int )
+{
+    return false;
+}
 
 struct _CheckDefaultValidity
 {
@@ -101,15 +119,39 @@ AINLINE int _fileReadNumber( lua_State *L )
     return 1;
 }
 
-static int luafile_readByte( lua_State *L )         { return _fileReadNumber <char> ( L ); }
-static int luafile_readUByte( lua_State *L )        { return _fileReadNumber <unsigned char> ( L ); }
-static int luafile_readShort( lua_State *L )        { return _fileReadNumber <short> ( L ); }
-static int luafile_readUShort( lua_State *L )       { return _fileReadNumber <unsigned short> ( L ); }
-static int luafile_readInt( lua_State *L )          { return _fileReadNumber <int> ( L ); }
-static int luafile_readUInt( lua_State *L )         { return _fileReadNumber <unsigned int> ( L ); }
+static int luafile_readByte( lua_State *L )
+{
+    return _fileReadNumber <char> ( L );
+}
+static int luafile_readUByte( lua_State *L )
+{
+    return _fileReadNumber <unsigned char> ( L );
+}
+static int luafile_readShort( lua_State *L )
+{
+    return _fileReadNumber <short> ( L );
+}
+static int luafile_readUShort( lua_State *L )
+{
+    return _fileReadNumber <unsigned short> ( L );
+}
+static int luafile_readInt( lua_State *L )
+{
+    return _fileReadNumber <int> ( L );
+}
+static int luafile_readUInt( lua_State *L )
+{
+    return _fileReadNumber <unsigned int> ( L );
+}
 
-static int luafile_readFloat( lua_State *L )        { return _fileReadNumber <float> ( L ); }
-static int luafile_readDouble( lua_State *L )       { return _fileReadNumber <double> ( L ); }
+static int luafile_readFloat( lua_State *L )
+{
+    return _fileReadNumber <float> ( L );
+}
+static int luafile_readDouble( lua_State *L )
+{
+    return _fileReadNumber <double> ( L );
+}
 
 static int luafile_readBoolean( lua_State *L )
 {
@@ -160,15 +202,39 @@ static int luafile_write( lua_State *L )
     return 1;
 }
 
-static int luafile_writeByte( lua_State *L )            { return _writeFileNumber <char, _CheckDefaultValidity> ( L, "writeByte" ); }
-static int luafile_writeUByte( lua_State *L )           { return _writeFileNumber <unsigned char, _CheckDefaultValidity> ( L, "writeUByte" ); }
-static int luafile_writeShort( lua_State *L )           { return _writeFileNumber <short, _CheckDefaultValidity> ( L, "writeShort" ); }
-static int luafile_writeUShort( lua_State *L )          { return _writeFileNumber <unsigned short, _CheckDefaultValidity> ( L, "writeUShort" ); }
-static int luafile_writeInt( lua_State *L )             { return _writeFileNumber <int, _CheckDefaultValidity> ( L, "writeInt" ); }
-static int luafile_writeUInt( lua_State *L )            { return _writeFileNumber <unsigned int, _CheckDefaultValidity> ( L, "writeUInt" ); }
+static int luafile_writeByte( lua_State *L )
+{
+    return _writeFileNumber <char, _CheckDefaultValidity> ( L, "writeByte" );
+}
+static int luafile_writeUByte( lua_State *L )
+{
+    return _writeFileNumber <unsigned char, _CheckDefaultValidity> ( L, "writeUByte" );
+}
+static int luafile_writeShort( lua_State *L )
+{
+    return _writeFileNumber <short, _CheckDefaultValidity> ( L, "writeShort" );
+}
+static int luafile_writeUShort( lua_State *L )
+{
+    return _writeFileNumber <unsigned short, _CheckDefaultValidity> ( L, "writeUShort" );
+}
+static int luafile_writeInt( lua_State *L )
+{
+    return _writeFileNumber <int, _CheckDefaultValidity> ( L, "writeInt" );
+}
+static int luafile_writeUInt( lua_State *L )
+{
+    return _writeFileNumber <unsigned int, _CheckDefaultValidity> ( L, "writeUInt" );
+}
 
-static int luafile_writeFloat( lua_State *L )           { return _writeFileNumber <float, _CheckDefaultValidity> ( L, "writeFloat" ); }
-static int luafile_writeDouble( lua_State *L )          { return _writeFileNumber <double, _CheckDefaultValidity> ( L, "writeDouble" ); }
+static int luafile_writeFloat( lua_State *L )
+{
+    return _writeFileNumber <float, _CheckDefaultValidity> ( L, "writeFloat" );
+}
+static int luafile_writeDouble( lua_State *L )
+{
+    return _writeFileNumber <double, _CheckDefaultValidity> ( L, "writeDouble" );
+}
 
 static int luafile_writeBoolean( lua_State *L )
 {
@@ -214,25 +280,25 @@ static int luafile_seek( lua_State *L )
 
         break;
     case LUA_TSTRING:
-        {
-            const char *type = lua_tostring( L, 2 );
+    {
+        const char *type = lua_tostring( L, 2 );
 
-            if ( strcmp( type, "cur" ) == 0 )
-            {
-                seekType = SEEK_CUR;
-                break;
-            }
-            else if ( strcmp( type, "set" ) == 0 )
-            {
-                seekType = SEEK_SET;
-                break;
-            }
-            else if ( strcmp( type, "end" ) == 0 )
-            {
-                seekType = SEEK_END;
-                break;
-            }
+        if ( strcmp( type, "cur" ) == 0 )
+        {
+            seekType = SEEK_CUR;
+            break;
         }
+        else if ( strcmp( type, "set" ) == 0 )
+        {
+            seekType = SEEK_SET;
+            break;
+        }
+        else if ( strcmp( type, "end" ) == 0 )
+        {
+            seekType = SEEK_END;
+            break;
+        }
+    }
     default:
 defMethod:
         lua_pushstring( L, "unknown seekmode" );

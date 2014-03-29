@@ -6,6 +6,8 @@ local svntools = {};
 local impFiles =
 {
     "MTA10/game_sa/CColModelSA.cpp",
+    "MTA10/game_sa/CColModelSA.loader.cpp",
+    "MTA10/game_sa/CColModelSA.loader.h",
     "MTA10/game_sa/CObjectSA.render.cpp",
     "MTA10/game_sa/CObjectSA.render.h",
     "MTA10/game_sa/CEntitySA.render.cpp",

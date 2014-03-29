@@ -112,7 +112,7 @@ static inline void luaBegin( CFile *file )
 			"        model.impTxd = true;\n" \
 			"    end\n\n" \
             "    if not (model.model) then\n" \
-			"        model.model = engineLoadDFF(model.model_file, model.id);\n\n" \
+			"        model.model = engineLoadDFF(model.model_file, model.id, true);\n\n" \
 			"        if not (model.model) then return false; end;\n\n" \
             "    end\n\n"
 		);
@@ -384,7 +384,7 @@ static inline void luaModelLoadEntry( CFile *file, const char *name, const char 
 		else
 		{
 			file->Printf(
-				"	pTable.model=engineLoadDFF(\"models/%s.dff\", %u);\n" \
+				"	pTable.model=engineLoadDFF(\"models/%s.dff\", %u, true);\n" \
 				"	pTable.col=engineLoadCOL(\"coll/%s.col\");\n", name, id, name
 			);
 		}
@@ -504,7 +504,7 @@ static inline void luaModelLODEntry( CFile *file, unsigned short id, const char 
 		{
 			file->Printf(
 				"	engineImportTXD(pModelEntry.txd, %u);\n" \
-				"	pModelEntry.model = engineLoadDFF(\"models/%s.dff\", %u);\n" \
+				"	pModelEntry.model = engineLoadDFF(\"models/%s.dff\", %u, true);\n" \
 				"	engineReplaceModel(pModelEntry.model, %u);\n", id, name, id, id
 			);
 
@@ -560,7 +560,7 @@ static inline void luaModelLODEnd( CFile *file )
 		{
 			file->Printf(
 				"		engineImportTXD(pModelEntry.txd, n[1]);\n" \
-				"		pModelEntry.model = engineLoadDFF(\"models/\"..n[2]..\".dff\", n[1]);\n" \
+				"		pModelEntry.model = engineLoadDFF(\"models/\"..n[2]..\".dff\", n[1], true);\n" \
 				"		engineReplaceModel(pModelEntry.model, n[1]);\n" \
 				"		if ( #n == 6 ) then\n" \
 				"			pModelEntry.col = engineLoadCOL(\"coll/\"..n[6]..\".col\");\n" \
@@ -610,7 +610,7 @@ static inline void luaModelLoadEnd( CFile *file )
 		{
 			file->Printf(
 				"		engineImportTXD(pModelEntry.txd, m.model);\n" \
-				"		pModelEntry.model=engineLoadDFF(\"models/\"..m.model_file..\".dff\", m.model);\n" \
+				"		pModelEntry.model=engineLoadDFF(\"models/\"..m.model_file..\".dff\", m.model, true);\n" \
 				"		pModelEntry.col=engineLoadCOL(\"coll/\"..m.coll_file..\".col\");\n"
 			);
 		}

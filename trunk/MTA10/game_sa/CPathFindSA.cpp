@@ -303,7 +303,7 @@ void __thiscall CPathFindSAInterface::ReadContainer( RwStream *stream, unsigned 
         // Allocate the path node structures
         size_t nodeSize = sizeof(*nodes) * header.numNodes;
 
-        nodes = (PathFind::pathNode*)RwMalloc( nodeSize );
+        nodes = (PathFind::pathNode*)RwMalloc( nodeSize, 0 );
 
         // Bugfix: if we do not have enough memory, return here.
         if ( !nodes )
@@ -319,7 +319,7 @@ void __thiscall CPathFindSAInterface::ReadContainer( RwStream *stream, unsigned 
     else
     {
         // We allocate an empty structure to hopefully save the engine!
-        nodes = new (RwMalloc( sizeof(*nodes) )) PathFind::pathNode();
+        nodes = new (RwMalloc( sizeof(*nodes), 0 )) PathFind::pathNode();
 
         // Bugfix: if we do not have enough memory, return here.
         if ( !nodes )
@@ -334,7 +334,7 @@ void __thiscall CPathFindSAInterface::ReadContainer( RwStream *stream, unsigned 
         // Allocate the navi node structures for our sector.
         size_t nodeSize = sizeof(*naviNodes) * header.numNaviNodes;
 
-        naviNodes = (PathFind::naviNode*)RwMalloc( nodeSize );
+        naviNodes = (PathFind::naviNode*)RwMalloc( nodeSize, 0 );
 
         // If the allocation succeeded, we read the node information
         // from our stream.
@@ -364,10 +364,10 @@ void __thiscall CPathFindSAInterface::ReadContainer( RwStream *stream, unsigned 
         size_t nodeLinkLengthSize = sizeof(*nodeLinkLength) + header.numLinks;
         size_t unknownDataSize = sizeof(*unknown) + header.numLinks;
 
-        dynamicLinks = (PathFind::pathDynamicLinkContainer*)RwMalloc( dynamicLinkSize );
-        naviNodeLink = (PathFind::naviNodeLink*)RwMalloc( naviNodeLinkSize );
-        nodeLinkLength = (PathFind::nodeLinkLength*)RwMalloc( nodeLinkLengthSize );
-        unknown = (PathFind::unknownData*)RwMalloc( unknownDataSize );
+        dynamicLinks = (PathFind::pathDynamicLinkContainer*)RwMalloc( dynamicLinkSize, 0 );
+        naviNodeLink = (PathFind::naviNodeLink*)RwMalloc( naviNodeLinkSize, 0 );
+        nodeLinkLength = (PathFind::nodeLinkLength*)RwMalloc( nodeLinkLengthSize, 0 );
+        unknown = (PathFind::unknownData*)RwMalloc( unknownDataSize, 0 );
 
         // Read from our stream.
         // The_GTA: only save the readed bytes if allocation of the structures succeeded.

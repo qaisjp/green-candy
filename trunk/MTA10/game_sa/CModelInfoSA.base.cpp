@@ -15,6 +15,7 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+#include "gamesa_renderware.h"
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
@@ -145,21 +146,129 @@ timeInfo* CBaseModelInfoSAInterface::GetTimeInfo( void )
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C4BC0
 =========================================================*/
+inline size_t GetVehicleSuspensionLineBufferSize( CColDataSA *colData, CVehicleSAInterface *pVehicle )
+{
+    eVehicleType vehicleType = pVehicle->m_vehicleType;
+
+    size_t allocSize = 0;
+    int numWheels = 0;
+
+    if ( vehicleType == VEHICLE_MONSTERTRUCK )
+    {
+        allocSize = 0x90;
+        numWheels = 4;
+    }
+    else if ( vehicleType == VEHICLE_BIKE )
+    {
+        allocSize = 0x80;
+        numWheels = 4;
+    }
+    else if ( vehicleType == VEHICLE_CAR || vehicleType == VEHICLE_HELI || vehicleType == VEHICLE_AUTOMOBILETRAILER || vehicleType == VEHICLE_PLANE
+              || vehicleType == VEHICLE_QUADBIKE )
+    {
+        modelId_t modelIndex = pVehicle->GetModelIndex();
+
+        // The Rhino has 12 wheels.
+        if ( modelIndex == VT_RHINO )
+            numWheels = 12;
+        else
+            numWheels = 4;
+
+        allocSize = numWheels * ( sizeof( CColSuspensionLineSA ) + 8 );
+    }
+    else
+    {
+        return 0;
+    }
+
+    colData->ucNumWheels = numWheels;
+
+    return allocSize;
+}
+
+static void InitializeVehiclePublicSuspensionLines( CVehicleSAInterface *pVehicle, CColDataSA *colData )
+{
+    size_t bufSize = GetVehicleSuspensionLineBufferSize( colData, pVehicle );
+
+    // Only initialize if this vehicle interface needs suspension lines.
+    if ( bufSize != 0 )
+    {
+        CColSuspensionLineSA *suspLineBuf = (CColSuspensionLineSA*)RwMalloc( bufSize, 0 );
+
+        assert( suspLineBuf != NULL );
+
+        colData->pSuspensionLines = suspLineBuf;
+
+        // Call the vehicle initializator.
+        pVehicle->SetupSuspensionLines();
+    }
+}
+
 void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool dynamic )
 {
     pColModel = col;
+    
+    BOOL_FLAG( renderFlags, RENDER_COLMODEL, dynamic );
 
     if ( dynamic )
     {
-        renderFlags |= RENDER_COLMODEL;
-
         timeInfo *timed = GetTimeInfo();
 
         if ( timed && timed->m_model != -1 )
+        {
+            assert( g_colReplacement[timed->m_model] == NULL );
+
             ppModelInfo[timed->m_model]->SetCollision( col, false );
+        }
     }
-    else
-        renderFlags &= ~RENDER_COLMODEL;
+
+    // Only perform if col is not NULL.
+    if ( col )
+    {
+        // MTA fix: Do some security checks to prevent crashes.
+        eRwType rwType = GetRwModelType();
+
+        if ( rwType == RW_CLUMP )
+        {
+            eModelType modelType = GetModelType();
+
+            if ( modelType == MODEL_VEHICLE )
+            {
+                // Basically, in regular GTA:SA vehicles always have their collision allocated before their
+                // interfaces were constructed. This led to the fail-proof case that the vehicles could
+                // specialize the collision interface when they constructed themselves. This specialized
+                // interface would only be used by one model info and hence be valid through the engine's
+                // runtime.
+                // We cannot rely on that in MTA anymore. The following code fixes the assumption.
+
+                assert( col->pColData != NULL );
+
+                // We must make sure the collision data is not segmented.
+                col->UnsegmentizeData();
+
+                // Do we have no suspension data allocated?
+                CColDataSA *vehColData = col->pColData;
+
+                if ( vehColData->pSuspensionLines == NULL )
+                {
+                    // Is there any vehicle active that is of this model info?
+                    for ( unsigned int n = 0; n < MAX_VEHICLES; n++ )
+                    {
+                        CVehicleSAInterface *vehicle = Pools::GetVehiclePool()->Get( n );
+
+                        if ( vehicle && vehicle->GetModelInfo() == this )
+                        {
+                            // Initialize the suspension lines for this particular vehicle.
+                            InitializeVehiclePublicSuspensionLines( vehicle, vehColData );
+                            break;
+                        }
+                    }
+
+                    // By now, if a vehicle is active, the colData must have suspension line data.
+                }
+            }
+        }
+    }
 }
 
 /*=========================================================
@@ -174,7 +283,13 @@ void CBaseModelInfoSAInterface::SetCollision( CColModelSAInterface *col, bool dy
 void CBaseModelInfoSAInterface::DeleteCollision( void )
 {
     if ( pColModel && IsDynamicCol() )
+    {
+        // Do some security checks.
+        assert( GetColInterfaceUseCount( pColModel ) == 1 );
+
         delete pColModel;
+
+    }
 
     pColModel = NULL;
 }
@@ -272,6 +387,7 @@ void CBaseModelInfoSAInterface::UnsetColModel( void )
     CBaseModelInfoSAInterface::ValidateResource (MTA extension)
 
     Arguments:
+        modelIndex - the model index associated the this base model info
         rwobj - resource that should be checked compatibility for
     Purpose:
         Returns a boolean that tells you whether the given resource

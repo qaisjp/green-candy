@@ -18,13 +18,13 @@
 
 extern "C"
 {
-    #include <lua.h>
-    #include <lualib.h>
-    #include <lauxlib.h>
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
 }
 
 #ifdef WIN32
-    #define MTAEXPORT extern "C" __declspec(dllexport)
+#define MTAEXPORT extern "C" __declspec(dllexport)
 #else
-    #define MTAEXPORT extern "C"
+#define MTAEXPORT extern "C"
 #endif

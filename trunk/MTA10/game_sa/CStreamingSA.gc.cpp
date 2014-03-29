@@ -118,6 +118,7 @@ struct GarbageCollectStreamingEntities
         if ( player && player->pedFlags.bInVehicle && player->CurrentObjective == entity )
             return true;
 
+        // The entity must have a RenderWare object here.
         entity->DeleteRwObject();
 
         if ( model->GetRefCount() == 0 )
@@ -243,6 +244,17 @@ Streaming::streamingEntityReference_t* __cdecl Streaming::AddActiveEntity( CEnti
             ref = gcMan.PushRender( &chainInfo );
 
             // can only fail if no more heap memory available.
+        }
+
+        // Last resort option.
+        if ( !ref )
+        {
+            // If everything else failed, we must steal a streaming node.
+            gcMan.ExecuteCustom( FreeStreamingEntity() );
+
+            ref = gcMan.PushRender( &chainInfo );
+
+            assert( ref != NULL );
         }
     }
 

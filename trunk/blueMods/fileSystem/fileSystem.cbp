@@ -18,7 +18,6 @@
 				</Compiler>
 				<Linker>
 					<Add library="../../FileSystem/lib/libfs_d.a" />
-					<Add library="../depend/lua/lib/lua5.1.a" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -35,7 +34,6 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
-					<Add library="../depend/lua/lib/lua5.1.a" />
 					<Add library="../../FileSystem/lib/libfs.a" />
 				</Linker>
 			</Target>
@@ -53,7 +51,7 @@
 			<Add directory="." />
 		</Compiler>
 		<Linker>
-			<Add directory="../depend/lua/lib" />
+			<Add library="../depend/lua/lib/lua5.1.a" />
 			<Add directory="../../FileSystem/lib" />
 		</Linker>
 		<Unit filename="../../lua_interpret/luafile.Utils.hxx" />

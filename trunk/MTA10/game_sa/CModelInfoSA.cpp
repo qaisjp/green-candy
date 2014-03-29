@@ -404,7 +404,7 @@ void CModelInfoSA::StaticFlushPendingRestreamIPL( void )
     _entityModelRefresh modelGather;
 
     // Scan all streamed in entities and delete their RenderWare objects which need to be updated.
-    Streamer::ForAllStreamerSectors( modelGather, true, true, true, true, true );
+    Streamer::ForAllStreamerSectors( modelGather, true, true, true, true, true, true );
 
     // We no longer need to update models depending on texture containers.
     ms_RestreamTxdIDMap.clear();
@@ -622,7 +622,7 @@ void* CModelInfoSA::SetVehicleSuspensionData( void* pSuspensionLines )
     CColDataSA* pColData = m_pInterface->pColModel->pColData;
     void* pOrigSuspensionLines = pColData->pSuspensionLines;
 
-    pColData->pSuspensionLines = pSuspensionLines;
+    pColData->pSuspensionLines = (CColSuspensionLineSA*)pSuspensionLines;
     return pOrigSuspensionLines;
 }
 

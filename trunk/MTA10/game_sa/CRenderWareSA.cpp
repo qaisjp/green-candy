@@ -159,10 +159,6 @@ RwCalloc_t                              RwCalloc                                
 /** GTA:SA function mappings                                                **/
 /*****************************************************************************/
 
-LoadCollisionModel_t            LoadCollisionModel              = (LoadCollisionModel_t)            invalid_ptr;
-LoadCollisionModelVer2_t        LoadCollisionModelVer2          = (LoadCollisionModelVer2_t)        invalid_ptr;
-LoadCollisionModelVer3_t        LoadCollisionModelVer3          = (LoadCollisionModelVer3_t)        invalid_ptr;
-LoadCollisionModelVer4_t        LoadCollisionModelVer4          = (LoadCollisionModelVer4_t)        invalid_ptr;
 CClothesBuilder_CopyTexture_t   CClothesBuilder_CopyTexture     = (CClothesBuilder_CopyTexture_t)   invalid_ptr;
 
 extern CGameSA *pGame;
@@ -462,10 +458,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
     RwCalloc                            = (RwCalloc_t)                              0x0072F460;
 
     // Shared addresses
-    LoadCollisionModel                  = (LoadCollisionModel_t)                    0x00537580;
-    LoadCollisionModelVer2              = (LoadCollisionModelVer2_t)                0x00537EE0;
-    LoadCollisionModelVer3              = (LoadCollisionModelVer3_t)                0x00537CE0;
-    LoadCollisionModelVer4              = (LoadCollisionModelVer4_t)                0x00537AE0;
     CClothesBuilder_CopyTexture         = (CClothesBuilder_CopyTexture_t)           0x005A5730;
 
     // Initialize sub modules

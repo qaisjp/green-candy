@@ -13,6 +13,7 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+#include "gamesa_renderware.h"
 
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
@@ -27,17 +28,22 @@ CColModelSAInterface::CColModelSAInterface( void )
     }
 }
 
+// Binary offsets: (1.0 US and 1.0 EU): 0x0040F700
 CColModelSAInterface::~CColModelSAInterface( void )
 {
-    _asm
-    {
-        mov     ecx,this
-        mov     eax,FUNC_CColModel_Destructor
-        call    eax
-    }
+    if ( m_releaseDataOnDestroy )
+        ReleaseData();
 }
 
-void CColModelSAInterface::AllocateData( void )
+void CColModelSAInterface::_DestructorHook( void )
+{
+    this->~CColModelSAInterface();
+}
+
+// Used for vehicle models so that they use non-segmented collision data.
+// This prevents a memory leak when allocating and using runtime-created suspension line data.
+// It is important to call this function on every vehicle collision interface.
+void CColModelSAInterface::UnsegmentizeData( void )
 {
     __asm
     {
@@ -46,24 +52,64 @@ void CColModelSAInterface::AllocateData( void )
     }
 }
 
-void CColModelSAInterface::ReleaseData( void )
+// Binary offsets: (1.0 US and 1.0 EU): 0x0040F9E0
+void __thiscall CColModelSAInterface::ReleaseData( void )
 {
-    __asm
+    CColDataSA *colData = pColData;
+
+    if ( colData )
     {
-        // __thiscall -> ecx == this
-        mov eax,0x0040F9E0
-        call eax
+        if ( this->m_isColDataSegmented )
+        {
+            colData->SegmentedClear();
+
+            RwFree( colData );
+        }
+        else
+        {
+            colData->UnsegmentedClear();
+
+            _freeMemGame( colData );
+        }
+
+        pColData = NULL;
     }
 }
 
 void* CColModelSAInterface::operator new( size_t )
 {
-    return (*ppColModelPool)->Allocate();
+    return Pools::GetColModelPool()->Allocate();
 }
 
 void CColModelSAInterface::operator delete( void *ptr )
 {
-    (*ppColModelPool)->Free( (CColModelSAInterface*)ptr );
+    Pools::GetColModelPool()->Free( (CColModelSAInterface*)ptr );
+}
+
+CColDataSA::CColDataSA( void )
+{
+    // Binary offsets: (1.0 US and 1.0 EU): 0x0040F030
+    numSpheres = 0;
+    numBoxes = 0;
+    numColTriangles = 0;
+    ucNumWheels = 0;
+
+    unkFlag1 = false;
+    hasFaceGroups = false;
+    hasShadowMeshFaces = false;
+
+    pColSpheres = NULL;
+    pColBoxes = NULL;
+    pSuspensionLines = NULL;
+    pColVertices = NULL;
+    pColTriangles = NULL;
+    pColTrianglePlanes = NULL;
+
+    numShadowMeshFaces = 0;
+    numShadowMeshVertices = 0;
+
+    pShadowMeshVertices = NULL;
+    pShadowMeshFaces = NULL;
 }
 
 /*=========================================================
@@ -164,14 +210,12 @@ void ColModel_Shutdown( void )
 CColModelSA::CColModelSA( void )
 {
     m_pInterface = new CColModelSAInterface;
-    m_original = NULL;
     m_bDestroyInterface = true;
 }
 
 CColModelSA::CColModelSA( CColModelSAInterface *pInterface, bool destroy )
 {
     m_pInterface = pInterface;
-    m_original = NULL;
     m_bDestroyInterface = destroy;
 }
 
@@ -183,9 +227,63 @@ CColModelSA::~CColModelSA( void )
         delete m_pInterface;
 }
 
-bool CColModelSA::Replace( unsigned short id )
+CColModelSA::colImport_t* CColModelSA::FindImport( modelId_t id, colImports_t::iterator& findIter )
 {
-    if ( id > DATA_TEXTURE_BLOCK-1 )
+    for ( colImports_t::iterator iter = m_imported.begin(); iter != m_imported.end(); iter++ )
+    {
+        colImport_t& import = *iter;
+
+        if ( import.modelIndex == id )
+        {
+            findIter = iter;
+            return &import;
+        }
+    }
+
+    return NULL;
+}
+
+const CColModelSA::colImport_t* CColModelSA::FindImport( modelId_t id ) const
+{
+    for ( colImports_t::const_iterator iter = m_imported.begin(); iter != m_imported.end(); iter++ )
+    {
+        const colImport_t& import = *iter;
+
+        if ( import.modelIndex == id )
+            return &import;
+    }
+
+    return NULL;
+}
+
+unsigned int __cdecl GetColInterfaceUseCount( CColModelSAInterface *colModel )
+{
+    unsigned int existCount = 0;
+
+    for ( modelId_t n = 0; n < MAX_MODELS; n++ )
+    {
+        CBaseModelInfoSAInterface *model = ppModelInfo[n];
+
+        if ( model && model->pColModel == colModel )
+        {
+            existCount++;
+        }
+
+        CColModelSA *replaceInterface = g_colReplacement[n];
+        bool origDynamic;
+
+        if ( replaceInterface && replaceInterface->GetOriginal( n, origDynamic ) == colModel )
+        {
+            existCount++;
+        }
+    }
+
+    return existCount;
+}
+
+bool CColModelSA::Replace( modelId_t id )
+{
+    if ( id > MAX_MODELS-1 )
         return false;
 
     if ( IsReplaced( id ) )
@@ -195,54 +293,158 @@ bool CColModelSA::Replace( unsigned short id )
     if ( g_colReplacement[id] )
         g_colReplacement[id]->Restore( id );
 
+    // Set some lighting for this collision if not already present
+    CColDataSA* pColData = m_pInterface->pColData;
+    if ( pColData )
+    {
+        for ( uint i = 0 ; i < pColData->numColTriangles ; i++ )
+        {
+            CColTriangleSA* pTriangle = pColData->pColTriangles + i;
+            if ( pTriangle->lighting.night == 0 && pTriangle->lighting.day == 0 )
+            {
+                pTriangle->lighting.night = 1;
+                pTriangle->lighting.day = 12;
+            }
+        }
+    }
+
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
-    
-    // Store the original so we can restore it again
-    m_original = model->pColModel;
-    m_originalDynamic = model->IsDynamicCol();
 
-    model->SetCollision( m_pInterface, false );
+    CColModelSAInterface *origColModel = NULL;
+    bool isOriginalDynamic = false;
+
+    if ( CColModelSAInterface *modelColModel = model->pColModel )
+    {
+        // Make sure we unlink this collision.
+        model->pColModel = NULL;
+
+        // So here is the magic behind collision interfaces.
+        // During startup, GTA:SA optimizes its collision interfaces so that multiple model infos
+        // can use the same collision interface. This spans across level of details models to timed models.
+        // If we do not handle this situation, GTA:SA can suddenly destroy collision interfaces and overwrite
+        // them with another one, making collisions jump around like wild foxes.
+        // HENCE: MAKE SURE THE COLLISION INTERFACE WE WORK WITH IS UNIQUE.
+        unsigned int interfaceUseCount = GetColInterfaceUseCount( modelColModel );
+
+        if ( interfaceUseCount > 0 )
+        {
+            // Clone it to prevent fucking around.
+            // Remember that clone is a new MTA feature thanks to The_GTA.
+            origColModel = modelColModel->Clone();
+
+            if ( origColModel )
+            {
+                // We now own the collision, so set dynamic to true.
+                isOriginalDynamic = true;
+            }
+        }
+
+        if ( !origColModel )
+        {
+            assert( interfaceUseCount == 0 );
+
+            // We use the direct col model if no other choice.
+            origColModel = modelColModel;
+            isOriginalDynamic = model->IsDynamicCol();
+        }
+    }
+    
+    eRwType rwType = model->GetRwModelType();
+
+    CColModelSAInterface *replaceColModel = NULL;
+    bool replaceDynamic = false;
+
+    if ( rwType == RW_CLUMP )
+    {
+        eModelType modelType = model->GetModelType();
+
+        if ( modelType == MODEL_VEHICLE )
+        {
+            // Vehicles need a special collision interface.
+            replaceColModel = m_pInterface->Clone();
+
+            // We must unsegmentize the interface to prevent memory leaks.
+            replaceColModel->UnsegmentizeData();
+        }
+    }
+
+    if ( replaceColModel == NULL )
+        replaceColModel = m_pInterface;
+
+    model->SetCollision( replaceColModel, replaceDynamic );
 
     g_colReplacement[id] = this;
 
-    m_imported.push_back( id );
+    colImport_t importStruct;
+    importStruct.replaceCollision = replaceColModel;
+    importStruct.modelIndex = id;
+    importStruct.originalCollision = origColModel;
+    importStruct.isOriginalDynamic = isOriginalDynamic;
+
+    m_imported.push_back( importStruct );
     return true;
 }
 
-bool CColModelSA::IsReplaced( unsigned short id ) const
+bool CColModelSA::IsReplaced( modelId_t id ) const
 {
-    return std::find( m_imported.begin(), m_imported.end(), id ) != m_imported.end();
+    return FindImport( id ) != NULL;
 }
 
-bool CColModelSA::Restore( unsigned short id )
+bool CColModelSA::Restore( modelId_t id )
 {
-    imports_t::const_iterator iter = std::find( m_imported.begin(), m_imported.end(), id );
+    colImports_t::iterator iter;
+    colImport_t *import = FindImport( id, iter );
 
-    if ( iter == m_imported.end() )
+    if ( !import )
         return false;
 
     CModelLoadInfoSA *info = (CModelLoadInfoSA*)ARRAY_CModelLoadInfo + id;
     CBaseModelInfoSAInterface *model = ppModelInfo[id];
 
+    assert( import->replaceCollision == model->pColModel );
+
+    if ( import->replaceCollision != m_pInterface )
+    {
+        // Since we cloned the interface, we destroy it here.
+        // This is made because every vehicle type must have a specialized collision interface.
+        delete import->replaceCollision;
+
+        model->pColModel = NULL;
+    }
+
+    // todo: m_original can be NULL. fix this.
+    CColModelSAInterface *origCol = import->originalCollision;
+    bool origDynamic = import->isOriginalDynamic;
+
     switch( model->GetRwModelType() )
     {
     case RW_ATOMIC:
+        if ( origCol )
+        {
+            assert( GetColInterfaceUseCount( origCol ) == 1 );
+        }
+
         // Restore the original colmodel no matter what
-        model->SetCollision( m_original, m_originalDynamic );
+        model->SetCollision( origCol, origDynamic );
 
         // Destroy it's data if not used anymore
-        if ( m_originalDynamic && !Streaming::GetCOLEnvironment().m_pool->Get( m_original->m_colPoolIndex )->m_loaded )
-            m_original->ReleaseData();
+        if ( origCol && origDynamic && origCol->m_colPoolIndex != 0 )
+        {
+            if ( !Streaming::GetCOLEnvironment().m_pool->Get( origCol->m_colPoolIndex )->m_loaded )
+            {
+                origCol->ReleaseData();
+            }
+        }
 
         break;
     case RW_CLUMP:
         if ( info->m_eLoading == MODEL_LOADED )
-            model->SetCollision( m_original, m_originalDynamic );
+            model->SetCollision( origCol, origDynamic );
         else
         {
             // Clumps delete collision at freeing them
-            delete m_original;
+            delete origCol;
 
             model->pColModel = NULL;
         }
@@ -258,7 +460,50 @@ bool CColModelSA::Restore( unsigned short id )
 void CColModelSA::RestoreAll( void )
 {
     while ( !m_imported.empty() )
-        Restore( m_imported.front() );
+    {
+        const colImport_t& import = *m_imported.begin();
+
+        Restore( import.modelIndex );
+    }
+}
+
+CColModelSA::imports_t CColModelSA::GetImportList( void ) const
+{
+    imports_t importsVirtual;
+
+    for ( colImports_t::const_iterator iter = m_imported.begin(); iter != m_imported.end(); iter++ )
+    {
+        const colImport_t& import = *iter;
+
+        importsVirtual.push_back( import.modelIndex );
+    }
+
+    return importsVirtual;
+}
+
+void CColModelSA::SetOriginal( modelId_t modelIndex, CColModelSAInterface *colModel, bool isDynamic )
+{
+    colImports_t::iterator iter;
+    colImport_t *import = FindImport( modelIndex, iter );
+
+    if ( !import )
+        return;
+
+    if ( colModel )
+    {
+        assert( GetColInterfaceUseCount( colModel ) == 0 );
+    }
+
+    import->originalCollision = colModel;
+    import->isOriginalDynamic = isDynamic;
+}
+
+CColModelSAInterface* CColModelSA::GetOriginal( modelId_t modelIndex, bool& isDynamic )
+{
+    colImports_t::iterator iter;
+    colImport_t *import = FindImport( modelIndex, iter );
+
+    return ( import ) ? ( import->originalCollision ) : ( NULL );
 }
 
 void* CColFileSA::operator new ( size_t )
@@ -269,4 +514,15 @@ void* CColFileSA::operator new ( size_t )
 void CColFileSA::operator delete ( void *ptr )
 {
     Streaming::GetCOLEnvironment().m_pool->Free( (CColFileSA*)ptr );
+}
+
+void Collision_Init( void )
+{
+    // Install a memory leak fix.
+    HookInstall( 0x0040F9E0, h_memFunc( &CColModelSAInterface::ReleaseData ), 5 );
+    HookInstall( 0x0040F700, h_memFunc( &CColModelSAInterface::_DestructorHook ), 5 );
+}
+
+void Collision_Shutdown( void )
+{
 }

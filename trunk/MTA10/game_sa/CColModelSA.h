@@ -17,34 +17,6 @@
 
 #include <game/CColModel.h>
 
-#define FUNC_CColModel_Constructor      0x40FB60
-#define FUNC_CColModel_Destructor       0x40F700
-
-typedef struct
-{
-    union
-    {
-        char version[4];
-        unsigned int checksum;
-    };
-
-    DWORD size;
-    char name[22];
-    unsigned short modelId;
-} ColModelFileHeader;
-
-typedef struct
-{
-    CVector     vecCenter;
-    float       fRadius;
-} CColSphereSA;
-
-typedef struct
-{
-    CVector     min;
-    CVector     max;
-} CColBoxSA;
-
 // Collision stored surface type
 struct EColSurface
 {
@@ -246,19 +218,121 @@ struct CColLighting
     uchar   night:4;  // 0-15
 };
 
+#define FUNC_CColModel_Constructor      0x40FB60
+#define FUNC_CColModel_Destructor       0x40F700
+
+typedef struct
+{
+    CVector     vecMin;
+    CVector     vecMax;
+    CVector     vecOffset;
+    FLOAT       fRadius;
+} CBoundingBoxSA;
+
+
+struct CColSurfaceSA
+{
+    EColSurface     material;
+    unsigned char   flags;
+    unsigned char   unknown;
+    CColLighting    light;
+};
+
+
+struct CColSuspensionLineSA
+{
+    CVector start, end;
+};
+
+
+struct CColSphereSA
+{
+    inline CColSphereSA( float fRadius, const CVector& vecCenter, EColSurface material, unsigned char flags, unsigned char unknown )
+    {
+        this->fRadius = fRadius;
+        this->vecCenter = vecCenter;
+        this->surface.material = material;
+        this->surface.flags = flags;
+        this->surface.unknown = unknown;
+    }
+
+    CVector         vecCenter;
+    float           fRadius;
+    CColSurfaceSA   surface;
+};
+
+
+struct CColBoxSA
+{
+    inline CColBoxSA( const CVector& min, const CVector& max, EColSurface material, unsigned char flags, unsigned char unknown )
+    {
+        this->min = min;
+        this->max = max;
+        this->surface.material = material;
+        this->surface.flags = flags;
+        this->surface.unknown = unknown;
+    }
+
+    CVector         min;
+    CVector         max;
+    CColSurfaceSA   surface;
+};
+
+
+struct CColVertexSA
+{
+    inline CColVertexSA( short a, short b, short c )
+    {
+        this->a = a;
+        this->b = b;
+        this->c = c;
+    }
+
+    short a, b, c;
+};
+
+
 typedef struct
 {
     unsigned short  v1;
     unsigned short  v2;
     unsigned short  v3;
-    unsigned char   material;
+    EColSurface     material;
     CColLighting    lighting;
 } CColTriangleSA;
+
+
+struct CColFaceGroupSA
+{
+    CVector min, max;
+    unsigned short StartFace, EndFace;
+};
+
+
+struct CColFaceGroupHeaderSA
+{
+    unsigned int numFaceGroups;
+};
+
 
 typedef struct
 {
     BYTE pad0 [ 12 ];
 } CColTrianglePlaneSA;
+
+
+typedef struct
+{
+    union
+    {
+        char version[4];
+        unsigned int checksum;
+    };
+
+    DWORD size;
+    char name[22];
+    unsigned short modelId;
+} ColModelFileHeader;
 
 class CColFileSA
 {
@@ -327,20 +401,57 @@ public:
     bool                            m_isInterior;       // 43
 };
 
-typedef struct
+struct CColDataSA
 {
-    unsigned short                  numSpheres;         // 0
-    unsigned short                  numBoxes;           // 2
-    unsigned short                  numTriangles;       // 4
-    BYTE                            ucNumWheels;        // 6
-    BYTE                            pad2;               // 7
-    CColSphereSA*                   colSpheres;         // 8
-    CColBoxSA*                      colBoxes;           // 12
-    void*                           pSuspensionLines;   // 16
-    void*                           unk;                // 20
-    CColTriangleSA*                 colTriangles;       // 24
-    CColTrianglePlaneSA*            colPlanes;          // 28
-} CColDataSA;
+    CColDataSA( void );
+
+    struct trianglePlanesListNode
+    {
+        DWORD pad;
+        trianglePlanesListNode *next;
+        trianglePlanesListNode *prev;
+    };
+
+    trianglePlanesListNode* GetTrianglePlanesListNode( void );
+
+    void __thiscall     SegmentedClear( void );
+    void __thiscall     UnsegmentedClear( void );
+
+    CColFaceGroupHeaderSA*  GetFaceGroupHeader( void );
+    CColFaceGroupSA*        GetFaceGroup( unsigned int groupIndex );
+
+    unsigned short                  numSpheres;             // 0
+    unsigned short                  numBoxes;               // 2
+    unsigned short                  numColTriangles;        // 4
+    BYTE                            ucNumWheels;            // 6
+
+    union
+    {
+        unsigned char               flags;                  // 7
+
+        struct
+        {
+            unsigned char           unkFlag1 : 1;           // 7
+            unsigned char           hasFaceGroups : 1;      
+            unsigned char           hasShadowMeshFaces : 1; 
+        };
+    };
+
+    CColSphereSA*                   pColSpheres;            // 8
+    CColBoxSA*                      pColBoxes;              // 12
+    CColSuspensionLineSA*           pSuspensionLines;       // 16
+    CColVertexSA*                   pColVertices;           // 20
+    CColTriangleSA*                 pColTriangles;          // 24
+    CColTrianglePlaneSA*            pColTrianglePlanes;     // 28
+
+    int                             numShadowMeshFaces;     // 32
+    unsigned int                    numShadowMeshVertices;  // 36
+    CColVertexSA*                   pShadowMeshVertices;    // 40
+    CColTriangleSA*                 pShadowMeshFaces;       // 44
+
+    unsigned int        CalculateNumberOfShadowMeshVertices( void ) const;
+    unsigned int        CalculateNumberOfCollisionMeshVertices( void ) const;
+};
 
 class CColModelSAInterface
 {
@@ -348,18 +459,26 @@ public:
                                     CColModelSAInterface    ( void );
                                     ~CColModelSAInterface   ( void );
 
-    void __thiscall                 AllocateData            ( void );
+    void __thiscall                 _DestructorHook         ( void );
+
+    void __thiscall                 UnsegmentizeData        ( void );
     void __thiscall                 ReleaseData             ( void );
+
+    CColModelSAInterface*           Clone                   ( void );
 
     void*   operator new ( size_t );
     void    operator delete ( void *ptr );
 
-    CBoundingBox                    m_bounds;           // 0
-    unsigned char                   m_colPoolIndex;     // 40
-    bool                            m_unk : 1;          // 41
-    BYTE                            m_pad[2];           // 42
-    CColDataSA*                     pColData;           // 44
+    CBoundingBox                    m_bounds;                   // 0
+    unsigned char                   m_colPoolIndex;             // 40
+    bool                            m_isCollidable : 1;         // 41, if true, this collision interface has spheres, boxes or triangles
+    bool                            m_isColDataSegmented : 1;   //     if true, pColData is the only allocation used (all pointers inside point to sub segments in memory)
+    bool                            m_releaseDataOnDestroy : 1; //     if true, the destructor releases the collision data
+    BYTE                            m_pad[2];                   // 42
+    CColDataSA*                     pColData;                   // 44
 };
+
+#include "CColModelSA.loader.h"
 
 // Utility functions.
 void __cdecl Collision_Preload( void );
@@ -372,45 +491,62 @@ namespace Collision
     // The idea of a collision quad tree conflicts with our dynamical collision assignment system.
     // We have to update the GTA:SA logic so that it does not unload colFiles which we are still
     // using.
+    // Update: since collision sectors have reference counts, its all good. :)
     inline colFileQuadTreeNode_t*   GetCollisionQuadTree( void )
     {
         return *(colFileQuadTreeNode_t**)0x0096555C;
     }
 };
 
+// Utility functions.
+unsigned int __cdecl GetColInterfaceUseCount( CColModelSAInterface *colModel );
+
 // Module Initialization.
 void ColModel_Init( void );
 void ColModel_Shutdown( void );
+
 
 class CColModelSA : public CColModel
 {
     friend class CStreamingSA;
 public:
+
+    struct colImport_t
+    {
+        modelId_t               modelIndex;
+        CColModelSAInterface*   replaceCollision;
+        CColModelSAInterface*   originalCollision;
+        bool                    isOriginalDynamic;
+    };
+    typedef std::list <colImport_t> colImports_t;
+
                                     CColModelSA         ( void );
                                     CColModelSA         ( CColModelSAInterface *pInterface, bool destroy = false );
                                     ~CColModelSA        ( void );
 
     inline CColModelSAInterface*    GetInterface        ( void )                        { return m_pInterface; }
 
-    bool                            Replace             ( unsigned short id );
-    bool                            IsReplaced          ( unsigned short id ) const;
-    bool                            Restore             ( unsigned short id );
+    bool                            Replace             ( modelId_t id );
+    bool                            IsReplaced          ( modelId_t id ) const;
+    colImport_t*                    FindImport          ( modelId_t id, colImports_t::iterator& findIter );
+    const colImport_t*              FindImport          ( modelId_t id ) const;
+    bool                            Restore             ( modelId_t id );
     void                            RestoreAll          ( void );
 
-    const imports_t&                GetImportList       ( void ) const                  { return m_imported; }
+    imports_t                       GetImportList       ( void ) const;
 
-    void                            SetOriginal         ( CColModelSAInterface *col, bool isDynamic )   { m_original = col; m_originalDynamic = isDynamic; }
-    CColModelSAInterface*           GetOriginal         ( void )                        { return m_original; }
-
-    bool                            IsOriginalDynamic   ( void )                        { return m_originalDynamic; }
+    void                            SetOriginal         ( modelId_t modelIndex, CColModelSAInterface *col, bool isDynamic );
+    CColModelSAInterface*           GetOriginal         ( modelId_t modelIndex, bool& originalDynamic );
 
 private:
     CColModelSAInterface*           m_pInterface;
-    CColModelSAInterface*           m_original;
-    bool                            m_originalDynamic;
     bool                            m_bDestroyInterface;
 
-    imports_t                       m_imported;
+    colImports_t                    m_imported;
 };
+
+// Module initialization.
+void Collision_Init( void );
+void Collision_Shutdown( void );
 
 #endif

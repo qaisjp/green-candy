@@ -309,19 +309,19 @@ bool __cdecl LoadClumpFilePersistent( RwStream *stream, modelId_t id )
             {
                 col = new CColModelSAInterface;
 
-                col->AllocateData();
+                col->UnsegmentizeData();
             }
 
             // If we replaced the collision, we want to put it into the original storage
             // Loading it into the model does not make sense ;)
             if ( CColModelSA *colModel = g_colReplacement[id] )
             {
-                colModel->SetOriginal( col, true );
+                colModel->SetOriginal( id, col, true );
             }
             else
             {
                 // Set the collision to the model.
-                info->SetColModel( col, true );
+                info->SetCollision( col, true );
 
                 // Set a special model flag
                 info->flags |= 0x0800;

@@ -3,7 +3,7 @@
 *  Multi Theft Auto: San Andreas - Deathmatch
 *
 *  ml_base, External lua add-on module
-*  
+*
 *  Copyright © 2003-2008 MTA.  All Rights Reserved.
 *
 *  Grand Theft Auto is © 2002-2003 Rockstar North
@@ -55,6 +55,6 @@ MTAEXPORT bool DoPulse ( void )
 
 MTAEXPORT bool ShutdownModule ( void )
 {
-    
+
     return true;
 }
