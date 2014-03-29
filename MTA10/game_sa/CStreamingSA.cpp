@@ -132,7 +132,7 @@ void __cdecl Streaming::RequestModel( modelId_t id, unsigned int flags )
 
         // Model support fix: quick load a model if we already have it for replacement; prevents memory leaks and boosts speed
 	    // as opposed to letting the original/replaced game resources load
-        if ( id < DATA_TEXTURE_BLOCK )
+        if ( id < MAX_MODELS )
         {
             CBaseModelInfoSAInterface *minfo = ppModelInfo[id];
 
@@ -270,7 +270,7 @@ struct ModelFreeDispatch : ModelCheckDispatch <false>   // by default we do not 
 
             model->DeleteRwObject();
 
-            model->SetCollision( col, false );
+            model->pColModel = col;
         }
         else
             model->DeleteRwObject();
@@ -687,7 +687,7 @@ void __cdecl Streaming::Update( void )
         }
         else if ( *(unsigned int*)VAR_currArea == 0 )
         {
-            Streamer::RequestSquaredSectorEntities( camPos, 0 );
+            Streamer::RequestLevelOfDetailSectorEntities( camPos, 0 );
         }
     }
 

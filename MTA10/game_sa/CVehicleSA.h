@@ -448,7 +448,7 @@ public:
     virtual bool __thiscall         CanPedLeaveCar                      () const = 0;
     virtual void __thiscall         ProcessDrivingAnims                 () = 0;
     virtual void* __thiscall        GetRideAnimData                     () = 0;
-    virtual void __thiscall         SetupSuspension                     () = 0;
+    virtual void __thiscall         SetupSuspensionLines                () = 0;
     virtual void __thiscall         GetMovingCollisionSpeed             ( CVector& vec ) const = 0;
     virtual void __thiscall         Fix                                 () = 0;
     virtual void __thiscall         SetupDamageAfterLoad                () = 0;
@@ -731,7 +731,7 @@ public:
     void                        Fix()                                                   { GetInterface()->Fix(); }
     void                        BlowUp( CEntity *creator, unsigned long unk );
     void                        BlowUpCutSceneNoExtras( unsigned int unk1, unsigned int unk2, unsigned int unk3, unsigned int unk4 )    { GetInterface()->BlowWithCutscene( unk1, unk2, unk3, unk4 ); }
-    virtual void                RecalculateSuspensionLines()                            { GetInterface()->SetupSuspension(); }
+    virtual void                RecalculateSuspensionLines()                            { GetInterface()->SetupSuspensionLines(); }
 
     CVehicle*                   GetTowedVehicle() const;
     CVehicle*                   GetTowedByVehicle() const;
