@@ -20,18 +20,12 @@ void IPLSector_Init( void );
 void IPLSector_Shutdown( void );
 
 // IPL sector (buildings) instance
-class CIPLFileSA
+class CIPLFileSA    //size: 52 bytes
 {
 public:
     CIPLFileSA( const char *name ) : m_bounds( MAX_REGION, -MAX_REGION, -MAX_REGION, MAX_REGION )
     {
-        m_buildingRangeStart = 0x7FFF;
-        m_buildingRangeEnd = -0;
-
-        m_dummyRangeStart = 0x7FFF;
-        m_dummyRangeEnd = -0;
-
-        m_iplId = 0xFFFF;
+        m_iplId = -1;
 
         m_isInterior = false;
         m_isLoaded = false;
@@ -39,10 +33,14 @@ public:
         m_doNotStream = true;
 
         m_terminateAtUnload = false;
-        m_unk11 = false;
+        m_containsFarChunks = false;
+
+        // Otherwise we encounter loading trouble in cached mode.
+        assert( strlen( name ) < sizeof( m_name ) );
 
         // Store the .IPL filename in our field.
-        strcpy( m_name, name );
+        strncpy( m_name, name, 17 );
+        m_name[17] = '\0';
     }
 
     // Methods required by the sectorizer.
@@ -63,20 +61,22 @@ public:
     CBounds2D       m_bounds;               // 0
     char            m_name[18];             // 16
 
-    short           m_buildingRangeStart;   // 34
-    short           m_buildingRangeEnd;     // 36
+    typedef ValueRange <short> indexRange_t;
 
-    short           m_dummyRangeStart;      // 38
-    short           m_dummyRangeEnd;        // 40
+    // Unless those ranges are updated, native GTA:SA will only support up to MAX_SHORT buildings or dummies.
+    // This poses a risk to total conversions such as GTA:SoL.
+    // Solution: update struct and use "int" as rangeNumberType.
+    indexRange_t    m_buildingRange;        // 34, pool index range of building pool
+    indexRange_t    m_dummyRange;           // 38, pool index range of dummy pool
 
-    unsigned short  m_iplId;                // 42
+    short           m_iplId;                // 42
 
     bool            m_isInterior;           // 44
     bool            m_isLoaded;             // 45
     bool            m_streamingSectorLoad;  // 46, set by streaming to indicate that we want to load it
     bool            m_doNotStream;          // 47, 1
     bool            m_terminateAtUnload;    // 48
-    bool            m_unk11;                // 49
+    bool            m_containsFarChunks;    // 49, is true if LOD distance of any instance is greater than 150.0f
 
     WORD            m_pad;                  // 50
 };

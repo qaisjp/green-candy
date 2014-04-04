@@ -12,6 +12,8 @@
 
 #include <StdInc.h>
 
+#define CACHE_FILE_NAME     "MODELS\\\\CINFO.BIN"
+
 extern CBaseModelInfoSAInterface **ppModelInfo;
 
 // Available cache modes.
@@ -22,9 +24,13 @@ enum eCacheMode : unsigned int
     CACHE_WRITING   // set data to game structures
 };
 
-// To finish this CINFO.BIN caching system I have to wait for Jusonex's input.
-// He has made important work on the IPL building loader, which is tied to the CINFO.BIN caching.
-// I want to implement his work. (TODO)
+// If set to true, the engine will cache heavy game contents, so engine startup is quicker.
+static bool _useEngineCaching = true;
+
+inline bool UseEngineCaching( void )
+{
+    return _useEngineCaching;
+}
 
 /*=========================================================
     _Cache_Init
@@ -39,26 +45,18 @@ enum eCacheMode : unsigned int
 // This is a value compatible with MAX_COL_FILES and MAX_IPL_FILES.
 #define MAX_COLLISION_AREA_ENTRIES          256
 
-static unsigned int *const VAR_maximumNumberOfCollisions_atLoad = (unsigned int*)0x00BC409C;
+static unsigned int maximumNumberOfCollisions_atLoad = 0;
 
-struct cachedAreaEntry  //size: 52
+struct CachedIPLInstanceIndexTrimArrayManager
 {
-    cachedAreaEntry( void )
+    AINLINE void InitField( unsigned int& index )
     {
-        m_bounds.m_minX = MAX_REGION;
-        m_bounds.m_maxY = -MAX_REGION;
-        m_bounds.m_maxX = MAX_REGION;
-        m_bounds.m_minY = -MAX_REGION;
+        return;
     }
-
-    CBounds2D               m_bounds;       // 0
-    BYTE                    m_pad[36];      // 16
 };
+typedef growableArray <unsigned int, 8, 0, CachedIPLInstanceIndexTrimArrayManager, unsigned int> cachedIPLInstanceIndexTrimArray_t;
 
-static unsigned char **const VAR_cachedAreaModelCount = (unsigned char**)0x00BC4098;
-static unsigned int *const VAR_cachedAreaModelCountSize = (unsigned int*)0x00BC40B4;
-
-static cachedAreaEntry **const VAR_cachedAreaEntries = (cachedAreaEntry**)0x00BC4094;
+static cachedIPLInstanceIndexTrimArray_t cachedIPLInstanceIndexTrim;
 
 struct cachedColFile  //size: 24
 {
@@ -86,13 +84,55 @@ struct cachedColFile  //size: 24
     };
 };
 
-static cachedColFile **const VAR_cachedColFiles = (cachedColFile**)0x00BC4090;
-static unsigned int *const VAR_cachedColFilesSize = (unsigned int*)0x00BC40B8;
+struct cachedIPLFile    //size: 52
+{
+    cachedIPLFile( void )
+    {
+        m_bounds.m_minX = MAX_REGION;
+        m_bounds.m_maxY = -MAX_REGION;
+        m_bounds.m_maxX = MAX_REGION;
+        m_bounds.m_minY = -MAX_REGION;
+    }
+
+    CBounds2D       m_bounds;               // 0
+    char            m_name[18];             // 16
+
+    short           m_buildingRangeStart;   // 34
+    short           m_buildingRangeEnd;     // 36
+
+    short           m_dummyRangeStart;      // 38
+    short           m_dummyRangeEnd;        // 40
+
+    short           m_iplId;                // 42
+
+    bool            m_isInterior;           // 44
+    bool            m_isLoaded;             // 45
+    bool            m_streamingSectorLoad;  // 46, set by streaming to indicate that we want to load it
+    bool            m_doNotStream;          // 47, 1
+    bool            m_terminateAtUnload;    // 48
+    bool            m_containsFarChunks;    // 49, is true if LOD distance of any instance is greater than 150.0f
+
+    WORD            m_pad;                  // 50
+};
+
+// Must be static array.
+static cachedIPLFile *cachedIPLFiles = NULL;
+
+struct CachedCOLFileArrayManager
+{
+    AINLINE void InitField( cachedColFile& colFile )
+    {
+        return;
+    }
+};
+typedef growableArray <cachedColFile, 8, 0, CachedCOLFileArrayManager, unsigned int> cachedColFileArray_t;
+
+static cachedColFileArray_t cachedColFiles;
 
 struct cachedGameProperty //size: 20
 {
-    BYTE                    m_pad[4];           // 0
-    unsigned int            m_buildingIndex;    // 4
+    int                     m_buildingIndex;    // 0
+    int                     m_lodBuildingIndex; // 4
     modelId_t               m_primaryModel;     // 8
     modelId_t               m_secondaryModel;   // 12
 
@@ -110,8 +150,16 @@ struct cachedGameProperty //size: 20
     };
 };
 
-static cachedGameProperty **const VAR_cachedGameProperties = (cachedGameProperty**)0x00BC40AC;
-static unsigned int *const VAR_cachedGamePropertyIndex = (unsigned int*)0x00BC40B0;
+struct CachedGamePropertyArrayManager
+{
+    AINLINE void InitField( cachedGameProperty& prop )
+    {
+        return;
+    }
+};
+typedef growableArray <cachedGameProperty, 8, 0, CachedGamePropertyArrayManager, unsigned int> cachedGamePropertyArray_t;
+
+static cachedGamePropertyArray_t cachedGameProperties;
 
 struct cachedCollisionEntry //size: 48
 {
@@ -122,9 +170,38 @@ struct cachedCollisionEntry //size: 48
     BYTE                    m_pad[2];               // 46
 };
 
-static eCacheMode *const VAR_collisionCacheStatus = (eCacheMode*)0x00BC40A0;
-static cachedCollisionEntry **const VAR_cachedCollisionArray = (cachedCollisionEntry**)0x00BC40A4;
-static unsigned int *const VAR_cachedCollisionCount = (unsigned int*)0x00BC40A8;
+static eCacheMode collisionCacheStatus = CACHE_DISABLED;    // init engine with cache disabled for safety.
+
+struct CachedCollisionArrayManager
+{
+    AINLINE void InitField( cachedCollisionEntry& entry )
+    {
+        return;
+    }
+};
+typedef growableArray <cachedCollisionEntry, 8, 0, CachedCollisionArrayManager, unsigned int> cachedCollisionEntryArray_t;
+
+static cachedCollisionEntryArray_t cachedCollisionArray;
+
+template <typename growableArrayType>
+inline bool ReadGrowableFileArray( CFile *file, growableArrayType& data )
+{
+    unsigned int structureCount;
+
+    if ( !file->ReadUInt( structureCount ) )
+        return false;
+
+    data.SetSizeCount( structureCount );
+
+    if ( structureCount == 0 )
+        return true;
+    
+    size_t expectedRead = structureCount * sizeof( growableArrayType::dataType_t );
+
+    size_t readBytes = file->Read( &data.Get( 0 ), 1, expectedRead );
+
+    return ( readBytes == expectedRead );
+}
 
 void __cdecl _Cache_Init( void )
 {
@@ -133,12 +210,53 @@ void __cdecl _Cache_Init( void )
     // the code is still present on the PS2 version.
 
     // Store the number of loaded collisions at load.
-    *VAR_maximumNumberOfCollisions_atLoad = (*ppColModelPool)->GetMax();
+    maximumNumberOfCollisions_atLoad = Pools::GetColModelPool()->GetMax();
 
     // Allocate management structures.
-    *VAR_cachedAreaModelCount = new unsigned char[MAX_COLLISION_AREA_ENTRIES];
-    *VAR_cachedAreaEntries = new cachedAreaEntry[MAX_COLLISION_AREA_ENTRIES];
-    *VAR_cachedColFiles = new cachedColFile[MAX_COLLISION_AREA_ENTRIES];
+    cachedIPLInstanceIndexTrim.SetSizeCount( 3328 );
+    cachedIPLFiles = new cachedIPLFile[MAX_COLLISION_AREA_ENTRIES];
+    cachedColFiles.SetSizeCount( MAX_COLLISION_AREA_ENTRIES );
+    
+    // MTA extension.
+    if ( UseEngineCaching() )
+    {
+        bool successful = false;
+
+        // Read the CINFO.BIN file in the game directory if it is available.
+        CFile *cacheFile = gameFileRoot->Open( CACHE_FILE_NAME, "rb" );
+
+        if ( cacheFile )
+        {
+            // Read data from the file.
+            ReadGrowableFileArray( cacheFile, cachedCollisionArray );
+            ReadGrowableFileArray( cacheFile, cachedIPLInstanceIndexTrim );
+
+            cacheFile->Read( cachedIPLFiles, MAX_COLLISION_AREA_ENTRIES, sizeof( cachedIPLFile ) );
+
+            ReadGrowableFileArray( cacheFile, cachedColFiles );
+            ReadGrowableFileArray( cacheFile, cachedGameProperties );
+
+            successful = true;
+
+            delete cacheFile;
+        }
+        
+        // If reading was not successful, write a new cache file.
+        if ( !successful )
+        {
+            // Read data from game structures.
+            collisionCacheStatus = CACHE_READING;
+        }
+        else
+        {
+            // Write data into game structures.
+            collisionCacheStatus = CACHE_WRITING;
+        }
+    }
+    else
+    {
+        collisionCacheStatus = CACHE_DISABLED;
+    }
 }
 
 /*=========================================================
@@ -185,6 +303,12 @@ void __forceinline WriteArrayIfAvailable( CFile *file, const arrayType data[], u
     file->Write( data, sizeof(arrayType), elemCount );
 }
 
+template <typename growArrayType>
+void __forceinline WriteGrowableArrayIfAvailable( CFile *file, growArrayType& data )
+{
+    WriteArrayIfAvailable( file, &data.Get( 0 ), data.GetCount() );
+}
+
 template <typename deleteType>
 void __forceinline SafeDelete( deleteType*& delPtr )
 {
@@ -198,43 +322,39 @@ void __forceinline SafeDelete( deleteType*& delPtr )
 void __cdecl _Cache_Shutdown( void )
 {
     // Get all the important pointers.
-    cachedCollisionEntry *cachedCollisionArray = *VAR_cachedCollisionArray;
-    unsigned char *cachedAreaModelCountArray = *VAR_cachedAreaModelCount;
-    cachedAreaEntry *cachedAreaEntryArray = *VAR_cachedAreaEntries;
-    cachedColFile *cachedColFilesArray = *VAR_cachedColFiles;
-    cachedGameProperty *cachedGamePropertyArray = *VAR_cachedGameProperties;
+    cachedIPLFile *cachedAreaEntryArray = cachedIPLFiles;
 
     // Write the collision information if ready.
     // This means that we have read all game structures and are now writing the cache.
-    if ( *VAR_collisionCacheStatus == CACHE_READING )
+    if ( collisionCacheStatus == CACHE_READING )
     {
         // The_GTA: in the original function the R* file functions were used.
         // Instead, I am using CFileSystem, the MTA:Eir implementation.
-        CFile *cacheFile = gameFileRoot->Open( "MODELS\\\\CINFO.BIN", "wb" );
+        CFile *cacheFile = gameFileRoot->Open( CACHE_FILE_NAME, "wb" );
 
         // Bugfix: account for creation failure.
         if ( cacheFile )
         {
             // Write the engine status.
             // We can restore to the engine status this way.
-            WriteArrayIfAvailable( cacheFile, cachedCollisionArray, *VAR_cachedCollisionCount );
-            WriteArrayIfAvailable( cacheFile, cachedAreaModelCountArray, *VAR_cachedAreaModelCountSize );
+            WriteGrowableArrayIfAvailable( cacheFile, cachedCollisionArray );
+            WriteGrowableArrayIfAvailable( cacheFile, cachedIPLInstanceIndexTrim );
 
             WriteIfAvailable( cacheFile, cachedAreaEntryArray, sizeof(*cachedAreaEntryArray) * MAX_COLLISION_AREA_ENTRIES );
 
-            WriteArrayIfAvailable( cacheFile, cachedColFilesArray, *VAR_cachedColFilesSize );
-            WriteArrayIfAvailable( cacheFile, cachedGamePropertyArray, *VAR_cachedGamePropertyIndex );
+            WriteGrowableArrayIfAvailable( cacheFile, cachedColFiles );
+            WriteGrowableArrayIfAvailable( cacheFile, cachedGameProperties );
 
             delete cacheFile;
         }
     }
 
     // Free all resources if they have been used.
-    SafeDelete( cachedGamePropertyArray );
-    SafeDelete( cachedCollisionArray );
-    SafeDelete( cachedAreaModelCountArray );
+    cachedGameProperties.Shutdown();
+    cachedCollisionArray.Shutdown();
+    cachedIPLInstanceIndexTrim.Shutdown();
     SafeDelete( cachedAreaEntryArray );
-    SafeDelete( cachedColFilesArray );
+    cachedColFiles.Shutdown();
 }
 
 /*=========================================================
@@ -249,7 +369,7 @@ void __cdecl _Cache_Shutdown( void )
 =========================================================*/
 bool __cdecl Cache_IsWritingMode( void )
 {
-    return *VAR_collisionCacheStatus == CACHE_WRITING;
+    return collisionCacheStatus == CACHE_WRITING;
 }
 
 /*=========================================================
@@ -274,18 +394,15 @@ bool __cdecl Cache_IsWritingMode( void )
 void __cdecl Cache_StoreCollision( unsigned int id, CColModelSAInterface *col )
 {
     // Only execute if we are in the correct phase.
-    if ( *VAR_collisionCacheStatus != CACHE_READING )
+    if ( collisionCacheStatus != CACHE_READING )
         return;
 
     // Save important details about our collision.
-    cachedCollisionEntry& cacheEntry = (*VAR_cachedCollisionArray)[*VAR_cachedCollisionCount];
+    cachedCollisionEntry& cacheEntry = cachedCollisionArray.ObtainItem();
     cacheEntry.m_bounds = col->m_bounds;
     cacheEntry.m_model = id;
     cacheEntry.m_colFile = col->m_colPoolIndex;
     cacheEntry.m_isCollidable = col->m_isCollidable;
-
-    // Increase the array size.
-    (*VAR_cachedCollisionCount)++;
 }
 
 /*=========================================================
@@ -304,28 +421,32 @@ void __cdecl Cache_WriteCollision( void )
     if ( !Cache_IsWritingMode() )
         return;
 
-    unsigned int max = *VAR_cachedCollisionCount;
+    unsigned int max = cachedCollisionArray.GetSizeCount();
 
     for ( unsigned int n = 0; n < max; n++ )
     {
-        const cachedCollisionEntry& colEntry = (*VAR_cachedCollisionArray)[n];
+        const cachedCollisionEntry& colEntry = cachedCollisionArray.Get( n );
 
         // Get the model info the collision entry is pointing to.
         CBaseModelInfoSAInterface *model = ppModelInfo[colEntry.m_model];
 
-        // Allocate a new collision interface, which we populate.
-        CColModelSAInterface *colModel = new CColModelSAInterface;
-        colModel->m_bounds = colEntry.m_bounds;
-        colModel->m_colPoolIndex = colEntry.m_colFile;
-        colModel->m_isCollidable = colEntry.m_isCollidable;
+        // Crashfix: only load collision if the model exists.
+        if ( model )
+        {
+            // Allocate a new collision interface, which we populate.
+            CColModelSAInterface *colModel = new CColModelSAInterface;
+            colModel->m_bounds = colEntry.m_bounds;
+            colModel->m_colPoolIndex = colEntry.m_colFile;
+            colModel->m_isCollidable = colEntry.m_isCollidable;
 
-        // Update the collision of the model.
-        // Note that we assume that no collision was loaded prior to this.
-        model->SetColModel( colModel, true );
+            // Update the collision of the model.
+            // Note that we assume that no collision was loaded prior to this.
+            model->SetColModel( colModel, true );
 
-        // Update the collision boundaries, which is faster than
-        // scanning the whole collision library.
-        RegisterCOLLibraryModel( colEntry.m_colFile, colEntry.m_model );
+            // Update the collision boundaries, which is faster than
+            // scanning the whole collision library.
+            RegisterCOLLibraryModel( colEntry.m_colFile, colEntry.m_model );
+        }
     }
 }
 
@@ -342,16 +463,13 @@ void __cdecl Cache_WriteCollision( void )
 =========================================================*/
 void __cdecl Cache_RestoreColFile( CColFileSA *colFile )
 {
-    const cachedColFile& colFileEntry = (*VAR_cachedColFiles)[*VAR_cachedColFilesSize];
+    const cachedColFile& colFileEntry = cachedColFiles.ObtainItem();
 
     colFile->m_bounds = colFileEntry.m_bounds;
-    colFile->m_rangeStart = colFileEntry.m_rangeStart;
-    colFile->m_rangeEnd = colFileEntry.m_rangeEnd;
+    colFile->m_range.start = colFileEntry.m_rangeStart;
+    colFile->m_range.end = colFileEntry.m_rangeEnd;
     colFile->m_isProcedural = colFileEntry.m_isProcedural;
     colFile->m_isInterior = colFileEntry.m_isInterior;
-
-    // Increment the sequential index.
-    (*VAR_cachedColFilesSize)++;
 }
 
 /*=========================================================
@@ -369,16 +487,80 @@ void __cdecl Cache_RestoreColFile( CColFileSA *colFile )
 void __cdecl Cache_StoreColFile( CColFileSA colFile )
 {
     // Store data in our cache.
-    cachedColFile& colFileEntry = (*VAR_cachedColFiles)[*VAR_cachedColFilesSize];
+    cachedColFile& colFileEntry = cachedColFiles.ObtainItem();
 
     colFileEntry.m_bounds = colFile.m_bounds;
-    colFileEntry.m_rangeStart = colFile.m_rangeStart;
-    colFileEntry.m_rangeEnd = colFile.m_rangeEnd;
+    colFileEntry.m_rangeStart = colFile.m_range.start;
+    colFileEntry.m_rangeEnd = colFile.m_range.end;
     colFileEntry.m_isProcedural = colFile.m_isProcedural;
     colFileEntry.m_isInterior = colFile.m_isInterior;
+}
 
-    // Increment the sequential index.
-    (*VAR_cachedColFilesSize)++;
+/*=========================================================
+    Cache_RestoreIPLFile
+
+    Arguments:
+        iplFile - pointer to write IPL sector information to
+        iplIndex - index of the IPL sector
+    Purpose:
+        Restores data about a given IPL sector from the persistent
+        cache.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005B2EF0
+=========================================================*/
+const CIPLFileSA& __cdecl Cache_RestoreIPLFile( CIPLFileSA& iplFile, unsigned int iplIndex )
+{
+    const cachedIPLFile& iplFileEntry = cachedIPLFiles[ iplIndex ];
+
+    iplFile.m_bounds = iplFileEntry.m_bounds;
+    memcpy( &iplFile.m_name[0], &iplFileEntry.m_name[0], sizeof( iplFile.m_name ) );
+    iplFile.m_buildingRange.start = iplFileEntry.m_buildingRangeStart;
+    iplFile.m_buildingRange.end = iplFileEntry.m_buildingRangeEnd;
+    iplFile.m_dummyRange.start = iplFileEntry.m_dummyRangeStart;
+    iplFile.m_dummyRange.end = iplFileEntry.m_dummyRangeEnd;
+    iplFile.m_iplId = iplFileEntry.m_iplId;
+    iplFile.m_isInterior = iplFileEntry.m_isInterior;
+    iplFile.m_isLoaded = iplFileEntry.m_isLoaded;
+    iplFile.m_streamingSectorLoad = iplFileEntry.m_streamingSectorLoad;
+    iplFile.m_doNotStream = iplFileEntry.m_doNotStream;
+    iplFile.m_terminateAtUnload = iplFileEntry.m_terminateAtUnload;
+    iplFile.m_containsFarChunks = iplFileEntry.m_containsFarChunks;
+    iplFile.m_pad = iplFileEntry.m_pad;
+
+    return iplFile;
+}
+
+/*=========================================================
+    Cache_StoreIPLFile
+
+    Arguments:
+        iplIndex - index of the IPL sector
+        iplFile - the IPL sector to store into the cache
+    Purpose:
+        Writes data about the IPL sector into the persistent
+        cache. The engine can restore from that data on next
+        boot.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005B2ED0
+=========================================================*/
+void __cdecl Cache_StoreIPLFile( unsigned int iplIndex, CIPLFileSA iplFile )
+{
+    cachedIPLFile& iplFileEntry = cachedIPLFiles[ iplIndex ];
+
+    iplFileEntry.m_bounds = iplFile.m_bounds;
+    memcpy( &iplFileEntry.m_name[0], &iplFile.m_name[0], sizeof( iplFileEntry.m_name ) );
+    iplFileEntry.m_buildingRangeStart = iplFile.m_buildingRange.start;
+    iplFileEntry.m_buildingRangeEnd = iplFile.m_buildingRange.end;
+    iplFileEntry.m_dummyRangeStart = iplFile.m_dummyRange.start;
+    iplFileEntry.m_dummyRangeEnd = iplFile.m_dummyRange.end;
+    iplFileEntry.m_iplId = iplFile.m_iplId;
+    iplFileEntry.m_isInterior = iplFile.m_isInterior;
+    iplFileEntry.m_isLoaded = iplFile.m_isLoaded;
+    iplFileEntry.m_streamingSectorLoad = iplFile.m_streamingSectorLoad;
+    iplFileEntry.m_doNotStream = iplFile.m_doNotStream;
+    iplFileEntry.m_terminateAtUnload = iplFile.m_terminateAtUnload;
+    iplFileEntry.m_containsFarChunks = iplFile.m_containsFarChunks;
+    iplFileEntry.m_pad = iplFile.m_pad;
 }
 
 /*=========================================================
@@ -420,22 +602,22 @@ void __cdecl Cache_LoadCollision( void )
 =========================================================*/
 void __cdecl Cache_IncrementBySector( CEntitySAInterface **buildingArray )
 {
-    eCacheMode status = *VAR_collisionCacheStatus;
+    eCacheMode status = collisionCacheStatus;
 
     // Dispatch by current game loading process status.
     if ( status == CACHE_WRITING )
     {
-        unsigned int max = *VAR_cachedAreaModelCount[*VAR_cachedAreaModelCountSize];
-        unsigned int n = *VAR_cachedGamePropertyIndex;
+        unsigned int max = cachedIPLInstanceIndexTrim.ObtainItem();
+        unsigned int n = cachedGameProperties.GetCount();
 
         for ( ; n < max; n++ )
         {
-            const cachedGameProperty& linkEntry = (*VAR_cachedGameProperties)[n];
+            const cachedGameProperty& linkEntry = cachedGameProperties.Get( n );
 
             if ( linkEntry.m_underwater )
             {
                 // Set selected building as underwater.
-                buildingArray[linkEntry.m_buildingIndex]->m_entityFlags |= ENTITY_UNDERWATER;
+                buildingArray[linkEntry.m_lodBuildingIndex]->m_entityFlags |= ENTITY_UNDERWATER;
             }
 
             if ( linkEntry.m_drawAdditive )
@@ -452,7 +634,7 @@ void __cdecl Cache_IncrementBySector( CEntitySAInterface **buildingArray )
 
             if ( linkEntry.m_colLink )
             {
-                // Switch collision interfaces.
+                // Inherit collision interfaces.
                 CBaseModelInfoSAInterface *primary = ppModelInfo[linkEntry.m_primaryModel];
                 CBaseModelInfoSAInterface *secondary = ppModelInfo[linkEntry.m_secondaryModel];
 
@@ -461,15 +643,100 @@ void __cdecl Cache_IncrementBySector( CEntitySAInterface **buildingArray )
             }
         }
         // Update current selector index.
-        *VAR_cachedGamePropertyIndex = n;
-
-        (*VAR_cachedAreaModelCountSize)++;
+        cachedGameProperties.numActiveEntries = n;
     }
     else if ( status == CACHE_READING )
     {
-        *VAR_cachedAreaModelCount[*VAR_cachedAreaModelCountSize] = *VAR_cachedGamePropertyIndex;
+        cachedIPLInstanceIndexTrim.AddItem( cachedGameProperties.GetCount() );
+    }
+}
 
-        (*VAR_cachedAreaModelCountSize)++;
+/*=========================================================
+    Cache_WriteSectorInformation
+
+    Arguments:
+        buildingArray - array of buildings for the sector
+        lodInstanceIndex - index to the LOD building
+        buildingInstanceIndex - index to the actual building
+    Purpose:
+        Used by the engine to store information about the
+        game world during startup.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005B3040
+=========================================================*/
+void __cdecl Cache_WriteSectorInformation( CEntitySAInterface **buildingArray, int lodInstanceIndex, int buildingInstanceIndex )
+{
+    eCacheMode status = collisionCacheStatus;
+
+    if ( status == CACHE_READING )
+    {
+        // Write a cached entry.
+        cachedGameProperty prop;
+
+        CEntitySAInterface *building = buildingArray[ buildingInstanceIndex ];
+        CEntitySAInterface *lodBuilding = building->m_pLod; // note: must not be NULL.
+
+        prop.m_buildingIndex = buildingInstanceIndex;
+        prop.m_flags = 0;   // reset flags.
+
+        prop.m_primaryModel = building->GetModelIndex();
+        prop.m_secondaryModel = lodBuilding->GetModelIndex();
+
+        if ( lodBuilding->numLodChildren <= 0 )
+        {
+            CBaseModelInfoSAInterface *modelInfo = building->GetModelInfo();
+            CCameraSAInterface& camera = Camera::GetInterface();
+            float scaledLODDistance = modelInfo->GetLODDistance() * camera.LODDistMultiplier;
+
+            if ( scaledLODDistance > EntityRender::GetGlobalDrawDistance() )
+            {
+                prop.m_drawAdditive = true;
+            }
+        }
+
+        prop.m_lodBuildingIndex = -1;
+
+        if ( lodInstanceIndex > 0 )
+        {
+            int lodIndex = 0;
+
+            do
+            {
+                if ( buildingArray[ lodIndex ] == lodBuilding )
+                {
+                    prop.m_lodBuildingIndex = lodIndex;
+                    break;
+                }
+
+                lodIndex++;
+            } while ( lodIndex < lodInstanceIndex );
+        }
+
+        CBaseModelInfoSAInterface *primaryModel = building->GetModelInfo();
+        CBaseModelInfoSAInterface *secondaryModel = lodBuilding->GetModelInfo();
+
+        if ( lodBuilding->numLodChildren == 1 )
+        {
+            if ( building->bUnderwater )
+            {
+                prop.m_underwater = true;
+            }
+
+            if ( primaryModel->pColModel != secondaryModel->pColModel && primaryModel->pColModel != NULL )
+            {
+                prop.m_colLink = true;
+            }
+        }
+        else if ( primaryModel->bDrawAdditive )
+        {
+            prop.m_normalLOD = true;
+        }
+
+        // Only write entry if a change has been detected.
+        if ( prop.m_flags != 0 )
+        {
+            cachedGameProperties.AddItem( prop );
+        }
     }
 }
 
@@ -478,12 +745,16 @@ void Cache_Init( void )
     // Hook stuff.
     HookInstall( 0x005B31A0, (DWORD)_Cache_Init, 5 );
     HookInstall( 0x005B2AD0, (DWORD)_Cache_Shutdown, 5 );
+    HookInstall( 0x005B2AC0, (DWORD)Cache_IsWritingMode, 5 );
     HookInstall( 0x005B2C20, (DWORD)Cache_StoreCollision, 5 );
     HookInstall( 0x005B2CC0, (DWORD)Cache_WriteCollision, 5 );
     HookInstall( 0x005B2E60, (DWORD)Cache_RestoreColFile, 5 );
     HookInstall( 0x005B2DD0, (DWORD)Cache_StoreColFile, 5 );
+    HookInstall( 0x005B2EF0, (DWORD)Cache_RestoreIPLFile, 5 );
+    HookInstall( 0x005B2ED0, (DWORD)Cache_StoreIPLFile, 5 );
     HookInstall( 0x004113D0, (DWORD)Cache_LoadCollision, 5 );
     HookInstall( 0x005B2F10, (DWORD)Cache_IncrementBySector, 5 );
+    HookInstall( 0x005B3040, (DWORD)Cache_WriteSectorInformation, 5 );
 }
 
 void Cache_Shutdown( void )

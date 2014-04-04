@@ -24,8 +24,16 @@
 class CBuildingSAInterface : public CEntitySAInterface
 {
 public:
+    CBuildingSAInterface( void );
+
     void*   operator new( size_t );
     void    operator delete( void *ptr );
+};
+
+class CNoCOLBuildingSAInterface : public CBuildingSAInterface
+{
+public:
+    CNoCOLBuildingSAInterface( void );
 };
 
 class CBuildingSA : public virtual CBuilding, public CEntitySA

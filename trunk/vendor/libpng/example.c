@@ -1,6 +1,4 @@
 
-#if 0 /* in case someone actually tries to compile this */
-
 /* example.c - an example of using libpng
  * Last changed in libpng 1.2.1 December 7, 2001.
  * This file has been placed in the public domain by the authors.
@@ -810,5 +808,3 @@ void write_png(char *file_name /* , ... other image information ... */)
    /* that's it */
    return (OK);
 }
-
-#endif /* if 0 */

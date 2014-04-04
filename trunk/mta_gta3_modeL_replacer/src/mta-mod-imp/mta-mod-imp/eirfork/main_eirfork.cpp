@@ -13,6 +13,7 @@ static bool cached;
 static unsigned int streamerMemory;
 static bool autoCollect;
 static eStreamMethod streamMethod;
+static bool optimizeEngine;
 
 static inline void luaBegin( CFile *file )
 {
@@ -39,17 +40,31 @@ static inline void luaBegin( CFile *file )
 	file->Printf(
 		"local textureCache = {};\n" \
 		"local streamedObjects = {};\n" \
-		"local pModels = {};\n\n" \
-		"setCloudsEnabled(false);\n"
+		"local pModels = {};\n\n"
 	);
 
-	if ( !lodSupport )
+    if ( applyWorldConfig )
+    {
+        file->Printf(
+            "setCloudsEnabled(false);\n"
+        );
+    }
+
+	if ( applyWorldConfig && !lodSupport )
 	{
 		file->Printf(
 			"setFarClipDistance(350);\n" \
 			"setFogDistance(10);\n"
 		);
 	}
+
+    if ( optimizeEngine )
+    {
+        file->Printf(
+            "engineStreamingSetProperty( \"infiniteStreaming\", true );\n" \
+            "engineStreamingSetProperty( \"nodeStealing\", false );\n"
+        );
+    }
 
 	file->Printf(
 		"debug.sethook(nil);\n\n"
@@ -906,6 +921,7 @@ bool bundleForEIRFORK( CINI *config )
 		cached = mainEntry->GetBool("cached");
 		streamerMemory = (unsigned int)mainEntry->GetInt("streamerMemory") * 1024 * 1024;
 		autoCollect = mainEntry->GetBool("autoCollect");
+        optimizeEngine = mainEntry->GetBool("optimizeEngine");
 
 		const char *method = mainEntry->Get("method");
 
@@ -933,6 +949,7 @@ bool bundleForEIRFORK( CINI *config )
 		staticCompile = false;
 		cached = false;
 		autoCollect = false;
+        optimizeEngine = true;
 	}
 
 nonotify:

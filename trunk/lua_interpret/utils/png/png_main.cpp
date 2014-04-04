@@ -143,6 +143,11 @@ static LUA_DECLARE( load )
     return 0;
 }
 
+static LUA_DECLARE( save )
+{
+    return 0;
+}
+
 const static luaL_Reg png_library[] =
 {
     LUA_METHOD( load ),
