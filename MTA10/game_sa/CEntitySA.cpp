@@ -47,10 +47,31 @@ CEntitySAInterface::~CEntitySAInterface( void )
 {
 }
 
-void CEntitySAInterface::SetModelIndex( unsigned short id )
-{
-    // TODO
-}
+// Implement some virtual stuff, so we can construct entities.
+// The compiler complains otherwise.
+// We are not going to use these functions anyway.
+void __thiscall CEntitySAInterface::AddRect( CBounds2D bounds )                         {}
+bool __thiscall CEntitySAInterface::AddToWorld( void )                                  { return false; }
+void __thiscall CEntitySAInterface::RemoveFromWorld( void )                             {}
+void __thiscall CEntitySAInterface::SetStatic( bool enabled )                           {}
+void __thiscall CEntitySAInterface::SetModelIndex( modelId_t id )                       {}
+void __thiscall CEntitySAInterface::SetModelIndexNoCreate( modelId_t id )               {}
+void __thiscall CEntitySAInterface::CreateRwObject( void )                              {}
+void __thiscall CEntitySAInterface::DeleteRwObject( void )                              {}
+const CBounds2D& __thiscall CEntitySAInterface::GetBoundingBox( CBounds2D& bounds )     { return bounds; }
+void __thiscall CEntitySAInterface::ProcessControl( void )                              {}
+void __thiscall CEntitySAInterface::ProcessCollision( void )                            {}
+void __thiscall CEntitySAInterface::ProcessShift( void )                                {}
+bool __thiscall CEntitySAInterface::TestCollision( void )                               { return false; }
+void __thiscall CEntitySAInterface::Teleport( float x, float y, float z, int unk )      {}
+void __thiscall CEntitySAInterface::PreFrame( void )                                    {}
+bool __thiscall CEntitySAInterface::Frame( void )                                       { return true; }
+void __thiscall CEntitySAInterface::PreRender( void )                                   {}
+void __thiscall CEntitySAInterface::Render( void )                                      {}
+unsigned char __thiscall CEntitySAInterface::SetupLighting( void )                      { return 0; }
+void __thiscall CEntitySAInterface::RemoveLighting( unsigned char id )                  {}
+void __thiscall CEntitySAInterface::Invalidate( void )                                  {}
+
 
 void CEntitySAInterface::GetPosition( CVector& pos ) const
 {

@@ -194,6 +194,35 @@ public:
     unsigned int    m_count;
 };
 
+// Generic range specifier.
+template <typename rangeNumberType>
+struct ValueRange
+{
+    inline ValueRange( void )
+    {
+        rangeNumberType max = std::numeric_limits <rangeNumberType>::max();
+
+        start = max;
+        end = -max - 1;
+    }
+
+    inline bool IsEmpty( void ) const
+    {
+        return start > end;
+    }
+
+    inline void Add( rangeNumberType num )
+    {
+        if ( num < start )
+            start = num;
+
+        if ( num > end )
+            end = num;
+    }
+
+    rangeNumberType start, end;
+};
+
 #undef DEBUG_LOG
 #ifdef DEBUG_LOG
     #include <stdio.h>

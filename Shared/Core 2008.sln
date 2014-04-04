@@ -100,6 +100,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua_interpret", "..\lua_int
 		{6E793DA8-5641-4BBB-BCB0-43BF10682E14} = {6E793DA8-5641-4BBB-BCB0-43BF10682E14}
 		{E28A87BB-7417-4DD7-ADF4-88F918CF055C} = {E28A87BB-7417-4DD7-ADF4-88F918CF055C}
 		{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B} = {78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}
+		{342072D6-3177-4099-B31B-58CE0537C746} = {342072D6-3177-4099-B31B-58CE0537C746}
 		{8EEECEE6-A6EC-BC48-8E76-22B87825444B} = {8EEECEE6-A6EC-BC48-8E76-22B87825444B}
 	EndProjectSection
 EndProject
@@ -108,6 +109,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freetype", "..\vendor\freetype-2.4.12\builds\win32\vc2008\freetype.vcproj", "{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileSystem", "..\FileSystem\FileSystem.vcproj", "{6E793DA8-5641-4BBB-BCB0-43BF10682E14}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtga", "..\vendor\libtga\win32\libtga\libtga.vcproj", "{342072D6-3177-4099-B31B-58CE0537C746}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -498,6 +501,20 @@ Global
 		{6E793DA8-5641-4BBB-BCB0-43BF10682E14}.Release Singlethreaded|Win32.Build.0 = Release|Win32
 		{6E793DA8-5641-4BBB-BCB0-43BF10682E14}.Release|Win32.ActiveCfg = Release|Win32
 		{6E793DA8-5641-4BBB-BCB0-43BF10682E14}.Release|Win32.Build.0 = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Debug Multithreaded|Win32.ActiveCfg = Debug|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Debug Multithreaded|Win32.Build.0 = Debug|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Debug Singlethreaded|Win32.ActiveCfg = Debug|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Debug Singlethreaded|Win32.Build.0 = Debug|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Debug|Win32.ActiveCfg = Debug|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Debug|Win32.Build.0 = Debug|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Nightly|Win32.ActiveCfg = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Nightly|Win32.Build.0 = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Release Multithreaded|Win32.ActiveCfg = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Release Multithreaded|Win32.Build.0 = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Release Singlethreaded|Win32.ActiveCfg = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Release Singlethreaded|Win32.Build.0 = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Release|Win32.ActiveCfg = Release|Win32
+		{342072D6-3177-4099-B31B-58CE0537C746}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

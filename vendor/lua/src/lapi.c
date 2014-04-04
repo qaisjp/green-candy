@@ -1424,7 +1424,9 @@ LUA_API ILuaClass* lua_refclass( lua_State *L, int idx )
 {
     const TValue *val = index2constadr( L, idx );
 
-    lua_assert( iscollectable( val ) );
+    if ( !iscollectable( val ) )
+        return NULL;
+
     return ( val->value.gc )->GetClass();
 }
 

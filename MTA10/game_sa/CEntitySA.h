@@ -96,27 +96,27 @@ public:
                                     CEntitySAInterface      ( void );
                                     ~CEntitySAInterface     ( void );                       // 0
 
-    virtual void __thiscall         AddRect                 ( CRect rect ) = 0;             // 4
-    virtual bool __thiscall         AddToWorld              ( void ) = 0;                   // 8
-    virtual void __thiscall         RemoveFromWorld         ( void ) = 0;                   // 12
-    virtual void __thiscall         SetStatic               ( bool enabled ) = 0;           // 16
-    virtual void __thiscall         SetModelIndex           ( unsigned short id );          // 20
-    virtual void __thiscall         SetModelIndexNoCreate   ( unsigned short id ) = 0;      // 24
-    virtual RwObject* __thiscall    CreateRwObject          ( void ) = 0;                   // 28
-    virtual void __thiscall         DeleteRwObject          ( void ) = 0;                   // 32
-    virtual void __thiscall         GetBoundingBox          ( CBoundingBox& box ) = 0;      // 36
-    virtual void __thiscall         ProcessControl          ( void ) = 0;                   // 40
-    virtual void __thiscall         ProcessCollision        ( void ) = 0;                   // 44
-    virtual void __thiscall         ProcessShift            ( void ) = 0;                   // 48
-    virtual bool __thiscall         TestCollision           ( void ) = 0;                   // 52
-    virtual void __thiscall         Teleport                ( float x, float y, float z, int unk ) = 0; // 56
-    virtual void __thiscall         PreFrame                ( void ) = 0;                   // 60
-    virtual bool __thiscall         Frame                   ( void ) = 0;                   // 64
-    virtual void __thiscall         PreRender               ( void ) = 0;                   // 68
-    virtual void __thiscall         Render                  ( void ) = 0;                   // 72
-    virtual unsigned char __thiscall    SetupLighting       ( void ) = 0;                   // 76
-    virtual void __thiscall         RemoveLighting          ( unsigned char id ) = 0;       // 80
-    virtual void __thiscall         Invalidate              ( void ) = 0;                   // 84
+    virtual void __thiscall                 AddRect( CBounds2D rect );                              // 4
+    virtual bool __thiscall                 AddToWorld();                                           // 8
+    virtual void __thiscall                 RemoveFromWorld();                                      // 12
+    virtual void __thiscall                 SetStatic( bool enabled );                              // 16
+    virtual void __thiscall                 SetModelIndex( modelId_t id );                          // 20
+    virtual void __thiscall                 SetModelIndexNoCreate( modelId_t id );                  // 24
+    virtual void __thiscall                 CreateRwObject();                                       // 28
+    virtual void __thiscall                 DeleteRwObject();                                       // 32
+    virtual const CBounds2D& __thiscall     GetBoundingBox( CBounds2D& box );                       // 36
+    virtual void __thiscall                 ProcessControl();                                       // 40
+    virtual void __thiscall                 ProcessCollision();                                     // 44
+    virtual void __thiscall                 ProcessShift();                                         // 48
+    virtual bool __thiscall                 TestCollision();                                        // 52
+    virtual void __thiscall                 Teleport( float x, float y, float z, int unk );         // 56
+    virtual void __thiscall                 PreFrame();                                             // 60
+    virtual bool __thiscall                 Frame();                                                // 64
+    virtual void __thiscall                 PreRender();                                            // 68
+    virtual void __thiscall                 Render();                                               // 72
+    virtual unsigned char __thiscall        SetupLighting();                                        // 76
+    virtual void __thiscall                 RemoveLighting( unsigned char id );                     // 80
+    virtual void __thiscall                 Invalidate();                                           // 84
 
     unsigned char __thiscall        _SetupLighting          ( void );
     void __thiscall                 _RemoveLighting         ( unsigned char id );
@@ -177,7 +177,50 @@ public:
 
     RwObject*               m_pRwObject;            // 24
 
-    unsigned int            m_entityFlags;          // 28
+    union
+    {
+        struct
+        {
+            /********** BEGIN CFLAGS **************/
+            unsigned long bUsesCollision : 1;           // does entity use collision
+            unsigned long bCollisionProcessed : 1;  // has object been processed by a ProcessEntityCollision function
+            unsigned long bIsStatic : 1;                // is entity static
+            unsigned long bHasContacted : 1;            // has entity processed some contact forces
+            unsigned long bIsStuck : 1;             // is entity stuck
+            unsigned long bIsInSafePosition : 1;        // is entity in a collision free safe position
+            unsigned long bWasPostponed : 1;            // was entity control processing postponed
+            unsigned long bIsVisible : 1;               //is the entity visible
+            
+            unsigned long bIsBIGBuilding : 1;           // Set if this entity is a big building
+            unsigned long bRenderDamaged : 1;           // use damaged LOD models for objects with applicable damage
+            unsigned long bStreamingDontDelete : 1; // Dont let the streaming remove this 
+            unsigned long bRemoveFromWorld : 1;     // remove this entity next time it should be processed
+            unsigned long bHasHitWall : 1;              // has collided with a building (changes subsequent collisions)
+            unsigned long bImBeingRendered : 1;     // don't delete me because I'm being rendered
+            unsigned long bDrawLast :1;             // draw object last
+            unsigned long bDistanceFade :1;         // Fade entity because it is far away
+            
+            unsigned long bDontCastShadowsOn : 1;       // Dont cast shadows on this object
+            unsigned long bOffscreen : 1;               // offscreen flag. This can only be trusted when it is set to true
+            unsigned long bIsStaticWaitingForCollision : 1; // this is used by script created entities - they are static until the collision is loaded below them
+            unsigned long bDontStream : 1;              // tell the streaming not to stream me
+            unsigned long bUnderwater : 1;              // this object is underwater change drawing order
+            unsigned long bHasPreRenderEffects : 1; // Object has a prerender effects attached to it
+            unsigned long bIsTempBuilding : 1;          // whether or not the building is temporary (i.e. can be created and deleted more than once)
+            unsigned long bDontUpdateHierarchy : 1; // Don't update the aniamtion hierarchy this frame
+            
+            unsigned long bHasRoadsignText : 1;     // entity is roadsign and has some 2deffect text stuff to be rendered
+            unsigned long bDisplayedSuperLowLOD : 1;
+            unsigned long bIsProcObject : 1;            // set object has been generate by procedural object generator
+            unsigned long bBackfaceCulled : 1;          // has backface culling on
+            unsigned long bLightObject : 1;         // light object with directional lights
+            unsigned long bUnimportantStream : 1;       // set that this object is unimportant, if streaming is having problems
+            unsigned long bTunnel : 1;          // Is this model part of a tunnel
+            unsigned long bTunnelTransition : 1;        // This model should be rendered from within and outside of the tunnel
+            /********** END CFLAGS **************/
+        };
+        unsigned long m_entityFlags;
+    };
 
     unsigned short          m_randomSeed;           // 32
     short                   m_nModelIndex;          // 34
@@ -191,7 +234,11 @@ public:
     unsigned char           m_iplIndex;             // 46, used to define which IPL file object is in
     unsigned char           m_areaCode;             // 47, used to define what objects are visible at this point
     
-    CEntitySAInterface*     m_pLod;                 // 48
+    union
+    {
+        CEntitySAInterface* m_pLod;                 // 48
+        unsigned int        m_iLodIndex;
+    };
     unsigned char           numLodChildren;         // 52
     unsigned char           numLodChildrenRendered; // 53
 

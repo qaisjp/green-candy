@@ -291,29 +291,29 @@ function xmlCreateNodeEx(name)
             end
             
             function writeTree(tabcount)
-                local buff = string.rep(" ", tabcount * 4) .. "<" .. node.name;
+                local buff = string.rep(" ", tabcount * 4) .. "<" .. name;
                 local m,n;
                 
                 if not (tabcount) then
                     tabcount = 0;
                 end
                 
-                for m,n in pairs(node.attr) do
+                for m,n in pairs(attr) do
                     buff = buff .. " " .. m .. "=\"" .. convertStringInternal(n) .. "\"";
                 end
                 
-                if (#node.children == 0) then
+                if (#children == 0) then
                     buff = buff .. " />\n";
                     return buff;
                 end
                 
                 buff = buff .. ">\n";
                 
-                for j,k in ipairs(node.children) do
+                for j,k in ipairs(children) do
                     buff = buff .. k.writeTree(tabcount + 1);
                 end
                 
-                buff = buff .. string.rep(" ", tabcount * 4) ..  "</" .. node.name .. ">\n";
+                buff = buff .. string.rep(" ", tabcount * 4) ..  "</" .. name .. ">\n";
                 return buff;
             end
             

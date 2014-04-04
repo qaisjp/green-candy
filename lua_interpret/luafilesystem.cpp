@@ -480,6 +480,50 @@ int luafsys_createZIPArchive( lua_State *L )
 {
     return _archiveTranslatorFunctor( L, zipArchiveTranslatorCreator() );
 }
+
+static int luafsys_copyFile( lua_State *L )
+{
+    CFileTranslator *srcTranslator = lua_readclass <CFileTranslator> ( L, 1, LUACLASS_FILETRANSLATOR );
+    const char *srcPath = lua_tostring( L, 2 );
+    CFileTranslator *dstTranslator = lua_readclass <CFileTranslator> ( L, 3, LUACLASS_FILETRANSLATOR );
+    const char *dstPath = lua_tostring( L, 4 );
+
+    LUA_CHECK( srcTranslator && srcPath && dstTranslator && dstPath );
+
+    bool success = FileSystem::FileCopy( srcTranslator, srcPath, dstTranslator, dstPath );
+
+    lua_pushboolean( L, success );
+    return 1;
+}
+
+static int luafsys_copyStream( lua_State *L )
+{
+    CFile *srcStream = lua_readclass <CFile> ( L, 1, LUACLASS_FILE );
+    CFile *dstStream = lua_readclass <CFile> ( L, 2, LUACLASS_FILE );
+
+    LUA_CHECK( srcStream && dstStream );
+
+    FileSystem::StreamCopy( *srcStream, *dstStream );
+
+    lua_pushboolean( L, true );
+    return 1;
+}
+
+static int luafsys_copyStreamCount( lua_State *L )
+{
+    CFile *srcStream = lua_readclass <CFile> ( L, 1, LUACLASS_FILE );
+    CFile *dstStream = lua_readclass <CFile> ( L, 2, LUACLASS_FILE );
+    int count = (int)lua_tonumber( L, 3 );
+
+    LUA_CHECK( srcStream && dstStream );
+
+    LUA_CHECK( count > 0 );
+
+    FileSystem::StreamCopyCount( *srcStream, *dstStream, count );
+
+    lua_pushboolean( L, true );
+    return 1;
+}
 #endif //FU_CLASS
 
 int luafsys_getRoot( lua_State *L )
@@ -495,6 +539,9 @@ static const luaL_Reg fsysLib[] =
     { "createArchiveTranslator", luafsys_createArchiveTranslator },
     { "createZIPArchive", luafsys_createZIPArchive },
 #endif //FU_CLASS
+    { "copyFile", luafsys_copyFile },
+    { "copyStream", luafsys_copyStream },
+    { "copyStreamCount", luafsys_copyStreamCount },
     { NULL, NULL }
 };
 

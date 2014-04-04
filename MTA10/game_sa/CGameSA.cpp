@@ -144,6 +144,7 @@ CGameSA::CGameSA( void )
     m_pWaterManager             = new CWaterManagerSA();
 
     // :D
+    RenderWareAPI_Init();
     RenderWarePipeline_Init();
     Transformation_Init();
     QuadTree_Init();
@@ -236,6 +237,7 @@ CGameSA::~CGameSA( void )
     QuadTree_Shutdown();
     Transformation_Shutdown();
     RenderWarePipeline_Shutdown();
+    RenderWareAPI_Shutdown();
 
     delete m_pPools;    // has to be first to delete using entities
     delete m_pFx;
