@@ -85,32 +85,32 @@ public:
 			return set->value;
 		}
 
-		inline int GetInt(const char *key)
+		inline int GetInt(const char *key, int defaultValue = 0)
 		{
 			const char *value = Get(key);
 
 			if (!value)
-				return 0;
+				return defaultValue;
 
 			return atoi(value);
 		}
 
-		inline double GetFloat(const char *key)
+		inline double GetFloat(const char *key, double defaultValue = 0.0f)
 		{
 			const char *value = Get(key);
 
 			if (!value)
-				return 0;
+				return defaultValue;
 
 			return atof(value);
 		}
 
-		inline bool GetBool(const char *key)
+		inline bool GetBool(const char *key, bool defaultValue = false)
 		{
 			const char *value = Get(key);
 
 			if (!value)
-				return false;
+				return defaultValue;
 
 			return (strcmp(value, "true") == 0) || (unsigned int)atoi(value) != 0;
 		}

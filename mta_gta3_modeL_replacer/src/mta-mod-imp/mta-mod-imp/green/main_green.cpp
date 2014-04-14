@@ -117,15 +117,9 @@ bool bundleForGREEN( CINI *config )
 
 		for ( objIter = lod.begin(); objIter != lod.end(); objIter++ )
 		{
-			unsigned int m;
 			const char *name = (*objIter)->m_modelName;
 
-			for (m=0; m<usNames; m++)
-			{
-				if (strcmp(names[m], name) == 0)
-					break;
-			}
-			if (m != usNames)
+			if ( g_usedModelNames.Exists( name ) )
 				continue;
 
 			if ( !resManager.AllocateResources( (*objIter)->m_modelName, true ) )
@@ -168,18 +162,12 @@ bool bundleForGREEN( CINI *config )
 
 	for (iter = instances.begin(); iter != instances.end(); iter++)
 	{
-		unsigned short m;
 		const char *name = (*iter)->m_name;
 
 		if ( lodSupport && lodMap[(*iter)->m_modelID] )
 			continue;
 
-		for (m=0; m < usNames; m++)
-		{
-			if (strcmp(name, names[m]) == 0)
-				break;
-		}
-		if (m != usNames)
+		if ( g_usedModelNames.Exists( name ) )
 		{
 			// We add all map entries
 			pMapFile->Printf(pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);

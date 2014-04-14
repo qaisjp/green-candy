@@ -1123,18 +1123,12 @@ nonotify:
 
 		for ( objIter = lod.begin(); objIter != lod.end(); objIter++ )
 		{
-			unsigned int m;
 			const char *name = (*objIter)->m_modelName;
 
-			for (m=0; m<usNames; m++)
-			{
-				if (strcmp(names[m], name) == 0)
-					break;
-			}
-			if (m != usNames)
+			if ( g_usedModelNames.Exists( name ) )
 				continue;
 
-			if ( !resManager.AllocateResources( (*objIter)->m_modelName, true ) )
+			if ( !resManager.AllocateResources( name, true ) )
 				continue;
 
 			_snprintf( resManager.lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
@@ -1144,7 +1138,7 @@ nonotify:
 
 			luaModelLODEntry( pLuaFile,
 				(*objIter)->m_realModelID,
-				(*objIter)->m_modelName,
+				name,
 				resManager.colName,
 				(*objIter)->m_textureName,
 				resManager.lodBuffer,
@@ -1159,18 +1153,12 @@ nonotify:
 
 	for (iter = instances.begin(); iter != instances.end(); iter++)
 	{
-		unsigned short m;
 		const char *name = (*iter)->m_name;
 
 		if ( lodSupport && lodMap[(*iter)->m_modelID] )
 			continue;
 
-		for (m=0; m < usNames; m++)
-		{
-			if (strcmp(name, names[m]) == 0)
-				break;
-		}
-		if (m != usNames)
+		if ( g_usedModelNames.Exists( name ) )
 		{
 #if (MAP_METHOD==MAP_XML)
 			// We add all map entries
