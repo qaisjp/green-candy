@@ -57,6 +57,83 @@ typedef struct quat_s
 	double z;
 } quat_t;
 
+bool CompareNames( const char *prim, const char *sec );
+
+class ImmutableString
+{
+public:
+    inline ImmutableString( const char *data )
+    {
+        dataPtr = NULL;
+
+        if ( data )
+        {
+            dataPtr = strdup( data );
+        }
+    }
+
+    inline ImmutableString( const ImmutableString& right )
+    {
+        dataPtr = NULL;
+
+        if ( right.dataPtr )
+        {
+            dataPtr = strdup( right.dataPtr );
+        }
+    }
+
+    inline ~ImmutableString( void )
+    {
+        if ( dataPtr )
+        {
+            free( (void*)dataPtr );
+        }
+    }
+
+    bool operator ==( const char *right ) const
+    {
+        if ( dataPtr == NULL )
+        {
+            return ( right == NULL || *right == '\0' );
+        }
+
+        return CompareNames( dataPtr, right );
+    }
+
+    operator const char*( void ) const
+    {
+        if ( dataPtr == NULL )
+            return "";
+
+        return dataPtr;
+    }
+
+private:
+    const char *dataPtr;
+};
+
+class NameRegistry
+{
+public:
+    void Add( const char *name )
+    {
+        if ( !Exists( name ) )
+        {
+            names.push_back( name );
+        }
+    }
+
+    bool Exists( const char *name ) const
+    {
+        return ( std::find( names.begin(), names.end(), name ) != names.end() );
+    }
+
+private:
+    typedef std::list <ImmutableString> nameList_t;
+
+    nameList_t names;
+};
+
 // Global variables
 extern bool doCompile;
 extern bool debug;
@@ -65,8 +142,7 @@ extern bool forceLODInherit;
 extern bool preserveMainWorldIntegrity;
 
 extern unsigned short modelIDs[65536];
-extern const char *names[65536];
-extern unsigned short usNames;
+extern NameRegistry g_usedModelNames;
 
 extern CCollisionRegistry *colRegistry;
 

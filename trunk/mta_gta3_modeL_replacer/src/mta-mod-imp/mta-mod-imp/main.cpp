@@ -14,8 +14,7 @@ bool forceLODInherit = false;
 bool preserveMainWorldIntegrity = true;
 
 unsigned short modelIDs[65536];
-const char *names[65536];
-unsigned short usNames = 0;
+NameRegistry g_usedModelNames;
 
 CIPL *ipls[256];
 unsigned int numIPL = 0;
@@ -40,6 +39,8 @@ static bool zipOutput = false;
 const char *zipName = NULL;
 static bool zipResources = false;
 
+static bool namesCaseInsensitive = true;
+
 // Collision registry for dynamic lookup.
 CCollisionRegistry *colRegistry = NULL;
 
@@ -47,13 +48,27 @@ CFileTranslator *g_resourceRoot = NULL;
 CFileTranslator *g_outputRoot = NULL;
 
 
-CObject*	GetObjectByModel(const char *model)
+bool CompareNames( const char *prim, const char *sec )
 {
-	objectList_t::iterator iter;
+    if ( namesCaseInsensitive )
+    {
+        return ( stricmp( prim, sec ) == 0 );
+    }
+    else
+    {
+        return ( strcmp( prim, sec ) == 0 );
+    }
+}
 
-	for (iter = objects.begin(); iter != objects.end(); iter++)
-		if (strcmp((*iter)->m_modelName, model) == 0)
+CObject*	GetObjectByModel( const char *model )
+{
+	for ( objectList_t::iterator iter = objects.begin(); iter != objects.end(); iter++ )
+    {
+		if ( CompareNames( (*iter)->m_modelName, model ) )
+        {
 			return *iter;
+        }
+    }
 
 	return NULL;
 }
@@ -210,17 +225,18 @@ int		main (int argc, char *argv[])
 	{
 		// Apply configuration
         compilator = mainEntry->Get("compilator");
-		doCompile = mainEntry->GetBool("compile");
-		debug = mainEntry->GetBool("debug");
+		doCompile = mainEntry->GetBool("compile", true);
+		debug = mainEntry->GetBool("debug", false);
 		mode = mainEntry->Get("mode");
-		lodSupport = mainEntry->GetBool("lodSupport");
-		preserveMainWorldIntegrity = mainEntry->GetBool("preserveMainWorldIntegrity");
-		usXoffset = mainEntry->GetInt("xOffset");
-		usYoffset = mainEntry->GetInt("yOffset");
-		usZoffset = mainEntry->GetInt("zOffset");
-        zipOutput = mainEntry->GetBool("zipOutput");
+		lodSupport = mainEntry->GetBool("lodSupport", true);
+		preserveMainWorldIntegrity = mainEntry->GetBool("preserveMainWorldIntegrity", false);
+		usXoffset = mainEntry->GetInt("xOffset", 0);
+		usYoffset = mainEntry->GetInt("yOffset", 0);
+		usZoffset = mainEntry->GetInt("zOffset", 0);
+        zipOutput = mainEntry->GetBool("zipOutput", false);
         zipName = mainEntry->Get("zipName");
-        zipResources = mainEntry->GetBool("zipResources");
+        zipResources = mainEntry->GetBool("zipResources", false);
+        namesCaseInsensitive = mainEntry->GetBool("namesCaseInsensitive", true);
 	}
 	else
 	{
@@ -234,6 +250,7 @@ int		main (int argc, char *argv[])
         zipOutput = false;
         zipName = NULL;
         zipResources = false;
+        namesCaseInsensitive = true;
 	}
 
 	if ( preserveMainWorldIntegrity )

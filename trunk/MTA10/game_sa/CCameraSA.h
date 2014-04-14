@@ -346,12 +346,27 @@ public:
     bool m_bResetOldMatrix;                                 // 2417
 
 //  protected:
+#if 0
+    // Original
     RwMatrix m_cameraMatrix;                                // 2420
     RwMatrix m_cameraMatrixOld;                             // 2484
     RwMatrix m_viewMatrix;                                  // 2548
     RwMatrix m_matInverse;                                  // 2612
     RwMatrix m_matMirrorInverse;                            // 2676
     RwMatrix m_matMirror;                                   // 2740
+#else
+    // Looks more likely to be this
+    RwMatrix m_cameraMatrix;                                // 2420
+    int unk1[2];                                            // 2484
+    RwMatrix m_cameraMatrixOld;                             // 2492
+    int unk2[2];                                            // 2556
+    RwMatrix m_viewMatrix;                                  // 2564
+    int unk3[2];                                            // 2628
+    RwMatrix m_matInverse;                                  // 2636
+    int unk4[2];                                            // 2700
+    RwMatrix m_matMirrorInverse;                            // 2708
+    int unk5[8];                                            // 2772
+#endif
 
     CVector m_vecFrustumNormals[4];                         // 2804
     CVector m_vecFrustumWorldNormals[4];                    // 2852

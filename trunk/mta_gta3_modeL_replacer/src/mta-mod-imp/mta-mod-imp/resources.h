@@ -9,18 +9,15 @@ struct ResourceManager
     CFileTranslator *outputRoot;
     CFileTranslator *resourceRoot;
 
-    const char *txdNames[65536];
+    NameRegistry usedTxdNames;
     const char *txdName;
     const char *colName;
-    unsigned short usTxdNames;
     char lodBuffer[128];
 
     inline ResourceManager( int a, dispatchType& _dispatch ) : dispatch( _dispatch )
     {
         this->outputRoot = AcquireOutputRoot();
         this->resourceRoot = AcquireResourceRoot();
-
-        usTxdNames = 0;
 
         txdName = NULL;
         colName = NULL;
@@ -52,7 +49,6 @@ struct ResourceManager
     {
 	    char buffer[1024];
 	    char copyBuffer[1024];
-	    unsigned int k;
 
 	    // Copy the model file
 	    _snprintf(buffer, 1023, "%s.dff", name);
@@ -118,12 +114,8 @@ struct ResourceManager
 
 	    txdName = txdObj->m_textureName;
 
-	    for (k=0; k < usTxdNames; k++)
-		    if (strcmp(txdNames[k], txdName) == 0)
-			    break;
-
 	    // Little hack
-	    if (k == usTxdNames)
+	    if ( !usedTxdNames.Exists( txdName ) )
 	    {
 		    // Copy over resources
 		    _snprintf(buffer, 1023, "%s.txd", txdName);
@@ -140,10 +132,10 @@ struct ResourceManager
                 dispatch.OnTxdEntry( txdName );
 		    }
 
-		    txdNames[usTxdNames++] = txdName;
+		    usedTxdNames.Add( txdName );
 	    }
 
-	    names[usNames++] = name;
+	    g_usedModelNames.Add( name );
 
         dispatch.OnModelEntry( name );
 

@@ -28,7 +28,6 @@ DECLARE_ENUM( eCGUIType );
 DECLARE_ENUM( eDxTestMode );
 DECLARE_ENUM( EBlendModeType );
 DECLARE_ENUM( RpLightType );
-DECLARE_ENUM( eWorldRenderMode );
 
 enum eDXHorizontalAlign
 {
