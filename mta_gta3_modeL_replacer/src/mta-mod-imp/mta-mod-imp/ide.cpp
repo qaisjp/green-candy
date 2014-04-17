@@ -17,6 +17,9 @@ CIDE::CIDE(CCSV *csv)
 
 	while (csv->ReadNextRow())
 	{
+        if ( csv->GetItemCount() == 0 )
+            continue;
+
 		const char *token = csv->GetRowItem(0);
 
 		if (strcmp(token, "objs") == 0)
@@ -46,10 +49,16 @@ void	CIDE::ReadObjects()
 		const char **row = m_csv->GetRow();
 		CObject *object;
 
+        if ( m_csv->GetItemCount() == 0 )
+            continue;
+
 		if (strcmp(row[0], "end") == 0)
 			break;
 
-		if (m_csv->GetItemCount() < 5)
+        if ( **row == '#' )
+            continue;
+
+		if ( !m_csv->ExpectTokenCount( 5 ) )
 			continue;
 
 		object = new CObject();

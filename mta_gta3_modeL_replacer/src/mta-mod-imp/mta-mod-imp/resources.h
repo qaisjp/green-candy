@@ -23,6 +23,19 @@ struct ResourceManager
         colName = NULL;
     }
 
+    inline CFile* OpenOutputFile( const char *filePath, const char *mode )
+    {
+        CFile *outputStream = outputRoot->Open( filePath, mode );
+
+        if ( !outputStream )
+        {
+            // Warn the implementation that something failed to create or open.
+            printf( "warning: failed to create file handle to '%s' (using mode '%s')\n", filePath, mode );
+        }
+
+        return outputStream;
+    }
+
     inline bool ResourceExists( const char *name, const char *outputName )
     {
         if ( outputRoot->Exists( outputName ) )
@@ -145,6 +158,88 @@ struct ResourceManager
 	    }
 
 	    return true;
+    }
+};
+
+template <typename processorType>
+struct InstanceMapper
+{
+    inline InstanceMapper( processorType& proc ) : processor( proc )
+    {
+        processor.OnBegin();
+    }
+
+    inline ~InstanceMapper( void )
+    {
+        processor.OnEnd();
+    }
+
+    inline void MapInstance( const char *instName, unsigned int modelIndex, double posX, double posY, double posZ, double eulerX, double eulerY, double eulerZ )
+    {
+        processor.OnInstance( instName, modelIndex, posX + mapXoffset, posY + mapYoffset, posZ + mapZoffset, eulerX, eulerY, eulerZ );
+    }
+
+    processorType& processor;
+};
+
+struct InstanceProcessorDesc
+{
+    inline InstanceProcessorDesc( void )
+    {
+        mapHeader = NULL;
+        mapEntry = NULL;
+        mapEnd = NULL;
+    }
+
+    typedef void (*mapEntryCallback)( CFile *file, const char *instName, unsigned int modelIndex, double posX, double posY, double posZ, double eulerX, double eulerY, double eulerZ );
+
+    const char *mapHeader;
+    mapEntryCallback mapEntry;
+    const char *mapEnd;
+};
+
+struct InstanceProcessor
+{
+    CFile *mapFile;
+    InstanceProcessorDesc instDesc;
+
+    inline InstanceProcessor( CFile *mapFile, InstanceProcessorDesc desc )
+    {
+        this->mapFile = mapFile;
+        this->instDesc = desc;
+    }
+
+    inline void OnBegin( void )
+    {
+        if ( !mapFile )
+            return;
+
+        if ( instDesc.mapHeader )
+        {
+            mapFile->Printf( "%s", instDesc.mapHeader );
+        }
+    }
+
+    inline void OnInstance( const char *instName, unsigned int modelIndex, double posX, double posY, double posZ, double eulerX, double eulerY, double eulerZ )
+    {
+        if ( !mapFile )
+            return;
+
+        if ( instDesc.mapEntry )
+        {
+            instDesc.mapEntry( mapFile, instName, modelIndex, posX, posY, posZ, eulerX, eulerY, eulerZ );
+        }
+    }
+
+    inline void OnEnd( void )
+    {
+        if ( !mapFile )
+            return;
+
+        if ( instDesc.mapEnd )
+        {
+            mapFile->Printf( "%s", instDesc.mapEnd );
+        }
     }
 };
 

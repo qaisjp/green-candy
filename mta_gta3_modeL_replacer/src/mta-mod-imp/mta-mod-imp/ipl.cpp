@@ -69,6 +69,9 @@ CIPL::CIPL(CCSV *csv)
 	// We need to catch the inst instruction
 	while (csv->ReadNextRow())
 	{
+        if ( csv->GetItemCount() == 0 )
+            continue;
+
 		const char *tag = csv->GetRowItem(0);
 
 		if (strcmp(tag, "inst") == 0)
@@ -78,11 +81,11 @@ CIPL::CIPL(CCSV *csv)
 
 CIPL::~CIPL()
 {
-	instanceList_t::iterator iter;
+	instanceMap_t::iterator iter;
 
 	for (iter = m_instances.begin(); iter != m_instances.end(); iter++)
     {
-        CInstance *inst = *iter;
+        CInstance *inst = iter->second;
 
         free( inst->m_name );
 
@@ -94,43 +97,53 @@ CIPL::~CIPL()
 
 void	CIPL::ReadInstances()
 {
+    unsigned int instCount = 0;
+
 	while (m_csv->ReadNextRow())
 	{
 		const char **row = m_csv->GetRow();
 		CInstance *inst;
         quat_t trans;
 
+        if ( m_csv->GetItemCount() == 0 )
+            continue;
+
 		if (strcmp(row[0], "end") == 0)
 			break;
 
-		if (m_csv->GetItemCount() < 11)
-			continue;
+        if ( **row == '#' )
+            continue;
 
-		inst = new CInstance();
+        if ( m_csv->ExpectTokenCount( 11 ) )
+        {
+		    inst = new CInstance();
 
-		inst->m_modelID = atoi(row[0]);
+		    inst->m_modelID = atoi(row[0]);
 
-		inst->m_name = strdup( row[1] );
+		    inst->m_name = strdup( row[1] );
 
-		inst->m_interior = atoi(row[2]);
+		    inst->m_interior = atoi(row[2]);
 
-		inst->m_position[0] = atof(row[3]);
-		inst->m_position[1] = atof(row[4]);
-		inst->m_position[2] = atof(row[5]);
+		    inst->m_position[0] = atof(row[3]);
+		    inst->m_position[1] = atof(row[4]);
+		    inst->m_position[2] = atof(row[5]);
 
-		trans.x = atof(row[6]);
-		trans.y = atof(row[7]);
-		trans.z = atof(row[8]);
-		trans.w = atof(row[9]);
+		    trans.x = atof(row[6]);
+		    trans.y = atof(row[7]);
+		    trans.z = atof(row[8]);
+		    trans.w = atof(row[9]);
 
-		QuatToEuler(&trans, &inst->m_rotation[0], &inst->m_rotation[1], &inst->m_rotation[2]);
+		    QuatToEuler(&trans, &inst->m_rotation[0], &inst->m_rotation[1], &inst->m_rotation[2]);
 
-		inst->m_lod = atoi(row[10]);
+		    inst->m_lod = atoi(row[10]);
 
-		if ( inst->m_lod != -1 )
-			m_isLod.push_back( inst->m_lod );
+		    if ( inst->m_lod != -1 )
+			    m_isLod.push_back( inst->m_lod );
 
-		m_instances.push_back(inst);
+		    m_instances[ instCount ] = inst;
+        }
+
+        instCount++;
 	}
 }
 
@@ -141,8 +154,10 @@ bool	CIPL::IsLOD(unsigned int id)
 
 CInstance*	CIPL::GetLod(CInstance *scene)
 {
-	if ( scene->m_lod >= 0 && scene->m_lod < (int)m_instances.size() )
-		return m_instances.at( scene->m_lod );
+    instanceMap_t::iterator iter = m_instances.find( scene->m_lod );
+
+    if ( iter != m_instances.end() )
+        return iter->second;
 
     return NULL;
 }

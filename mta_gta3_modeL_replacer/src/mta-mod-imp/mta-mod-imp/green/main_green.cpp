@@ -28,6 +28,14 @@ static const char *pMetaHeader2=
 static const char *pMetaEnd=
 	"</meta>\n";
 
+
+static void mapEntryCallback( CFile *file, const char *instName, unsigned int modelIndex, double posX, double posY, double posZ, double eulerX, double eulerY, double eulerZ )
+{
+    file->Printf( pMapEntry, instName, modelIndex, (float)posX, (float)posY, (float)posZ );
+    file->Printf( pMapEntry2, (int)eulerX, (int)eulerY, (int)eulerZ );
+}
+
+
 static CFile *pMetaFile = NULL;
 
 struct greenResourceDispatch
@@ -62,9 +70,9 @@ typedef ResourceManager <greenResourceDispatch> greenResourceManager;
 
 bool bundleForGREEN( CINI *config )
 {
-	CFile *pLuaFile;
-	CFile *pMapFile;
-	CFile *pLuaServer;
+	CFile *pLuaFile = NULL;
+	CFile *pMapFile = NULL;
+	CFile *pLuaServer = NULL;
 	CINI::Entry *mainEntry;
 	instanceList_t::iterator iter;
 
@@ -73,7 +81,7 @@ bool bundleForGREEN( CINI *config )
 
     greenResourceManager resManager( 0, dispatch );
 
-	printf( "Mode: MTA:GREEN\n" );
+	printf( "Mode: MTA:Eir\n" );
 
 	if ( config && ( mainEntry = config->GetEntry( "MainGREEN" ) ) )
 	{
@@ -85,133 +93,151 @@ bool bundleForGREEN( CINI *config )
 	}
 
 	// Create the .lua file
-	pLuaFile = resManager.outputRoot->Open("model_res.lua","w");
-	pMetaFile = resManager.outputRoot->Open("meta.xml","w");
-	pMapFile = resManager.outputRoot->Open("gta3.map","w");
-	pLuaServer = resManager.outputRoot->Open("main_server.lua","w");
+	pLuaFile = resManager.OpenOutputFile("model_res.lua","w");
+	pMetaFile = resManager.OpenOutputFile("meta.xml","w");
+	pMapFile = resManager.OpenOutputFile("gta3.map","w");
+	pLuaServer = resManager.OpenOutputFile("main_server.lua","w");
+
+    // Create the instance processor.
+    // We only support mapping to XML file.
+    InstanceProcessorDesc instDesc;
+    instDesc.mapHeader = pMapHeader;
+    instDesc.mapEntry = mapEntryCallback;
+    instDesc.mapEnd = pMapEnd;
+
+    InstanceProcessor instProc( pMapFile, instDesc );
 
 	// Init files first
 	pMetaFile->Printf("%s", pMetaHeader);
 	pLuaServer->Printf("%s", pServerHeader);
 	pMetaFile->Printf("%s", pMetaHeaderMap);
-	pMapFile->Write(pMapHeader,1,strlen(pMapHeader));
 
-	if ( doCompile )
-		pMetaFile->Printf(pMetaHeader2, "script.luac");
-	else
-		pMetaFile->Printf(pMetaHeader2, "script.lua");
+    {
+        InstanceMapper <InstanceProcessor> mapper( instProc );
 
-	if ( lodSupport )
-	{
-		pMetaFile->Printf(
-			"	<file src=\"lod_res.lua\" type=\"client\" />\n"
-		);
+	    if ( doCompile )
+		    pMetaFile->Printf(pMetaHeader2, "script.luac");
+	    else
+		    pMetaFile->Printf(pMetaHeader2, "script.lua");
 
-		objectList_t::iterator objIter;
-		CFile *lodRes = resManager.outputRoot->Open("lod_res.lua", "w");
+	    if ( lodSupport )
+	    {
+		    pMetaFile->Printf(
+			    "	<file src=\"lod_res.lua\" type=\"client\" />\n"
+		    );
 
-		// LODs are loaded and stay this way
-		lodRes->Printf( "return {\n" );
+		    objectList_t::iterator objIter;
+		    CFile *lodRes = resManager.outputRoot->Open("lod_res.lua", "w");
 
-		tableCount = 0;
+		    // LODs are loaded and stay this way
+		    lodRes->Printf( "return {\n" );
 
-		for ( objIter = lod.begin(); objIter != lod.end(); objIter++ )
-		{
-			const char *name = (*objIter)->m_modelName;
+		    tableCount = 0;
 
-			if ( g_usedModelNames.Exists( name ) )
-				continue;
+		    for ( objIter = lod.begin(); objIter != lod.end(); objIter++ )
+		    {
+			    const char *name = (*objIter)->m_modelName;
 
-			if ( !resManager.AllocateResources( (*objIter)->m_modelName, true ) )
-				continue;
+			    if ( g_usedModelNames.Exists( name ) )
+				    continue;
 
-			_snprintf( resManager.lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
+			    if ( !resManager.AllocateResources( (*objIter)->m_modelName, true ) )
+				    continue;
 
-			if ( tableCount++ != 0 )
-				lodRes->Printf( ",\n" );
+			    _snprintf( resManager.lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
 
-			lodMap_t::const_iterator lodMapIter = lodMap.find( (*objIter)->m_modelID );
-			CObject *obj = lodMapIter != lodMap.end() ? GetObjectByModel( lodMapIter->second->m_name ) : NULL;
+			    if ( tableCount++ != 0 )
+				    lodRes->Printf( ",\n" );
 
-			lodRes->Printf(
-				"    { %u, \"%s\", \"%s\", \"%s\", %u",
-				(*objIter)->m_realModelID,
-				(*objIter)->m_modelName,
-				(*objIter)->m_textureName,
-				resManager.lodBuffer,
-				obj ? obj->m_realModelID : 0
-			);
+			    lodMap_t::const_iterator lodMapIter = lodMap.find( (*objIter)->m_modelID );
+			    CObject *obj = lodMapIter != lodMap.end() ? GetObjectByModel( lodMapIter->second->m_name ) : NULL;
 
-			if ( resManager.colName )
-			{
-				lodRes->Printf( ", %s", resManager.colName );
-			}
+			    lodRes->Printf(
+				    "    { %u, \"%s\", \"%s\", \"%s\", %u",
+				    (*objIter)->m_realModelID,
+				    (*objIter)->m_modelName,
+				    (*objIter)->m_textureName,
+				    resManager.lodBuffer,
+				    obj ? obj->m_realModelID : 0
+			    );
 
-			lodRes->Printf( " }" );
-		}
+			    if ( resManager.colName )
+			    {
+				    lodRes->Printf( ", %s", resManager.colName );
+			    }
 
-		lodRes->Printf( "\n};" );
+			    lodRes->Printf( " }" );
+		    }
 
-		delete lodRes;
-	}
+		    lodRes->Printf( "\n};" );
 
-	// Write the model information table
-	pLuaFile->Printf( "return {\n" );
+		    delete lodRes;
+	    }
 
-	tableCount = 0;
+	    // Write the model information table
+	    pLuaFile->Printf( "return {\n" );
 
-	for (iter = instances.begin(); iter != instances.end(); iter++)
-	{
-		const char *name = (*iter)->m_name;
+	    tableCount = 0;
 
-		if ( lodSupport && lodMap[(*iter)->m_modelID] )
-			continue;
+	    for (iter = instances.begin(); iter != instances.end(); iter++)
+	    {
+		    const char *name = (*iter)->m_name;
 
-		if ( g_usedModelNames.Exists( name ) )
-		{
-			// We add all map entries
-			pMapFile->Printf(pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-			pMapFile->Printf(pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
-			continue;
-		}
+		    if ( lodSupport && lodMap[(*iter)->m_modelID] )
+			    continue;
 
-		if ( !resManager.AllocateResources( name, false ) )
-			continue;
+		    if ( g_usedModelNames.Exists( name ) )
+		    {
+			    // We add all map entries
+			    mapper.MapInstance( name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0], (*iter)->m_position[1], (*iter)->m_position[2], (*iter)->m_rotation[0], (*iter)->m_rotation[1], (*iter)->m_rotation[2] );
+		    }
+            else if ( resManager.AllocateResources( name, false ) )
+            {
+		        // We add all map entries
+		        mapper.MapInstance( name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0], (*iter)->m_position[1], (*iter)->m_position[2], (*iter)->m_rotation[0], (*iter)->m_rotation[1], (*iter)->m_rotation[2] );
 
-		// We add all map entries
-		pMapFile->Printf(pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-		pMapFile->Printf(pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
+		        unsigned short lod = 0;
 
-		unsigned short lod = 0;
+		        if ( CObject *lodObj = backLodMap[(*iter)->m_modelID] )
+			        lod = lodObj->m_realModelID;
 
-		if ( CObject *lodObj = backLodMap[(*iter)->m_modelID] )
-			lod = lodObj->m_realModelID;
+		        // Now LUA
+		        if ( tableCount++ != 0 )
+			        pLuaFile->Printf( ",\n" );
 
-		// Now LUA
-		if ( tableCount++ != 0 )
-			pLuaFile->Printf( ",\n" );
+		        pLuaFile->Printf(
+			        "    { model=%u, model_file=\"%s\", txd_file=\"%s\", coll_file=\"%s\", lod=%s", modelIDs[(*iter)->m_modelID], name, resManager.txdName, name, resManager.lodBuffer
+		        );
 
-		pLuaFile->Printf(
-			"    { model=%u, model_file=\"%s\", txd_file=\"%s\", coll_file=\"%s\", lod=%s", modelIDs[(*iter)->m_modelID], name, resManager.txdName, name, resManager.lodBuffer
-		);
+		        if ( lodSupport && lod != 0 )
+			        pLuaFile->Printf( ", lodID=%u }", lod );
+		        else
+			        pLuaFile->Printf( " }" );
+            }
+	    }
 
-		if ( lodSupport && lod != 0 )
-			pLuaFile->Printf( ", lodID=%u }", lod );
-		else
-			pLuaFile->Printf( " }" );
-	}
-
-	pLuaFile->Printf( "\n};" );
-
-	pMapFile->Printf(pMapEnd);
+	    pLuaFile->Printf( "\n};" );
+    }
 
 	pLuaServer->Printf(pServerEnd);
 	pMetaFile->Printf(pMetaEnd);
 	// Close em
-	delete pLuaFile;
-	delete pMetaFile;
-	delete pMapFile;
-    delete pLuaServer;
+    if ( pLuaFile )
+    {
+	    delete pLuaFile;
+    }
+    if ( pMetaFile )
+    {
+	    delete pMetaFile;
+    }
+    if ( pMapFile )
+    {
+	    delete pMapFile;
+    }
+    if ( pLuaServer )
+    {
+        delete pLuaServer;
+    }
 
 	// Copy over the appropriate model loader
 	fileRoot->Copy( "stockpile/green/lod_static.lua", "output/script.lua" );

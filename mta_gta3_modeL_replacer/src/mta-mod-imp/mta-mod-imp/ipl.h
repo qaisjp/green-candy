@@ -20,7 +20,8 @@ public:
 	int				m_lodID;
 };
 
-typedef	std::vector <CInstance*> instanceList_t;
+typedef std::list <CInstance*> instanceList_t;
+typedef	std::map <unsigned int, CInstance*> instanceMap_t;
 
 class CIPL
 {
@@ -32,7 +33,7 @@ public:
 	bool			IsLOD(unsigned int id);
 	CInstance*		GetLod(CInstance *obj);
 
-	instanceList_t	m_instances;
+	instanceMap_t	m_instances;
 private:
 	void			ReadInstances();
 

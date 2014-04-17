@@ -17,6 +17,9 @@ static bool optimizeEngine;
 
 static inline void luaBegin( CFile *file )
 {
+    if ( !file )
+        return;
+
 	file->Printf(
 		"%s\n", GetGenericScriptHeader()
 	);
@@ -313,6 +316,9 @@ static inline void luaBegin( CFile *file )
 
 static inline void luaMethodBegin( CFile *file )
 {
+    if ( !file )
+        return;
+
 	file->Printf(
 		"local function modelStreamOut (id)\n" \
 		"	local pModel = pModels[id];\n\n" \
@@ -363,6 +369,9 @@ static inline void luaMethodBegin( CFile *file )
 
 static inline void luaModelBeginLoader( CFile *file )
 {
+    if ( !file )
+        return;
+
 	file->Printf(
 		"function loadModels ()\n" \
 		"	local pModel, pTXD, pColl, pTable;\n\n"
@@ -371,6 +380,9 @@ static inline void luaModelBeginLoader( CFile *file )
 
 static inline void luaModelLoadBegin( CFile *file )
 {
+    if ( !file )
+        return;
+
 	if (!staticCompile)
 	{
 		file->Printf(
@@ -381,6 +393,9 @@ static inline void luaModelLoadBegin( CFile *file )
 
 static inline void luaModelLoadEntry( CFile *file, const char *name, const char *txdName, unsigned short id, const char *lod, unsigned short lodID )
 {
+    if ( !file )
+        return;
+
 	if (staticCompile)
 	{
 		file->Printf(
@@ -441,6 +456,9 @@ static inline void luaModelLoadEntry( CFile *file, const char *name, const char 
 
 static inline void luaModelLODBegin( CFile *file )
 {
+    if ( !file )
+        return;
+
 	if ( !staticCompile )
 	{
 		file->Printf(
@@ -451,6 +469,9 @@ static inline void luaModelLODBegin( CFile *file )
 
 static inline void luaModelLODEntry( CFile *file, unsigned short id, const char *name, const char *colName, const char *txdName, const char *lod, unsigned short super )
 {
+    if ( !file )
+        return;
+
 	if ( !staticCompile )
 	{
 		if ( tableCount++ != 0 )
@@ -541,6 +562,9 @@ static inline void luaModelLODEntry( CFile *file, unsigned short id, const char 
 
 static inline void luaModelLODEnd( CFile *file )
 {
+    if ( !file )
+        return;
+
 	if ( !staticCompile )
 	{
 		file->Printf(
@@ -598,6 +622,9 @@ static inline void luaModelLODEnd( CFile *file )
 
 static inline void luaModelLoadEnd( CFile *file )
 {
+    if ( !file )
+        return;
+
 	if (!staticCompile)
 	{
 		file->Printf(
@@ -676,6 +703,9 @@ static inline void luaModelLoadEnd( CFile *file )
 
 static inline void luaMethodEnd( CFile *file )
 {
+    if ( !file )
+        return;
+
 	switch( streamMethod )
 	{
 	case STREAM_STREAM:
@@ -700,6 +730,9 @@ static inline void luaMethodEnd( CFile *file )
 
 static inline void luaEnd( CFile *file )
 {
+    if ( !file )
+        return;
+
 	if ( cached )
 	{
 		file->Printf(
@@ -818,13 +851,13 @@ static inline void luaEnd( CFile *file )
 	if ( applyWorldConfig && jetpackHeight != 0 )
 	{
 		file->Printf(
-			"setJetpackMaxHeight(%u);\n", usZoffset + jetpackHeight
+			"setJetpackMaxHeight(%u);\n", (unsigned int)mapZoffset + jetpackHeight
 		);
 	}
 }
 
 static const char *pServerHeader=
-	"-- Automatically generated server script by MTASA map IPL map converter\n" \
+	"-- Automatically generated server script by MTA:SA IPL map converter\n" \
 	"setMapName(\"United\");\n";
 #if (MAP_METHOD==MAP_LUA)
 static const char *pServerMapHeader=
@@ -865,6 +898,21 @@ static const char *pMetaEnd=
 	"</meta>\n";
 
 
+static void mapEntryCallback( CFile *file, const char *instName, unsigned int modelIndex, double posX, double posY, double posZ, double eulerX, double eulerY, double eulerZ )
+{
+    if ( mappingType == MAPPING_XML )
+    {
+        file->Printf( pMapEntry, instName, modelIndex, (float)posX, (float)posY, (float)posZ );
+        file->Printf( pMapEntry2, (int)eulerX, (int)eulerY, (int)eulerZ );
+    }
+    else if ( mappingType == MAPPING_LUA )
+    {
+        file->Printf( pServerMapEntry, modelIndex, (float)posX, (float)posY, (float)posZ, instName );
+        file->Printf( pServerMapEntry2, (int)eulerX, (int)eulerY, (int)eulerZ );
+    }
+}
+
+
 static CFile *pMetaFile = NULL;
 
 struct eirforkResourceDispatch
@@ -899,9 +947,9 @@ typedef ResourceManager <eirforkResourceDispatch> eirforkResourceManager;
 
 bool bundleForEIRFORK( CINI *config )
 {
-	CFile *pLuaFile;
-	CFile *pMapFile;
-	CFile *pLuaServer;
+	CFile *pLuaFile = NULL;
+	CFile *pMapFile = NULL;
+	CFile *pLuaServer = NULL;
 	CINI::Entry *mainEntry;
 	instanceList_t::iterator iter;
 
@@ -955,133 +1003,159 @@ bool bundleForEIRFORK( CINI *config )
 
 nonotify:
 	// Create the .lua file
-	pLuaFile = resManager.outputRoot->Open("script.lua","w");
-	pMetaFile = resManager.outputRoot->Open("meta.xml","w");
-#if (MAP_METHOD==MAP_XML)
-	pMapFile = resManager.outputRoot->Open("gta3.map","w");
-#endif
-	pLuaServer = resManager.outputRoot->Open("main_server.lua","w");
+	pLuaFile = resManager.OpenOutputFile("script.lua","w");
+	pMetaFile = resManager.OpenOutputFile("meta.xml","w");
+
+    if ( mappingType == MAPPING_XML )
+    {
+	    pMapFile = resManager.OpenOutputFile("gta3.map","w");
+    }
+
+	pLuaServer = resManager.OpenOutputFile("main_server.lua","w");
+
+    // Set up the instance processor.
+    CFile *instMapFile = ( mappingType == MAPPING_XML ) ? ( pMapFile ) : ( pLuaServer );
+
+    InstanceProcessorDesc instDesc;
+    
+    if ( mappingType == MAPPING_XML )
+    {
+        instDesc.mapHeader = pMapHeader;
+        instDesc.mapEnd = pMapEnd;
+    }
+    else if ( mappingType == MAPPING_LUA )
+    {
+        instDesc.mapHeader = pServerMapHeader;
+        instDesc.mapEnd = pServerMapEnd;
+    }
+    instDesc.mapEntry = mapEntryCallback;
+
+    InstanceProcessor instProc( instMapFile, instDesc );
 
 	// Init files first
 	luaBegin( pLuaFile );
-	pMetaFile->Printf(pMetaHeader, GetCompilatorName());
-	pLuaServer->Printf("%s", pServerHeader);
-#if (MAP_METHOD==MAP_XML)
-	pMetaFile->Printf("%s", pMetaHeaderMap);
-	pMapFile->Write(pMapHeader,1,strlen(pMapHeader));
-#elif (MAP_METHOD==MAP_LUA)
-	fprintf(pLuaServer,pServerMapHeader);
-#endif
+    if ( pMetaFile )
+    {
+	    pMetaFile->Printf(pMetaHeader, GetCompilatorName());
+    }
+    if ( pLuaServer )
+    {
+	    pLuaServer->Printf("%s", pServerHeader);
+    }
 
-	luaMethodBegin( pLuaFile );
+    if ( mappingType == MAPPING_XML && pMetaFile )
+    {
+	    pMetaFile->Printf("%s", pMetaHeaderMap);
+    }
 
-	luaModelBeginLoader( pLuaFile );
+    {
+        // Begin the map file.
+        InstanceMapper <InstanceProcessor> mapper( instProc );
 
-	if ( doCompile )
-		pMetaFile->Printf(pMetaHeader2, "script.luac");
-	else
-		pMetaFile->Printf(pMetaHeader2, "script.lua");
+	    luaMethodBegin( pLuaFile );
 
-	if ( lodSupport )
-	{
-		objectList_t::iterator objIter;
+	    luaModelBeginLoader( pLuaFile );
 
-		// LODs are loaded and stay this way
-		luaModelLODBegin( pLuaFile );
+        if ( pMetaFile )
+        {
+		    pMetaFile->Printf( pMetaHeader2, ( doCompile ) ? "script.luac" : "script.lua" );
+        }
 
-		for ( objIter = lod.begin(); objIter != lod.end(); objIter++ )
-		{
-			const char *name = (*objIter)->m_modelName;
+	    if ( lodSupport )
+	    {
+		    objectList_t::iterator objIter;
 
-			if ( g_usedModelNames.Exists( name ) )
-				continue;
+		    // LODs are loaded and stay this way
+		    luaModelLODBegin( pLuaFile );
 
-			if ( !resManager.AllocateResources( name, true ) )
-				continue;
+		    for ( objIter = lod.begin(); objIter != lod.end(); objIter++ )
+		    {
+			    const char *name = (*objIter)->m_modelName;
 
-			_snprintf( resManager.lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
+			    if ( g_usedModelNames.Exists( name ) )
+				    continue;
 
-			lodMap_t::const_iterator lodMapIter = lodMap.find( (*objIter)->m_modelID );
-			CObject *obj = lodMapIter != lodMap.end() ? GetObjectByModel( lodMapIter->second->m_name ) : NULL;
+			    if ( !resManager.AllocateResources( name, true ) )
+				    continue;
 
-			luaModelLODEntry( pLuaFile,
-				(*objIter)->m_realModelID,
-				name,
-				resManager.colName,
-				(*objIter)->m_textureName,
-				resManager.lodBuffer,
-				obj ? obj->m_realModelID : 0
-			);
-		}
+			    _snprintf( resManager.lodBuffer, 127, "%.0f", (*objIter)->m_drawDistance );
 
-		luaModelLODEnd( pLuaFile );
-	}
+			    lodMap_t::const_iterator lodMapIter = lodMap.find( (*objIter)->m_modelID );
+			    CObject *obj = lodMapIter != lodMap.end() ? GetObjectByModel( lodMapIter->second->m_name ) : NULL;
 
-	luaModelLoadBegin( pLuaFile );
+			    luaModelLODEntry( pLuaFile,
+				    (*objIter)->m_realModelID,
+				    name,
+				    resManager.colName,
+				    (*objIter)->m_textureName,
+				    resManager.lodBuffer,
+				    obj ? obj->m_realModelID : 0
+			    );
+		    }
 
-	for (iter = instances.begin(); iter != instances.end(); iter++)
-	{
-		const char *name = (*iter)->m_name;
+		    luaModelLODEnd( pLuaFile );
+	    }
 
-		if ( lodSupport && lodMap[(*iter)->m_modelID] )
-			continue;
+	    luaModelLoadBegin( pLuaFile );
 
-		if ( g_usedModelNames.Exists( name ) )
-		{
-#if (MAP_METHOD==MAP_XML)
-			// We add all map entries
-			pMapFile->Printf(pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-			pMapFile->Printf(pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
-#elif (MAP_METHOD==MAP_LUA)
-			// Yup, we script our elements
-			pLuaServer->Printf(pServerMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-			pLuaServer->Printf(pServerMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
-#endif
-			continue;
-		}
+	    for (iter = instances.begin(); iter != instances.end(); iter++)
+	    {
+		    const char *name = (*iter)->m_name;
 
-		if ( !resManager.AllocateResources( name, false ) )
-			continue;
+		    if ( lodSupport && lodMap[(*iter)->m_modelID] )
+			    continue;
 
-#if (MAP_METHOD==MAP_XML)
-		// We add all map entries
-		pMapFile->Printf(pMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-		pMapFile->Printf(pMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
-#elif (MAP_METHOD==MAP_LUA)
-		// Yup, we script our elements
-		pLuaServer->Printf(pServerMapEntry, name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0] + usXoffset, (*iter)->m_position[1] + usYoffset, (*iter)->m_position[2] + usZoffset);
-		pLuaServer->Printf(pServerMapEntry2, (int)(*iter)->m_rotation[0], (int)(*iter)->m_rotation[1], (int)(*iter)->m_rotation[2]);
-#endif
+		    if ( g_usedModelNames.Exists( name ) )
+		    {
+                mapper.MapInstance( name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0], (*iter)->m_position[1], (*iter)->m_position[2], (*iter)->m_rotation[0], (*iter)->m_rotation[1], (*iter)->m_rotation[2] );
+		    }
+            else if ( resManager.AllocateResources( name, false ) )
+            {
+                mapper.MapInstance( name, modelIDs[(*iter)->m_modelID], (*iter)->m_position[0], (*iter)->m_position[1], (*iter)->m_position[2], (*iter)->m_rotation[0], (*iter)->m_rotation[1], (*iter)->m_rotation[2] );
 
-		unsigned short lod = 0;
+		        unsigned short lod = 0;
 
-		if ( CObject *lodObj = backLodMap[(*iter)->m_modelID] )
-			lod = lodObj->m_realModelID;
+		        if ( CObject *lodObj = backLodMap[(*iter)->m_modelID] )
+			        lod = lodObj->m_realModelID;
 
-		// Now LUA
-		luaModelLoadEntry( pLuaFile, name, resManager.txdName, modelIDs[(*iter)->m_modelID], resManager.lodBuffer, lod );
-	}
+		        // Now LUA
+		        luaModelLoadEntry( pLuaFile, name, resManager.txdName, modelIDs[(*iter)->m_modelID], resManager.lodBuffer, lod );
+            }
+	    }
 
-	luaModelLoadEnd( pLuaFile );
+	    luaModelLoadEnd( pLuaFile );
 
-#if (MAP_METHOD==MAP_XML)
-	pMapFile->Printf("%s", pMapEnd);
-#elif (MAP_METHOD==MAP_LUA)
-	pLuaServer->Printf(pServerMapEnd);
-#endif
+        // Write the end of the map file.
+    }
 
 	luaMethodEnd( pLuaFile );
 
-	pLuaServer->Printf("%s", pServerEnd);
-	pMetaFile->Printf("%s", pMetaEnd);
+    if ( pLuaServer )
+    {
+	    pLuaServer->Printf("%s", pServerEnd);
+    }
+    if ( pMetaFile )
+    {
+	    pMetaFile->Printf("%s", pMetaEnd);
+    }
 	luaEnd( pLuaFile );
 	// Close em
-	delete pLuaFile;
-	delete pMetaFile;
-#if (MAP_METHOD==MAP_XML)
-	delete pMapFile;
-#endif
-    delete pLuaServer;
+    if ( pLuaFile )
+    {
+	    delete pLuaFile;
+    }
+    if ( pMetaFile )
+    {
+	    delete pMetaFile;
+    }
+    if ( pMapFile )
+    {
+	    delete pMapFile;
+    }
+    if ( pLuaServer )
+    {
+        delete pLuaServer;
+    }
 
 	if ( doCompile )
 	{
