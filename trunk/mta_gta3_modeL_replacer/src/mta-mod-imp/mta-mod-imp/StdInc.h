@@ -161,19 +161,38 @@ extern std::map <unsigned short, CObject*> backLodMap;
 extern unsigned int tableCount;
 extern unsigned int numAvailable;
 
-extern short usYoffset;
-extern short usXoffset;
-extern short usZoffset;
+extern int mapYoffset;
+extern int mapXoffset;
+extern int mapZoffset;
 
-// Compile-Time macros for convenience
-#define MAP_LUA 1
-#define MAP_XML 2
-#define MAP_METHOD MAP_XML
-#define MAP_MAXLOD TRUE
+enum eMappingType
+{
+    MAPPING_LUA,
+    MAPPING_XML
+};
+extern eMappingType mappingType;
 
-#define MODEL_TABLE 1
-#define MODEL_STATIC 2
-#define MODEL_METHOD MODEL_TABLE
+enum eMappingFormat
+{
+    MAPPING_III,
+    MAPPING_VICECITY,
+    MAPPING_SANANDREAS
+};
+extern eMappingFormat mappingFormat;
+
+struct converter_runtime_error
+{
+    inline converter_runtime_error( const std::string& msg ) : message( msg.c_str() )
+    {
+    }
+
+    const char* getMessage( void ) const
+    {
+        return message;
+    }
+
+    ImmutableString message;
+};
 
 #ifdef __linux__
 #define _snprintf snprintf

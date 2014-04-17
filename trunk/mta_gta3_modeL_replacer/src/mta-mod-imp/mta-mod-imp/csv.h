@@ -17,7 +17,7 @@ class CCSV
 	friend CCSV*	LoadCSV(const char *filename);
 
 public:
-					CCSV( FILE *ioptr );
+					CCSV( CFile *ioptr );
 					~CCSV();
 
 	unsigned int	GetCurrentLine();
@@ -29,8 +29,13 @@ public:
 	const char**	GetRow();
 	void			FreeRow();
 
+    void            ParsingError( const char *msg );
+    
+    // Helper functions.
+    bool            ExpectTokenCount( unsigned int numTokens );
+
 private:
-	FILE*			m_file;
+	CFile*		    m_file;
 	unsigned int	m_currentLine;
 	unsigned int	m_numItems;
 	char**			m_row;

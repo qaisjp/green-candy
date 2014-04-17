@@ -7,7 +7,7 @@
 
 CCSV*   CreateCSV( const char *filename )
 {
-    FILE *file = fopen( filename, "w" );
+    CFile *file = fileRoot->Open( filename, "w" );
 
     if ( !file )
         return NULL;
@@ -18,7 +18,7 @@ CCSV*   CreateCSV( const char *filename )
 // Inits .csv files
 CCSV*	LoadCSV(const char *filename)
 {
-	FILE *file = fopen(filename, "r");
+	CFile *file = fileRoot->Open(filename, "r");
 
 	if (!file)
 		return NULL;
@@ -26,7 +26,7 @@ CCSV*	LoadCSV(const char *filename)
     return new CCSV( file );
 }
 
-CCSV::CCSV( FILE *ioptr )
+CCSV::CCSV( CFile *ioptr )
 {
     m_currentLine = 0;
     m_numItems = 0;
@@ -39,7 +39,7 @@ CCSV::~CCSV()
 	// Freeing memory used by row
 	FreeRow();
 
-	fclose(m_file);
+	delete m_file;
 }
 
 /*======================
@@ -64,15 +64,15 @@ void    CCSV::WriteNextRow( const std::vector <std::string>& items )
     while ( iter != items.end() )
     {
         const std::string& item = *iter;
-        fwrite( item.c_str(), 1, item.size(), m_file );
+        m_file->Write( item.c_str(), 1, item.size() );
 
         iter++;
 
         if ( iter != items.end() )
-            fputc( CSV_SEPERATION, m_file );
+            m_file->WriteByte( (char)CSV_SEPERATION );
     }
 
-    fputc( '\n', m_file );
+    m_file->WriteByte( '\n' );
 
 	m_currentLine++;
 }
@@ -80,7 +80,6 @@ void    CCSV::WriteNextRow( const std::vector <std::string>& items )
 // Gets a line
 bool	CCSV::ReadNextRow()
 {
-	unsigned int n;
 	unsigned int seek = 0;
 	unsigned int numSep = 1;
 	unsigned int buffpos = 0;
@@ -94,7 +93,7 @@ bool	CCSV::ReadNextRow()
 	// Get a complete line, until a NULL termination appears, and check, how many seperation are in this line
 	while (seek < 65536 && lastchr != 0 && lastchr != '\n' && lastchr != -1)
 	{
-		if (!fread(&lastchr, 1, 1, m_file))
+		if (!m_file->Read(&lastchr, 1, 1))
 			return false;
 
 		linebuff[seek] = lastchr;
@@ -112,11 +111,14 @@ bool	CCSV::ReadNextRow()
 
 	m_currentLine++;
 
-	// Malloc first memory
-	m_row = (char**)calloc(numSep, sizeof(long int));
+    if ( numSep > 0 )
+    {
+	    // Malloc first memory
+	    m_row = (char**)calloc(numSep, sizeof(const char*));
+    }
 
 	// Filter all things from the linebuff
-	for (n=0; n<seek; n++)
+	for (unsigned int n=0; n<seek; n++)
 	{
 		lastchr = linebuff[n];
 
@@ -129,6 +131,7 @@ bool	CCSV::ReadNextRow()
 			break;
 		case 0:
         case CSV_SEPERATION:
+            if ( m_numItems != 0 || buffpos != 0 )
             {
 			    itembuff[buffpos] = 0;
 
@@ -184,4 +187,26 @@ void	CCSV::FreeRow()
 
 	m_numItems = 0;
 	m_row = NULL;
+}
+
+void CCSV::ParsingError( const char *msg )
+{
+    printf( "CSV ERROR - %s (line %u): %s\n", FileSystem::GetFileNameItem( m_file->GetPath(), true ).c_str(), m_currentLine, msg );
+}
+
+bool CCSV::ExpectTokenCount( unsigned int numTokens )
+{
+    unsigned int actualItemCount = GetItemCount();
+
+	if (actualItemCount < numTokens)
+    {
+        char errorBuf[64];
+
+        snprintf( errorBuf, sizeof(errorBuf)-1, "expected %u items, got %u", numTokens, actualItemCount );
+
+        ParsingError( errorBuf );
+		return false;
+    }
+
+    return true;
 }
