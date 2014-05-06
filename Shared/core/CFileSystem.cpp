@@ -136,7 +136,7 @@ long CRawFile::Tell( void ) const
 #endif //OS DEPENDANT CODE
 }
 
-bool CRawFile::IsEOF() const
+bool CRawFile::IsEOF( void ) const
 {
 #ifdef _WIN32
     return ( SetFilePointer( m_file, 0, NULL, FILE_CURRENT ) >= GetFileSize( m_file, NULL ) );
