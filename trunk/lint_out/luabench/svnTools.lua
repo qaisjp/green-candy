@@ -25,6 +25,8 @@ local impFiles =
     "MTA10/game_sa/CExecutiveManagerSA.h",
     "MTA10/game_sa/CExecutiveManagerSA.fiber.cpp",
     "MTA10/game_sa/CExecutiveManagerSA.fiber.h",
+    "MTA10/game_sa/CExecutiveManagerSA.task.cpp",
+    "MTA10/game_sa/CExecutiveManagerSA.task.h",
     "MTA10/game_sa/CFileUtilsSA.cpp",
     "MTA10/game_sa/CFileUtilsSA.h",
     "MTA10/game_sa/CIMGManagerSA.cpp",
@@ -55,10 +57,20 @@ local impFiles =
     "MTA10/game_sa/CRenderWareSA.pipeline.h",
     "MTA10/game_sa/CRenderWareSA.render.cpp",
     "MTA10/game_sa/CRenderWareSA.render.h",
+    "MTA10/game_sa/CRenderWareSA.rmode.hxx",
+    "MTA10/game_sa/CRenderWareSA.rtbucket.cpp",
+    "MTA10/game_sa/CRenderWareSA.rtbucket.h",
     "MTA10/game_sa/CRenderWareSA.rtcallback.cpp",
     "MTA10/game_sa/CRenderWareSA.rtcallback.h",
     "MTA10/game_sa/CRenderWareSA.rwapi.cpp",
     "MTA10/game_sa/CRenderWareSA.rwapi.h",
+    "MTA10/game_sa/CRenderWareSA.state.lighting.hxx",
+    "MTA10/game_sa/CRenderWareSA.state.rs.hxx",
+    "MTA10/game_sa/CRenderWareSA.state.sampler.hxx",
+    "MTA10/game_sa/CRenderWareSA.state.stream.hxx",
+    "MTA10/game_sa/CRenderWareSA.state.transf.hxx",
+    "MTA10/game_sa/CRenderWareSA.state.tss.hxx",
+    "MTA10/game_sa/CRenderWareSA.stateman.hxx",
     "MTA10/game_sa/CStreamerSA.cpp",
     "MTA10/game_sa/CStreamerSA.h",
     "MTA10/game_sa/CStreamingSA.cache.cpp",
@@ -251,6 +263,8 @@ local function getSVNCommit(sourceSVN, targetSVN)
 end
 
 function svntools.update()
+    print( "MTA:Eir -> Er fork" );
+
     local commit = getSVNCommit( sourceSVN, targetSVN );
     
     commit.perform();
@@ -259,6 +273,8 @@ function svntools.update()
 end
 
 function svntools.check()
+    print( "MTA:Eir -> Er fork" );
+
     local commit = getSVNCommit( sourceSVN, targetSVN );
     
     commit.details();
@@ -267,6 +283,8 @@ function svntools.check()
 end
 
 function svntools.revupdate()
+    print( "Eir fork -> MTA:Eir" );
+
     local commit = getSVNCommit( targetSVN, sourceSVN );
     
     commit.perform();
@@ -275,6 +293,8 @@ function svntools.revupdate()
 end
 
 function svntools.revcheck()
+    print( "Eir fork -> MTA:Eir" );
+
     local commit = getSVNCommit( targetSVN, sourceSVN );
     
     commit.details();

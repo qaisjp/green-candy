@@ -174,6 +174,9 @@ bool CModelSA::Replace( unsigned short id )
     // Remove previous references to this model to prevent collision
     pGame->GetModelManager()->RestoreModel( id );
 
+    // We want to fence the loading process to get accurate data.
+    Streaming::FenceLoading();
+
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
     CStreamingSA *streaming = pGame->GetStreaming();
 
@@ -229,6 +232,9 @@ bool CModelSA::Restore( unsigned short id )
 
         return m_atomics.front()->Restore( id );
     }
+
+    // We want to fence the loading process to get accurate data.
+    Streaming::FenceLoading();
 
     CClumpModelInfoSAInterface *cinfo = (CClumpModelInfoSAInterface*)info;
     CStreamingSA *streaming = pGame->GetStreaming();

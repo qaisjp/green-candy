@@ -397,11 +397,20 @@ void __cdecl Streaming::FreeModel( modelId_t id )
     if ( info->m_eLoading == MODEL_UNAVAILABLE )
         return;
 
+    // MTA extension: we must fence the loading process to prevent corruption due
+    // to complex out-of-order execution.
+    FenceLoading();
+
     // Perform the freeing logic
-    if ( info->m_eLoading == MODEL_LOADED && DefaultDispatchExecute( id, ModelFreeDispatch() ) )
+    if ( info->m_eLoading == MODEL_LOADED )
     {
-        // Only decrease if the free-request was successful!
-        *(DWORD*)VAR_MEMORYUSAGE -= info->GetSize();
+        ModelFreeDispatch freeDispatch;
+
+        if ( DefaultDispatchExecute( id, freeDispatch ) )
+        {
+            // Only decrease if the free-request was successful!
+            *(DWORD*)VAR_MEMORYUSAGE -= info->GetSize();
+        }
     }
 
     if ( info->IsOnLoader() )
@@ -585,20 +594,52 @@ void __cdecl Streaming::RequestSpecialModel( modelId_t model, const char *tex, u
     Binary offsets:
         (1.0 US and 1.0 EU): 0x0040C1E0
 =========================================================*/
+struct modelIndexArrayManager
+{
+    AINLINE void InitField( modelId_t& modelIndex )
+    {
+        return;
+    }
+};
+typedef growableArray <modelId_t, 4, 0, modelIndexArrayManager, unsigned int> modelIndexArray;
+
+static modelIndexArray _loadQueueIndexStorage;
+
+inline bool IsPersistentLoadInfo( CModelLoadInfoSA& loadInfo )
+{
+    return IS_ANY_FLAG( loadInfo.m_flags, 0x1E );
+}
+
 void __cdecl Streaming::CleanUpLoadQueue( void )
 {
-    CModelLoadInfoSA *iter = GetLastQueuedLoadInfo();
-
-    while ( iter != *(CModelLoadInfoSA**)0x008E4C58 )
+    // Fetch the model indice that are expired.
+    // It has to be an atomic operation.
+    _loadQueueIndexStorage.Clear();
     {
-        CModelLoadInfoSA *nextInfo = Streaming::GetPrevLoadInfo( iter );
+        CModelLoadInfoSA *iter = GetLastQueuedLoadInfo();
 
-        if ( !IS_ANY_FLAG( iter->m_flags, 0x1E ) )
+        while ( iter != *(CModelLoadInfoSA**)0x008E4C58 )
         {
-            Streaming::FreeModel( iter->GetIndex() );
-        }
+            CModelLoadInfoSA *nextInfo = Streaming::GetPrevLoadInfo( iter );
 
-        iter = nextInfo;
+            if ( !IsPersistentLoadInfo( *iter ) )
+            {
+                _loadQueueIndexStorage.AddItem( iter->GetIndex() );
+            }
+
+            iter = nextInfo;
+        }
+    }
+
+    // Process the indice.
+    for ( unsigned int n = 0; n < _loadQueueIndexStorage.GetCount(); n++ )
+    {
+        CModelLoadInfoSA& loadInfo = GetModelLoadInfo( n );
+
+        if ( !IsPersistentLoadInfo( loadInfo ) )
+        {
+            Streaming::FreeModel( n );
+        }
     }
 }
 

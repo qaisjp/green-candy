@@ -14,6 +14,20 @@
 #include "RenderWare/RwRenderTools.hxx"
 #include "RenderWare/RwInternals.h"
 
+#include "CRenderWareSA.rmode.hxx"
+
+#include "CRenderWareSA.state.rs.hxx"
+#include "CRenderWareSA.state.tss.hxx"
+#include "CRenderWareSA.state.sampler.hxx"
+#include "CRenderWareSA.state.transf.hxx"
+#include "CRenderWareSA.state.stream.hxx"
+
+// Definitions of device state managers.
+RwRenderStateManager g_renderStateManager;
+RwTextureStageStateManager g_textureStageStateManager;
+RwSamplerStateManager g_samplerStateManager;
+RwVertexStreamStateManager g_vertexStreamStateManager;
+
 RwRenderStateLock::_rsLockDesc RwRenderStateLock::_rsLockInfo[210];
 
 /*=========================================================
@@ -184,44 +198,13 @@ void __cdecl RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
         function return a DWORD, but decided against it since I
         realized that it did not match the GTA:SA representation.
 =========================================================*/
-struct _texStageStateQuery
-{
-    DWORD id;
-    D3DTEXTURESTAGESTATETYPE type;
-};
-
-struct _texStageStateDesc
-{
-    deviceStateValue value;
-    int isQueried;
-};
-
-static _texStageStateDesc _texStateStages[8][33];
-
-inline _texStageStateDesc& GetNativeTextureStageStateDesc( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType )
-{
-    return _texStateStages[stageId][stateType];
-}
-
 void __cdecl RwD3D9SetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD value )
 {
-    _texStageStateDesc& stateInfo = GetNativeTextureStageStateDesc( stageId, stateType );
+    RwTextureStageStateManager::stateAddress address;
+    address.stageIndex = stageId;
+    address.stageType = stateType;
 
-    if ( stateInfo.value == value )
-        return;
-
-    stateInfo.value = value;
-
-    // Make sure the update it notified to the device.
-    if ( !stateInfo.isQueried )
-    {
-        stateInfo.isQueried = true;
-
-        // Queue the request to update our TSS to the device.
-        _texStageStateQuery& queryItem = ((_texStageStateQuery*)0x00C99C80)[ (*(unsigned int*)0x00C9A5F0)++ ];
-        queryItem.id = stageId;
-        queryItem.type = stateType;
-    }
+    g_textureStageStateManager.SetDeviceStateChecked( address, value );
 }
 
 /*=========================================================
@@ -248,7 +231,11 @@ void __cdecl RwD3D9SetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE
 =========================================================*/
 void __cdecl RwD3D9GetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD& value )
 {
-    value = GetNativeTextureStageStateDesc( stageId, stateType ).value;
+    RwTextureStageStateManager::stateAddress address;
+    address.stageIndex = stageId;
+    address.stageType = stateType;
+
+    value = g_textureStageStateManager.GetDeviceState( address );
 }
 
 /*=========================================================
@@ -345,21 +332,17 @@ void RwD3D9FreeRenderStates( void )
         (1.0 US): 0x007FC200
         (1.0 EU): 0x007FC240
 =========================================================*/
-static deviceStateValue currentTextureStageStateValues[8][33];
-
 inline deviceStateValue& GetNativeCurrentRenderState( D3DRENDERSTATETYPE type )
 {
     return ((deviceStateValue*)0x00C98E88)[type];
 }
 
-inline deviceStateValue& GetNativeCurrentTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType )
-{
-    return currentTextureStageStateValues[stageId][stateType];
-}
-
 void __cdecl RwD3D9ApplyDeviceStates( void )
 {
     IDirect3DDevice9 *renderDevice = GetRenderDevice();
+
+    // Apply vertex stream information.
+    g_vertexStreamStateManager.ApplyDeviceStates();
     
     // Apply RenderStates
     unsigned int renderStates = *(unsigned int*)0x00C9A5EC;
@@ -399,30 +382,11 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
     // Processed, so zero out
     *(unsigned int*)0x00C9A5EC = 0;
 
-    unsigned int textureStates = *(unsigned int*)0x00C9A5F0;
-
     // Apply texture stage states
-    for ( unsigned int n = 0; n < textureStates; n++ )
-    {
-        _texStageStateQuery& item = ((_texStageStateQuery*)0x00C99C80)[n];
-        _texStageStateDesc& desc = GetNativeTextureStageStateDesc( item.id, item.type );
+    g_textureStageStateManager.ApplyDeviceStates();
 
-        desc.isQueried = false;
-
-        DWORD newState = desc.value;
-        deviceStateValue& currentState = GetNativeCurrentTextureStageState( item.id, item.type );
-
-        if ( newState != currentState )
-        {
-            // Update the texture stage
-            renderDevice->SetTextureStageState( item.id, item.type, newState );
-
-            currentState = newState;
-        }
-    }
-
-    // No more texture states to process.
-    *(unsigned int*)0x00C9A5F0 = 0;
+    // Apply transformations.
+    g_transformationStateManager.ApplyDeviceStates();
 }
 
 /*=========================================================
@@ -463,28 +427,7 @@ void __cdecl RwD3D9ValidateDeviceStates( void )
     }
 
     // Validate texture stage states.
-    for ( unsigned int n = 0; n < MAX_SAMPLERS; n++ )
-    {
-        for ( unsigned int stageType = 0; stageType < 33; stageType++ )
-        {
-            D3DTEXTURESTAGESTATETYPE type = (D3DTEXTURESTAGESTATETYPE)stageType;
-
-            deviceStateValue& currentState = GetNativeCurrentTextureStageState( n, type );
-
-            DWORD realCurrent = 0xFFFFFFFF;
-            if ( renderDevice->GetTextureStageState( n, type, &realCurrent ) == D3D_OK )
-            {
-                if ( currentState != realCurrent )
-                {
-#ifdef DEBUG_DEVICE_STATE_INTEGRITY
-                    __asm int 3
-#endif //DEBUG_DEVICE_STATE_INTEGRITY
-
-                    currentState = realCurrent;
-                }
-            }
-        }
-    }
+    g_textureStageStateManager.ValidateDeviceStates();
 }
 
 /*=========================================================
@@ -561,7 +504,7 @@ inline D3DMATERIAL9& GetNativeCurrentMaterial( void )
     return *(D3DMATERIAL9*)0x00C98AF8;
 }
 
-void __cdecl RwD3D9SetMaterial( const D3DMATERIAL9& material )
+int __cdecl RwD3D9SetMaterial( const D3DMATERIAL9& material )
 {
     D3DMATERIAL9& currentMaterial = GetNativeCurrentMaterial();
     
@@ -571,8 +514,55 @@ void __cdecl RwD3D9SetMaterial( const D3DMATERIAL9& material )
 
         *(unsigned int*)0x00C9A5F4 = 0;
 
-        GetRenderDevice()->SetMaterial( &material );
+        int iReturn = GetRenderDevice()->SetMaterial( &material );
+
+        return ( iReturn >= 0 );
     }
+
+    return true;
+}
+
+/*=========================================================
+    RwD3D9GetMaterial (MTA extension)
+
+    Arguments:
+        material - device material data pointer
+    Purpose:
+        Returns the material that is currently assigned to
+        the pipeline.
+=========================================================*/
+void __cdecl RwD3D9GetMaterial( D3DMATERIAL9& material )
+{
+    material = GetNativeCurrentMaterial();
+}
+
+/*=========================================================
+    RwD3D9SetStreamSource
+
+    Arguments:
+        streamIndex - index of the vertex stream to update
+        streamPtr - GPU data pointer to the stream data
+        streamOffset - offset into the vertex stream to set
+        streamStride - stride for the vertex stream
+    Purpose:
+        Updates the Direct3D 9 device vertex stream buffers.
+        This function caches the current stream buffers so that
+        unnecessary updates to the GPU are avoided.
+    Binary offsets:
+        (1.0 US): 0x007FA030
+        (1.0 EU): 0x007FA070
+=========================================================*/
+void __cdecl RwD3D9SetStreamSource( DWORD streamIndex, IDirect3DVertexBuffer9 *streamPtr, size_t streamOffset, size_t streamStride )
+{
+    RwVertexStreamStateManager::stateAddress address;
+    address.streamNumber = streamIndex;
+
+    RwD3D9StreamInfo info;
+    info.m_vertexBuf = streamPtr;
+    info.m_offset = streamOffset;
+    info.m_stride = streamStride;
+
+    g_vertexStreamStateManager.SetDeviceStateChecked( address, info );
 }
 
 /*=========================================================
@@ -590,24 +580,17 @@ void __cdecl RwD3D9SetMaterial( const D3DMATERIAL9& material )
         (1.0 US): 0x007FA090
         (1.0 EU): 0x007FA0D0
 =========================================================*/
-inline RwD3D9Streams& GetStreamsInfo( unsigned int index )
-{
-    assert( index < 2 );
-
-    return ((RwD3D9Streams*)0x00C97BD8)[index];
-}
-
-void __cdecl RwD3D9SetStreams( RwD3D9Streams& streams, int useOffset )
+void __cdecl RwD3D9SetStreams( const RwD3D9Streams& streams, int useOffset )
 {
     IDirect3DDevice9 *renderDevice = GetRenderDevice_Native();
-
-    RwD3D9Streams& currentStreams = GetStreamsInfo( 0 );
 
     // Loop through all stream interfaces (there can be maximally two)
     for ( unsigned int n = 0; n < 2; n++ )
     {
-        RwD3D9StreamInfo& info = streams.streams[n];
-        RwD3D9StreamInfo& current = currentStreams.streams[n];
+        const RwD3D9StreamInfo& info = streams.streams[n];
+
+        RwVertexStreamStateManager::stateAddress address;
+        address.streamNumber = n;
 
         // The caller decides whether we use byte offsets in this stream.
         size_t streamOffset = ( useOffset ) ? info.m_offset : 0;
@@ -615,29 +598,36 @@ void __cdecl RwD3D9SetStreams( RwD3D9Streams& streams, int useOffset )
         // Decide whether the stream interface needs updating at all.
         if ( IDirect3DVertexBuffer9 *vertexBuf = info.m_vertexBuf )
         {
-            if ( current.m_vertexBuf != vertexBuf ||
-                 current.m_offset != streamOffset ||
-                 current.m_stride != info.m_stride )
-            {
-                current.m_vertexBuf = vertexBuf;
-                current.m_offset = streamOffset;
-                current.m_stride = info.m_stride;
-
-                renderDevice->SetStreamSource( n, vertexBuf, streamOffset, info.m_stride );
-            }
+            RwD3D9SetStreamSource( n, vertexBuf, streamOffset, info.m_stride );
         }
         else
         {
             // Clear the vertex stream if it has been unloaded in the given streams info.
-            if ( current.m_vertexBuf )
+            if ( g_vertexStreamStateManager.GetDeviceState( address ).m_vertexBuf )
             {
-                current.m_vertexBuf = NULL;
-                current.m_offset = 0;
-                current.m_stride = 0;
-
-                renderDevice->SetStreamSource( n, NULL, 0, 0 );
+                g_vertexStreamStateManager.ResetDeviceState( address );
             }
         }
+    }
+}
+
+/*=========================================================
+    RwD3D9GetStreams (MTA extension)
+
+    Arguments:
+        streamInfo - pointer to write streams information into
+    Purpose:
+        Retrieves the current streams information that is
+        active at the driver.
+=========================================================*/
+void __cdecl RwD3D9GetStreams( RwD3D9Streams& streamInfo )
+{
+    for ( unsigned int n = 0; n < 2; n++ )
+    {
+        RwVertexStreamStateManager::stateAddress address;
+        address.streamNumber = n;
+
+        streamInfo.streams[n] = g_vertexStreamStateManager.GetDeviceState( address );
     }
 }
 
@@ -658,6 +648,11 @@ inline IDirect3DPixelShader9*& GetCurrentPixelShader( void )
     return *(IDirect3DPixelShader9**)0x008E244C;
 }
 
+IDirect3DPixelShader9* __cdecl RwD3D9GetCurrentPixelShader( void )
+{
+    return GetCurrentPixelShader();
+}
+
 void __cdecl RwD3D9SetCurrentPixelShader( IDirect3DPixelShader9 *pixelShader )
 {
     IDirect3DPixelShader9*& currentPixelShader = GetCurrentPixelShader();
@@ -670,7 +665,7 @@ void __cdecl RwD3D9SetCurrentPixelShader( IDirect3DPixelShader9 *pixelShader )
     }
 }
 
-inline void __cdecl RwD3D9UnsetPixelShader( void )
+void __cdecl RwD3D9UnsetPixelShader( void )
 {
     IDirect3DPixelShader9*& currentPixelShader = GetCurrentPixelShader();
 
@@ -699,7 +694,12 @@ inline IDirect3DVertexShader9*& GetCurrentVertexShader( void )
     return *(IDirect3DVertexShader9**)0x008E2448;
 }
 
-inline void __cdecl RwD3D9SetCurrentVertexShader( IDirect3DVertexShader9 *vertexShader )
+IDirect3DVertexShader9* __cdecl RwD3D9GetCurrentVertexShader( void )
+{
+    return GetCurrentVertexShader();
+}
+
+void __cdecl RwD3D9SetCurrentVertexShader( IDirect3DVertexShader9 *vertexShader )
 {
     IDirect3DVertexShader9*& currentVertexShader = GetCurrentVertexShader();
 
@@ -728,7 +728,12 @@ inline IDirect3DIndexBuffer9*& GetCurrentIndexBuffer( void )
     return *(IDirect3DIndexBuffer9**)0x008E2450;
 }
 
-inline void __cdecl RwD3D9SetCurrentIndexBuffer( IDirect3DIndexBuffer9 *indexBuf )
+IDirect3DIndexBuffer9* __cdecl RwD3D9GetCurrentIndexBuffer( void )
+{
+    return GetCurrentIndexBuffer();
+}
+
+void __cdecl RwD3D9SetCurrentIndexBuffer( IDirect3DIndexBuffer9 *indexBuf )
 {
     IDirect3DIndexBuffer9*& curIndexBuf = GetCurrentIndexBuffer();
 
@@ -762,7 +767,12 @@ inline DWORD& GetCurrentFixedVertexFunction( void )
     return *(DWORD*)0x008E2440;
 }
 
-inline void RwD3D9SetCurrentVertexDeclaration( IDirect3DVertexDeclaration9 *vertexDecl )
+IDirect3DVertexDeclaration9* __cdecl RwD3D9GetCurrentVertexDeclaration( void )
+{
+    return GetCurrentVertexDeclaration();
+}
+
+void __cdecl RwD3D9SetCurrentVertexDeclaration( IDirect3DVertexDeclaration9 *vertexDecl )
 {
     IDirect3DVertexDeclaration9*& curVertexDecl = GetCurrentVertexDeclaration();
 
@@ -773,10 +783,24 @@ inline void RwD3D9SetCurrentVertexDeclaration( IDirect3DVertexDeclaration9 *vert
         bool success = GetRenderDevice_Native()->SetVertexDeclaration( vertexDecl ) >= 0;
 
         curVertexDecl = ( success ) ? vertexDecl : (IDirect3DVertexDeclaration9*)-1;
+
+#if 0
+        D3DVERTEXELEMENT9 elements[MAXD3DDECLLENGTH];
+        UINT numElements;
+
+        vertexDecl->GetDeclaration( elements, &numElements );
+
+        for ( unsigned int n = 0; n < numElements; n++ )
+        {
+            D3DVERTEXELEMENT9& element = elements[n];
+
+            __asm nop
+        }
+#endif
     }
 }
 
-inline void __cdecl RpD3D9DrawIndexedPrimitive( D3DPRIMITIVETYPE primitiveType, INT baseVertexIndex, UINT minVertexIndex, UINT numVertice, UINT startIndex, UINT primCount )
+void __cdecl RpD3D9DrawIndexedPrimitive( D3DPRIMITIVETYPE primitiveType, INT baseVertexIndex, UINT minVertexIndex, UINT numVertice, UINT startIndex, UINT primCount )
 {
     // Update the render and texture states before drawing.
     RwD3D9ApplyDeviceStates();
@@ -784,7 +808,7 @@ inline void __cdecl RpD3D9DrawIndexedPrimitive( D3DPRIMITIVETYPE primitiveType, 
     GetRenderDevice_Native()->DrawIndexedPrimitive( primitiveType, baseVertexIndex, minVertexIndex, numVertice, startIndex, primCount );
 }
 
-inline void __cdecl RpD3D9DrawPrimitive( D3DPRIMITIVETYPE primitiveType, UINT startVertex, UINT numPrimitives )
+void __cdecl RpD3D9DrawPrimitive( D3DPRIMITIVETYPE primitiveType, UINT startVertex, UINT numPrimitives )
 {
     // Update the render and texture states before drawing.
     RwD3D9ApplyDeviceStates();
@@ -928,8 +952,7 @@ struct GenericVideoPassRender
 
     __forceinline unsigned int GetRenderAlphaClamp( void )
     {
-        // todo: allow the user to define this value.
-        return 100;
+        return GetWorldObjectAlphaClamp();
     }
 
     unsigned int& renderFlags;
@@ -1080,8 +1103,7 @@ struct AlphaTexturedVideoPassRender
 
     __forceinline unsigned int GetRenderAlphaClamp( void )
     {
-        // todo: allow the user to define this value.
-        return 100;
+        return GetWorldObjectAlphaClamp();
     }
 
     unsigned int& renderFlags;
@@ -1131,6 +1153,16 @@ void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtna
     }
 }
 
+/*=========================================================
+    RwD3D9InitializeCurrentStates
+
+    Purpose:
+        Sets up the RenderWare Direct3D 9 runtime with the
+        current device states.
+    Note:
+        This function has been inlined into device initialization
+        and device reset functions.
+=========================================================*/
 inline RwColor& GetCurrentSurfaceColor( void )
 {
     return *(RwColor*)0x00C9A5F8;
@@ -1166,34 +1198,7 @@ void RwD3D9InitializeCurrentStates( void )
     *(unsigned int*)0x00C9A5EC = 0;
 
     // Set up the current TSS values.
-    for ( unsigned int stageId = 0; stageId < MAX_SAMPLERS; stageId++ )
-    {
-        for ( unsigned int stateId = 0; stateId < 33; stateId++ )
-        {
-            D3DTEXTURESTAGESTATETYPE type = (D3DTEXTURESTAGESTATETYPE)stateId;
-
-            deviceStateValue& currentValue = GetNativeCurrentTextureStageState( stageId, type );
-
-            renderDevice->GetTextureStageState( stageId, type, &currentValue.value );
-        }
-    }
-
-    // Initialize the TSS maintenance array based on the current texture stage states.
-    for ( unsigned int stageId = 0; stageId < MAX_SAMPLERS; stageId++ )
-    {
-        for ( unsigned int stateId = 0; stateId < 33; stateId++ )
-        {
-            D3DTEXTURESTAGESTATETYPE type = (D3DTEXTURESTAGESTATETYPE)stateId;
-
-            _texStageStateDesc& tssDesc = GetNativeTextureStageStateDesc( stageId, type );
-
-            tssDesc.value = GetNativeCurrentTextureStageState( stageId, type );
-            tssDesc.isQueried = false;
-        }
-    }
-
-    // Reset TSS query.
-    *(unsigned int*)0x00C9A5F0 = 0;
+    g_textureStageStateManager.Initialize();
 
     // Set up the sampler states array.
     for ( unsigned int samplerIndex = 0; samplerIndex < MAX_SAMPLERS; samplerIndex++ )
@@ -1212,6 +1217,7 @@ void RwD3D9InitializeCurrentStates( void )
     renderDevice->GetMaterial( &GetNativeCurrentMaterial() );
 
     // Initialize surface environment.
+    *(float*)0x00C9A5FC = 0.0f;
     *(float*)0x00C9A600 = 0.0f;
     *(float*)0x00C9A5D8 = 0.0f;
     *(float*)0x00C9A5DC = 0.0f;
@@ -1219,6 +1225,176 @@ void RwD3D9InitializeCurrentStates( void )
 
     *(unsigned int*)0x00C9A5F4 = 0;
     GetCurrentSurfaceColor() = 0x00000000;
+
+    // MTA extension: set up different state managers.
+    g_transformationStateManager.Initialize();
+    g_vertexStreamStateManager.Initialize();
+}
+
+/*=========================================================
+    RwD3D9InitializePipelineStates
+
+    Purpose:
+        Called when the usage of expensive device resources
+        should be reset.
+    Binary offsets:
+        (1.0 US): 0x007F6B00
+        (1.0 EU): 0x007F6B40
+=========================================================*/
+void __cdecl RwD3D9InitializePipelineStates( void )
+{
+    // Invalidate runtime resources.
+    *(DWORD*)0x008E2440 = 0xFFFFFFFF;
+    GetCurrentVertexDeclaration() = (IDirect3DVertexDeclaration9*)0xFFFFFFFF;
+    GetCurrentVertexShader() = (IDirect3DVertexShader9*)0xFFFFFFFF;
+    GetCurrentPixelShader() = (IDirect3DPixelShader9*)0xFFFFFFFF;
+    GetCurrentIndexBuffer() = (IDirect3DIndexBuffer9*)0xFFFFFFFF;
+
+    // Invalidate vertex streams.
+    g_vertexStreamStateManager.Invalidate();
+}
+
+/*=========================================================
+    RwD3D9ReleaseDeviceResources
+
+    Purpose:
+        Called when the runtime wants to release all resources
+        that it has been using inside the Direct3D 9 driver.
+    Binary offsets:
+        (1.0 US): 0x007F7F70
+        (1.0 EU): 0x007F7FB0
+=========================================================*/
+inline IDirect3DSurface9*& GetMainRenderTarget( void )
+{
+    return *(IDirect3DSurface9**)0x00C97C30;
+}
+
+inline IDirect3DSurface9** GetDeviceRenderTargets( void )
+{
+    return (IDirect3DSurface9**)0x00C98090;
+}
+
+void __cdecl RwD3D9SetRenderTarget( DWORD targetIndex, IDirect3DSurface9 *renderSurface )
+{
+    IDirect3DSurface9*& currentSurface = GetDeviceRenderTargets()[ targetIndex ];
+
+    if ( currentSurface != renderSurface )
+    {
+        currentSurface = renderSurface;
+
+        GetRenderDevice()->SetRenderTarget( targetIndex, renderSurface );
+    }
+}
+
+inline IDirect3DSurface9*& GetMainDepthStencilSurface( void )
+{
+    return *(IDirect3DSurface9**)0x00C97C2C;
+}
+
+inline IDirect3DSurface9*& GetCurrentDepthStencilSurface( void )
+{
+    return *(IDirect3DSurface9**)0x00C9808C;
+}
+
+void __cdecl RwD3D9SetDepthStencilSurface( IDirect3DSurface9 *depthStencilSurface )
+{
+    IDirect3DSurface9*& currentSurface = GetCurrentDepthStencilSurface();
+
+    if ( currentSurface != depthStencilSurface )
+    {
+        currentSurface = depthStencilSurface;
+
+        GetRenderDevice()->SetDepthStencilSurface( depthStencilSurface );
+    }
+}
+
+inline void RwD3D9InitializeDeviceCommon( void )
+{
+    RwD3D9InitializePipelineStates();
+
+    // We do not require transformation free list management anymore (US offset: 0x007F7FB1)
+
+    // Invalidate transformations.
+    g_transformationStateManager.Invalidate();
+}
+
+int __cdecl RwD3D9ReleaseDeviceResources( void )
+{
+    RwD3D9InitializeDeviceCommon();
+
+    // Set resources to blank.
+    IDirect3DDevice9 *renderDevice = GetRenderDevice_Native();
+
+    for ( unsigned int n = 0; n < 8; n++ )
+    {
+        renderDevice->SetTexture( n, NULL );
+    }
+
+    renderDevice->SetIndices( NULL );
+
+    g_vertexStreamStateManager.ClearDevice();
+
+    renderDevice->SetPixelShader( NULL );
+    renderDevice->SetVertexDeclaration( NULL );
+    renderDevice->SetVertexShader( NULL );
+
+    // Reset render targets.
+    for ( unsigned int n = 0; n < 4; n++ )
+    {
+        IDirect3DSurface9 *defaultSurface = NULL;
+
+        if ( n == 0 )
+        {
+            defaultSurface = GetMainRenderTarget();
+        }
+
+        RwD3D9SetRenderTarget( n, defaultSurface );
+    }
+
+    RwD3D9SetDepthStencilSurface( GetMainDepthStencilSurface() );
+    
+    // Close remaining management structures.
+    switch( pGame->GetGameVersion() )
+    {
+    case VERSION_EU_10:
+        ((void (__cdecl*)( void ))0x007FB630)();
+        ((void (__cdecl*)( void ))0x0080DFF0)();
+        ((void (__cdecl*)( void ))0x007F5880)();
+
+        break;
+    case VERSION_US_10:
+        ((void (__cdecl*)( void ))0x007FB5F0)();
+        ((void (__cdecl*)( void ))0x0080DFB0)();
+        ((void (__cdecl*)( void ))0x007F5840)();
+        
+        break;
+    }
+
+    ((void (__cdecl*)( void ))0x004CB640)();
+
+    RwFreeListPurgeAll();
+    return true;
+}
+
+/*=========================================================
+    RwD3D9AcquireD3DDevice
+
+    Purpose:
+        Initializes the Direct3D device environment and returns
+        the pointer to it.
+    Binary offsets:
+        (1.0 US): 0x007F9D50
+        (1.0 EU): 0x007F9D90
+=========================================================*/
+IDirect3DDevice9* __cdecl RwD3D9AcquireD3DDevice( void )
+{
+    // Initialize stuff.
+    RwD3D9InitializeDeviceCommon();
+
+    g_transformationStateManager.Initialize();
+    g_vertexStreamStateManager.Initialize();
+
+    return GetRenderDevice();
 }
 
 /*=========================================================
@@ -1288,26 +1464,45 @@ void RenderWarePipeline_Init( void )
         HookInstall( 0x007FC360, (DWORD)HOOK_RwD3D9GetRenderState, 5 );
         HookInstall( 0x007FC380, (DWORD)RwD3D9SetTextureStageState, 5 );
         HookInstall( 0x007FC3E0, (DWORD)RwD3D9GetTextureStageState, 5 );
+        HookInstall( 0x007FC400, (DWORD)RwD3D9SetSamplerState, 5 );
+        HookInstall( 0x007FC440, (DWORD)RwD3D9GetSamplerState, 5 );
+        HookInstall( 0x007FC470, (DWORD)RwD3D9SetMaterial, 5 );
         HookInstall( 0x007FC240, (DWORD)RwD3D9ApplyDeviceStates, 5 );
+        HookInstall( 0x007FA070, (DWORD)RwD3D9SetStreamSource, 5 );
+        HookInstall( 0x007FA0D0, (DWORD)RwD3D9SetStreams, 5 );
         HookInstall( 0x00756E40, (DWORD)HOOK_DefaultAtomicRenderingCallback, 5 );
         HookInstall( 0x007FCB00, (DWORD)RwD3D9InitializeDeviceStates, 5 );
         HookInstall( 0x007FD140, (DWORD)RwD3D9ResetDeviceStates, 5 );
+        HookInstall( 0x007F6B40, (DWORD)RwD3D9InitializePipelineStates, 5 );
+        HookInstall( 0x007F7FB0, (DWORD)RwD3D9ReleaseDeviceResources, 5 );
+        HookInstall( 0x007F9D90, (DWORD)RwD3D9AcquireD3DDevice, 5 );
         break;
     case VERSION_US_10:
         HookInstall( 0x007FC2D0, (DWORD)HOOK_RwD3D9SetRenderState, 5 );
         HookInstall( 0x007FC320, (DWORD)HOOK_RwD3D9GetRenderState, 5 );
         HookInstall( 0x007FC340, (DWORD)RwD3D9SetTextureStageState, 5 );
         HookInstall( 0x007FC3A0, (DWORD)RwD3D9GetTextureStageState, 5 );
+        HookInstall( 0x007FC3C0, (DWORD)RwD3D9SetSamplerState, 5 );
+        HookInstall( 0x007FC400, (DWORD)RwD3D9GetSamplerState, 5 );
+        HookInstall( 0x007FC430, (DWORD)RwD3D9SetMaterial, 5 );
         HookInstall( 0x007FC200, (DWORD)RwD3D9ApplyDeviceStates, 5 );
+        HookInstall( 0x007FA030, (DWORD)RwD3D9SetStreamSource, 5 );
+        HookInstall( 0x007FA090, (DWORD)RwD3D9SetStreams, 5 );
         HookInstall( 0x00756DF0, (DWORD)HOOK_DefaultAtomicRenderingCallback, 5 );
         HookInstall( 0x007FCAC0, (DWORD)RwD3D9InitializeDeviceStates, 5 );
         HookInstall( 0x007FD100, (DWORD)RwD3D9ResetDeviceStates, 5 );
+        HookInstall( 0x007F6B00, (DWORD)RwD3D9InitializePipelineStates, 5 );
+        HookInstall( 0x007F7F70, (DWORD)RwD3D9ReleaseDeviceResources, 5 );
+        HookInstall( 0x007F9D50, (DWORD)RwD3D9AcquireD3DDevice, 5 );
         break;
     }
 
     HookInstall( 0x005DA020, (DWORD)HOOK_InitDeviceSystem, 5 );
+
+    RenderBucket::Initialize();
 }
 
 void RenderWarePipeline_Shutdown( void )
 {
+    RenderBucket::Shutdown();
 }

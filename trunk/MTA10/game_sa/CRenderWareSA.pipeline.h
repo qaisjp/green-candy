@@ -20,6 +20,10 @@ void __cdecl RwD3D9ApplyDeviceStates    ( void );
 void __cdecl RwD3D9ValidateDeviceStates ( void );
 
 void __cdecl RwD3D9SetSamplerState      ( DWORD samplerId, D3DSAMPLERSTATETYPE stateType, DWORD value );
+void __cdecl RwD3D9GetSamplerState      ( DWORD samplerId, D3DSAMPLERSTATETYPE stateType, DWORD& valueOut );
+
+int __cdecl RwD3D9SetMaterial           ( const D3DMATERIAL9& material );
+void __cdecl RwD3D9GetMaterial          ( D3DMATERIAL9& material );
 
 void __cdecl RwD3D9SetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD value );
 void __cdecl RwD3D9GetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD& value );
@@ -34,6 +38,59 @@ void RwD3D9FreeRenderState              ( D3DRENDERSTATETYPE type );
 void RwD3D9FreeRenderStates             ( void );
 
 void RwD3D9InitializeCurrentStates      ( void );
+
+struct RwD3D9RenderCallbackData
+{
+    RwD3D9RenderCallbackData( void )
+    {
+        // Let the runtime initialize the struct, because there is no valid default state.
+        return;
+    }
+
+    RwD3D9RenderCallbackData( const RwD3D9RenderCallbackData& right )
+    {
+        operator = ( right );
+    }
+
+    void operator = ( const RwD3D9RenderCallbackData& right )
+    {
+        primitiveType = right.primitiveType;
+        startVertex = right.startVertex;
+        numPrimitives = right.numPrimitives;
+        indexedNumVertice = right.indexedNumVertice;
+        indexedStartIndex = right.indexedStartIndex;
+    }
+
+    D3DPRIMITIVETYPE                primitiveType;
+    unsigned int                    startVertex;
+    unsigned int                    numPrimitives;
+    unsigned int                    indexedNumVertice, indexedStartIndex;
+};
+
+struct RwD3D9StreamInfo //size: 16 bytes
+{
+    AINLINE RwD3D9StreamInfo( void )
+    {
+        m_vertexBuf = NULL;
+        m_offset = 0;
+        m_stride = 0;
+        unk4 = 0;
+    }
+
+    IDirect3DVertexBuffer9* m_vertexBuf;    // 0
+    size_t m_offset;                        // 4
+    size_t m_stride;                        // 8
+    int unk4;                               // 12
+};
+
+struct RwD3D9Streams    //size: 32 bytes
+{
+    RwD3D9StreamInfo    streams[2];     // 0
+};
+
+void __cdecl RwD3D9SetStreamSource      ( DWORD streamIndex, IDirect3DVertexBuffer9 *streamPtr, size_t streamOffset, size_t streamStride );
+void __cdecl RwD3D9SetStreams           ( const RwD3D9Streams& streams, int useOffset );
+void __cdecl RwD3D9GetStreams           ( RwD3D9Streams& streamInfo );
 
 typedef CPool <CEnvMapMaterialSA, 16000> CEnvMapMaterialPool;
 typedef CPool <CEnvMapAtomicSA, 4000> CEnvMapAtomicPool;

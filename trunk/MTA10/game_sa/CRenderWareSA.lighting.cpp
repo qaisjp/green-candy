@@ -15,6 +15,13 @@
 #include <sstream>
 #include "RenderWare/RwRenderTools.hxx"
 
+#include "CRenderWareSA.rmode.hxx"
+
+#include "CRenderWareSA.state.lighting.hxx"
+
+// Location of the lighting state manager.
+RwLightingStateManager g_lightingStateManager;
+
 #define NUM_LIGHTING_SHADER_CACHE_COUNT			8
 
 //todo: implement a light state management so that GTA:SA light settings are separate from MTA light settings.
@@ -118,6 +125,15 @@ namespace D3D9Lighting
         return true;
     }
 
+    bool lightState::GetLight( int lightIndex, D3DLIGHT9& lightStruct )
+    {
+        if ( nativeLights.GetSizeCount() <= lightIndex )
+            return false;
+
+        lightStruct = nativeLights.Get( lightIndex );
+        return true;
+    }
+
     bool lightState::EnableLight( int lightIndex, bool enabled )
     {
         if ( enabled )
@@ -134,6 +150,13 @@ namespace D3D9Lighting
         }
         
         return activeGlobalLights.RemoveItem( lightIndex );
+    }
+
+    bool lightState::IsLightEnabled( int lightIndex )
+    {
+        unsigned int findIndex;
+
+        return activeGlobalLights.Find( lightIndex, findIndex );
     }
 
     void lightState::ResetActiveLights( void )
@@ -561,6 +584,15 @@ bool _SetLightGlobal( int lightIndex, const D3DLIGHT9& lightStruct )
     return renderDevice->SetLight( lightIndex, &lightStruct ) >= 0;
 }
 
+bool _GetLightGlobal( int lightIndex, D3DLIGHT9& lightStruct )
+{
+    if ( D3D9Lighting::deviceLightInfo.GetSizeCount() <= lightIndex )
+        return false;
+
+    lightStruct = D3D9Lighting::deviceLightInfo.Get( lightIndex ).native;
+    return true;
+}
+
 template <typename processorType>
 bool _FindLightSlotGlobal( const D3DLIGHT9& lightStruct, int& lightIndex, processorType& cb )
 {
@@ -613,7 +645,7 @@ bool _LightEnableGlobal( int lightIndex, bool enable )
 {
     // Ignore invalid light indice.
     if ( lightIndex >= D3D9Lighting::deviceLightInfo.GetSizeCount() )
-        return true;
+        return false;
 
     nativeLightInfo& lightInfo = D3D9Lighting::deviceLightInfo.Get( lightIndex );
 
@@ -625,6 +657,14 @@ bool _LightEnableGlobal( int lightIndex, bool enable )
         return GetRenderDevice()->LightEnable( lightIndex,status ) >= 0;
     }
     return true;
+}
+
+bool _GetLightEnableGlobal( int lightIndex )
+{
+    if ( lightIndex >= D3D9Lighting::deviceLightInfo.GetSizeCount() )
+        return false;
+
+    return D3D9Lighting::deviceLightInfo.Get( lightIndex ).active != 0;
 }
 
 inline CShaderItem* _NewLightShaderInstance( const char *name )
@@ -709,6 +749,21 @@ struct lightPassManager
         return false;
     }
 
+    bool GetLight( int lightIndex, D3DLIGHT9& lightStruct )
+    {
+        if ( !inPhase )
+            return light_state.GetLight( lightIndex, lightStruct );
+        else
+        {
+            if ( IsFixedFunction() )
+            {
+                return _GetLightGlobal( lightIndex, lightStruct );
+            }
+        }
+
+        return false;
+    }
+
     bool EnableLight( int lightIndex, bool enable )
     {
         if ( !inPhase )
@@ -720,6 +775,23 @@ struct lightPassManager
             if ( IsFixedFunction() )
             {
                 return _LightEnableGlobal( lightIndex, enable );
+            }
+        }
+
+        return false;
+    }
+
+    bool IsLightEnabled( int lightIndex )
+    {
+        if ( !inPhase )
+        {
+            return light_state.IsLightEnabled( lightIndex );
+        }
+        else
+        {
+            if ( IsFixedFunction() )
+            {
+                return _GetLightEnableGlobal( lightIndex );
             }
         }
 
@@ -1271,7 +1343,7 @@ justCached:
                         if ( !_FindFreeLightSlotGlobal( nativeIndex, cb.GetGlobalLightProcessor() ) )
                             break;
 
-                        if ( !SetLight( nativeIndex, lightStruct ) )
+                        if ( !_SetLightGlobal( nativeIndex, lightStruct ) )
                             break;
                     }
 
@@ -1315,9 +1387,6 @@ justCached:
             unsigned int tmpIndex;
 
             bool found = ( m_cache.cachedIndice.Find( shaderIndex, tmpIndex ) );
-
-            if ( found )
-                __asm nop
 
             return found;
         }
@@ -1472,8 +1541,19 @@ justCached:
             for ( int n = 0; n < (int)maxGPULights; n++ )
             {
                 unsigned int foundIndex = -1;
+                
+                bool found = false;
 
-                if ( !applicator.m_takenSlots.Find( n, foundIndex ) )
+                if ( applicator.m_takenSlots.Find( n, foundIndex ) )
+                    found = true;
+
+                if ( !found && _cachedLightingData.isAvailable )
+                {
+                    if ( _cachedLightingData.cachedIndice.Find( n, foundIndex ) )
+                        found = true;
+                }
+
+                if ( !found )
                 {
                     EnableLight( n, false );
                 }
@@ -1790,6 +1870,22 @@ int __cdecl RpD3D9SetLight( int lightIndex, const D3DLIGHT9& lightStruct )
 }
 
 /*=========================================================
+    RpD3D9GetLight (MTA extension)
+
+    Arguments:
+        lightIndex - the index to get the light from
+        lightStruct - Direct3D light information
+    Purpose:
+        Returns the light struct that is assigned to the given
+        lighting index. The light index should be a native GPU
+        light index.
+=========================================================*/
+int __cdecl RpD3D9GetLight( int lightIndex, D3DLIGHT9& lightStruct )
+{
+    return globalLightPassMan.GetLight( lightIndex, lightStruct );
+}
+
+/*=========================================================
     RpD3D9DirLightEnable
 
     Arguments:
@@ -1851,6 +1947,20 @@ int __cdecl RpD3D9EnableLight( int lightIndex, int enable )
 }
 
 /*=========================================================
+    RpD3D9GetLightEnable (MTA extension)
+
+    Arguments:
+        lightIndex - light index to enable
+    Purpose:
+        Returns the light enable state for the given light
+        index.
+=========================================================*/
+int __cdecl RpD3D9GetLightEnable( int lightIndex )
+{
+    return globalLightPassMan.IsLightEnabled( lightIndex ) ? 1 : 0;
+}
+
+/*=========================================================
     RpD3D9EnableLights
 
     Arguments:
@@ -1905,7 +2015,7 @@ int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )
     unsigned int numLights = 0;
 
     LIST_FOREACH_BEGIN( RpLight, curScene->globalLights.root, sceneLights )
-        if ( cb.CanProcessLight( item ) )
+        if ( cb.CanProcessLight( item ) && RenderMode::IsRwLightEnabled( item ) )
         {
             numLights++;
 
@@ -2008,62 +2118,68 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
 
     bool requiresAmbientLighting = false;
 
-    bool enableLighting = IS_ANY_FLAG( geom->flags, 0x20 );
-
-    if ( curScene )
+    if ( RenderMode::IsLightingEnabled() )
     {
-        if ( enableLighting || forceGlobalLighting )
+        bool enableLighting = IS_ANY_FLAG( geom->flags, 0x20 );
+
+        if ( curScene )
         {
-            // Process main light-state.
-            D3D9Lighting::curLightState.ResetActiveLights();
+            if ( enableLighting || forceGlobalLighting )
+            {
+                // Process main light-state.
+                D3D9Lighting::curLightState.ResetActiveLights();
 
-            hasGlobalLighting = _GlobalLightsEnable( D3D9Lighting::curLightState, AtomicGlobalLightManager( geom ) ) != 0;
+                hasGlobalLighting = _GlobalLightsEnable( D3D9Lighting::curLightState, AtomicGlobalLightManager( geom ) ) != 0;
 
-            // Set the global ambient light color to the one specified by the native light-state.
-            GetAmbientColor() = D3D9Lighting::curLightState.ambientLightColor;
+                // Set the global ambient light color to the one specified by the native light-state.
+                GetAmbientColor() = D3D9Lighting::curLightState.ambientLightColor;
 
-            requiresAmbientLighting = true;
+                requiresAmbientLighting = true;
 
-            // todo: optimize light sectoring.
-            // we should make sure it is quad-tree oriented (not proven for now, tho its quite fast this way)
-        }
+                // todo: optimize light sectoring.
+                // we should make sure it is quad-tree oriented (not proven for now, tho its quite fast this way)
+            }
 
-        if ( enableLighting && IS_ANY_FLAG( geom->flags, 0x10 ) || forceLocalLighting )
-        {
-            // Activate all local lights on a seperate light-state.
-            D3D9Lighting::lightState& localLightState = localLight_lightState;
-            localLightState.ResetActiveLights();
+            if ( enableLighting && IS_ANY_FLAG( geom->flags, 0x10 ) || forceLocalLighting )
+            {
+                // Activate all local lights on a seperate light-state.
+                D3D9Lighting::lightState& localLightState = localLight_lightState;
+                localLightState.ResetActiveLights();
 
-            // Scancode algorithm, so lights do not get processed twice.
-            RwInterface *rwInterface = RenderWare::GetInterface();
+                // Scancode algorithm, so lights do not get processed twice.
+                RwInterface *rwInterface = RenderWare::GetInterface();
 
-            rwInterface->m_frame++;
+                rwInterface->m_frame++;
 
-            LIST_FOREACH_BEGIN( RpAtomic::sectorNode, atomic->sectors.root, node )
-                RwSector *sector = item->data;
+                LIST_FOREACH_BEGIN( RpAtomic::sectorNode, atomic->sectors.root, node )
+                    RwSector *sector = item->data;
 
-                LIST_FOREACH_BEGIN( RwSector::lightNode, sector->m_localLights.root, node )
-                    RpLight *light = item->data;
+                    LIST_FOREACH_BEGIN( RwSector::lightNode, sector->m_localLights.root, node )
+                        RpLight *light = item->data;
 
-                    if ( light && light->parent && light->frame != rwInterface->m_frame && light->IsLightActive() && RpLightIsInsideFrustum( light ) )
-                    {
-                        light->frame = rwInterface->m_frame;
-
-                        const RwMatrix& lightPos = light->parent->GetLTM();
-                        const RwSphere& atomicSphere = atomic->GetWorldBoundingSphere();
-
-                        float lightSphereActivityRange = light->radius + atomicSphere.radius;
-
-                        lightSphereActivityRange *= lightSphereActivityRange;
-
-                        if ( ( atomicSphere.pos - lightPos.vPos ).LengthSquared() <= lightSphereActivityRange )
+                        if ( light && light->parent && light->frame != rwInterface->m_frame && light->IsLightActive() && RpLightIsInsideFrustum( light ) )
                         {
-                            if ( localLightState.ActivateLocalLight( light ) )
-                                hasLocalLighting = true;
+                            if ( RenderMode::IsRwLightEnabled( light ) )
+                            {
+                                light->frame = rwInterface->m_frame;
+
+                                const RwMatrix& lightPos = light->parent->GetLTM();
+                                const RwSphere& atomicSphere = atomic->GetWorldBoundingSphere();
+
+                                float lightSphereActivityRange = light->radius + atomicSphere.radius;
+
+                                lightSphereActivityRange *= lightSphereActivityRange;
+
+                                if ( ( atomicSphere.pos - lightPos.vPos ).LengthSquared() <= lightSphereActivityRange )
+                                {
+                                    if ( localLightState.ActivateLocalLight( light ) )
+                                        hasLocalLighting = true;
+                                }
+                            }
                         }
-                    }
+                    LIST_FOREACH_END
                 LIST_FOREACH_END
-            LIST_FOREACH_END
+            }
         }
     }
 
@@ -2169,6 +2285,9 @@ bool RpD3D9GlobalLightingPrePass( void )
             doLighting = true;
         else
         {
+            // Cache lighting data.
+            globalLightPassMan.CacheLightingData();
+
             // Do the first pass of the global light pass manager here.
             globalLightPassMan.Begin();
 
@@ -2195,7 +2314,11 @@ void RpD3D9CacheLighting( void )
     if ( hasLocalLighting )
     {
         localLightPassMan.CacheLightingData();
-        //globalLightPassMan.CacheLightingData();
+    }
+
+    if ( hasGlobalLighting )
+    {
+        globalLightPassMan.CacheLightingData();
     }
 }
 
@@ -2247,19 +2370,6 @@ void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRende
 
                 while ( globalLightPassMan.DoLightPass() )
                 {
-#if 0
-                    // Todo: fix white texture issues appearing because of this.
-                    RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1 );
-                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_DIFFUSE );
-                    RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TEXTURE );
-
-                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAOP, D3DTOP_SELECTARG1 );
-                    RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE );
-
-                    RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_DISABLE );
-                    RwD3D9SetTextureStageState( 1, D3DTSS_ALPHAOP, D3DTOP_DISABLE );
-#endif
-
                     // Render as often as we require light meshes.
                     RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
                 }

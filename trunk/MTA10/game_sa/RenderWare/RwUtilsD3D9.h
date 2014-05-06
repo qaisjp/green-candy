@@ -14,7 +14,10 @@
 #define _RENDERWARE_DIRECT3D9_UTILITIES_
 
 // Utility functions.
+bool __cdecl RwD3D9MatrixEqual( const D3DMATRIX& left, const D3DMATRIX& right );
 int __cdecl RwD3D9SetTransform( D3DTRANSFORMSTATETYPE state, const D3DMATRIX *matrix );
+void __cdecl RwD3D9GetTransform( D3DTRANSFORMSTATETYPE state, D3DMATRIX *matrix );
+bool __cdecl RwD3D9IsTransformActive( D3DTRANSFORMSTATETYPE state );
 
 // Module initialization.
 void RenderWareUtilsD3D9_Init( void );
