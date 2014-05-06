@@ -286,6 +286,11 @@ struct corotLoadFlavor
         return true;
     }
 
+    __forceinline bool IsFinishedLoading( CModelLoadInfoSA& resource )
+    {
+        return true;
+    }
+
     loadHandler& m_loadHandler;
 };
 
@@ -315,6 +320,11 @@ struct semiCorotLoadFlavor : corotLoadFlavor <loadHandler>
         }
 
         return successLoad;
+    }
+
+    __forceinline bool IsFinishedLoading( CModelLoadInfoSA& resource )
+    {
+        return ( resource.m_eLoading != MODEL_RELOAD );
     }
 };
 
@@ -360,7 +370,7 @@ struct ModelLoadDispatch : public ModelCheckDispatch <false>
         // Process to the resource loading.
         bool success = m_loadFlavor.LoadBaseModel( id, info );
 
-        if ( m_loadInfo.m_eLoading != MODEL_RELOAD )
+        if ( m_loadFlavor.IsFinishedLoading( m_loadInfo ) )
         {
             txdInst->DereferenceNoDestroy();
 
@@ -545,7 +555,9 @@ bool __cdecl LoadModel( void *buf, modelId_t id, unsigned int threadId )
     if ( success )
     {
         // Do post loading handling
-        DefaultDispatchExecute( id, ModelPostLoadDispatch( loadInfo ) );
+        ModelPostLoadDispatch postLoadDispatch( loadInfo );
+
+        DefaultDispatchExecute( id, postLoadDispatch );
 
         // If we do not require a second loader run...
         if ( loadInfo.m_eLoading != MODEL_RELOAD )
@@ -1021,9 +1033,9 @@ struct corotPulseManager
             // Do post loading handling
             DefaultDispatchExecute( id, ModelPostLoadDispatch( loadInfo ) );
 
-            // If we do not require a second loader run...
-            if ( loadInfo.m_eLoading != MODEL_RELOAD )
-                OnModelLoaded( id );
+            // In the true coroutine loading environment, we never require a second loader run.
+            // We have finished loading the model!
+            OnModelLoaded( id );
         }
         
         return success;
@@ -1150,7 +1162,9 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
 
         // Clear the secondary queues
         for ( unsigned int n = 1; n < MAX_STREAMING_REQUESTERS; n++ )
+        {
             memset( GetStreamingRequest( n ).ids, 0xFF, sizeof(int) * MAX_STREAMING_REQUESTS );
+        }
     }
 
     // Processing succeeded!
@@ -1743,8 +1757,8 @@ void Streaming::EnableFiberedLoading( bool enable )
     if ( enableFiberedLoading == enable )
         return;
 
-    // Make sure the runtime does not load resources anymore.
-    LoadAllRequestedModels( false );
+    // Make sure the loader is not in critical engine sections.
+    FenceLoading();
 
     LeaveFiberMode();
 
@@ -1803,7 +1817,7 @@ namespace Streaming
     volatile bool insideLoadAllRequestedModels = false;   // GTA:SA code is not C++ exception friendly.
 };
 
-__forceinline unsigned int GetNextThreadId( unsigned int threadId )
+AINLINE unsigned int GetNextThreadId( unsigned int threadId )
 {
     // Optimizations.
     if ( MAX_STREAMING_REQUESTERS == 2 )
@@ -1839,7 +1853,7 @@ inline void __cdecl ContinueResourceAcquisition( unsigned int threadId )
     }
 }
 
-__forceinline bool IsAnySlicerActivity( void )
+AINLINE bool IsAnySlicerActivity( void )
 {
     for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
     {
@@ -1859,7 +1873,7 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
     if ( insideLoadAllRequestedModels )
         return;
 
-    insideLoadAllRequestedModels= true;
+    insideLoadAllRequestedModels = true;
     PulseStreamingRequests();
     
     unsigned int pulseCount = std::max( (unsigned int)10, *(unsigned int*)0x008E4CB8 * 2 );
@@ -1881,7 +1895,22 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
         // Cancel any pending activity (if PulseStreamingRequests did not finish it)
         if ( requester.status != streamingRequest::STREAMING_NONE )
         {
-            CancelSyncSemaphore( Streaming::GetStreamingRequestSyncSemaphoreIndex( threadId ) );
+            // If we are running fibered and the loader is still processing data,
+            // we must terminate that loading.
+            if ( requester.loaderFiber )
+            {
+                while ( requester.status == streamingRequest::STREAMING_LOADING )
+                {
+                    // Run the fiber.
+                    ProcessStreamingRequest( threadId );
+                }
+            }
+
+            // Cancel any data acquisition.
+            if ( requester.bufBehavior == streamingRequest::BUFFERING_IMG )
+            {
+                CancelSyncSemaphore( Streaming::GetStreamingRequestSyncSemaphoreIndex( threadId ) );
+            }
 
             // Tell the requester about it
             requester.statusCode = 100;
@@ -1901,7 +1930,7 @@ void __cdecl Streaming::LoadAllRequestedModels( bool onlyPriority )
 
         if ( !enableFiberedLoading )
         {
-            // If we expect to load only priority and there is no priority models
+            // If we expect to load only priority and there are no priority models
             // to load, we can cancel here.
             if ( onlyPriority && numPriorityRequests == 0 )
                 break;
@@ -1992,6 +2021,35 @@ void __cdecl HOOK_PulseStreamingLoader( void )
             Streaming::LoadAllRequestedModels( false );
         else
             Streaming::PulseLoader();
+    }
+}
+
+/*=========================================================
+    Streaming::FenceLoading (MTA extension)
+
+    Purpose:
+        This function must be called if critical data structures
+        of the Streaming system will be changed. It will ensure
+        that the Streaming system is not using those.
+=========================================================*/
+void Streaming::FenceLoading( void )
+{
+    for ( unsigned int n = 0; n < MAX_STREAMING_REQUESTERS; n++ )
+    {
+        if ( isLoadingBigModel && n != 0 )
+            break;
+
+        streamingRequest& requester = GetStreamingRequest( n );
+
+        // Ensure that the loading process is not holding on to important data.
+        // If we are fibered, we must finish loading.
+        if ( !requester.loaderFiber || !requester.loaderFiber->is_running() )
+        {
+            while ( requester.status == streamingRequest::STREAMING_LOADING )
+            {
+                ProcessStreamingRequest( n );
+            }
+        }
     }
 }
 

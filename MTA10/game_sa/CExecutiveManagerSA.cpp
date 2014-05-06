@@ -61,10 +61,16 @@ CExecutiveManagerSA::CExecutiveManagerSA( void )
 
     frameTime = ExecutiveManager::GetPerformanceTimer();
     frameDuration = 0;
+
+    // Initialize sub modules
+    InitializeTasks();
 }
 
 CExecutiveManagerSA::~CExecutiveManagerSA( void )
 {
+    // Shutdown sub modules.
+    ShutdownTasks();
+
     // Destroy all groups.
     while ( !LIST_EMPTY( groups.root ) )
     {
@@ -145,6 +151,23 @@ void CExecutiveManagerSA::CloseFiber( CFiberSA *fiber )
     LIST_REMOVE( fiber->groupNode );
 
     delete fiber;
+}
+
+void CExecutiveManagerSA::PushFiber( CFiberSA *currentFiber )
+{
+    fiberStack.AddItem( currentFiber );
+}
+
+void CExecutiveManagerSA::PopFiber( void )
+{
+    fiberStack.Pop();
+}
+
+CFiberSA* CExecutiveManagerSA::GetCurrentFiber( void )
+{
+    unsigned int fiberCount = fiberStack.GetCount();
+
+    return ( fiberCount != 0 ) ? ( fiberStack.Get( fiberCount - 1 ) ) : ( NULL );
 }
 
 CExecutiveGroupSA* CExecutiveManagerSA::CreateGroup( void )

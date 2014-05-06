@@ -91,6 +91,7 @@ namespace Streaming
     // Loader routines.
     void __cdecl LoadAllRequestedModels( bool onlyPriority );
     void __cdecl PulseLoader( void );
+    void __cdecl FenceLoading( void );
 };
 
 // Streaming loader exports.

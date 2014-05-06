@@ -17,9 +17,11 @@
 // Lighting system exports.
 int __cdecl     RpD3D9LightsEqual           ( const D3DLIGHT9& left, const D3DLIGHT9& right );
 int __cdecl     RpD3D9SetLight              ( int lightIndex, const D3DLIGHT9& lightStruct );
+int __cdecl     RpD3D9GetLight              ( int lightIndex, D3DLIGHT9& lightStruct );
 int __cdecl     RpD3D9DirLightEnable        ( RpLight *light );
 int __cdecl     RpD3D9LocalLightEnable      ( RpLight *light );
 int __cdecl     RpD3D9EnableLight           ( int lightIndex, int phase );
+int __cdecl     RpD3D9GetLightEnable        ( int lightIndex );
 int __cdecl     RpD3D9GlobalLightsEnable    ( unsigned char flags );
 bool            RpD3D9GlobalLightingPrePass ( void );
 void            RpD3D9CacheLighting         ( void );
@@ -59,240 +61,6 @@ struct nativeLightInfo  //size: 108 bytes
     {
         return RpD3D9LightsEqual( native, right.native ) != 0;
     }
-};
-
-template <typename dataType, unsigned int pulseCount, unsigned int allocFlags, typename arrayMan, typename countType>
-struct growableArray
-{
-    typedef dataType dataType_t;
-
-    AINLINE growableArray( void )
-    {
-        data = NULL;
-        numActiveEntries = 0;
-        sizeCount = 0;
-    }
-
-    AINLINE ~growableArray( void )
-    {
-        Shutdown();
-    }
-
-    AINLINE void Init( void )
-    { }
-
-    AINLINE void Shutdown( void )
-    {
-        if ( data )
-            SetSizeCount( 0 );
-
-        numActiveEntries = 0;
-        sizeCount = 0;
-    }
-
-    AINLINE void SetSizeCount( countType index )
-    {
-        if ( index != sizeCount )
-        {
-            countType oldCount = sizeCount;
-
-            sizeCount = index;
-
-            if ( data )
-            {
-                // Destroy any structures that got removed.
-                for ( countType n = index; n < oldCount; n++ )
-                {
-                    data[n].~dataType();
-                }
-            }
-
-            RwInterface *rwInterface = RenderWare::GetInterface();
-
-            if ( index == 0 )
-            {
-                // Handle clearance requests.
-                if ( data )
-                {
-                    rwInterface->m_memory.m_free( data );
-
-                    data = NULL;
-                }
-            }
-            else
-            {
-                size_t newArraySize = sizeCount * sizeof( dataType );
-
-                if ( !data )
-                    data = (dataType*)rwInterface->m_memory.m_malloc( newArraySize, allocFlags );
-                else
-                    data = (dataType*)rwInterface->m_memory.m_realloc( data, newArraySize, allocFlags );
-            }
-
-            if ( data )
-            {
-                // Fill the gap.
-                for ( countType n = oldCount; n < index; n++ )
-                {
-                    new (&data[n]) dataType;
-
-                    manager.InitField( data[n] );
-                }
-            }
-            else
-                sizeCount = 0;
-        }
-    }
-
-    AINLINE void SetItem( const dataType& dataField, countType index )
-    {
-        if ( index >= sizeCount )
-        {
-            SetSizeCount( sizeCount + pulseCount );
-        }
-
-        data[index] = dataField;
-    }
-
-    AINLINE void AddItem( const dataType& data )
-    {
-        SetItem( data, numActiveEntries );
-
-        numActiveEntries++;
-    }
-
-    AINLINE dataType& ObtainItem( void )
-    {
-        countType obtainIndex = numActiveEntries;
-
-        if ( obtainIndex >= sizeCount )
-        {
-            SetSizeCount( obtainIndex + pulseCount );
-        }
-
-        dataType& returnVal = data[obtainIndex];
-
-        numActiveEntries = obtainIndex + 1;
-        return returnVal;
-    }
-
-    AINLINE countType GetCount( void ) const
-    {
-        return numActiveEntries;
-    }
-
-    AINLINE countType GetSizeCount( void ) const
-    {
-        return sizeCount;
-    }
-
-    AINLINE dataType& Get( countType index )
-    {
-        assert( index < sizeCount );
-
-        return data[index];
-    }
-
-    AINLINE bool Pop( dataType& item )
-    {
-        if ( numActiveEntries != 0 )
-        {
-            item = data[--numActiveEntries];
-            return true;
-        }
-
-        return false;
-    }
-
-    AINLINE bool RemoveItem( const dataType& item )
-    {
-        countType foundSlot = -1;
-        
-        if ( !Find( item, foundSlot ) )
-            return false;
-
-        countType moveCount = numActiveEntries - ( foundSlot + 1 );
-
-        if ( moveCount != 0 )
-            std::copy( data + foundSlot + 1, data + numActiveEntries, data + foundSlot );
-
-        numActiveEntries--;
-        return true;
-    }
-
-    AINLINE bool Find( const dataType& inst, countType& indexOut ) const
-    {
-        for ( countType n = 0; n < numActiveEntries; n++ )
-        {
-            if ( data[n] == inst )
-            {
-                indexOut = n;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    AINLINE unsigned int Count( const dataType& inst ) const
-    {
-        unsigned int count = 0;
-
-        for ( countType n = 0; n < numActiveEntries; n++ )
-        {
-            if ( data[n] == inst )
-                count++;
-        }
-
-        return count;
-    }
-
-    AINLINE void Clear( void )
-    {
-        numActiveEntries = 0;
-    }
-
-    AINLINE void TrimTo( countType indexTo )
-    {
-        if ( numActiveEntries > indexTo )
-            numActiveEntries = indexTo;
-    }
-
-    AINLINE void SwapContents( growableArray& right )
-    {
-        dataType *myData = this->data;
-        dataType *swapData = right.data;
-
-        this->data = swapData;
-        right.data = myData;
-
-        countType myActiveCount = this->numActiveEntries;
-        countType swapActiveCount = right.numActiveEntries;
-
-        this->numActiveEntries = swapActiveCount;
-        right.numActiveEntries = myActiveCount;
-
-        countType mySizeCount = this->sizeCount;
-        countType swapSizeCount = right.sizeCount;
-
-        this->sizeCount = swapSizeCount;
-        right.sizeCount = mySizeCount;
-    }
-    
-    AINLINE void SetContents( growableArray& right )
-    {
-        right.SetSizeCount( numActiveEntries );
-
-        for ( countType n = 0; n < numActiveEntries; n++ )
-            right.data[n] = data[n];
-
-        right.numActiveEntries = numActiveEntries;
-    }
-
-    dataType* data;
-    countType numActiveEntries;
-    countType sizeCount;
-    arrayMan manager;
 };
 
 namespace D3D9Lighting
@@ -347,7 +115,9 @@ namespace D3D9Lighting
 
         void Clear( void );
         bool SetLight( int lightIndex, const D3DLIGHT9& lightInfo );
+        bool GetLight( int lightIndex, D3DLIGHT9& lightInfo );
         bool EnableLight( int lightIndex, bool enable );
+        bool IsLightEnabled( int lightIndex );
 
         inline int GetFreeLightIndex( void )
         {
@@ -372,7 +142,7 @@ namespace D3D9Lighting
         D3DLIGHT9 dirLightStruct;                           // Binary offsets: (1.0 US and 1.0 EU): 0x00C92648
         D3DLIGHT9 localLightStruct;                         // Binary offsets: (1.0 US and 1.0 EU): 0x00C925E0
 
-        typedef growableArray <D3DLIGHT9, 8, 0x1030411, deviceLightInfoArrayManager, unsigned int> deviceLightInfoArray;
+        typedef growableArray <D3DLIGHT9, 8, 0x1030411, deviceLightInfoArrayManager, int> deviceLightInfoArray;
 
         lightIndexArray             activeGlobalLights;     // Array of light indice that are active
         deviceLightInfoArray        nativeLights;           // Array of light data that is set

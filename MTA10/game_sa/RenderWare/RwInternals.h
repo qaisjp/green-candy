@@ -43,6 +43,11 @@ struct deviceStateValue
         value = 0xFFFFFFFF;
     }
 
+    deviceStateValue( const DWORD& value )
+    {
+        this->value = value;
+    }
+
     void operator = ( DWORD value )
     {
         this->value = value;

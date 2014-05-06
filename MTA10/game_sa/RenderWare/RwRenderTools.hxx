@@ -33,21 +33,6 @@ inline IDirect3DDevice9* GetRenderDevice( void )
 #endif //OPTIMIZE_DIRECT3D_DEVICE
 }
 
-struct RwD3D9StreamInfo //size: 16 bytes
-{
-    IDirect3DVertexBuffer9* m_vertexBuf;    // 0
-    size_t m_offset;                        // 4
-    size_t m_stride;                        // 8
-    int unk4;                               // 12
-};
-
-struct RwD3D9Streams    //size: 32 bytes
-{
-    RwD3D9StreamInfo    streams[2];     // 0
-};
-
-void __cdecl RwD3D9SetStreams                   ( RwD3D9Streams& streams, int useOffset );
-
 //padlevel: 2
 struct RwRenderPass //size: 36 bytes
 {
@@ -91,11 +76,17 @@ struct RwRenderCallbackTraverse //size: 24 bytes (+ sizeof( m_impl ))
     RwRenderCallbackTraverseImpl    m_impl;                 // 24
 };
 
+IDirect3DPixelShader9* __cdecl RwD3D9GetCurrentPixelShader( void );
 void __cdecl RwD3D9SetCurrentPixelShader        ( IDirect3DPixelShader9 *pixelShader );
 void __cdecl RwD3D9UnsetPixelShader             ( void );
 
+IDirect3DVertexShader9* __cdecl RwD3D9GetCurrentVertexShader( void );
 void __cdecl RwD3D9SetCurrentVertexShader       ( IDirect3DVertexShader9 *vertexShader );
+
+IDirect3DIndexBuffer9* __cdecl RwD3D9GetCurrentIndexBuffer( void );
 void __cdecl RwD3D9SetCurrentIndexBuffer        ( IDirect3DIndexBuffer9 *indexBuf );
+
+IDirect3DVertexDeclaration9* __cdecl RwD3D9GetCurrentVertexDeclaration( void );
 void __cdecl RwD3D9SetCurrentVertexDeclaration  ( IDirect3DVertexDeclaration9 *vertexDecl );
 
 void __cdecl RpD3D9DrawIndexedPrimitive         ( D3DPRIMITIVETYPE primitiveType, INT baseVertexIndex, UINT minVertexIndex, UINT numVertice, UINT startIndex, UINT primCount );
@@ -126,6 +117,44 @@ inline bool RwD3D9IsVertexAlphaRenderingRequiredEx( RwRenderPass *rtPass, RpMate
     return RwD3D9IsVertexAlphaRenderingRequired( rtPass, curMat ) || curMat->texture && RwTextureHasAlpha( curMat->texture );
 }
 
+inline D3DMATERIAL9& GetInlineSurfaceMaterial( void )
+{
+    return *(D3DMATERIAL9*)0x008E2538;
+}
+
+inline void RpD3D9SetSurfaceProperties( RpMaterialLighting& matLight, RwColor& matColor, unsigned int renderFlags )
+{
+    if ( *(float*)0x00C9A5FC == matLight.diffuse && *(float*)0x00C9A600 == matLight.ambient &&
+         *(RwColor*)0x00C9A5F8 == matColor && *(unsigned int*)0x00C9A5F4 == ( renderFlags & 0x48 ) &&
+         *(float*)0x00C9A5D8 == *(float*)0x008E2418 &&
+         *(float*)0x00C9A5DC == *(float*)0x008E241C &&
+         *(float*)0x00C9A5E0 == *(float*)0x008E2420 )
+    {
+        return;
+    }
+
+    *(float*)0x00C9A5FC = matLight.diffuse;
+    *(float*)0x00C9A600 = matLight.ambient;
+    *(RwColor*)0x00C9A5F8 = matColor;
+    *(unsigned int*)0x00C9A5F4 = ( renderFlags & 0x48 );
+    *(float*)0x00C9A5D8 = *(float*)0x008E2418;
+    *(float*)0x00C9A5DC = *(float*)0x008E241C;
+    *(float*)0x00C9A5E0 = *(float*)0x008E2420;
+
+    if ( IS_ANY_FLAG( renderFlags, 0x40 ) && matColor == 0xFFFFFFFF )
+    {
+        // Calculate the real vehicle lighting color.
+        long double colorIntensity = matLight.diffuse / 255.0f;
+
+        D3DMATERIAL9& surfMat = GetInlineSurfaceMaterial();
+        surfMat.Diffuse.r = ( colorIntensity * matColor.r );
+        surfMat.Diffuse.g = ( colorIntensity * matColor.g );
+        surfMat.Diffuse.b = ( colorIntensity * matColor.b );
+
+        
+    }
+}
+
 // Helper function to update surface properties.
 inline bool RwD3D9UpdateRenderPassSurfaceProperties( RwRenderPass *rtPass, DWORD lightValue, RpMaterial *curMat, unsigned int renderFlags )
 {
@@ -149,14 +178,47 @@ inline void RwD3D9DisableSecondTextureStage( void )
     RwD3D9SetTextureStageState( 1, D3DTSS_TEXTURETRANSFORMFLAGS, 0 );
 }
 
-// Helper function to draw meshes of current render pass.
-inline void RwD3D9DrawRenderPassPrimitive( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+// Native cached mesh rendering pass function.
+AINLINE void RwD3D9DrawRenderPassPrimitiveNative( bool isIndexed, const RwD3D9RenderCallbackData& callbackData )
 {
     // Assumes that we set index buffer according to rt-rules.
-    if ( rtinfo->m_indexBuffer )
-        RpD3D9DrawIndexedPrimitive( rtinfo->m_primitiveType, rtPass->m_startVertex, 0, rtPass->m_indexedNumVertice, rtPass->m_indexedStartIndex, rtPass->m_numPrimitives );
+    if ( isIndexed )
+    {
+        RpD3D9DrawIndexedPrimitive(
+            callbackData.primitiveType,
+            callbackData.startVertex,
+            0,
+            callbackData.indexedNumVertice,
+            callbackData.indexedStartIndex,
+            callbackData.numPrimitives
+        );
+    }
     else
-        RpD3D9DrawPrimitive( rtinfo->m_primitiveType, rtPass->m_startVertex, rtPass->m_numPrimitives );
+    {
+        RpD3D9DrawPrimitive(
+            callbackData.primitiveType,
+            callbackData.startVertex,
+            callbackData.numPrimitives
+        );
+    }
+}
+
+// Helper function to draw meshes of current render pass.
+AINLINE void RwD3D9DrawRenderPassPrimitive( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass )
+{
+    // Set up the native data to pass to the renderer.
+    RwD3D9RenderCallbackData renderCall;
+    renderCall.primitiveType = rtinfo->m_primitiveType;
+    renderCall.startVertex = rtPass->m_startVertex;
+    renderCall.numPrimitives = rtPass->m_numPrimitives;
+    renderCall.indexedNumVertice = rtPass->m_indexedNumVertice;
+    renderCall.indexedStartIndex = rtPass->m_indexedStartIndex;
+
+    // Pass the data to the GPU.
+    if ( RenderBucket::OnCachedRenderCall( renderCall ) == false )
+    {
+        RwD3D9DrawRenderPassPrimitiveNative( rtinfo->m_indexBuffer != NULL, renderCall );
+    }
 }
 
 void RpD3D9RenderLightMeshForPass( RwRenderCallbackTraverseImpl *rtinfo, RwRenderPass *rtPass );
@@ -255,7 +317,30 @@ struct MeshRenderManager
             }
 
             if ( !useAlphaFix || renderOpaque )
+            {
+                bool hasCustomAlphaRef = false;
+
+                if ( !useAlphaFix )
+                {
+                    unsigned int customAlphaRef;
+
+                    if ( RenderMode::GetAlphaClamp( customAlphaRef ) )
+                    {
+                        alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, customAlphaRef );
+
+                        hasCustomAlphaRef = true;
+                    }
+                }
+
                 meshCB.OnRenderMesh( cb, rtinfo, ( useAlphaFix ) ? RENDER_TRANSLUCENT : RENDER_OPAQUE_AND_TRANSLUCENT );
+
+                if ( hasCustomAlphaRef )
+                {
+                    alphaRef->~RwRenderStateLock();
+
+                    rsAlloc.Pop();
+                }
+            }
 
             if ( renderOpaque )
             {

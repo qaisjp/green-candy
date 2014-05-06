@@ -104,6 +104,14 @@ public:
         status = FIBER_SUSPENDED;
     }
 
+    inline bool is_running( void ) const        { return ( status == FIBER_RUNNING ); }
+    inline bool is_terminated( void ) const     { return ( status == FIBER_TERMINATED ); }
+    
+    // Manager functions
+    void push_on_stack( void );
+    void pop_from_stack( void );
+    bool is_current_on_stack( void ) const;
+
     // Native functions that skip manager activity.
     inline void resume( void )
     {
@@ -114,14 +122,23 @@ public:
 
             status = FIBER_RUNNING;
 
+            // Push the fiber on the current thread's executive stack.
+            push_on_stack();
+
             ExecutiveFiber::eswitch( callee, runtime );
         }
     }
 
     inline void yield( void )
     {
+        assert( status == FIBER_RUNNING );
+        assert( is_current_on_stack() );
+
         // WARNING: only call this function from the fiber stack!
         status = FIBER_SUSPENDED;
+
+        // Pop the fiber from the current active executive stack.
+        pop_from_stack();
 
         ExecutiveFiber::qswitch( runtime, callee );
     }

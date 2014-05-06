@@ -234,6 +234,21 @@ void __declspec(naked) ExecutiveFiber::qswitch( Fiber *from, Fiber *to )
     }
 }
 
+void CFiberSA::push_on_stack( void )
+{
+    manager->PushFiber( this );
+}
+
+void CFiberSA::pop_from_stack( void )
+{
+    manager->PopFiber();
+}
+
+bool CFiberSA::is_current_on_stack( void ) const
+{
+    return ( manager->GetCurrentFiber() == this );
+}
+
 void CFiberSA::yield_proc( void )
 {
     bool needYield = false;

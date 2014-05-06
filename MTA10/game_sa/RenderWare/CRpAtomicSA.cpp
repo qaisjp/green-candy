@@ -122,6 +122,9 @@ bool CRpAtomicSA::Replace( unsigned short id )
     // Remove previous references to this model to prevent collision
     pGame->GetModelManager()->RestoreModel( id );
 
+    // We want to fence the loading process to get accurate data.
+    Streaming::FenceLoading();
+
     CAtomicModelInfoSA *ainfo = (CAtomicModelInfoSA*)info;
 
     bool isLoaded = ainfo->GetRwObject() != NULL;
@@ -159,6 +162,9 @@ bool CRpAtomicSA::Restore( unsigned short id )
         m_imported.erase( iter );
         return false;
     }
+
+    // We want to fence the loading process to get accurate data.
+    Streaming::FenceLoading();
 
     CTxdInstanceSA *txd;
     bool isLoaded = info->GetRwObject() != NULL;
