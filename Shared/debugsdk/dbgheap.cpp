@@ -55,15 +55,16 @@
 
 #ifdef USE_HEAP_DEBUGGING
 #include <windows.h>
-#ifndef LIST_VALIDATE
+#ifndef LIST_GETITEM
 #include <rwlist.hpp>
-#endif //LIST_VALIDATE
+#endif //LIST_GETITEM
 
 #ifndef MEM_INTERRUPT
 #define MEM_INTERRUPT( expr )   assert( expr )
 #endif //MEM_INTERRUPT
 
 SYSTEM_INFO g_systemInfo;
+pfnMemoryAllocWatch _memAllocWatchCallback = NULL;
 
 #ifdef USE_FULL_PAGE_HEAP
 
@@ -356,9 +357,40 @@ inline static void _win32_shutdownHeap( void )
 }
 #endif
 
+inline void DbgMemAllocEvent( void *memPtr, size_t memSize )
+{
+    if ( _memAllocWatchCallback )
+    {
+        _memAllocWatchCallback( memPtr, memSize );
+    }
+}
+
+inline void* DbgMallocNative( size_t memSize )
+{
+    void *memPtr = _win32_allocMem( memSize );
+
+    DbgMemAllocEvent( memPtr, memSize );
+
+    return memPtr;
+}
+
+inline void* DbgReallocNative( void *memPtr, size_t newSize )
+{
+    void *newPtr = _win32_reallocMem( memPtr, newSize );
+
+    DbgMemAllocEvent( memPtr, newSize );
+
+    return newPtr;
+}
+
+inline void DbgFreeNative( void *memPtr )
+{
+    _win32_freeMem( memPtr );
+}
+
 void* operator new( size_t memSize ) throw(std::bad_alloc)
 {
-    void *mem = _win32_allocMem( memSize );
+    void *mem = DbgMallocNative( memSize );
 
     if ( !mem )
         throw std::bad_alloc( "failed to allocate memory" );
@@ -368,12 +400,12 @@ void* operator new( size_t memSize ) throw(std::bad_alloc)
 
 void* operator new( size_t memSize, const std::nothrow_t ) throw()
 {
-    return _win32_allocMem( memSize );
+    return DbgMallocNative( memSize );
 }
 
 void* operator new[]( size_t memSize ) throw(std::bad_alloc)
 {
-    void *mem = _win32_allocMem( memSize );
+    void *mem = DbgMallocNative( memSize );
 
     if ( !mem )
         throw std::bad_alloc( "failed to allocate memory" );
@@ -383,32 +415,32 @@ void* operator new[]( size_t memSize ) throw(std::bad_alloc)
 
 void* operator new[]( size_t memSize, const std::nothrow_t ) throw()
 {
-    return _win32_allocMem( memSize );
+    return DbgMallocNative( memSize );
 }
 
 void operator delete( void *ptr ) throw()
 {
-    _win32_freeMem( ptr );
+    DbgFreeNative( ptr );
 }
 
 void operator delete[]( void *ptr ) throw()
 {
-    _win32_freeMem( ptr );
+    DbgFreeNative( ptr );
 }
 
 void* DbgMalloc( size_t size )
 {
-    return _win32_allocMem( size );
+    return DbgMallocNative( size );
 }
 
 void* DbgRealloc( void *ptr, size_t size )
 {
-    return _win32_reallocMem( ptr, size );
+    return DbgReallocNative( ptr, size );
 }
 
 void DbgFree( void *ptr )
 {
-    _win32_freeMem( ptr );
+    DbgFreeNative( ptr );
 }
 
 #endif
@@ -420,6 +452,9 @@ void DbgHeap_Init( void )
 #ifdef USE_HEAP_DEBUGGING
     GetSystemInfo( &g_systemInfo );
 
+    // Initialize watch callbacks.
+    _memAllocWatchCallback = NULL;
+
     _win32_initHeap();
 #endif
 }
@@ -430,6 +465,15 @@ void DbgHeap_Validate( void )
 {
 #ifdef USE_HEAP_DEBUGGING
     _win32_validateMemory();
+#endif
+}
+
+// Debug heap memory callback routines.
+// Call these to set specific callbacks for memory watching.
+void DbgHeap_SetMemoryAllocationWatch( pfnMemoryAllocWatch allocWatchCallback )
+{
+#ifdef USE_HEAP_DEBUGGING
+    _memAllocWatchCallback = allocWatchCallback;
 #endif
 }
 

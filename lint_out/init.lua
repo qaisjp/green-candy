@@ -366,7 +366,10 @@ local function loadEnvironment(envRoot)
                 end, nil, false
             );
         end
-        scanResourceRepository(resRoot);
+        
+        if ( resRoot ) then
+            scanResourceRepository(resRoot);
+        end
         
         local function loadResource(resInfo)
             if (resInfo.isProcessed) or (resInfo.isLoaded) then

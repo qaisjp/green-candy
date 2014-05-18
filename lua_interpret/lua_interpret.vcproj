@@ -42,7 +42,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\;..\vendor\sparsehash\current\src;..\vendor\sparsehash\current\src\windows;..\vendor\libtga\src"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\;..\vendor\sparsehash\current\src;..\vendor\sparsehash\current\src\windows;..\vendor\libtga\src;..\vendor\detours\include"
 				PreprocessorDefinitions="WIN32;_DEBUG"
 				RuntimeLibrary="3"
 				StructMemberAlignment="0"
@@ -63,15 +63,16 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1d.lib DbgHelp.lib zlibd_2008.lib freetype2412_D.lib libpng2008d.lib jpegd.lib libfs_d.lib libtga_d.lib"
+				AdditionalDependencies="lua5.1d.lib DbgHelp.lib zlibd_2008.lib freetype2412_D.lib libpng2008d.lib jpegd.lib libfs_d.lib libtga_d.lib detours.lib"
 				OutputFile="$(OutDir)\lint_d.exe"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib;../FileSystem/lib;../vendor/sparsehash/current/src;../vendor/libtga/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib;../FileSystem/lib;../vendor/sparsehash/current/src;../vendor/libtga/lib;../vendor/detours/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMTD.lib"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
 				EntryPointSymbol="_MainInit"
+				DataExecutionPrevention="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -127,7 +128,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\;..\vendor\sparsehash\current\src;..\vendor\sparsehash\current\src\windows;..\vendor\libtga\src"
+				AdditionalIncludeDirectories=".\;..\vendor\lua\src;..\vendor\zlib\;..\vendor\lua\;..\vendor;..\Shared\sdk;..\Shared;..\MTA10\mods\shared_logic;&quot;..\vendor\freetype-2.4.12\include&quot;;&quot;..\vendor\jpeg\jpeg-8d&quot;;..\vendor\opengl\;..\vendor\sparsehash\current\src;..\vendor\sparsehash\current\src\windows;..\vendor\libtga\src;..\vendor\detours\include"
 				PreprocessorDefinitions="WIN32;NDEBUG"
 				StringPooling="true"
 				RuntimeLibrary="2"
@@ -149,10 +150,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="lua5.1.lib DbgHelp.lib zlib_2008.lib freetype2412.lib libpng2008.lib jpeg.lib libfs.lib libtga.lib"
+				AdditionalOptions="/SAFESEH:NO"
+				AdditionalDependencies="lua5.1.lib DbgHelp.lib zlib_2008.lib freetype2412.lib libpng2008.lib jpeg.lib libfs.lib libtga.lib detours.lib"
 				OutputFile="$(OutDir)\lint.exe"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib;../FileSystem/lib;../vendor/sparsehash/current/src;../vendor/libtga/lib"
+				AdditionalLibraryDirectories="../vendor/lua/lib;../vendor/zlib/lib;&quot;..\vendor\freetype-2.4.12\objs\win32\vc2008\&quot;;../vendor/libpng/lib;../vendor/jpeg/lib;../FileSystem/lib;../vendor/sparsehash/current/src;../vendor/libtga/lib;../vendor/detours/lib"
 				IgnoreAllDefaultLibraries="false"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
@@ -650,6 +652,18 @@
 			</File>
 			<File
 				RelativePath="..\Shared\debugsdk\dbgheap.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\debugsdk\dbgtrace.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\debugsdk\dbgtrace.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\debugsdk\dbgtrace.vendor.hwbrk.hxx"
 				>
 			</File>
 		</Filter>

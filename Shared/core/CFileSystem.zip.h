@@ -12,6 +12,11 @@
 #ifndef _FILESYSTEM_ZIP_
 #define _FILESYSTEM_ZIP_
 
+// Checksums.
+#define ZIP_SIGNATURE               0x06054B50
+#define ZIP_FILE_SIGNATURE          0x02014B50
+#define ZIP_LOCAL_FILE_SIGNATURE    0x04034B50
+
 #include <time.h>
 
 #pragma warning(push)
@@ -67,6 +72,30 @@ public:
         unsigned short  nameLen;
         unsigned short  commentLen;
     };
+
+    struct _centralFile
+    {
+        unsigned int    signature;
+        unsigned short  version;
+        unsigned short  reqVersion;
+        unsigned short  flags;
+        unsigned short  compression;
+        unsigned short  modTime;
+        unsigned short  modDate;
+        unsigned int    crc32;
+
+        size_t          sizeCompressed;
+        size_t          sizeReal;
+
+        unsigned short  nameLen;
+        unsigned short  extraLen;
+        unsigned short  commentLen;
+
+        unsigned short  diskID;
+        unsigned short  internalAttr;
+        unsigned int    externalAttr;
+        size_t          localHeaderOffset;
+    };
 #pragma pack()
 
 private:
@@ -106,36 +135,89 @@ private:
     };
 
 public:
-    struct file
+    struct fsActiveEntry
     {
+        fsActiveEntry( const filePath& name, const filePath& relPath ) : name( name ), relPath( relPath )
+        {
+            return;
+        }
+
         filePath        name;
         filePath        relPath;
+
         unsigned short  version;
         unsigned short  reqVersion;
         unsigned short  flags;
-        unsigned short  compression;
+
+        unsigned short  diskID;
+
         unsigned short  modTime;
         unsigned short  modDate;
 
-        unsigned int    crc32;
-        size_t          sizeCompressed;
-        size_t          sizeReal;
-
-        unsigned short  diskID;
-        unsigned short  internalAttr;
-        unsigned int    externalAttr;
         size_t          localHeaderOffset;
 
         std::string     extra;
         std::string     comment;
 
-        bool            archived;
-        bool            cached;
-        bool            subParsed;
+        inline _localHeader ConstructLocalHeader( void ) const
+        {
+            _localHeader header;
+            header.signature = ZIP_LOCAL_FILE_SIGNATURE;
+            header.modTime = modTime;
+            header.modDate = modDate;
+            header.nameLen = relPath.size();
+            header.commentLen = comment.size();
+            return header;
+        }
 
-        typedef std::list <stream*> lockList;
-        lockList        locks;
-        directory*      dir;
+        inline _centralFile ConstructCentralHeader( void ) const
+        {
+            _centralFile header;
+            header.signature = ZIP_FILE_SIGNATURE;
+            header.version = version;
+            header.reqVersion = reqVersion;
+            header.flags = flags;
+            //header.compression
+            header.modTime = modTime;
+            header.modDate = modDate;
+            //header.crc32
+            //header.sizeCompressed
+            //header.sizeReal
+            header.nameLen = relPath.size();
+            header.extraLen = extra.size();
+            header.commentLen = comment.size();
+            header.diskID = diskID;
+            //header.internalAttr
+            //header.externalAttr
+            header.localHeaderOffset = localHeaderOffset;
+            return header;
+        }
+
+        inline void AllocateArchiveSpace( CArchiveFileTranslator *archive, _localHeader& entryHeader, size_t& sizeCount )
+        {
+            // Update the offset.
+            localHeaderOffset = archive->m_file.Tell() - archive->m_structOffset;
+
+            sizeCount += sizeof( entryHeader ) + entryHeader.nameLen + entryHeader.commentLen;
+        }
+
+        inline void Reset( void )
+        {
+#ifdef _WIN32
+            version = 10;
+#else
+            version = 0x03; // Unix
+#endif //_WIN32
+            reqVersion = 0x14;
+            flags = 0;
+
+            UpdateTime();
+
+            diskID = 0;
+
+            extra.clear();
+            comment.clear();
+        }
 
         inline void SetModTime( const tm& date )
         {
@@ -164,34 +246,50 @@ public:
             date.tm_yday = 0;
         }
 
-        inline void UpdateTime( void )
+        virtual void UpdateTime( void )
         {
             time_t curTime = time( NULL );
             SetModTime( *gmtime( &curTime ) );
         }
+    };
+
+    struct file : public fsActiveEntry
+    {
+        file( const filePath& name ) : fsActiveEntry( name, filePath() )
+        {
+            return;
+        }
+
+        unsigned short  compression;
+
+        unsigned int    crc32;
+        size_t          sizeCompressed;
+        size_t          sizeReal;
+
+        unsigned short  internalAttr;
+        unsigned int    externalAttr;
+
+        bool            archived;
+        bool            cached;
+        bool            subParsed;
+
+        typedef std::list <stream*> lockList;
+        lockList        locks;
+        directory*      dir;
 
         inline void Reset( void )
         {
-#ifdef _WIN32
-            version = 10;
-#else
-            version = 0x03; // Unix
-#endif //_WIN32
-            reqVersion = 0x14;
-            flags = 0;
-            compression = 8;
+            // Common reset.
+            fsActiveEntry::Reset();
 
-            UpdateTime();
+            // File-specific reset.
+            compression = 8;
 
             crc32 = 0;
             sizeCompressed = 0;
             sizeReal = 0;
-            diskID = 0;
             internalAttr = 0;
             externalAttr = 0;
-
-            extra.clear();
-            comment.clear();
 
             archived = false;
             cached = false;
@@ -205,6 +303,14 @@ public:
 #else
             return version == 0x03; // Unix
 #endif //_WIN32
+        }
+
+        inline void UpdateTime( void )
+        {
+            fsActiveEntry::UpdateTime();
+
+            // Update the time of its parent directories.
+            dir->UpdateTime();
         }
     };
 
@@ -263,10 +369,11 @@ private:
 public:
     typedef std::list <file*> fileList;
 
-    struct directory
+    struct directory : public fsActiveEntry
     {
-        directory( filePath fileName, filePath path ) : name( fileName ), relPath( path )
+        directory( filePath fileName, filePath path ) : fsActiveEntry( fileName, path )
         {
+            return;
         }
 
         ~directory( void )
@@ -281,9 +388,6 @@ public:
             for ( ; fileIter != files.end(); ++fileIter )
                 delete *fileIter;
         }
-
-        filePath name;
-        filePath relPath;
 
         typedef std::list <directory*> subDirs;
 
@@ -315,6 +419,7 @@ public:
             dir = new directory( dirName, relPath + dirName + "/" );
             dir->name = dirName;
             dir->parent = this;
+            dir->Reset();
 
             children.push_back( dir );
             return *dir;
@@ -328,8 +433,7 @@ public:
 
         inline file&    AddFile( const filePath& fileName )
         {
-            file& entry = *new file;
-            entry.name = fileName;
+            file& entry = *new file( fileName );
 			entry.flags = 0;
 
             PositionFile( entry );
@@ -436,6 +540,27 @@ public:
                     return RemoveFile( **iter );
             }
             return false;
+        }
+
+        inline bool     IsEmpty( void ) const
+        {
+            return ( files.empty() && children.empty() );
+        }
+
+        inline bool     NeedsWriting( void ) const
+        {
+            return ( IsEmpty() || comment.size() != 0 || extra.size() != 0 );
+        }
+
+        inline void     UpdateTime( void )
+        {
+            fsActiveEntry::UpdateTime();
+
+            // Update the time of its parent directories.
+            if ( parent )
+            {
+                parent->UpdateTime();
+            }
         }
     };
 

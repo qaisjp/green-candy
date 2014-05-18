@@ -11,6 +11,29 @@ function zipcep()
 	return file.createArchiveTranslator(zz.open("lol.zip", "rb"));
 end
 
+function dirzip()
+    local zstream = root.open( "test.zip", "rb" );
+    
+    dzip = file.createArchiveTranslator( zstream );
+    
+    zstream.destroy();
+    return dzip;
+end
+
+function dirzipcreat()
+    local zipwritestream = root.open( "testw.zip", "wb" );
+    
+    dzip = file.createZIPArchive( zipwritestream );
+    
+    dzip.createDir( "testdir/" );
+    
+    zipwritestream.destroy();
+    
+    dzip.save();
+    
+    dzip.destroy();
+end
+
 function dircmd()
 	local m,n;
 	local files = root.scanDir("", "*", true);

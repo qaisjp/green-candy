@@ -37,8 +37,11 @@ void DbgFree( void *ptr );
 
 #endif //USE_HEAP_DEBUGGING
 
+typedef void (__cdecl*pfnMemoryAllocWatch)( void *memPtr, size_t memSize );
+
 void DbgHeap_Init( void );
 void DbgHeap_Validate( void );
+void DbgHeap_SetMemoryAllocationWatch( pfnMemoryAllocWatch allocWatchCallback );
 void DbgHeap_Shutdown( void );
 
 #endif //HEAP_DEBUG
