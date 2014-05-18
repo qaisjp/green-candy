@@ -485,7 +485,7 @@ inline bool _File_MatchPattern( const char *input, filePattern_t *pattern )
                 if ( len > input_len )
                     return false;
 
-                if ( _File_CompareStrings_Count( input, cmpCmd->string, len ) != 0 )
+                if ( _File_CompareStrings_Count( input, cmpCmd->string, len ) == false )
                     return false;
 
                 input_len -= len;
