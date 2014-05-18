@@ -214,12 +214,28 @@ extern "C"
 extern int mainCRTStartup( void );
 }
 
+static void __cdecl _DbgHeap_MemAllocWatch( void *memPtr, size_t memSize )
+{
+    if ( (DWORD)memPtr == 0x00154380 || (DWORD)memPtr == 0x001543B8 )
+    {
+        __asm int 3
+    }
+}
+
 extern "C" int APIENTRY _MainInit( void )
 {
     DbgHeap_Init();
 
+    DbgTraceStackSpace stackSpace;  // reserved memory; must be always allocated.
+
+    DbgTrace_Init( stackSpace );
+
+    // Set up memory debugging routines.
+    DbgHeap_SetMemoryAllocationWatch( _DbgHeap_MemAllocWatch );
+
     int ret = mainCRTStartup();
 
+    DbgTrace_Shutdown();
     DbgHeap_Shutdown();
     return ret;
 }
@@ -252,7 +268,31 @@ bool lint_loadscript( lua_State *L, const char *script, const char *path )
     return true;
 }
 
-int main( int argc, char *argv[] )
+struct testExceptionHandler : public DbgTrace::IExceptionHandler
+{
+    testExceptionHandler( void )
+    {
+        return;
+    }
+
+    ~testExceptionHandler( void )
+    {
+        return;
+    }
+
+    bool OnException( unsigned int error_code, DbgTrace::IEnvSnapshot *runtimeSnapShot )
+    {
+        if ( !IsDebuggerPresent() )
+        {
+            printf( "An irrecoverable exception has occured!\n%s", runtimeSnapShot->ToString().c_str() );
+            
+            getchar();
+        }
+        return false;
+    }
+};
+
+int _main( int argc, char *argv[] )
 {
     cout << "MTA:Lua Interpreter v1.0, by (c)Martin Turski (visit mtasa.com)\nCompiled on " __DATE__ "\n\n";
 
@@ -425,4 +465,15 @@ int main( int argc, char *argv[] )
 
     shutdown_interpreter();
     return EXIT_SUCCESS;
+}
+
+int main( int argc, char *argv[] )
+{
+    testExceptionHandler myHandler;
+
+    DbgTrace::RegisterExceptionHandler( &myHandler );
+
+    _main( argc, argv );
+
+    DbgTrace::UnregisterExceptionHandler( &myHandler );
 }

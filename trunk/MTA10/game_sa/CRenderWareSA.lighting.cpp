@@ -693,19 +693,6 @@ inline CShaderItem* _NewLightShaderInstance( const char *name )
     return shader;
 }
 
-// Utilities for shader management.
-namespace ShaderLightUtils
-{
-    AINLINE std::string to_string( int num )
-    {
-        std::stringstream stream;
-
-        stream << num;
-
-        return stream.str();
-    }
-};
-
 // Manager for rendering light states.
 using namespace D3D9Lighting;
 

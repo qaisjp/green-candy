@@ -15,10 +15,6 @@
 #include <zlib.h>
 #include <sstream>
 
-#define ZIP_SIGNATURE               0x06054B50
-#define ZIP_FILE_SIGNATURE          0x02014B50
-#define ZIP_LOCAL_FILE_SIGNATURE    0x04034B50
-
 // Global properties used by the .zip extension
 // for managing temporary files (OS dependent).
 // See CFileSystem::InitZIP.
@@ -667,30 +663,6 @@ struct _endDir
     unsigned short  commentLen;
 };
 
-struct _centralFile
-{
-    unsigned int    signature;
-    unsigned short  version;
-    unsigned short  reqVersion;
-    unsigned short  flags;
-    unsigned short  compression;
-    unsigned short  modTime;
-    unsigned short  modDate;
-    unsigned int    crc32;
-
-    size_t          sizeCompressed;
-    size_t          sizeReal;
-
-    unsigned short  nameLen;
-    unsigned short  extraLen;
-    unsigned short  commentLen;
-
-    unsigned short  diskID;
-    unsigned short  internalAttr;
-    unsigned int    externalAttr;
-    size_t          localHeaderOffset;
-};
-
 #pragma pack()
 
 CArchiveFileTranslator::directory& CArchiveFileTranslator::_CreateDirTree( directory& dir, const dirTree& tree )
@@ -1017,6 +989,25 @@ struct zip_deflate_compression : public zip_stream_compression
 
 void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
 {
+    if ( dir.NeedsWriting() )
+    {
+        _localHeader header = dir.ConstructLocalHeader();
+        
+        // Allocate space in the archive.
+        dir.AllocateArchiveSpace( this, header, size );
+
+        header.version = dir.version;
+        header.flags = dir.flags;
+        header.compression = 0;
+        header.crc32 = 0;
+        header.sizeCompressed = 0;
+        header.sizeReal = 0;
+
+        m_file.WriteStruct( header );
+        m_file.WriteString( dir.relPath );
+        m_file.WriteString( dir.comment );
+    }
+    
     directory::subDirs::iterator iter = dir.children.begin();
 
     for ( ; iter != dir.children.end(); ++iter )
@@ -1027,17 +1018,11 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
     for ( ; fileIter != dir.files.end(); ++fileIter )
     {
         file& info = **fileIter;
-        _localHeader header;
-        header.signature = ZIP_LOCAL_FILE_SIGNATURE;
-        header.modTime = info.modTime;
-        header.modDate = info.modDate;
-        header.nameLen = info.relPath.size();
-        header.commentLen = info.comment.size();
 
-        // Update the offset
-        info.localHeaderOffset = m_file.Tell() - m_structOffset;
+        _localHeader header = info.ConstructLocalHeader();
 
-        size += sizeof( header ) + header.nameLen + header.commentLen;
+        // Allocate space in the archive.
+        info.AllocateArchiveSpace( this, header, size );
 
         if ( !info.cached )
         {
@@ -1108,8 +1093,33 @@ void CArchiveFileTranslator::SaveDirectory( directory& dir, size_t& size )
 
 unsigned int CArchiveFileTranslator::BuildCentralFileHeaders( const directory& dir, size_t& size )
 {
+    unsigned cnt = 0;
+
+    if ( dir.NeedsWriting() )
+    {
+        _centralFile header = dir.ConstructCentralHeader();
+
+        // Zero out fields which make no sense
+        header.compression = 0;
+        header.crc32 = 0;
+        header.sizeCompressed = 0;
+        header.sizeReal = 0;
+        header.internalAttr = 0;
+#ifdef _WIN32
+        header.externalAttr = FILE_ATTRIBUTE_DIRECTORY;
+#else
+        header.externalAttr = 0;
+#endif
+        
+        m_file.WriteStruct( header );
+        m_file.WriteString( dir.relPath );
+        m_file.WriteString( dir.extra );
+        m_file.WriteString( dir.comment );
+        
+        cnt++;
+    }
+
     directory::subDirs::const_iterator iter = dir.children.begin();
-    unsigned int cnt = 0;
 
     for ( ; iter != dir.children.end(); ++iter )
         cnt += BuildCentralFileHeaders( **iter, size );
@@ -1119,25 +1129,14 @@ unsigned int CArchiveFileTranslator::BuildCentralFileHeaders( const directory& d
     for ( ; fileIter != dir.files.end(); ++fileIter )
     {
         const file& info = **fileIter;
-        _centralFile header;
+        _centralFile header = info.ConstructCentralHeader();
 
-        header.signature = ZIP_FILE_SIGNATURE;
-        header.version = info.version;
-        header.reqVersion = info.reqVersion;
-        header.flags = info.flags;
         header.compression = info.compression;
-        header.modTime = info.modTime;
-        header.modDate = info.modDate;
         header.crc32 = info.crc32;
         header.sizeCompressed = info.sizeCompressed;
         header.sizeReal = info.sizeReal;
-        header.nameLen = info.relPath.size();
-        header.extraLen = info.extra.size();
-        header.commentLen = info.comment.size();
-        header.diskID = info.diskID;
         header.internalAttr = info.internalAttr;
         header.externalAttr = info.externalAttr;
-        header.localHeaderOffset = info.localHeaderOffset;
 
         m_file.WriteStruct( header );
         m_file.WriteString( info.relPath.c_str() );

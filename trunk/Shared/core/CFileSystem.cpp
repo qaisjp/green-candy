@@ -1126,54 +1126,57 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
             }
         }
 
-        if ( !dirCallback && !recurse )
-            goto endJump;
-
-        //next search for subdirectories only
-        handle = FindFirstFile( query.c_str(), &finddata );
-
-        if ( handle == INVALID_HANDLE_VALUE )
-            goto endJump;
-
-        do
+        if ( dirCallback || recurse )
         {
-            if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY) )
-                continue;
+            //next search for subdirectories only
+            handle = FindFirstFile( query.c_str(), &finddata );
 
-            if ( !(finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
-                continue;
-
-            // Optimization :)
-            if ( _File_IgnoreDirectoryScanEntry( finddata.cFileName ) )
-                continue;
-
-            filePath target = output;
-            target += finddata.cFileName;
-            target += '/';
-
-            if ( dirCallback )
+            if ( handle != INVALID_HANDLE_VALUE )
             {
-                _File_OnDirectoryFound( pattern, finddata.cFileName, target, dirCallback, userdata );
+                do
+                {
+                    if ( finddata.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY) )
+                        continue;
+
+                    if ( !(finddata.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
+                        continue;
+
+                    // Optimization :)
+                    if ( _File_IgnoreDirectoryScanEntry( finddata.cFileName ) )
+                        continue;
+
+                    filePath target = output;
+                    target += finddata.cFileName;
+                    target += '/';
+
+                    if ( dirCallback )
+                    {
+                        _File_OnDirectoryFound( pattern, finddata.cFileName, target, dirCallback, userdata );
+                    }
+
+                    if ( recurse )
+                        ScanDirectory( target.c_str(), wcard, true, dirCallback, fileCallback, userdata );
+
+                } while ( FindNextFile(handle, &finddata) );
+
+                FindClose( handle );
             }
-
-            if ( recurse )
-                ScanDirectory( target.c_str(), wcard, true, dirCallback, fileCallback, userdata );
-
-        } while ( FindNextFile(handle, &finddata) );
+        }
     }
     catch( ... )
     {
         // Callbacks may throw exceptions
         _File_DestroyPattern( pattern );
 
-        FindClose( handle );
+        if ( handle != INVALID_HANDLE_VALUE )
+        {
+            FindClose( handle );
+        }
         throw;
     }
 
-endJump:
     _File_DestroyPattern( pattern );
 
-    FindClose( handle );
 #elif defined(__linux__)
     DIR *findDir = opendir( output.c_str() );
 
