@@ -820,7 +820,7 @@ namespace FileSystem
     }
 
     // Useful utility to get the file name out of a path.
-    inline std::string  GetFileNameItem( const char *name, bool includeExtension = false )
+    inline std::string  GetFileNameItem( const char *name, bool includeExtension = false, std::string *outDirectory = NULL )
     {
         const char *fileStartFrom = NULL;
         const char *origName = name;
@@ -860,6 +860,19 @@ namespace FileSystem
             }
 
             name++;
+        }
+
+        if ( outDirectory )
+        {
+            // Only create directory path if it is applicable.
+            if ( origName != fileStartFrom )
+            {
+                *outDirectory = std::string( origName, fileStartFrom );
+            }
+            else
+            {
+                outDirectory->clear();
+            }
         }
 
         return std::string( fileStartFrom, fileEnd );

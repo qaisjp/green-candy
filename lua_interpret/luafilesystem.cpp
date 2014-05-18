@@ -526,6 +526,66 @@ static int luafsys_copyStreamCount( lua_State *L )
 }
 #endif //FU_CLASS
 
+static int luafsys_pathToFilename( lua_State *L )
+{
+    luaL_checktype( L, 1, LUA_TSTRING );
+    luaL_checktype( L, 2, LUA_TBOOLEAN );
+
+    const char *path = lua_tostring( L, 1 );
+    bool includeExtension = lua_toboolean( L, 2 );
+
+    std::string directoryOut;
+
+    std::string fileName = FileSystem::GetFileNameItem( path, includeExtension, &directoryOut );
+
+    int iRet = 1;
+
+    lua_pushlstring( L, fileName.c_str(), fileName.size() );
+
+    if ( directoryOut.size() != 0 )
+    {
+        lua_pushlstring( L, directoryOut.c_str(), directoryOut.size() );
+
+        iRet++;
+    }
+
+    return iRet;
+}
+
+static int luafsys_streamCompare( lua_State *L )
+{
+    CFile *srcFile = lua_readclass <CFile> ( L, 1, LUACLASS_FILE );
+    CFile *dstFile = lua_readclass <CFile> ( L, 2, LUACLASS_FILE );
+
+    LUA_CHECK( srcFile && dstFile );
+
+    char sourceBuf[2048];
+    char targetBuf[2048];
+
+    bool isEqual = true;
+
+    while ( !srcFile->IsEOF() )
+    {
+        size_t sourceReadCount = srcFile->Read( sourceBuf, 1, sizeof( sourceBuf ) );
+        size_t destReadCount = dstFile->Read( targetBuf, 1, sizeof( targetBuf ) );
+
+        if ( sourceReadCount != destReadCount )
+        {
+            isEqual = false;
+            break;
+        }
+
+        if ( sourceReadCount != 0 && memcmp( sourceBuf, targetBuf, sourceReadCount ) != 0 )
+        {
+            isEqual = false;
+            break;
+        }
+    }
+
+    lua_pushboolean( L, isEqual );
+    return 1;
+}
+
 int luafsys_getRoot( lua_State *L )
 {
     lua_pushvalue( L, lua_upvalueindex( 1 ) );
@@ -538,10 +598,12 @@ static const luaL_Reg fsysLib[] =
 #ifndef FU_CLASS
     { "createArchiveTranslator", luafsys_createArchiveTranslator },
     { "createZIPArchive", luafsys_createZIPArchive },
-#endif //FU_CLASS
     { "copyFile", luafsys_copyFile },
     { "copyStream", luafsys_copyStream },
     { "copyStreamCount", luafsys_copyStreamCount },
+#endif //FU_CLASS
+    { "pathToFilename", luafsys_pathToFilename },
+    { "streamCompare", luafsys_streamCompare },
     { NULL, NULL }
 };
 
