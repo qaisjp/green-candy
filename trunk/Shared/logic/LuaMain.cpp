@@ -152,7 +152,7 @@ void LuaMain::InitSecurity()
     RegisterFunction( "loadfile", DisabledFunction );
     RegisterFunction( "require", DisabledFunction );
     RegisterFunction( "loadlib", DisabledFunction );
-    RegisterFunction( "getfenv", DisabledFunction );
+    //RegisterFunction( "getfenv", DisabledFunction );
     RegisterFunction( "newproxy", DisabledFunction );
 }
 

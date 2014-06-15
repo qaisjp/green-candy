@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        luafile.cpp
 *  PURPOSE:     Test environment for the filesystem
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  For documentation visit http://wiki.mtasa.com/wiki/MTA:Eir/FileSystem/
 *
@@ -119,38 +119,47 @@ AINLINE int _fileReadNumber( lua_State *L )
     return 1;
 }
 
+// We use the computer systems analogy char<->byte.
 static int luafile_readByte( lua_State *L )
 {
-    return _fileReadNumber <char> ( L );
+    return _fileReadNumber <fsChar_t> ( L );
 }
 static int luafile_readUByte( lua_State *L )
 {
-    return _fileReadNumber <unsigned char> ( L );
+    return _fileReadNumber <fsUChar_t> ( L );
 }
 static int luafile_readShort( lua_State *L )
 {
-    return _fileReadNumber <short> ( L );
+    return _fileReadNumber <fsShort_t> ( L );
 }
 static int luafile_readUShort( lua_State *L )
 {
-    return _fileReadNumber <unsigned short> ( L );
+    return _fileReadNumber <fsUShort_t> ( L );
 }
 static int luafile_readInt( lua_State *L )
 {
-    return _fileReadNumber <int> ( L );
+    return _fileReadNumber <fsInt_t> ( L );
 }
 static int luafile_readUInt( lua_State *L )
 {
-    return _fileReadNumber <unsigned int> ( L );
+    return _fileReadNumber <fsUInt_t> ( L );
+}
+static int luafile_readWideInt( lua_State *L )
+{
+    return _fileReadNumber <fsWideInt_t> ( L );
+}
+static int luafile_readUWideInt( lua_State *L )
+{
+    return _fileReadNumber <fsUWideInt_t> ( L );
 }
 
 static int luafile_readFloat( lua_State *L )
 {
-    return _fileReadNumber <float> ( L );
+    return _fileReadNumber <fsFloat_t> ( L );
 }
 static int luafile_readDouble( lua_State *L )
 {
-    return _fileReadNumber <double> ( L );
+    return _fileReadNumber <fsDouble_t> ( L );
 }
 
 static int luafile_readBoolean( lua_State *L )
@@ -204,36 +213,44 @@ static int luafile_write( lua_State *L )
 
 static int luafile_writeByte( lua_State *L )
 {
-    return _writeFileNumber <char, _CheckDefaultValidity> ( L, "writeByte" );
+    return _writeFileNumber <fsChar_t, _CheckDefaultValidity> ( L, "writeByte" );
 }
 static int luafile_writeUByte( lua_State *L )
 {
-    return _writeFileNumber <unsigned char, _CheckDefaultValidity> ( L, "writeUByte" );
+    return _writeFileNumber <fsUChar_t, _CheckDefaultValidity> ( L, "writeUByte" );
 }
 static int luafile_writeShort( lua_State *L )
 {
-    return _writeFileNumber <short, _CheckDefaultValidity> ( L, "writeShort" );
+    return _writeFileNumber <fsShort_t, _CheckDefaultValidity> ( L, "writeShort" );
 }
 static int luafile_writeUShort( lua_State *L )
 {
-    return _writeFileNumber <unsigned short, _CheckDefaultValidity> ( L, "writeUShort" );
+    return _writeFileNumber <fsUShort_t, _CheckDefaultValidity> ( L, "writeUShort" );
 }
 static int luafile_writeInt( lua_State *L )
 {
-    return _writeFileNumber <int, _CheckDefaultValidity> ( L, "writeInt" );
+    return _writeFileNumber <fsInt_t, _CheckDefaultValidity> ( L, "writeInt" );
 }
 static int luafile_writeUInt( lua_State *L )
 {
-    return _writeFileNumber <unsigned int, _CheckDefaultValidity> ( L, "writeUInt" );
+    return _writeFileNumber <fsUInt_t, _CheckDefaultValidity> ( L, "writeUInt" );
+}
+static int luafile_writeWideInt( lua_State *L )
+{
+    return _writeFileNumber <fsWideInt_t, _CheckDefaultValidity> ( L, "writeWideInt" );
+}
+static int luafile_writeUWideInt( lua_State *L )
+{
+    return _writeFileNumber <fsUWideInt_t, _CheckDefaultValidity> ( L, "writeUWideInt" );
 }
 
 static int luafile_writeFloat( lua_State *L )
 {
-    return _writeFileNumber <float, _CheckDefaultValidity> ( L, "writeFloat" );
+    return _writeFileNumber <fsFloat_t, _CheckDefaultValidity> ( L, "writeFloat" );
 }
 static int luafile_writeDouble( lua_State *L )
 {
-    return _writeFileNumber <double, _CheckDefaultValidity> ( L, "writeDouble" );
+    return _writeFileNumber <fsDouble_t, _CheckDefaultValidity> ( L, "writeDouble" );
 }
 
 static int luafile_writeBoolean( lua_State *L )
@@ -369,6 +386,8 @@ static const luaL_Reg fileInterface[] =
     { "readUShort", luafile_readUShort },
     { "readInt", luafile_readInt },
     { "readUInt", luafile_readUInt },
+    { "readWideInt", luafile_readWideInt },
+    { "readUWideInt", luafile_readUWideInt },
     { "readFloat", luafile_readFloat },
     { "readDouble", luafile_readDouble },
     { "readBoolean", luafile_readBoolean },
@@ -379,6 +398,8 @@ static const luaL_Reg fileInterface[] =
     { "writeUShort", luafile_writeUShort },
     { "writeInt", luafile_writeInt },
     { "writeUInt", luafile_writeUInt },
+    { "writeWideInt", luafile_writeWideInt },
+    { "wrideUWideInt", luafile_writeUWideInt },
     { "writeFloat", luafile_writeFloat },
     { "writeDouble", luafile_writeDouble },
     { "writeBoolean", luafile_writeBoolean },

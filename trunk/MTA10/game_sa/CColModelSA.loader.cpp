@@ -104,19 +104,17 @@ struct ColHeaderVersion4 : public ColHeaderVersion3     //size: 92 bytes
 };
 C_ASSERT( sizeof( ColHeaderVersion4 ) == 92 );
 
-unsigned int CColDataSA::CalculateNumberOfShadowMeshVertices( void ) const
+AINLINE unsigned int _CalculateVertexCount( CColTriangle *faces, int faceCount )
 {
-    // Calculates the number of shadow mesh vertices.
-    // The number of shadow mesh vertices is equal to the highest index used in the shadow mesh (+1).
     unsigned int numVertices = 0;
 
-    if ( numShadowMeshFaces != 0 )
+    if ( faceCount != 0 )
     {
-        if ( numShadowMeshFaces > 0 )
+        if ( faceCount > 0 )
         {
-            for ( int n = 0; n < numShadowMeshFaces; n++ )
+            for ( int n = 0; n < faceCount; n++ )
             {
-                CColTriangleSA *face = pShadowMeshFaces + n;
+                CColTriangleSA *face = faces + n;
 
                 if ( numVertices < face->v1 )
                 {
@@ -141,41 +139,18 @@ unsigned int CColDataSA::CalculateNumberOfShadowMeshVertices( void ) const
     return numVertices;
 }
 
+unsigned int CColDataSA::CalculateNumberOfShadowMeshVertices( void ) const
+{
+    // Calculates the number of shadow mesh vertices.
+    // The number of shadow mesh vertices is equal to the highest index used in the shadow mesh (+1).
+    return _CalculateVertexCount( pShadowMeshFaces, numShadowMeshFaces );
+}
+
 unsigned int CColDataSA::CalculateNumberOfCollisionMeshVertices( void ) const
 {
     // Does exactly the same as CalculateNumberOfShadowMeshVertices but does it
     // for the collision mesh.
-    unsigned int numVertices = 0;
-
-    if ( numColTriangles != 0 )
-    {
-        if ( numColTriangles > 0 )
-        {
-            for ( int n = 0; n < numColTriangles; n++ )
-            {
-                CColTriangleSA *face = pColTriangles + n;
-
-                if ( numVertices < face->v1 )
-                {
-                    numVertices = face->v1;
-                }
-
-                if ( numVertices < face->v2 )
-                {
-                    numVertices = face->v2;
-                }
-
-                if ( numVertices < face->v3 )
-                {
-                    numVertices = face->v3;
-                }
-            }
-        }
-
-        numVertices++;
-    }
-
-    return numVertices;
+    return _CalculateVertexCount( pColTriangles, numColTriangles );
 }
 
 template <typename segmentHeaderType>
@@ -637,6 +612,8 @@ void __cdecl LoadCollisionModelVer4( const char *pBuffer, int bufferSize, CColMo
     pCollision->m_isColDataSegmented = true;
 }
 
+// TODO: add generic serialization support to this collision logic.
+
 // MTA extension.
 CColModelSAInterface* CColModelSAInterface::Clone( void )
 {
@@ -825,7 +802,7 @@ cloneFail:
 // Binary offsets: (1.0 US and 1.0 EU): 0x0040F6E0
 CColDataSA::trianglePlanesListNode* CColDataSA::GetTrianglePlanesListNode( void )
 {
-    return *(trianglePlanesListNode**)( ALIGN( (unsigned int)pColTrianglePlanes + numColTriangles * 10, 4, 4 ) );
+    return *(trianglePlanesListNode**)( ALIGN_SIZE( (unsigned int)pColTrianglePlanes + numColTriangles * 10, 4 ) );
 }
 
 inline CColDataSA::trianglePlanesListNode& GetFreeTrianglePlanesNode( void )

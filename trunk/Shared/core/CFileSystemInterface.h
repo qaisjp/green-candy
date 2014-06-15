@@ -12,6 +12,48 @@
 #ifndef _CFileSystemInterface_
 #define _CFileSystemInterface_
 
+// Macro that defines how alignment works.
+//  num: base of the number to be aligned
+//  sector: aligned-offset that should be added to num
+//  align: number of bytes to align to
+// EXAMPLE: ALIGN( 0x1001, 4, 4 ) -> 0x1000 (equivalent of compiler structure padding alignment)
+//          ALIGN( 0x1003, 1, 4 ) -> 0x1000
+//          ALIGN( 0x1003, 2, 4 ) -> 0x1004
+template <typename numberType>
+inline numberType ALIGN( numberType num, numberType sector, numberType align )
+{
+    return (((num) + (sector) - 1) & (~((align) - 1)));
+}
+
+// Helper macro (equivalent of EXAMPLE 1)
+template <typename numberType>
+inline numberType ALIGN_SIZE( numberType num, numberType sector )
+{
+    return( ALIGN( (num), (sector), (sector) ) );
+}
+
+// Definition of the offset type that accomodates for all kinds of files.
+// Realistically speaking, the system is not supposed to have files that are bigger than
+// this number type can handle.
+// Use this number type whenever correct operations are required.
+// REMEMBER: be sure to check that your compiler supports the number representation you want!
+typedef long long int fsOffsetNumber_t;
+
+// Types used to keep binary compatibility between compiler implementations and architectures.
+// Binary compatibility is required in streams, so that reading streams is not influenced by
+// compilation mode.
+typedef bool fsBool_t;
+typedef char fsChar_t;
+typedef unsigned char fsUChar_t;
+typedef short fsShort_t;
+typedef unsigned short fsUShort_t;
+typedef int fsInt_t;
+typedef unsigned int fsUInt_t;
+typedef long long int fsWideInt_t;
+typedef unsigned long long int fsUWideInt_t;
+typedef float fsFloat_t;
+typedef double fsDouble_t;
+
 // Compiler compatibility
 #ifndef _MSC_VER
 #define abstract
@@ -79,9 +121,30 @@ public:
             iOffset - positive or negative value to offset the stream by
             iType - SET_* ANSI enum to specify the procedure
         Purpose:
-            Relocates the position of the file/stream.
+            Relocates the position of the file/stream. If successful,
+            zero is returned. Otherwise, any other value than zero
+            is returned.
     ===================================================*/
     virtual	int             Seek( long iOffset, int iType ) = 0;
+
+    /*===================================================
+        CFile::SeekNative
+
+        Arguments:
+            iOffset - positive or negative value to offset the stream by
+            iType - SET_* ANSI enum to specify the procedure
+        Purpose:
+            Relocates the position of the file/stream. This function
+            uses the native number type for maximum file addressing.
+            If successful, zero is returned. Otherwise, any other value
+            than zero is returned.
+    ===================================================*/
+    virtual int SeekNative( fsOffsetNumber_t iOffset, int iType )
+    {
+        // Overwrite this function to offer actual native functionality.
+        // Implementations do not have to support broader access.
+        return Seek( (long)iOffset, iType );
+    }
 
     /*===================================================
         CFile::Tell
@@ -90,6 +153,21 @@ public:
             Returns the absolute file/stream location.
     ===================================================*/
     virtual	long            Tell( void ) const = 0;
+
+    /*===================================================
+        CFile::TellNative
+
+        Purpose:
+            Returns the absolute file/stream location. The return
+            value is a native number, so it has maximum file addressing
+            range.
+    ===================================================*/
+    virtual fsOffsetNumber_t    TellNative( void ) const
+    {
+        // Overwrite this method to offset actual native functionality.
+        // Implementations do not have to do that.
+        return (fsOffsetNumber_t)Tell();
+    }
 
     /*===================================================
         CFile::IsEOF
@@ -142,6 +220,20 @@ public:
     virtual	size_t          GetSize( void ) const = 0;
 
     /*===================================================
+        CFile::GetSizeNative
+
+        Purpose:
+            Returns the total file/stream size if available.
+            Otherwise it should return 0. This function returns
+            the size in a native number.
+    ===================================================*/
+    virtual fsOffsetNumber_t    GetSizeNative( void ) const
+    {
+        // Overwrite this function to enable actual native support.
+        return (fsOffsetNumber_t)GetSizeNative();
+    }
+
+    /*===================================================
         CFile::Flush
 
         Purpose:
@@ -181,25 +273,29 @@ public:
     virtual bool            IsWriteable( void ) const = 0;
 
     // Utility definitions, mostly self-explanatory
-    virtual	bool            ReadInt( int& out_i )               { return ReadStruct( out_i ); }
-    virtual bool            ReadUInt( unsigned int& out_ui )    { return ReadStruct( out_ui ); }
-    virtual	bool            ReadShort( short& out_s )           { return ReadStruct( out_s ); }
-    virtual bool            ReadUShort( unsigned short& out_us ){ return ReadStruct( out_us ); }
-    virtual	bool            ReadByte( char& out_b )             { return ReadStruct( out_b ); }
-    virtual bool            ReadByte( unsigned char& out_b )    { return ReadStruct( out_b ); }
-    virtual	bool            ReadFloat( float& out_f )           { return ReadStruct( out_f ); }
-    virtual bool            ReadDouble( double& out_d )         { return ReadStruct( out_d ); }
-    virtual bool            ReadBool( bool& out_b )             { return ReadStruct( out_b ); }
+    virtual	bool            ReadInt     ( fsInt_t& out_i )          { return ReadStruct( out_i ); }
+    virtual bool            ReadUInt    ( fsUInt_t& out_ui )        { return ReadStruct( out_ui ); }
+    virtual	bool            ReadShort   ( fsShort_t& out_s )        { return ReadStruct( out_s ); }
+    virtual bool            ReadUShort  ( fsUShort_t& out_us )      { return ReadStruct( out_us ); }
+    virtual	bool            ReadByte    ( fsChar_t& out_b )         { return ReadStruct( out_b ); }
+    virtual bool            ReadByte    ( fsUChar_t& out_b )        { return ReadStruct( out_b ); }
+    virtual bool            ReadWideInt ( fsWideInt_t out_wi )      { return ReadStruct( out_wi ); }
+    virtual bool            ReadWideUInt( fsUWideInt_t out_uwi )    { return ReadStruct( out_uwi ); }
+    virtual	bool            ReadFloat   ( fsFloat_t& out_f )        { return ReadStruct( out_f ); }
+    virtual bool            ReadDouble  ( fsDouble_t& out_d )       { return ReadStruct( out_d ); }
+    virtual bool            ReadBool    ( fsBool_t& out_b )         { return ReadStruct( out_b ); }
 
-    virtual	size_t          WriteInt( int iInt )                { return WriteStruct( iInt ); }
-    virtual size_t          WriteUInt( unsigned int uiInt )     { return WriteStruct( uiInt ); }
-    virtual size_t          WriteShort( short iShort )          { return WriteStruct( iShort ); }
-    virtual size_t          WriteUShort( unsigned short uShort ){ return WriteStruct( uShort ); }
-    virtual size_t          WriteByte( char cByte )             { return WriteStruct( cByte ); }
-    virtual size_t          WriteByte( unsigned char ucByte )   { return WriteStruct( ucByte ); }
-    virtual size_t          WriteFloat( float fFloat )          { return WriteStruct( fFloat ); }
-    virtual size_t          WriteDouble( double dDouble )       { return WriteStruct( dDouble ); }
-    virtual size_t          WriteBool( bool bBool )             { return WriteStruct( bBool ); }
+    virtual	size_t          WriteInt        ( fsInt_t iInt )            { return WriteStruct( iInt ); }
+    virtual size_t          WriteUInt       ( fsUInt_t uiInt )          { return WriteStruct( uiInt ); }
+    virtual size_t          WriteShort      ( fsShort_t iShort )        { return WriteStruct( iShort ); }
+    virtual size_t          WriteUShort     ( fsUShort_t uShort )       { return WriteStruct( uShort ); }
+    virtual size_t          WriteByte       ( fsChar_t cByte )          { return WriteStruct( cByte ); }
+    virtual size_t          WriteByte       ( fsUChar_t ucByte )        { return WriteStruct( ucByte ); }
+    virtual size_t          WriteWideInt    ( fsWideInt_t wInt )        { return WriteStruct( wInt ); }
+    virtual size_t          WriteUWideInt   ( fsUWideInt_t uwInt )      { return WriteStruct( uwInt ); }
+    virtual size_t          WriteFloat      ( fsFloat_t fFloat )        { return WriteStruct( fFloat ); }
+    virtual size_t          WriteDouble     ( fsDouble_t dDouble )      { return WriteStruct( dDouble ); }
+    virtual size_t          WriteBool       ( fsBool_t bBool )          { return WriteStruct( bBool ); }
 
     /*===================================================
         CFile::Printf
