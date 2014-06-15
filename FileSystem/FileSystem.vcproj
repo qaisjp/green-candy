@@ -157,11 +157,35 @@
 				>
 			</File>
 			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.internal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.stream.buffered.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.stream.raw.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.translator.pathutil.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.translator.system.h"
+				>
+			</File>
+			<File
 				RelativePath="..\Shared\core\CFileSystem.Utils.hxx"
 				>
 			</File>
 			<File
 				RelativePath="..\Shared\core\CFileSystem.zip.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.zip.internal.h"
 				>
 			</File>
 			<File
@@ -175,6 +199,22 @@
 		</Filter>
 		<File
 			RelativePath="..\Shared\core\CFileSystem.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\Shared\core\fsinternal\CFileSystem.stream.buffered.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\Shared\core\fsinternal\CFileSystem.stream.raw.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\Shared\core\fsinternal\CFileSystem.translator.pathutil.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\Shared\core\fsinternal\CFileSystem.translator.system.cpp"
 			>
 		</File>
 		<File

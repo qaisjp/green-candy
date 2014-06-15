@@ -65,7 +65,7 @@ function setCursorAlpha(alpha)
     -- TODO
     return false;
 end
-registerDebugProxy("setCursorAlpha", "boolean");
+registerDebugProxy("setCursorAlpha", "number");
 
 -- Trigger special cursor events.
 local sysEventListenCreation = sysEventListenCreation;

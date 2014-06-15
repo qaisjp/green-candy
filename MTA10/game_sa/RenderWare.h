@@ -26,7 +26,6 @@
 #define RW_STRUCT_ALIGN             ((int)((~((unsigned int)0))>>1))
 #define RW_TEXTURE_NAME_LENGTH      32
 #define RW_MAX_TEXTURE_COORDS       8
-#define RW_RENDER_UNIT              215.25f
 
 #define VAR_ATOMIC_RENDER_OFFSET    0x00C88024
 
@@ -365,8 +364,6 @@ struct RwLinkedMateria
 };
 
 #include "RenderWare/RpGeometry.h"
-
-#define ALIGN( num, sector, align ) (((num) + (sector) - 1) & (~((align) - 1)))
 
 struct RwFreeListMemBlock
 {

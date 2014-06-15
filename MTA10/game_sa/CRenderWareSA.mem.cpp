@@ -19,7 +19,6 @@
 static bool _allowPreallocation = false;
 
 #define DIV_CEIL( num, sector ) (((num) + ((sector) - 1)) / (sector))
-#define ALIGN_SIZE( num, sector ) ( ALIGN( (num), (sector), (sector) ) )
 
 static RwFreeList *freeListMemory = NULL;       // Manager of all free list allocations.
 static bool isMemoryInitiated = false;          // True whether system successfully initiated.
@@ -713,15 +712,17 @@ unsigned int __cdecl RwMemoryOpen( const RwMemoryDescriptor *memDesc )
 
     if ( memDesc )
     {
+        // Use custom memory callback pointers for allocation.
         intf->m_memory = *memDesc;
-        return true;
     }
-
-    // No custom interface specified; default to CRT
-    intf->m_memory.m_malloc = RwMemoryAllocate;
-    intf->m_memory.m_free = RwMemoryFree;
-    intf->m_memory.m_realloc = RwMemoryRealloc;
-    intf->m_memory.m_calloc = RwMemoryCellAlloc;
+    else
+    {
+        // No custom interface specified; default to CRT
+        intf->m_memory.m_malloc = RwMemoryAllocate;
+        intf->m_memory.m_free = RwMemoryFree;
+        intf->m_memory.m_realloc = RwMemoryRealloc;
+        intf->m_memory.m_calloc = RwMemoryCellAlloc;
+    }
     return true;
 }
 
