@@ -354,10 +354,11 @@ int CBufferedStreamWrap::SeekNative( fsOffsetNumber_t iOffset, int iType )
         offsetBase = (seekType_t)underlyingStream->GetSizeNative();
     }
 
-    fileSeek.Seek( offsetBase + iOffset );
+    fileSeek.Seek( (fsOffsetNumber_t)( offsetBase + iOffset ) );
 
     // Make sure the buffer is updated depending on a position change.
     // We do not have to do that.
+    // TODO: maybe add a property so the user can enable this? (commit of buffer on stream seek)
     if ( false )
     {
         SharedSliceSelectorManager selector( *this );
@@ -374,7 +375,7 @@ long CBufferedStreamWrap::Tell( void ) const
 
 fsOffsetNumber_t CBufferedStreamWrap::TellNative( void ) const
 {
-    return fileSeek.Tell();
+    return (fsOffsetNumber_t)fileSeek.Tell();
 }
 
 bool CBufferedStreamWrap::IsEOF( void ) const

@@ -91,9 +91,9 @@ enum eFileException
 /*===================================================
     CFile (stream class)
 
-    This is a the access interface to files/streams. You can read,
+    This is the access interface to files/streams. You can read,
     write to and obtain information from this. Once destroyed, the
-    connection is unlinked. During class life-time, the file is locked
+    connection is unlinked. During class life-time, the file may bes locked
     for deletion. Locks depend on the nature of the stream and of
     the OS/environment.
 ===================================================*/
@@ -288,6 +288,7 @@ public:
     virtual bool            IsWriteable( void ) const = 0;
 
     // Utility definitions, mostly self-explanatory
+    // These functions should be used if you want to preserve binary compatibility between systems.
     virtual	bool            ReadInt     ( fsInt_t& out_i )          { return ReadStruct( out_i ); }
     virtual bool            ReadUInt    ( fsUInt_t& out_ui )        { return ReadStruct( out_ui ); }
     virtual	bool            ReadShort   ( fsShort_t& out_s )        { return ReadStruct( out_s ); }
@@ -425,7 +426,7 @@ finish:
 typedef void (*pathCallback_t)( const filePath& path, void *userdata );
 
 /*===================================================
-    CFileTranslator
+    CFileTranslator (directory class)
 
     A file translator is an access point to filesystems on the local
     filesystem, the network or archives. Before destroying this, all files
@@ -730,6 +731,13 @@ public:
     virtual void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const = 0;
 };
 
+/*===================================================
+    CArchiveTranslator (archive root class)
+
+    This is a special form of CFileTranslator that is
+    an archive root. It manages content to-and-from
+    the underlying archive.
+===================================================*/
 class CArchiveTranslator abstract : public virtual CFileTranslator
 {
 public:
@@ -762,7 +770,7 @@ namespace FileSystem
     // Reads the file and gives possible patterns to a callback interface.
     // The interface may break the scan through the file and specify the location
     // where the seek should reside at. This function is used by the .zip extension
-    // To find where the .zip stream starts at.
+    // to find where the .zip stream starts at.
     template <class t, typename F>
     inline bool MappedReaderReverse( CFile& file, F& f )
     {
