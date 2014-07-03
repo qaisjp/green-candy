@@ -12,6 +12,8 @@
 #ifndef _CFileSystemInterface_
 #define _CFileSystemInterface_
 
+#include <bitset>
+
 // Macro that defines how alignment works.
 //  num: base of the number to be aligned
 //  sector: aligned-offset that should be added to num
@@ -20,16 +22,29 @@
 //          ALIGN( 0x1003, 1, 4 ) -> 0x1000
 //          ALIGN( 0x1003, 2, 4 ) -> 0x1004
 template <typename numberType>
-inline numberType ALIGN( numberType num, numberType sector, numberType align )
+AINLINE numberType ALIGN( numberType num, numberType sector, numberType align )
 {
-    return (((num) + (sector) - 1) & (~((align) - 1)));
+    // assume math based on x86 bits.
+    if ( ( (std::bitset <sizeof( align ) * 8>)(unsigned long)align ).count() == 1 )
+    {
+        //bitfield version. not compatible with non-bitfield alignments.
+        return (((num) + (sector) - 1) & (~((align) - 1)));
+    }
+    else
+    {
+        // General purpose alignment routine.
+        // Not as fast as the bitfield version.
+        numberType sectorOffset = ((num) + (sector) - 1);
+
+        return sectorOffset - ( sectorOffset % align );
+    }
 }
 
 // Helper macro (equivalent of EXAMPLE 1)
 template <typename numberType>
 inline numberType ALIGN_SIZE( numberType num, numberType sector )
 {
-    return( ALIGN( (num), (sector), (sector) ) );
+    return ( ALIGN( (num), (sector), (sector) ) );
 }
 
 // Definition of the offset type that accomodates for all kinds of files.

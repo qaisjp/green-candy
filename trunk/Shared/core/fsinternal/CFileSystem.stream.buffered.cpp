@@ -27,6 +27,10 @@
     While a file stream is wrapped usage of the toBeWrapped
     pointer outside of the wrapper class leads to
     undefined behavior.
+
+    I have not properly documented this buffered system yet.
+    Until I have, change of this class is usually not permitted
+    other than by me (in fear of breaking anything).
     
     Arguments:
         toBeWrapped - stream pointer that should be buffered
@@ -45,20 +49,14 @@ CBufferedStreamWrap::CBufferedStreamWrap( CFile *toBeWrapped, bool deleteOnQuit 
         systemCapabilities.GetSystemLocationSectorSize( *toBeWrapped->GetPath().c_str() )
     );
 
-    offsetOfBufferOnFileSpace = 0;
-
     fileSeek.SetHost( this );
-
-    // Fill the buffer with the beginning content.
-    fsOffsetNumber_t actualFileSeek = toBeWrapped->TellNative();
-
-    internalIOBuffer.FillWithFileSector( toBeWrapped );
-
-    toBeWrapped->SeekNative( actualFileSeek, SEEK_SET );
 }
 
 CBufferedStreamWrap::~CBufferedStreamWrap( void )
 {
+    // Push any pending buffer operations onto disk space.
+    SharedSliceSelectorManager( *this ).FlushBuffer();
+
     if ( terminateUnderlyingData == true )
     {
         delete underlyingStream;
@@ -67,8 +65,47 @@ CBufferedStreamWrap::~CBufferedStreamWrap( void )
     underlyingStream = NULL;
 }
 
-size_t CBufferedStreamWrap::Read( void *buffer, size_t sElement, unsigned long iNumElements )
+template <typename callbackType, typename seekGenericType>
+AINLINE void UpdateStreamedBufferPosition(
+                CBufferedStreamWrap::bufferSeekPointer_t& bufOffset,
+                seekGenericType& fileSeek,
+                callbackType& cb )
 {
+    typedef CBufferedStreamWrap::seekType_t seekType_t;
+
+    // Align the buffer so that the file seek is inside the buffer (begin of the reader slice)
+    seekType_t newBufferOffset = ALIGN( fileSeek.Tell(), (seekType_t)1, cb.GetBufferAlignment() );
+
+    // If we have to move the slice to another position.
+    bool isNewOffset = ( newBufferOffset != bufOffset.offsetOfBufferOnFileSpace );
+
+    if ( isNewOffset )
+    {
+        // Make sure pending write operations are finished.
+        cb.FlushBuffer();
+
+        // Update the buffer offset.
+        // This should transfer down to the runtime.
+        bufOffset.SetOffset( newBufferOffset );
+
+        cb.UpdateBuffer();
+    }
+}
+
+template <typename bufferAbstractType, typename callbackType, typename seekGenericType>
+AINLINE void SelectBufferedSlice(
+                bufferAbstractType *buffer,
+                CBufferedStreamWrap::bufferSeekPointer_t& bufOffset,
+                seekGenericType& fileSeek, size_t requestedReadCount,
+                callbackType& cb )
+{
+    typedef CBufferedStreamWrap::seekSlice_t seekSlice_t;
+    typedef CBufferedStreamWrap::seekType_t seekType_t;
+
+    // If we do not want to read anything, quit right away.
+    if ( requestedReadCount == 0 )
+        return;
+
     // Add simple error checking.
     // It could be fatal to the application to introduce an infinite loop here.
     unsigned int methodRepeatCount = 0;
@@ -76,30 +113,40 @@ size_t CBufferedStreamWrap::Read( void *buffer, size_t sElement, unsigned long i
 repeatMethod:
     methodRepeatCount++;
 
-    if ( methodRepeatCount == 1024 )
+    if ( methodRepeatCount == 6000000 )
         throw std::exception( "infinite buffered read repetition count" );
 
     // Do the actual logic.
-    size_t requestedReadCount = sElement * iNumElements;
-
     seekType_t localFileSeek = fileSeek.Tell();
+
+    size_t bufferSize = cb.GetBufferSize();
 
     // Create the slices for the seeking operation.
     // We will collide them against each other.
-    seekSlice_t readSlice( localFileSeek, localFileSeek + requestedReadCount );
-    seekSlice_t bufferSlice( this->offsetOfBufferOnFileSpace, this->offsetOfBufferOnFileSpace + internalIOBuffer.GetStorageSize() );
+    seekSlice_t readSlice( localFileSeek, requestedReadCount );
+    seekSlice_t bufferSlice( bufOffset.offsetOfBufferOnFileSpace, bufferSize );
 
     seekSlice_t::eIntersectionResult intResult = readSlice.intersectWith( bufferSlice );
 
-    seekType_t totalReadCount = 0;
+    // Make sure the content is prepared for the action.
+    bool hasToRepeat = cb.ContentInvokation( buffer, localFileSeek, requestedReadCount, intResult );
 
-    if ( intResult == seekSlice_t::INTERSECT_INSIDE )
+    if ( hasToRepeat )
+        goto repeatMethod;
+
+    if ( intResult == seekSlice_t::INTERSECT_EQUAL )
     {
-        internalIOBuffer.GetDataSequence( localFileSeek, (char*)buffer, requestedReadCount, totalReadCount );
+        cb.BufferedInvokation( buffer, 0, requestedReadCount );
 
-        fileSeek.Seek( localFileSeek + totalReadCount );
+        fileSeek.Seek( localFileSeek + requestedReadCount );
     }
-    else if ( intResult == seekSlice_t::INTERSECT_BORDER_START )
+    else if ( intResult == seekSlice_t::INTERSECT_INSIDE )
+    {
+        cb.BufferedInvokation( buffer, (size_t)( localFileSeek - bufOffset.offsetOfBufferOnFileSpace ), requestedReadCount );
+
+        fileSeek.Seek( localFileSeek + requestedReadCount );
+    }
+    else if ( intResult == seekSlice_t::INTERSECT_BORDER_END )
     {
         // Everything read-able has to fit inside client memory.
         // A size_t is assumed to be as big as the client memory allows.
@@ -108,15 +155,15 @@ repeatMethod:
         // First read from the file natively, to reach the buffer border.
         if ( sliceStartOffset > 0 )
         {
+            // Make sure the seek pointer is up to date.
+            fileSeek.Update();
+
             size_t actualReadCount = 0;
 
-            actualReadCount = underlyingStream->Read( buffer, 1, sliceStartOffset );
-
-            assert( actualReadCount == sliceStartOffset );
+            cb.NativeInvokation( buffer, sliceStartOffset, actualReadCount );
 
             // Update the file seek.
-            localFileSeek += sliceStartOffset;
-            fileSeek.Seek( localFileSeek );
+            fileSeek.Seek( localFileSeek += actualReadCount );
         }
 
         // Now lets read the remainder from the buffer.
@@ -124,36 +171,25 @@ repeatMethod:
 
         if ( sliceReadRemainderCount > 0 )
         {
-            // Set the file seek to current.
-            fileSeek.Update();
+            cb.BufferedInvokation( buffer + sliceStartOffset, 0, sliceReadRemainderCount );
 
-            char *outBuf = (char*)buffer + sliceStartOffset;
-
-            seekType_t actualMemRead = 0;
-
-            internalIOBuffer.GetDataSequence( 0, outBuf, sliceReadRemainderCount, actualMemRead );
-
-            assert( actualMemRead == sliceReadRemainderCount );
+            fileSeek.Seek( localFileSeek += sliceReadRemainderCount );
         }
     }
-    else if ( intResult == seekSlice_t::INTERSECT_BORDER_END )
+    else if ( intResult == seekSlice_t::INTERSECT_BORDER_START )
     {
-        size_t sliceEndOffset = (size_t)( bufferSlice.GetSliceEndPoint() - localFileSeek );
+        // The_GTA: That +1 is very complicated. Just roll with it!
+        size_t sliceEndOffset = (size_t)( bufferSlice.GetSliceEndPoint() + 1 - localFileSeek );
 
         // Read what can be read from the native buffer.
         if ( sliceEndOffset > 0 )
         {
-            seekType_t sliceReadInCount = bufferSlice.GetSliceEndPoint() - sliceEndOffset;
+            size_t sliceReadInCount = (size_t)( bufferSize - sliceEndOffset );
 
-            seekType_t actualMemRead = 0;
-
-            internalIOBuffer.GetDataSequence( sliceReadInCount, (char*)buffer, sliceEndOffset, actualMemRead );
-
-            assert( actualMemRead == sliceEndOffset );
+            cb.BufferedInvokation( buffer, sliceReadInCount, sliceEndOffset );
 
             // Update the local file seek.
-            localFileSeek += sliceEndOffset;
-            fileSeek.Seek( localFileSeek );
+            fileSeek.Seek( localFileSeek += sliceEndOffset );
         }
 
         // Read from the native file now.
@@ -164,13 +200,14 @@ repeatMethod:
             // Orient the underlying stream.
             fileSeek.Update();
 
-            size_t actualMemRead = 0;
+            fsOffsetNumber_t fileSize = cb.host.underlyingStream->GetSizeNative();
 
-            char *outBuffer = (char*)buffer + sliceEndOffset;
+            size_t actualReadCount = 0;
 
-            actualMemRead = underlyingStream->Read( outBuffer, 1, sliceReadRemainderCount );
+            cb.NativeInvokation( buffer + sliceEndOffset, sliceReadRemainderCount, actualReadCount );
 
-            assert( actualMemRead == sliceReadRemainderCount );
+            // Update the file seek pointer.
+            fileSeek.Seek( localFileSeek += actualReadCount );
         }
     }
     else if ( intResult == seekSlice_t::INTERSECT_ENCLOSING )
@@ -180,11 +217,12 @@ repeatMethod:
 
         if ( sliceStartOffset > 0 )
         {
+            // Make sure the seek pointer is up-to-date.
+            fileSeek.Update();
+
             size_t actualReadCount = 0;
 
-            actualReadCount = underlyingStream->Read( buffer, 1, sliceStartOffset );
-
-            assert( actualReadCount == sliceStartOffset );
+            cb.NativeInvokation( buffer, sliceStartOffset, actualReadCount );
 
             // Update the seek ptr.
             fileSeek.Seek( localFileSeek += sliceStartOffset );
@@ -192,15 +230,9 @@ repeatMethod:
 
         // Put the content of the entire internal buffer into the output buffer.
         {
-            char *outputBuf = (char*)buffer + sliceStartOffset;
+            cb.BufferedInvokation( buffer + sliceStartOffset, 0, bufferSize );
 
-            seekType_t actualInternalRead = 0;
-
-            internalIOBuffer.GetDataSequence( 0, outputBuf, internalIOBuffer.GetStorageSize(), actualInternalRead );
-
-            assert( actualInternalRead == internalIOBuffer.GetStorageSize() );
-
-            fileSeek.Seek( localFileSeek += internalIOBuffer.GetStorageSize() );
+            fileSeek.Seek( localFileSeek += bufferSize );
         }
 
         // Read the part after the internal buffer slice.
@@ -208,31 +240,23 @@ repeatMethod:
 
         if ( sliceEndOffset > 0 )
         {
-            char *outputBuf = (char*)buffer + sliceStartOffset + internalIOBuffer.GetStorageSize();
+            fileSeek.Update();
 
             size_t actualReadCount = 0;
 
-            fileSeek.Update();
+            cb.NativeInvokation( buffer + sliceStartOffset + bufferSize, sliceEndOffset, actualReadCount );
 
-            actualReadCount = underlyingStream->Read( outputBuf, 1, sliceEndOffset );
-
-            assert( actualReadCount == sliceEndOffset );
-
-            fileSeek.Seek( localFileSeek += sliceEndOffset );
+            fileSeek.Seek( localFileSeek += actualReadCount );
         }
     }
-    else if ( seekSlice_t::isFloatingIntersect( intResult ) )
+    else if ( seekSlice_t::isFloatingIntersect( intResult ) || intResult == seekSlice_t::INTERSECT_UNKNOWN )
     {
-        // Align the buffer so that the file seek is inside the buffer (begin of the reader slice)
-        seekType_t newBufferOffset = ALIGN_SIZE( localFileSeek, internalIOBuffer.GetStorageSize() );
-
-        this->offsetOfBufferOnFileSpace = newBufferOffset;
-
-        // Read data into the buffer.
-        fileSeek.Seek( newBufferOffset );
-        fileSeek.Update();
-
-        internalIOBuffer.FillWithFileSector( underlyingStream );
+        // Update buffer contents depending on the stream position.
+        UpdateStreamedBufferPosition(
+            bufOffset,
+            fileSeek,
+            cb
+        );
 
         // Attempt to repeat reading.
         goto repeatMethod;
@@ -243,14 +267,42 @@ repeatMethod:
         // Throw an exception.
         assert( 0 );
     }
+}
 
-    return (size_t)totalReadCount;
+size_t CBufferedStreamWrap::Read( void *buffer, size_t sElement, unsigned long iNumElements )
+{
+    // If we are not opened for reading rights, this operation should not do anything.
+    if ( !IsReadable() )
+        return 0;
+
+    ReadingSliceSelectorManager sliceMan( *this );
+
+    // Perform a complex buffered logic.
+    SelectBufferedSlice(
+        (char*)buffer, this->bufOffset,
+        this->fileSeek, sElement * iNumElements,
+        sliceMan
+    );
+
+    return sliceMan.GetBytesRead();
 }
 
 size_t CBufferedStreamWrap::Write( const void *buffer, size_t sElement, unsigned long iNumElements )
 {
-    // TODO: write this method.
-    return 0;
+    // If we are not opened for writing rights, this operation should not do anything.
+    if ( !IsWriteable() )
+        return 0;
+
+    WritingSliceSelectorManager sliceMan( *this );
+
+    // Perform the complex buffered logic.
+    SelectBufferedSlice(
+        (const char*)buffer, this->bufOffset,
+        this->fileSeek, sElement * iNumElements,
+        sliceMan
+    );
+
+    return sliceMan.GetBytesWritten();
 }
 
 int CBufferedStreamWrap::Seek( long iOffset, int iType )
@@ -273,6 +325,13 @@ int CBufferedStreamWrap::Seek( long iOffset, int iType )
     }
 
     fileSeek.Seek( (long)( offsetBase + iOffset ) );
+
+    // Make sure the buffer is updated depending on a position change.
+    {
+        SharedSliceSelectorManager selector( *this );
+
+        UpdateStreamedBufferPosition( this->bufOffset, this->fileSeek, selector );
+    }
     return 0;
 }
 
@@ -295,6 +354,13 @@ int CBufferedStreamWrap::SeekNative( fsOffsetNumber_t iOffset, int iType )
     }
 
     fileSeek.Seek( offsetBase + iOffset );
+
+    // Make sure the buffer is updated depending on a position change.
+    {
+        SharedSliceSelectorManager selector( *this );
+
+        UpdateStreamedBufferPosition( this->bufOffset, this->fileSeek, selector );
+    }
     return 0;
 }
 
@@ -319,7 +385,7 @@ bool CBufferedStreamWrap::IsEOF( void ) const
 bool CBufferedStreamWrap::Stat( struct stat *stats ) const
 {
     // Redirect this functionality to the underlying stream.
-    // We are not supposed to modify and of these logical attributes.
+    // We are not supposed to modify any of these logical attributes.
     return underlyingStream->Stat( stats );
 }
 
@@ -349,26 +415,8 @@ fsOffsetNumber_t CBufferedStreamWrap::GetSizeNative( void ) const
 
 void CBufferedStreamWrap::Flush( void )
 {
-    // Write our buffer into the file (if it changed).
-    if ( internalIOBuffer.HasChanged() )
-    {
-        // Write the buffer contents to the stream.
-        seekType_t currentFileSeek = fileSeek.Tell();
-
-        // Set the file seek to the logical position of the IO buffer.
-        // Then write the contents to it.
-        fileSeek.Seek( this->offsetOfBufferOnFileSpace );
-        fileSeek.Update();
-
-        internalIOBuffer.PushToFile( underlyingStream );
-
-        // Restore the original file seek.
-        // This is only being nice; it does not have to be restored.
-        fileSeek.Seek( currentFileSeek );
-
-        // We cleared the change.
-        internalIOBuffer.SetChanged( false );
-    }
+    // Get the contents of our buffer onto disk space (if required).
+    SharedSliceSelectorManager( *this ).FlushBuffer();
 
     // Write the remaining OS buffers.
     underlyingStream->Flush();

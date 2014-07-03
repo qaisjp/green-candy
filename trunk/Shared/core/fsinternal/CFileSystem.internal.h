@@ -35,6 +35,7 @@
 #include <dirent.h>
 #endif //__linux__
 
+#include "CFileSystem.common.h"
 #include "CFileSystem.stream.raw.h"
 #include "CFileSystem.stream.buffered.h"
 #include "CFileSystem.translator.pathutil.h"
@@ -43,7 +44,7 @@
 /*===================================================
     CSystemCapabilities
 
-    This class determines the system-dependant capabilties
+    This class determines the system-dependant capabilities
     and exports methods that return them to the runtime.
 
     It does not depend on a properly initialized CFileSystem

@@ -148,7 +148,7 @@ namespace LuaFunctionDefs
     {
         luaL_checktype( L, 1, LUA_TSTRING );
 
-        CFile *file = resManager->OpenStream( lua_readresource( L ), lua_tostring( L, 1 ), "wb" );
+        CFile *file = resManager->OpenStream( lua_readresource( L ), lua_tostring( L, 1 ), "wb+" );
 
         if ( !file )
         {

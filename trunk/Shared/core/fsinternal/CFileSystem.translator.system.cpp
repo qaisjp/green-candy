@@ -29,7 +29,7 @@
     Arguments:
         pPath - Absolute path pointing to an OS filesystem entry.
     Purpose:
-        Checks the given path and returns true if it points
+        Checks the given path and returns true if it pointss
         to a directory, false if a file or no entry was found
         at the path.
 ===================================================*/
@@ -239,7 +239,7 @@ CFile* CSystemFileTranslator::OpenEx( const char *path, const char *mode, unsign
     outFile = pFile;
 
     // If required, wrap the file into a buffered stream.
-    if ( true )
+    if ( true ) // todo: add a property that decides this?
     {
         outFile = new CBufferedStreamWrap( pFile, true );
     }

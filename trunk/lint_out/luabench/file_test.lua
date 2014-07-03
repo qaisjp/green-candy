@@ -123,3 +123,86 @@ function fileGetContent(path)
     
     return content;
 end
+
+function fileSeekWriteTest()
+    local file = dynroot.open("testfile.txt", "wb");
+    
+    -- Do basic and simple seek-based write and read tests.
+    file.seek( 10, "set" );
+    file.write( "Hello world!" );
+    
+    file.seek( -6, "cur" );
+    file.write( "fiend" );
+    
+    file.flush();
+    
+    file.seek( -5, "cur" );
+    
+    local testString1 = file.read(5);
+    
+    print( "test 1: " .. testString1 .. " -> fiend" );
+    
+    file.seek( 0, "set" );
+    
+    local nullBytes = file.read( 10 );
+    local reqNullBytes = string.rep( string.char( 0 ), 10 );
+    
+    print( "test2: " .. ( ( nullBytes == reqNullBytes ) and "success" or "failure" ) );
+    
+    -- Advanced test: write a series of blocks into a file and verify that they
+    -- have been properly stored.
+    file.seek( 0, "set" );
+    
+    -- Create a series of blocks that should be written to the file.
+    local blockSize = 100;
+    local blocksToAllocate = 10;
+    
+    local function allocateBlock()
+        local memStrings = {};
+        
+        for m=1,blockSize do
+            table.insert( memStrings,
+                string.char(
+                    math.floor( math.random() * 256 )
+                )
+            );
+        end
+        
+        return table.concat( memStrings, "" );
+    end
+    
+    local memBlocks = {};
+    
+    for m=1,blocksToAllocate do
+        table.insert( memBlocks, allocateBlock() );
+    end
+    
+    -- Write the blocks to the file.
+    for m,n in ipairs(memBlocks) do
+        file.write( n );
+    end
+    
+    -- Verify that the blocks have been written correctly.
+    file.seek( 0, "set" );
+    
+    local correctWriteThrough = true;
+    
+    for m,n in ipairs(memBlocks) do
+        local fileContent = file.read( blockSize );
+        local requiredBlock = n;
+        
+        if not ( fileContent == requiredBlock ) then
+            correctWriteThrough = false;
+            
+            print( "block " .. m .. " is invalid" );
+        end
+    end
+    
+    if ( correctWriteThrough ) then
+        print( "succeeded the write through test" );
+    else
+        print( "failed the write through test" );
+    end
+    
+    file.destroy();
+end

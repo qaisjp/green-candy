@@ -279,7 +279,12 @@ static int luafile_stat( lua_State *L )
 
 static int luafile_tell( lua_State *L )
 {
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->Tell() );
+    // (Attempt to) Get a large FileSystem number that stands for the current seek.
+    fsOffsetNumber_t filePosition = ((CFile*)lua_getmethodtrans( L ))->TellNative();
+
+    lua_Number num = (lua_Number)filePosition;
+
+    lua_pushnumber( L, num );
     return 1;
 }
 
@@ -323,7 +328,12 @@ defMethod:
         return -1;
     }
 
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->Seek( (long)lua_tonumber( L, 1 ), seekType ) );
+    // Convert lua_Number into a large FileSystem number.
+    lua_Number num = lua_tonumber( L, 1 );
+
+    fsOffsetNumber_t seekOffset = (fsOffsetNumber_t)num;
+
+    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->SeekNative( seekOffset, seekType ) );
     return 1;
 }
 
