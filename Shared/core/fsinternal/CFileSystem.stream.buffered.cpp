@@ -170,6 +170,9 @@ repeatMethod:
 
             // Update the file seek.
             fileSeek.Seek( localFileSeek += actualReadCount );
+
+            // Predict that we advanced by some bytes.
+            fileSeek.PredictNativeAdvance( (seekType_t)actualReadCount );
         }
 
         // Now lets read the remainder from the buffer.
@@ -226,6 +229,9 @@ repeatMethod:
 
             // Update the seek ptr.
             fileSeek.Seek( localFileSeek += sliceStartOffset );
+
+            // Predict that the real file offset advanced by some bytes.
+            fileSeek.PredictNativeAdvance( (seekType_t)actualReadCount );
         }
 
         // Put the content of the entire internal buffer into the output buffer.
