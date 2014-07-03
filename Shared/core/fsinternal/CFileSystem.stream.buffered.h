@@ -192,9 +192,9 @@ public:
             bool hasChanged = false;
 
             // Makes sure the buffer is filled below the offset "completeTo".
-            if ( completeTo > this->actualFillCount )
+            if ( (numberType)completeTo > this->actualFillCount )
             {
-                assert( completeTo <= this->storageSize );
+                assert( (numberType)completeTo <= this->storageSize );
 
                 unsigned long needToRead = (unsigned long)( completeTo - this->actualFillCount );
 
