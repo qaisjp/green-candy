@@ -125,7 +125,7 @@ function fileGetContent(path)
 end
 
 function fileSeekWriteTest()
-    local file = dynroot.open("testfile.txt", "wb");
+    local file = dynroot.open("testfile.txt", "wb+");
     
     -- Do basic and simple seek-based write and read tests.
     file.seek( 10, "set" );
@@ -151,7 +151,9 @@ function fileSeekWriteTest()
     
     -- Advanced test: write a series of blocks into a file and verify that they
     -- have been properly stored.
-    file.seek( 0, "set" );
+    file.destroy();
+    
+    file = dynroot.open("testfile.txt", "wb");
     
     -- Create a series of blocks that should be written to the file.
     local blockSize = 100;
@@ -183,7 +185,9 @@ function fileSeekWriteTest()
     end
     
     -- Verify that the blocks have been written correctly.
-    file.seek( 0, "set" );
+    file.destroy();
+    
+    file = dynroot.open("testfile.txt", "rb");
     
     local correctWriteThrough = true;
     

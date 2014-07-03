@@ -12,6 +12,10 @@
 #ifndef _FILESYSTEM_BLOCK_BASED_STREAMING_
 #define _FILESYSTEM_BLOCK_BASED_STREAMING_
 
+// Define this macro if you want to debug FileSystem scenarios that should never be reached
+// but if they are reached its the implementation's fault.
+//#define FILESYSTEM_PERFORM_SANITY_CHECKS
+
 class CBufferedStreamWrap : public CFile
 {
 public:
