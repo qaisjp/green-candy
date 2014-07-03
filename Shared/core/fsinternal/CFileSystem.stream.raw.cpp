@@ -17,6 +17,98 @@
 // Exported from the main FileSystem class.
 extern std::list <CFile*> *openFiles;
 
+enum eNumberConversion
+{
+    NUMBER_LITTLE_ENDIAN,
+    NUMBER_BIG_ENDIAN
+};
+
+// Utilities for number splitting.
+static inline unsigned int CalculateNumberSplitCount( size_t toBeSplitNumberSize, size_t nativeNumberSize )
+{
+    return (unsigned int)( toBeSplitNumberSize / nativeNumberSize );
+}
+
+template <typename nativeNumberType, typename splitNumberType>
+static inline nativeNumberType* GetNumberSector(
+            splitNumberType& numberToBeSplit,
+            unsigned int index,
+            eNumberConversion splitConversion, eNumberConversion nativeConversion )
+{
+    // Extract the sector out of numberToBeSplit.
+    nativeNumberType& nativeNumberPartial = *( (nativeNumberType*)&numberToBeSplit + index );
+
+    return &nativeNumberPartial;
+}
+
+template <typename splitNumberType, typename nativeNumberType>
+AINLINE void SplitIntoNativeNumbers(
+            splitNumberType numberToBeSplit,
+            nativeNumberType *nativeNumbers,
+            unsigned int maxNativeNumbers, unsigned int& nativeCount,
+            eNumberConversion toBeSplitConversion, eNumberConversion nativeConversion )
+{
+    // todo: add endian-ness support.
+    assert( toBeSplitConversion == nativeConversion );
+
+    // We assume a lot of things here.
+    // - a binary number system
+    // - endian integer system
+    // else this routine will produce garbage.
+
+    // On Visual Studio 2008, this routine optimizes down completely into compiler intrinsics.
+
+    const size_t nativeNumberSize = sizeof( nativeNumberType );
+    const size_t toBeSplitNumberSize = sizeof( splitNumberType );
+
+    // Calculate the amount of numbers we can fit into the array.
+    unsigned int splitNumberCount = std::min( CalculateNumberSplitCount( toBeSplitNumberSize, nativeNumberSize ), maxNativeNumbers );
+    unsigned int actualWriteCount = 0;
+
+    for ( unsigned int n = 0; n < splitNumberCount; n++ )
+    {
+        // Write it into the array.
+        nativeNumbers[ actualWriteCount++ ] = *GetNumberSector <nativeNumberType> ( numberToBeSplit, n, toBeSplitConversion, nativeConversion );
+    }
+
+    // Notify the runtime about how many numbers we have successfully written.
+    nativeCount = actualWriteCount;
+}
+
+template <typename splitNumberType, typename nativeNumberType>
+AINLINE void ConvertToWideNumber(
+            splitNumberType& wideNumberOut,
+            nativeNumberType *nativeNumbers, unsigned int numNativeNumbers,
+            eNumberConversion wideConversion, eNumberConversion nativeConversion )
+{
+    // todo: add endian-ness support.
+    assert( wideConversion == nativeConversion );
+
+    // we assume the same deals as SplitIntoNativeNumbers.
+    // else this routine is garbage.
+
+    // On Visual Studio 2008, this routine optimizes down completely into compiler intrinsics.
+
+    const size_t nativeNumberSize = sizeof( nativeNumberType );
+    const size_t toBeSplitNumberSize = sizeof( splitNumberType );
+
+    // Calculate the amount of numbers we need to put together.
+    unsigned int splitNumberCount = CalculateNumberSplitCount( toBeSplitNumberSize, nativeNumberSize );
+
+    for ( unsigned int n = 0; n < splitNumberCount; n++ )
+    {
+        // Write it into the number.
+        nativeNumberType numberToWrite = (nativeNumberType)0;
+
+        if ( n < numNativeNumbers )
+        {
+            numberToWrite = nativeNumbers[ n ];
+        }
+
+        *GetNumberSector <nativeNumberType> ( wideNumberOut, n, wideConversion, nativeConversion ) = numberToWrite;
+    }
+}
+
 /*===================================================
     CRawFile
 
@@ -56,7 +148,11 @@ size_t CRawFile::Read( void *pBuffer, size_t sElement, unsigned long iNumElement
     if (sElement == 0 || iNumElements == 0)
         return 0;
 
-    ReadFile(m_file, pBuffer, sElement * iNumElements, &dwBytesRead, NULL);
+    BOOL readComplete = ReadFile(m_file, pBuffer, sElement * iNumElements, &dwBytesRead, NULL);
+
+    if ( readComplete == FALSE )
+        return 0;
+
     return dwBytesRead / sElement;
 #elif defined(__linux__)
     return fread( pBuffer, sElement, iNumElements, m_file );
@@ -73,7 +169,11 @@ size_t CRawFile::Write( const void *pBuffer, size_t sElement, unsigned long iNum
     if (sElement == 0 || iNumElements == 0)
         return 0;
 
-    WriteFile(m_file, pBuffer, sElement * iNumElements, &dwBytesWritten, NULL);
+    BOOL writeComplete = WriteFile(m_file, pBuffer, sElement * iNumElements, &dwBytesWritten, NULL);
+
+    if ( writeComplete == FALSE )
+        return 0;
+
     return dwBytesWritten / sElement;
 #elif defined(__linux__)
     return fwrite( pBuffer, sElement, iNumElements, m_file );
@@ -97,14 +197,52 @@ int CRawFile::Seek( long iOffset, int iType )
 
 int CRawFile::SeekNative( fsOffsetNumber_t iOffset, int iType )
 {
-    // TODO.
+#ifdef _WIN32
+    // Split our offset into two DWORDs.
+    LONG numberParts[ 2 ];
+    unsigned int splitCount = 0;
+
+    SplitIntoNativeNumbers( iOffset, numberParts, NUMELMS(numberParts), splitCount, NUMBER_LITTLE_ENDIAN, NUMBER_LITTLE_ENDIAN );
+
+    // Tell the OS.
+    // Using the preferred method.
+    DWORD resultVal = INVALID_SET_FILE_POINTER;
+
+    if ( splitCount == 1 )
+    {
+        resultVal = SetFilePointer( this->m_file, numberParts[0], NULL, iType );
+    }
+    else if ( splitCount >= 2 )
+    {
+        resultVal = SetFilePointer( this->m_file, numberParts[0], &numberParts[1], iType );
+    }
+
+    if ( resultVal == INVALID_SET_FILE_POINTER )
+        return -1;
+
+    return 0;
+#elif defined(__linux__)
+    // todo.
+#else
     return -1;
+#endif //OS DEPENDANT CODE
 }
 
 long CRawFile::Tell( void ) const
 {
 #ifdef _WIN32
-    return SetFilePointer( m_file, 0, NULL, FILE_CURRENT );
+    LARGE_INTEGER posToMoveTo;
+    posToMoveTo.LowPart = 0;
+    posToMoveTo.HighPart = 0;
+
+    LARGE_INTEGER currentPos;
+
+    BOOL success = SetFilePointerEx( this->m_file, posToMoveTo, &currentPos, FILE_CURRENT );
+
+    if ( success == FALSE )
+        return -1;
+
+    return (long)( currentPos.LowPart );
 #elif defined(__linux__)
     return ftell( m_file );
 #else
@@ -114,14 +252,40 @@ long CRawFile::Tell( void ) const
 
 fsOffsetNumber_t CRawFile::TellNative( void ) const
 {
-    // TODO
-    return 0;
+#ifdef _WIN32
+    LARGE_INTEGER posToMoveTo;
+    posToMoveTo.LowPart = 0;
+    posToMoveTo.HighPart = 0;
+
+    union
+    {
+        LARGE_INTEGER currentPos;
+        DWORD currentPos_split[ sizeof( LARGE_INTEGER ) / sizeof( DWORD ) ];
+    };
+
+    BOOL success = SetFilePointerEx( this->m_file, posToMoveTo, &currentPos, FILE_CURRENT );
+
+    if ( success == FALSE )
+        return (fsOffsetNumber_t)0;
+
+    // Create a FileSystem number.
+    fsOffsetNumber_t resultNumber = (fsOffsetNumber_t)0;
+
+    ConvertToWideNumber( resultNumber, &currentPos_split[0], NUMELMS(currentPos_split), NUMBER_LITTLE_ENDIAN, NUMBER_LITTLE_ENDIAN );
+
+    return resultNumber;
+#elif defined(__linux__)
+    // todo.
+#else
+    return (fsOffsetNumber_t)0;
+#endif //OS DEPENDANT CODE
 }
 
 bool CRawFile::IsEOF( void ) const
 {
 #ifdef _WIN32
-    return ( SetFilePointer( m_file, 0, NULL, FILE_CURRENT ) >= GetFileSize( m_file, NULL ) );
+    // Check that the current file seek is beyond the maximum size.
+    return this->TellNative() >= this->GetSizeNative();
 #elif defined(__linux__)
     return feof( m_file );
 #else
@@ -197,7 +361,7 @@ void CRawFile::SetSeekEnd( void )
 size_t CRawFile::GetSize( void ) const
 {
 #ifdef _WIN32
-    return GetFileSize( m_file, NULL );
+    return (size_t)GetFileSize( m_file, NULL );
 #elif defined(__linux__)
     struct stat fileInfo;
     fstat( fileno( m_file ), &fileInfo );
@@ -210,8 +374,29 @@ size_t CRawFile::GetSize( void ) const
 
 fsOffsetNumber_t CRawFile::GetSizeNative( void ) const
 {
-    // TODO.
-    return 0;
+#ifdef _WIN32
+    union
+    {
+        LARGE_INTEGER fileSizeOut;
+        DWORD fileSizeOut_split[ sizeof( LARGE_INTEGER ) / sizeof( DWORD ) ];
+    };
+
+    BOOL success = GetFileSizeEx( this->m_file, &fileSizeOut );
+
+    if ( success == FALSE )
+        return (fsOffsetNumber_t)0;
+
+    // Convert to a FileSystem native number.
+    fsOffsetNumber_t bigFileSizeNumber = (fsOffsetNumber_t)0;
+
+    ConvertToWideNumber( bigFileSizeNumber, &fileSizeOut_split[0], NUMELMS(fileSizeOut_split), NUMBER_LITTLE_ENDIAN, NUMBER_LITTLE_ENDIAN );
+
+    return bigFileSizeNumber;
+#elif defined(__linux__)
+    // todo.
+#else
+    return (fsOffsetNumber_t)0;
+#endif //OS DEPENDANT CODE
 }
 
 void CRawFile::Flush( void )
