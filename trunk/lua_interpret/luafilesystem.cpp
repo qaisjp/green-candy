@@ -4,7 +4,7 @@
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        luafilesystem.cpp
 *  PURPOSE:     Lua filesystem access
-*  DEVELOPERS:  The_GTA <quiret@gmx.de>
+*  DEVELOPERS:  Martin Turski <quiret@gmx.de>
 *
 *  For documentation visit http://wiki.mtasa.com/wiki/MTA:Eir/FileSystem/
 *

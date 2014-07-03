@@ -110,6 +110,7 @@ public:
 
             // Restore content properties.
             SetFillCount( 0 );
+            SetChanged( false );
         }
 
         // Used when the data is filled manually.
@@ -119,7 +120,11 @@ public:
 
             this->actualFillCount = val;
 
-            if ( hasChanged )
+            if ( val == 0 )
+            {
+                SetChanged( false );
+            }
+            else if ( hasChanged )
             {
                 SetChanged( true );
             }
@@ -185,6 +190,9 @@ public:
                 1,
                 (size_t)this->storageSize
             );
+
+            // As we are directly the file content, it cannot have been changed.
+            SetChanged( false );
         }
 
         inline bool FileSectorCompletion( CFile *srcFile, size_t completeTo )
@@ -314,6 +322,10 @@ private:
 
                 host.internalIOBuffer.PushToFile( host.underlyingStream );
 
+                // We do not know how much we actually wrote to the file.
+                // This is why we invalidate the native ptr.
+                host.fileSeek.InvalidateNativePtr();
+
                 // Restore the original file seek.
                 host.fileSeek.Seek( currentFileSeek );
 
@@ -385,6 +397,12 @@ private:
                     hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
                         host.underlyingStream, localReadOffset
                     );
+
+                    if ( hasToRepeat )
+                    {
+                        // We cannot predict how much we actually read into the buffer, so invalidate the native seek ptr.
+                        host.fileSeek.InvalidateNativePtr();
+                    }
                 }
             }
             else if ( intResult == seekSlice_t::INTERSECT_UNKNOWN )
@@ -409,6 +427,10 @@ private:
                             host.underlyingStream
                         );
 
+                        // We have read as many bytes as are in the buffer now.
+                        // This is why the underlying stream should have advanced by the content count (fill count).
+                        host.fileSeek.PredictNativeAdvance( host.internalIOBuffer.GetFillCount() );
+
                         host.fileSeek.Seek( actualFileSeek );
 
                         host.bufOffset.SetInitialized();
@@ -427,6 +449,12 @@ private:
                             hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
                                 host.underlyingStream, localReadOffset
                             );
+
+                            if ( hasToRepeat )
+                            {
+                                // We cannot predict, so invalidate.
+                                host.fileSeek.InvalidateNativePtr();
+                            }
                         }
                     }
                 }
@@ -505,6 +533,12 @@ private:
                         host.underlyingStream, localWriteOffset
                     );
 
+                    if ( hasToRepeat )
+                    {
+                        // We cannot predict seek movement, so invalidate it.
+                        host.fileSeek.InvalidateNativePtr();
+                    }
+
                     // Allocate space to write things into for next pass.
                     bool maybeRepeat = AllocateBufferSize( localWriteOffset + (size_t)writeCount );
 
@@ -530,6 +564,12 @@ private:
                         hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
                             host.underlyingStream, localWriteOffset
                         );
+
+                        if ( hasToRepeat )
+                        {
+                            // We cannot predict the native underlying seek movement, so invalidate it.
+                            host.fileSeek.InvalidateNativePtr();
+                        }
 
                         // Allocate space to write things into for next pass.
                         bool maybeRepeat = AllocateBufferSize( localWriteOffset + (size_t)writeCount );
@@ -558,11 +598,13 @@ private:
 
     // The idea behind this class is:
     // Cache the logical stream position, so we avoid system calls when unnecessary.
+    // TODO: update this class in the future when FileSystem exceptions are designed.
     struct virtualStreamSeekPtr
     {
         seekType_t seekPtr;         // number containing the current seek into the stream.
+        seekType_t nativePtr;       // number that has the actual stream seek pointer (as predicted)
         CBufferedStreamWrap *host;  // host class
-        bool needsUpdating;         // boolean whether the current seek ptr needs updating.
+        bool isNativePtrValid;      // boolean whether the native pointer can be traced
 
         inline virtualStreamSeekPtr( void )
         {
@@ -570,7 +612,9 @@ private:
             host = NULL;
 
             seekPtr = 0;    // while host == NULL, this is invalid.
-            needsUpdating = false;
+            nativePtr = 0;  // same as seekPtr.
+
+            isNativePtrValid = false;
         }
 
         inline ~virtualStreamSeekPtr( void )
@@ -582,6 +626,8 @@ private:
         {
             this->host = hostStream;
             this->seekPtr = hostStream->underlyingStream->TellNative(); // validate the field.
+            this->nativePtr = this->seekPtr;
+            this->isNativePtrValid = true;
         }
 
         inline void Seek( seekType_t totalOffset )
@@ -593,8 +639,12 @@ private:
             // Modify the local seek descriptor.
             seekPtr = totalOffset;
 
-            // Mark that we have to update the local seek to the device ptr.
-            needsUpdating = true;
+            // the update flag is decided automatically.
+        }
+
+        inline bool NeedsUpdating( void ) const
+        {
+            return ( isNativePtrValid == false ) || ( Tell() != nativePtr );
         }
 
         inline seekType_t Tell( void ) const
@@ -602,17 +652,38 @@ private:
             return seekPtr;
         }
 
+        inline void InvalidateNativePtr( void )
+        {
+            isNativePtrValid = false;
+        }
+
+        inline void PredictNativeAdvance( seekType_t advanceBy )
+        {
+            // Increase the native seek ptr by some value.
+            nativePtr += advanceBy;
+        }
+
         inline void Update( void )
         {
             // Check whether we have to update.
-            if ( needsUpdating == false )
+            if ( NeedsUpdating() == false )
                 return;
 
             // Push the local seek pointer into the device handle.
-            host->underlyingStream->SeekNative( seekPtr, SEEK_SET );
+            int iResult = host->underlyingStream->SeekNative( seekPtr, SEEK_SET );
 
-            // We do not have to update anymore.
-            needsUpdating = false;
+            if ( iResult == 0 )
+            {
+                // We do not have to update anymore.
+                nativePtr = seekPtr;
+
+                isNativePtrValid = true;
+            }
+            else
+            {
+                // The native pointer is invalid if the seeking failed.
+                isNativePtrValid = false;
+            }
         }
     };
 
