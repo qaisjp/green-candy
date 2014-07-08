@@ -30,13 +30,13 @@ static bool bCameraClipVehicles;
 DWORD RETURN_Camera_CollisionDetection =    0x520195;
 void HOOK_Camera_CollisionDetection ();
 
-bool CCameraSAInterface::IsSphereVisible( const CVector& pos, float radius, void *unk )
+bool CCameraSAInterface::IsSphereVisible( const CVector& pos, float radius, const RwMatrix& transform )
 {
     DWORD dwFunc = 0x00420C40;
 
     __asm
     {
-        push unk
+        push transform
         push radius
         push pos
         mov ecx,this
@@ -643,5 +643,5 @@ void CCameraSA::SetCameraViewMode( unsigned char mode )
 
 bool CCameraSA::IsSphereVisible( const RwSphere& sphere ) const
 {
-    return m_interface->IsSphereVisible( sphere.pos, sphere.radius, (void*)0x00B6FA74 );
+    return m_interface->IsSphereVisible( sphere.pos, sphere.radius, Camera::GetInterface().m_matInverse );
 }

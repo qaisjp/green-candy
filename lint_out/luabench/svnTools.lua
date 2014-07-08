@@ -11,6 +11,7 @@ local impFiles =
     "MTA10/game_sa/CEntitySA.render.*",
     "MTA10/game_sa/CEntitySA.renderutils.*",
     "MTA10/game_sa/CEntitySA.rendersetup.*",
+    "MTA10/game_sa/CEntitySA.rmode.*",
     "MTA10/game_sa/CCacheSA.*",
     "MTA10/game_sa/CClumpModelInfoSA.*",
     "MTA10/game_sa/CExecutiveManagerSA.*",

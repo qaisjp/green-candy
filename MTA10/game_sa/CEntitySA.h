@@ -154,7 +154,7 @@ public:
     const CBounds2D& __thiscall     _GetBoundingBox         ( CBounds2D& out ) const;
     void __thiscall                 GetCenterPoint          ( CVector& out ) const;
 
-    float __thiscall                GetRadius               ( void ) const          { return GetColModel()->m_bounds.fRadius; }
+    float __thiscall                GetRadius               ( void ) const;
 
     float                           GetFadingAlpha          ( void ) const;
 
@@ -262,6 +262,8 @@ namespace Entity
 void Entity_Init( void );
 void Entity_Shutdown( void );
 
+#include "CEntitySA.rmode.h"
+
 class CEntitySA : public virtual CEntity
 {
     friend class COffsets;
@@ -302,6 +304,16 @@ public:
 
     bool                        IsVisible() const                               { return IS_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE ); }
     void                        SetVisible( bool enabled )                      { BOOL_FLAG( m_pInterface->m_entityFlags, ENTITY_VISIBLE, enabled ); }
+
+    rModeResult                 SetEntityRenderModeBool ( eEntityRenderMode rMode, bool value );
+    rModeResult                 SetEntityRenderModeInt ( eEntityRenderMode rMode, int value );
+    rModeResult                 SetEntityRenderModeFloat ( eEntityRenderMode rMode, float value );
+
+    rModeResult                 GetEntityRenderModeBool ( eEntityRenderMode rMode, bool& value ) const;
+    rModeResult                 GetEntityRenderModeInt ( eEntityRenderMode rMode, int& value ) const;
+    rModeResult                 GetEntityRenderModeFloat ( eEntityRenderMode rMode, float& value ) const;
+
+    rModeResult                 ResetEntityRenderMode ( eEntityRenderMode rMode );
 
     unsigned char               GetAreaCode() const;
     void                        SetAreaCode( unsigned char areaCode );
@@ -361,6 +373,9 @@ protected:
 
 public:
     bool                        m_doNotRemoveFromGame; // when deleted, if this is true, it won't be removed from the game
+
+    // Render modes.
+    entityRenderModes_t         m_renderModes;
 };
 
 #endif

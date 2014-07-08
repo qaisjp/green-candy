@@ -88,7 +88,7 @@ public:
 class CCameraSAInterface : public CPlaceableSAInterface //size: 3132
 {
 public:
-    bool __thiscall         IsSphereVisible             ( const CVector& pos, float radius, void *unk );
+    bool __thiscall         IsSphereVisible             ( const CVector& pos, float radius, const RwMatrix& transform );
     float __thiscall        GetGroundLevel              ( unsigned int type );
     unsigned int __thiscall GetMusicFadeType            ( void ) const;
 

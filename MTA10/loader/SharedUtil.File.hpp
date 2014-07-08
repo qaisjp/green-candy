@@ -11,6 +11,7 @@
 *****************************************************************************/
 
 #ifdef WIN32
+    #include <direct.h>
     #include "shellapi.h"
     #include "shlobj.h"
 #else

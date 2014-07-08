@@ -444,6 +444,9 @@ void __cdecl RwD3D9ValidateDeviceStates( void )
     Binary offsets:
         (1.0 US): 0x007FC3C0
         (1.0 EU): 0x007FC400
+    Note:
+        GTA:SA does never change the sampler states during
+        runtime.
 =========================================================*/
 typedef deviceStateValue samplerStates[14];
 
@@ -481,6 +484,9 @@ void __cdecl RwD3D9SetSamplerState( DWORD samplerId, D3DSAMPLERSTATETYPE stateTy
     Binary offsets:
         (1.0 US): 0x007FC400
         (1.0 EU): 0x007FC440
+    Note:
+        GTA:SA does never retrieve the current sampler states
+        during runtime.
 =========================================================*/
 void __cdecl RwD3D9GetSamplerState( DWORD samplerId, D3DSAMPLERSTATETYPE stateType, DWORD& valueOut )
 {
@@ -1476,6 +1482,7 @@ void RenderWarePipeline_Init( void )
         HookInstall( 0x007F6B40, (DWORD)RwD3D9InitializePipelineStates, 5 );
         HookInstall( 0x007F7FB0, (DWORD)RwD3D9ReleaseDeviceResources, 5 );
         HookInstall( 0x007F9D90, (DWORD)RwD3D9AcquireD3DDevice, 5 );
+        //HookInstall( 0x007FC510, (DWORD)RpD3D9SetSurfaceProperties, 5 );
         break;
     case VERSION_US_10:
         HookInstall( 0x007FC2D0, (DWORD)HOOK_RwD3D9SetRenderState, 5 );
@@ -1494,6 +1501,7 @@ void RenderWarePipeline_Init( void )
         HookInstall( 0x007F6B00, (DWORD)RwD3D9InitializePipelineStates, 5 );
         HookInstall( 0x007F7F70, (DWORD)RwD3D9ReleaseDeviceResources, 5 );
         HookInstall( 0x007F9D50, (DWORD)RwD3D9AcquireD3DDevice, 5 );
+        //HookInstall( 0x007FC4D0, (DWORD)RpD3D9SetSurfaceProperties, 5 );
         break;
     }
 

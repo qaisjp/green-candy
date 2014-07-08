@@ -1147,7 +1147,9 @@ bool __cdecl ProcessStreamingRequest( unsigned int id )
         else
         {
             // Do it the semi-coroutine way.
-            ProcessSlicerInstances( id, semiCorotPulseManager() );
+            semiCorotPulseManager pulseMan;
+
+            ProcessSlicerInstances( id, pulseMan );
         }
     }
 

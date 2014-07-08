@@ -122,37 +122,16 @@ inline D3DMATERIAL9& GetInlineSurfaceMaterial( void )
     return *(D3DMATERIAL9*)0x008E2538;
 }
 
-inline void RpD3D9SetSurfaceProperties( RpMaterialLighting& matLight, RwColor& matColor, unsigned int renderFlags )
+inline RwColorFloat& GetAmbientColor( void )
 {
-    if ( *(float*)0x00C9A5FC == matLight.diffuse && *(float*)0x00C9A600 == matLight.ambient &&
-         *(RwColor*)0x00C9A5F8 == matColor && *(unsigned int*)0x00C9A5F4 == ( renderFlags & 0x48 ) &&
-         *(float*)0x00C9A5D8 == *(float*)0x008E2418 &&
-         *(float*)0x00C9A5DC == *(float*)0x008E241C &&
-         *(float*)0x00C9A5E0 == *(float*)0x008E2420 )
-    {
-        return;
-    }
+    return *(RwColorFloat*)0x008E2418;
+}
 
-    *(float*)0x00C9A5FC = matLight.diffuse;
-    *(float*)0x00C9A600 = matLight.ambient;
-    *(RwColor*)0x00C9A5F8 = matColor;
-    *(unsigned int*)0x00C9A5F4 = ( renderFlags & 0x48 );
-    *(float*)0x00C9A5D8 = *(float*)0x008E2418;
-    *(float*)0x00C9A5DC = *(float*)0x008E241C;
-    *(float*)0x00C9A5E0 = *(float*)0x008E2420;
-
-    if ( IS_ANY_FLAG( renderFlags, 0x40 ) && matColor == 0xFFFFFFFF )
-    {
-        // Calculate the real vehicle lighting color.
-        long double colorIntensity = matLight.diffuse / 255.0f;
-
-        D3DMATERIAL9& surfMat = GetInlineSurfaceMaterial();
-        surfMat.Diffuse.r = ( colorIntensity * matColor.r );
-        surfMat.Diffuse.g = ( colorIntensity * matColor.g );
-        surfMat.Diffuse.b = ( colorIntensity * matColor.b );
-
-        
-    }
+inline void _RwD3D9CalculateColorWithIntensity( D3DCOLORVALUE& colorOut, long double intensity, float r, float g, float b )
+{
+    colorOut.r = (float)( intensity / 255.0f * r );
+    colorOut.g = (float)( intensity / 255.0f * g );
+    colorOut.b = (float)( intensity / 255.0f * b );
 }
 
 // Helper function to update surface properties.

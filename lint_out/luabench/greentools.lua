@@ -1,4 +1,5 @@
 local relDir = file.createTranslator("C:/Program Files/MTA San Andreas 1.2/");
+local fileTools = file;
 
 local function writeFileList(list, path, root, dirList)
 	local zip_stream = root.open(root.absPath() .. path, "rb+");
@@ -30,19 +31,16 @@ local function writeFileList(list, path, root, dirList)
 		
 		if (file) then
 			local relPath = root.relPathRoot(n);
-		
-			local content = file.read(file.size());
-			file.destroy();
 			
 			local compr_file = zip.open(relPath, "wb");
-			compr_file.write(content);
+			fileTools.copyStream( file, compr_file );
 			compr_file.destroy();
 			
 			print("wrote " .. relPath);
 			
 			count = count + 1;
 		else
-			print(n .. " does not exist");
+			print(n .. " could not open for reading");
 		end
 	end
     

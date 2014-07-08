@@ -336,14 +336,6 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\Shared\core\CFileSystem.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Shared\core\CFileSystem.zip.cpp"
-				>
-			</File>
-			<File
 				RelativePath=".\CInstallManager.cpp"
 				>
 			</File>
@@ -394,10 +386,6 @@
 			>
 			<File
 				RelativePath="..\..\Shared\core\CFileSystem.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\Shared\core\CFileSystem.zip.h"
 				>
 			</File>
 			<File

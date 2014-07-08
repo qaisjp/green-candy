@@ -442,7 +442,7 @@ private:
                         // Make sure that we have allocated enough buffer space for our operation.
                         size_t localReadOffset;
                         
-                        if ( host.IsSeekInsideBufferSpace( allocateTo, localReadOffset ) )
+                        if ( host.IsSeekInsideBufferSpace_Clamped( allocateTo, localReadOffset ) )
                         {
                             // We should only do work if the buffer is not filled up to "localWriteOffset".
                             // This condition has to be checked by the "FileSectorCompletion" method.

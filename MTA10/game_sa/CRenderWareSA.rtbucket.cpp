@@ -445,6 +445,7 @@ void RenderBucket::BeginPass( void )
     assert( isInPhase == false );
 
     // Notify all state managers.
+    g_vertexStreamStateManager.BeginBucketPass();
     g_renderStateManager.BeginBucketPass();
     g_textureStageStateManager.BeginBucketPass();
     g_samplerStateManager.BeginBucketPass();
@@ -485,7 +486,7 @@ namespace RenderBucket
     };
 }
 
-static const bool allowBucketRendering = true;
+static const bool allowBucketRendering = false;
 
 void RenderBucket::RenderPass( void )
 {
@@ -539,6 +540,7 @@ void RenderBucket::EndPass( void )
     currentPipeData = NULL;
 
     // Notify the managers.
+    g_vertexStreamStateManager.EndBucketPass();
     g_renderStateManager.EndBucketPass();
     g_textureStageStateManager.EndBucketPass();
     g_samplerStateManager.EndBucketPass();

@@ -68,7 +68,6 @@ RW_PLUGIN_INTERFACE_INST( RwFrame );
 // Material functions
 RpMaterialCreate_t                      RpMaterialCreate                        = (RpMaterialCreate_t)                      invalid_ptr;
 RpMaterialDestroy_t                     RpMaterialDestroy                       = (RpMaterialDestroy_t)                     invalid_ptr;
-RpD3D9SetSurfaceProperties_t            RpD3D9SetSurfaceProperties              = (RpD3D9SetSurfaceProperties_t)            invalid_ptr;
 RW_PLUGIN_INTERFACE_INST( RpMaterial );
 
 // Geometry functions
@@ -221,7 +220,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         // Material functions
         RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D9E0;
         RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA70;
-        RpD3D9SetSurfaceProperties          = (RpD3D9SetSurfaceProperties_t)            0x007FC510;
         RpMaterialRegisterPlugin            = (RpMaterialRegisterPlugin_t)              0x0074DC40;
         RpMaterialRegisterPluginStream      = (RpMaterialRegisterPluginStream_t)        0x0074DC70;
 
@@ -360,7 +358,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         // Material functions
         RpMaterialCreate                    = (RpMaterialCreate_t)                      0x0074D990;
         RpMaterialDestroy                   = (RpMaterialDestroy_t)                     0x0074DA20;
-        RpD3D9SetSurfaceProperties          = (RpD3D9SetSurfaceProperties_t)            0x007FC4D0;
         RpMaterialRegisterPlugin            = (RpMaterialRegisterPlugin_t)              0x0074DBF0;
         RpMaterialRegisterPluginStream      = (RpMaterialRegisterPluginStream_t)        0x0074DC20;
 

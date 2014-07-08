@@ -71,7 +71,6 @@ typedef void                    (__cdecl *RwFrameDestroy_t)                     
 // Material functions
 typedef RpMaterial*             (__cdecl *RpMaterialCreate_t)                   ();
 typedef int                     (__cdecl *RpMaterialDestroy_t)                  (RpMaterial *mat);
-typedef void                    (__cdecl *RpD3D9SetSurfaceProperties_t)         (RpMaterialLighting& matLight, RwColor& matColor, unsigned int renderFlags);
 
 // Geometry functions
 typedef RpGeometry*             (__cdecl *RpGeometryCreate_t)                   (int numverts, int numtriangles, unsigned int format);
@@ -200,7 +199,6 @@ RW_PLUGIN_INTERFACE_EXTERN( RwFrame );
 // Material functions
 extern RpMaterialCreate_t                       RpMaterialCreate;
 extern RpMaterialDestroy_t                      RpMaterialDestroy;
-extern RpD3D9SetSurfaceProperties_t             RpD3D9SetSurfaceProperties;
 RW_PLUGIN_INTERFACE_EXTERN( RpMaterial );
 
 // Geometry functions
