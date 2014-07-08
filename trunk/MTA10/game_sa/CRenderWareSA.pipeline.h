@@ -25,6 +25,9 @@ void __cdecl RwD3D9GetSamplerState      ( DWORD samplerId, D3DSAMPLERSTATETYPE s
 int __cdecl RwD3D9SetMaterial           ( const D3DMATERIAL9& material );
 void __cdecl RwD3D9GetMaterial          ( D3DMATERIAL9& material );
 
+int __cdecl RpD3D9SetSurfaceProperties  ( RpMaterialLighting& matLight, RwColor& matColor, unsigned int renderFlags );    // US exe: 0x007FC4D0
+void RpD3D9InitializeMaterialEnvironment( void );
+
 void __cdecl RwD3D9SetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD value );
 void __cdecl RwD3D9GetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD& value );
 

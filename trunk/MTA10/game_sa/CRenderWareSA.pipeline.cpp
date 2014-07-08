@@ -505,9 +505,20 @@ void __cdecl RwD3D9GetSamplerState( DWORD samplerId, D3DSAMPLERSTATETYPE stateTy
         (1.0 US): 0x007FC430
         (1.0 EU): 0x007FC470
 =========================================================*/
+// current runtime surface property snapshot.
+static float _surfaceDiffuseLighting = 0.0f;        // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5FC
+static float _surfaceAmbientLighting = 0.0f;        // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A600
+static RwColor _surfaceMaterialColor;               // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5F8
+static unsigned int _surfaceRenderFlags = 0;        // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5F4
+static float _surfaceAmbientColorRed = 0.0f;        // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5D8
+static float _surfaceAmbientColorGreen = 0.0f;      // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5DC
+static float _surfaceAmbientColorBlue = 0.0f;       // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5E0
+
+static D3DMATERIAL9 _currentMaterial;               // Binary offsets: (1.0 US and 1.0 EU): 0x00C98AF8
+
 inline D3DMATERIAL9& GetNativeCurrentMaterial( void )
 {
-    return *(D3DMATERIAL9*)0x00C98AF8;
+    return _currentMaterial;
 }
 
 int __cdecl RwD3D9SetMaterial( const D3DMATERIAL9& material )
@@ -516,9 +527,11 @@ int __cdecl RwD3D9SetMaterial( const D3DMATERIAL9& material )
     
     if ( memcmp( &currentMaterial, &material, sizeof( D3DMATERIAL9 ) ) != 0 )
     {
+        // Update our local copy of the current material.
         currentMaterial = material;
 
-        *(unsigned int*)0x00C9A5F4 = 0;
+        // Make sure surface rendering resets the material.
+        _surfaceRenderFlags = 0;
 
         int iReturn = GetRenderDevice()->SetMaterial( &material );
 
@@ -540,6 +553,213 @@ int __cdecl RwD3D9SetMaterial( const D3DMATERIAL9& material )
 void __cdecl RwD3D9GetMaterial( D3DMATERIAL9& material )
 {
     material = GetNativeCurrentMaterial();
+}
+
+/*=========================================================
+    RpD3D9SetSurfaceProperties
+
+    Arguments:
+        matLight - lighting intensity container of the surface
+        matColor - surface color
+        renderFlags - rendering flags of the current context
+    Purpose:
+        Sets up the surface of the to-be-rendered geometry
+        chunk. This function is generally used for all kinds
+        of meshes.
+    Binary offsets:
+        (1.0 US): 0x007FC4D0
+        (1.0 EU): 0x007FC510
+=========================================================*/
+int __cdecl RpD3D9SetSurfaceProperties( RpMaterialLighting& matLight, RwColor& matColor, unsigned int renderFlags )
+{
+    // Check whether any material parameter has changed.
+    if ( _surfaceDiffuseLighting    == matLight.diffuse &&
+         _surfaceAmbientLighting    == matLight.ambient &&
+         _surfaceMaterialColor      == matColor &&
+         _surfaceRenderFlags        == ( renderFlags & 0x48 ) &&
+         _surfaceAmbientColorRed    == GetAmbientColor().r &&
+         _surfaceAmbientColorGreen  == GetAmbientColor().g &&
+         _surfaceAmbientColorBlue   == GetAmbientColor().b )
+    {
+        return true;
+    }
+
+    // Update current material parameters.
+    _surfaceDiffuseLighting     = matLight.diffuse;
+    _surfaceAmbientLighting     = matLight.ambient;
+    _surfaceMaterialColor       = matColor;
+    _surfaceRenderFlags         = ( renderFlags & 0x48 );
+    _surfaceAmbientColorRed     = GetAmbientColor().r;
+    _surfaceAmbientColorGreen   = GetAmbientColor().g;
+    _surfaceAmbientColorBlue    = GetAmbientColor().b;
+
+    // Push the new data onto the GPU.
+    D3DMATERIAL9& surfMat = GetInlineSurfaceMaterial();
+    
+    // Color parameters that decide how data is pushed to the pipeline.
+    bool useMaterialColor = false;
+    bool putAmbientColor = false;
+    bool putEmissiveColor = false;
+    bool requireEmissiveColor = true;
+    
+    bool fillAmbientColorWithMaterialColor = false;
+    bool useVertexColor = IS_ANY_FLAG( renderFlags, 0x08 );
+
+    D3DMATERIALCOLORSOURCE ambientMaterialSource = D3DMCS_MATERIAL;
+    D3DMATERIALCOLORSOURCE emissiveMaterialSource = D3DMCS_MATERIAL;
+
+    // Calculate the color parameter values.
+    if ( IS_ANY_FLAG( renderFlags, 0x40 ) && matColor != 0xFFFFFFFF )
+    {
+        // Calculate the real vehicle lighting color.
+        useMaterialColor = true;
+
+        if ( useVertexColor )
+        {
+            // Apply ambient color from matColor.
+            fillAmbientColorWithMaterialColor = true;
+            
+            ambientMaterialSource = D3DMCS_COLOR1;
+
+            putEmissiveColor = true;
+        }
+        else
+        {
+            // Default to standard pipeline.
+            putAmbientColor = true;
+        }
+    }
+    else
+    {
+        // We do not use the color, only brightness/intensity.
+        if ( useVertexColor )
+        {
+            emissiveMaterialSource = D3DMCS_COLOR1;
+        }
+        else
+        {
+            requireEmissiveColor = false;
+        }
+
+        putAmbientColor = true;
+    }
+
+    // Generate diffuse color (RGBA).
+    long double diffuseRed = 1.0f, diffuseGreen = 1.0f, diffuseBlue = 1.0f, diffuseAlpha = 1.0f;
+
+    if ( useMaterialColor )
+    {
+        diffuseRed      *= (long double)matColor.r / 255.0f;
+        diffuseGreen    *= (long double)matColor.g / 255.0f;
+        diffuseBlue     *= (long double)matColor.b / 255.0f;
+        diffuseAlpha    *= (long double)matColor.a / 255.0f;
+    }
+
+    // Modulate the diffuse color with its intensity.
+    diffuseRed *= matLight.diffuse;
+    diffuseGreen *= matLight.diffuse;
+    diffuseBlue *= matLight.diffuse;
+
+    // Now put it into the material.
+    surfMat.Diffuse.r = (float)diffuseRed;  // convert to GPU precision.
+    surfMat.Diffuse.g = (float)diffuseGreen;
+    surfMat.Diffuse.b = (float)diffuseBlue;
+    surfMat.Diffuse.a = (float)diffuseAlpha;
+
+    // We ignore the specular color entirely.
+
+    // Execute post-diffuse parameters.
+    {
+        DWORD gpuAmbientColor = 0xFFFFFFFF;
+
+        if ( fillAmbientColorWithMaterialColor )
+        {
+            gpuAmbientColor = matColor.ToD3DColor();
+        }
+
+        HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, gpuAmbientColor );
+        HOOK_RwD3D9SetRenderState( D3DRS_COLORVERTEX, useVertexColor );
+
+        HOOK_RwD3D9SetRenderState( D3DRS_AMBIENTMATERIALSOURCE, ambientMaterialSource );
+        HOOK_RwD3D9SetRenderState( D3DRS_EMISSIVEMATERIALSOURCE, emissiveMaterialSource );
+    }
+
+    // Generate ambient color (only RGB).
+    long double ambientRed = GetAmbientColor().r, ambientGreen = GetAmbientColor().g, ambientBlue = GetAmbientColor().b;
+
+    if ( useMaterialColor )
+    {
+        ambientRed      *= (long double)matColor.r / 255.0f;
+        ambientGreen    *= (long double)matColor.g / 255.0f;
+        ambientBlue     *= (long double)matColor.b / 255.0f;
+    }
+
+    // Modulate the ambient color with its intensity.
+    ambientRed *= matLight.ambient;
+    ambientGreen *= matLight.ambient;
+    ambientBlue *= matLight.ambient;
+
+    // Decide where to put the ambient color.
+    float gpuAmbientRed = (float)ambientRed;    // convert to GPU precision.
+    float gpuAmbientGreen = (float)ambientGreen;
+    float gpuAmbientBlue = (float)ambientBlue;
+
+    if ( putAmbientColor )
+    {
+        surfMat.Ambient.r = gpuAmbientRed;
+        surfMat.Ambient.g = gpuAmbientGreen;
+        surfMat.Ambient.b = gpuAmbientBlue;
+    }
+    else
+    {
+        // Reset ambient color.
+        surfMat.Ambient.r = 0.0f;
+        surfMat.Ambient.g = 0.0f;
+        surfMat.Ambient.b = 0.0f;
+    }
+
+    // Only update emissive color if it is truly required.
+    if ( requireEmissiveColor )
+    {
+        if ( putEmissiveColor )
+        {
+            surfMat.Emissive.r = gpuAmbientRed;
+            surfMat.Emissive.g = gpuAmbientGreen;
+            surfMat.Emissive.b = gpuAmbientBlue;
+        }
+        else
+        {
+            // Reset color as we are not using it.
+            surfMat.Emissive.r = 0.0f;
+            surfMat.Emissive.g = 0.0f;
+            surfMat.Emissive.b = 0.0f;
+        }
+    }
+
+    return RwD3D9SetMaterial( surfMat );
+}
+
+/*=========================================================
+    RpD3D9InitializeMaterialEnvironment
+
+    Purpose:
+        Sets up runtime material parameters that are
+        related to GPU device states.
+=========================================================*/
+void RpD3D9InitializeMaterialEnvironment( void )
+{
+    // Initialize the current material.
+    GetRenderDevice_Native()->GetMaterial( &GetNativeCurrentMaterial() );
+
+    // Initialize surface environment.
+    _surfaceDiffuseLighting = 0.0f;
+    _surfaceAmbientLighting = 0.0f;
+    _surfaceAmbientColorRed = 0.0f;
+    _surfaceAmbientColorGreen = 0.0f;
+    _surfaceAmbientColorBlue = 0.0f;
+
+    _surfaceRenderFlags = 0;
+    _surfaceMaterialColor = 0x00000000;
 }
 
 /*=========================================================
@@ -1169,11 +1389,6 @@ void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtna
         This function has been inlined into device initialization
         and device reset functions.
 =========================================================*/
-inline RwColor& GetCurrentSurfaceColor( void )
-{
-    return *(RwColor*)0x00C9A5F8;
-}
-
 void RwD3D9InitializeCurrentStates( void )
 {
     // The_GTA: fixed current-ness of device states by actually querying the device.
@@ -1219,18 +1434,8 @@ void RwD3D9InitializeCurrentStates( void )
         }
     }
 
-    // Initialize the current material.
-    renderDevice->GetMaterial( &GetNativeCurrentMaterial() );
-
-    // Initialize surface environment.
-    *(float*)0x00C9A5FC = 0.0f;
-    *(float*)0x00C9A600 = 0.0f;
-    *(float*)0x00C9A5D8 = 0.0f;
-    *(float*)0x00C9A5DC = 0.0f;
-    *(float*)0x00C9A5E0 = 0.0f;
-
-    *(unsigned int*)0x00C9A5F4 = 0;
-    GetCurrentSurfaceColor() = 0x00000000;
+    // Initialize material environment.
+    RpD3D9InitializeMaterialEnvironment();
 
     // MTA extension: set up different state managers.
     g_transformationStateManager.Initialize();
