@@ -693,6 +693,19 @@ inline CShaderItem* _NewLightShaderInstance( const char *name )
     return shader;
 }
 
+// Utilities for shader management.
+namespace ShaderLightUtils
+{
+    AINLINE std::string to_string( int num )
+    {
+        std::stringstream stream;
+
+        stream << num;
+
+        return stream.str();
+    }
+};
+
 // Manager for rendering light states.
 using namespace D3D9Lighting;
 
@@ -1984,11 +1997,6 @@ void __cdecl RpD3D9EnableLights( bool enable, int unused )
 =========================================================*/
 static bool forceGlobalLighting = false;
 static bool forceLocalLighting = false;
-
-static RwColorFloat& GetAmbientColor( void )
-{
-    return *(RwColorFloat*)0x008E2418;
-}
 
 template <typename lightMan>
 int _GlobalLightsEnable( D3D9Lighting::lightState& state, lightMan& cb )

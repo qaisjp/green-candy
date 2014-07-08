@@ -26,6 +26,7 @@
 
 // Multiplayer includes
 #include <../game_sa/RenderWare.h>
+#include <../game_sa/CExecutiveManagerSA.h>
 #include <../game_sa/CPtrNodeSA.h>
 #include <../game_sa/CQuadTreeSA.h>
 #include <../game_sa/CTransformationSA.h>

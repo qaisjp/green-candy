@@ -104,7 +104,7 @@ struct ColHeaderVersion4 : public ColHeaderVersion3     //size: 92 bytes
 };
 C_ASSERT( sizeof( ColHeaderVersion4 ) == 92 );
 
-AINLINE unsigned int _CalculateVertexCount( CColTriangle *faces, int faceCount )
+AINLINE unsigned int _CalculateVertexCount( CColTriangleSA *faces, int faceCount )
 {
     unsigned int numVertices = 0;
 
@@ -802,7 +802,7 @@ cloneFail:
 // Binary offsets: (1.0 US and 1.0 EU): 0x0040F6E0
 CColDataSA::trianglePlanesListNode* CColDataSA::GetTrianglePlanesListNode( void )
 {
-    return *(trianglePlanesListNode**)( ALIGN_SIZE( (unsigned int)pColTrianglePlanes + numColTriangles * 10, 4 ) );
+    return *(trianglePlanesListNode**)( ALIGN_SIZE( (unsigned int)pColTrianglePlanes + numColTriangles * 10, (unsigned int)4 ) );
 }
 
 inline CColDataSA::trianglePlanesListNode& GetFreeTrianglePlanesNode( void )

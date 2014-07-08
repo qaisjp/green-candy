@@ -60,8 +60,8 @@ public:
     inline eIntersectionResult intersectWith( const sliceOfData& right ) const
     {
         // Make sure the slice has a valid size.
-        if ( this->endOffset > this->startOffset &&
-             right.endOffset > right.startOffset )
+        if ( this->endOffset >= this->startOffset &&
+             right.endOffset >= right.startOffset )
         {
             // Get generic stuff.
             numberType sliceStartA = startOffset, sliceEndA = endOffset;

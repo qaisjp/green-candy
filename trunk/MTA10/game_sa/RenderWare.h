@@ -389,7 +389,7 @@ struct RwFreeListMemBlock
 
     void* GetBlockPointer( unsigned int index, size_t blockSize, size_t alignment, size_t metaDataSize )
     {
-        return (void*)( ALIGN( (unsigned int)this + alignment + metaDataSize, 8, alignment ) + index * blockSize );
+        return (void*)( ALIGN( (unsigned int)this + alignment + metaDataSize, (unsigned int)8, (unsigned int)alignment ) + index * blockSize );
     }
 };
 

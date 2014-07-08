@@ -1101,14 +1101,6 @@ namespace CLuaFunctionDefs
         return 1;
     }
 
-    DECLARE_ENUM( eWorldRenderMode );
-
-    IMPLEMENT_ENUM_BEGIN( eWorldRenderMode )
-        ADD_ENUM( WORLD_RENDER_ORIGINAL,            "original" )
-        ADD_ENUM( WORLD_RENDER_MESHLOCAL_ALPHAFIX,  "meshlocal_alphafix" )
-        ADD_ENUM( WORLD_RENDER_SCENE_ALPHAFIX,      "scene_alphafix" )
-    IMPLEMENT_ENUM_END( "world-render-mode" )
-
     LUA_DECLARE( engineSetWorldRenderMode )
     {
         eWorldRenderMode renderMode;

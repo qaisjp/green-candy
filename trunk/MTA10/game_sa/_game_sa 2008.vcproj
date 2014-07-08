@@ -503,6 +503,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CEntitySA.rmode.cpp"
+				>
+			</File>
+			<File
 				RelativePath=".\CEntryInfoSA.cpp"
 				>
 			</File>
@@ -528,6 +532,10 @@
 			</File>
 			<File
 				RelativePath=".\CExecutiveManagerSA.fiber.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CExecutiveManagerSA.task.cpp"
 				>
 			</File>
 			<File
@@ -800,6 +808,10 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.render.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.rtbucket.cpp"
 				>
 			</File>
 			<File
@@ -1472,6 +1484,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CEntitySA.rmode.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CEntryInfoSA.h"
 				>
 			</File>
@@ -1497,6 +1513,10 @@
 			</File>
 			<File
 				RelativePath=".\CExecutiveManagerSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CExecutiveManagerSA.task.h"
 				>
 			</File>
 			<File
@@ -1773,6 +1793,14 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.render.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.rmode.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.rtbucket.h"
 				>
 			</File>
 			<File
