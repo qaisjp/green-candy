@@ -29,6 +29,8 @@ public:
     void                    InitZIP                 ( void );
     void                    DestroyZIP              ( void );
 
+    bool                    CanLockDirectories      ( void );
+
     CFileTranslator*        CreateTranslator        ( const char *path );
     CArchiveTranslator*     OpenArchive             ( CFile& file );
 
@@ -53,6 +55,12 @@ public:
 
     // Members.
     bool                    m_includeAllDirsInScan;     // decides whether ScanDir implementations should apply patterns on directories
+#ifdef _WIN32
+    bool                    m_hasDirectoryAccessPriviledge; // decides whether directories can be locked by the application
+#endif //_WIN32
+
+    // Embed extensions here.
+    zipExtension            m_zipExtension;
 };
 
 // These variables are exported for easy usage by the application.

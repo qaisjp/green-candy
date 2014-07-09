@@ -24,10 +24,10 @@
 
 class CZIPArchiveTranslator : public CSystemPathTranslator, public CArchiveTranslator
 {
-    friend class CFileSystem;
+    friend struct zipExtension;
     friend class CArchiveFile;
 public:
-                    CZIPArchiveTranslator( CFile& file );
+                    CZIPArchiveTranslator( zipExtension& theExtension, CFile& file );
                     ~CZIPArchiveTranslator( void );
 
     bool            WriteData( const char *path, const char *buffer, size_t size );
@@ -53,6 +53,8 @@ public:
 
     void            Save();
 
+    // Members.
+    zipExtension&   m_zipExtension;
     CFile&          m_file;
 
 #pragma pack(1)
@@ -589,8 +591,8 @@ private:
         return GetDirTree( this->m_rootDir, tree.begin(), tree.end() );
     }
 
-    const directory*     GetDeriviateDir( const directory& root, const dirTree& tree ) const;
-    directory&           MakeDeriviateDir( directory& root, const dirTree& tree );
+    const directory*    GetDeriviateDir( const directory& root, const dirTree& tree ) const;
+    directory&          MakeDeriviateDir( directory& root, const dirTree& tree );
 
     directory&          _CreateDirTree( directory& root, const dirTree& tree );
 
@@ -605,6 +607,12 @@ private:
     directory*  m_curDirEntry;
     std::string m_comment;
 
+    CFileTranslator*    GetFileRoot         ( void );
+    CFileTranslator*    GetUnpackRoot       ( void );
+    CFileTranslator*    GetRealtimeRoot     ( void );
+
+    // Runtime management file directories.
+    // They are acquired once they are required.
     CFileTranslator*    m_fileRoot;
     CFileTranslator*    m_unpackRoot;
     CFileTranslator*    m_realtimeRoot;
