@@ -56,33 +56,8 @@ CFileSystem::CFileSystem( void )
 
     // Set up members.
     m_includeAllDirsInScan = false;
-
-    // We should set special priviledges for the application if
-    // running under Win32.
 #ifdef _WIN32
-    HANDLE token;
-    MySecurityAttributes priv;
-
-    // We need SE_BACKUP_NAME to gain directory access on Windows
-    if ( !OpenProcessToken( GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token ) )
-        throw std::exception( "failed to adjust fileSystem priviledges" );
-
-    priv.count = 2;
-
-    if ( !LookupPrivilegeValue( NULL, SE_BACKUP_NAME, &priv.attr[0].Luid ) )
-        throw std::exception( "failed to lookup privilege UID" );
-
-    priv.attr[0].Attributes = SE_PRIVILEGE_ENABLED;
-
-    if ( !LookupPrivilegeValue( NULL, SE_RESTORE_NAME, &priv.attr[1].Luid ) )
-        throw std::exception( "failed to lookup privilege UID" );
-
-    priv.attr[1].Attributes = SE_PRIVILEGE_ENABLED;
-
-    if ( !AdjustTokenPrivileges( token, false, (TOKEN_PRIVILEGES*)&priv, sizeof( priv ), NULL, NULL ) )
-        throw std::exception( "lacking administrator privileges for fileSystem" );
-
-    CloseHandle( token );
+    m_hasDirectoryAccessPriviledge = false;
 #endif //_WIN32
 
     char cwd[1024];
@@ -98,7 +73,7 @@ CFileSystem::CFileSystem( void )
     fileRoot = CreateTranslator( cwd_ex );
 
     // Init Addons
-    InitZIP();
+    m_zipExtension.Init();
 
     fileSystem = this;
 
@@ -108,7 +83,8 @@ CFileSystem::CFileSystem( void )
 
 CFileSystem::~CFileSystem( void )
 {
-    DestroyZIP();
+    // Shutdown addons.
+    m_zipExtension.Shutdown();
 
     delete openFiles;
 
@@ -116,8 +92,60 @@ CFileSystem::~CFileSystem( void )
     _hasBeenInitialized = false;
 }
 
+bool CFileSystem::CanLockDirectories( void )
+{
+    // We should set special priviledges for the application if
+    // running under Win32.
+#ifdef _WIN32
+    // We assume getting the priviledge once is enough.
+    if ( !m_hasDirectoryAccessPriviledge )
+    {
+        HANDLE token;
+
+        // We need SE_BACKUP_NAME to gain directory access on Windows
+        if ( OpenProcessToken( GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &token ) == TRUE )
+        {
+            MySecurityAttributes priv;
+
+            priv.count = 2; // we want to request two priviledges.
+
+            BOOL backupRequest = LookupPrivilegeValue( NULL, SE_BACKUP_NAME, &priv.attr[0].Luid );
+
+            priv.attr[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+            BOOL restoreRequest = LookupPrivilegeValue( NULL, SE_RESTORE_NAME, &priv.attr[1].Luid );
+
+            priv.attr[1].Attributes = SE_PRIVILEGE_ENABLED;
+
+            if ( backupRequest == TRUE && restoreRequest == TRUE )
+            {
+                BOOL success = AdjustTokenPrivileges( token, false, (TOKEN_PRIVILEGES*)&priv, sizeof( priv ), NULL, NULL );
+
+                if ( success == TRUE )
+                {
+                    m_hasDirectoryAccessPriviledge = true;
+                }
+            }
+
+            CloseHandle( token );
+        }
+    }
+    return m_hasDirectoryAccessPriviledge;
+#elif defined(__linux__)
+    // We assume that we can always lock directories under Unix.
+    return true;
+#else
+    // No idea abott directory locking on other environments.
+    return false;
+#endif //OS DEPENDENT CODE
+}
+
 CFileTranslator* CFileSystem::CreateTranslator( const char *path )
 {
+    // Without access to directory locking, this function can not execute.
+    if ( !CanLockDirectories() )
+        return NULL;
+
     CSystemFileTranslator *pTranslator;
     filePath root;
     dirTree tree;

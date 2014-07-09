@@ -185,14 +185,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\Shared\core\CFileSystem.zip.h"
-				>
-			</File>
-			<File
-				RelativePath="..\Shared\core\fsinternal\CFileSystem.zip.internal.h"
-				>
-			</File>
-			<File
 				RelativePath="..\Shared\core\CFileSystemInterface.h"
 				>
 			</File>
@@ -200,6 +192,34 @@
 				RelativePath=".\StdInc.h"
 				>
 			</File>
+		</Filter>
+		<Filter
+			Name="zipExtension"
+			>
+			<File
+				RelativePath="..\Shared\core\CFileSystem.zip.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.zip.translator.cpp"
+				>
+			</File>
+			<Filter
+				Name="include"
+				>
+				<File
+					RelativePath="..\Shared\core\CFileSystem.zip.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\core\fsinternal\CFileSystem.zip.internal.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\core\fsinternal\CFileSystem.zip.utils.hxx"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<File
 			RelativePath="..\Shared\core\CFileSystem.cpp"
@@ -219,10 +239,6 @@
 		</File>
 		<File
 			RelativePath="..\Shared\core\fsinternal\CFileSystem.translator.system.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\Shared\core\CFileSystem.zip.cpp"
 			>
 		</File>
 		<File
