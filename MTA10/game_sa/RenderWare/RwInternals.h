@@ -23,7 +23,7 @@ struct d3d9RasterStage  //size: 24 bytes
     unsigned int v_addressMode;         // 8
     unsigned int filterType;            // 12
     RwColor borderColor;                // 16
-    unsigned int maxAnisotropy;         // 20
+    int maxAnisotropy;                  // 20
 };
 
 inline d3d9RasterStage& GetRasterStageInfo( unsigned int index )

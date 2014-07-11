@@ -1455,7 +1455,7 @@ void RwD3D9InitializeCurrentStates( void )
 void __cdecl RwD3D9InitializePipelineStates( void )
 {
     // Invalidate runtime resources.
-    *(DWORD*)0x008E2440 = 0xFFFFFFFF;
+    GetCurrentFixedVertexFunction() = 0xFFFFFFFF;
     GetCurrentVertexDeclaration() = (IDirect3DVertexDeclaration9*)0xFFFFFFFF;
     GetCurrentVertexShader() = (IDirect3DVertexShader9*)0xFFFFFFFF;
     GetCurrentPixelShader() = (IDirect3DPixelShader9*)0xFFFFFFFF;

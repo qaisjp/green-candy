@@ -371,6 +371,15 @@ private:
 
 				canContinue = ( awarenessOffset >= host.internalIOBuffer.GetStorageSize() );
 			}
+            else if ( intResult == seekSlice_t::INTERSECT_UNKNOWN )
+            {
+                // If we have no buffer size, it means we have read nothing and could establish no content.
+                // This means we terminate.
+                if ( GetBufferSize() == 0 )
+                {
+                    canContinue = false;
+                }
+            }
 
 			return canContinue;
 		}

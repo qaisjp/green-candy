@@ -113,6 +113,7 @@ end
 
 function makeglwnd()
     local window = win32.createDialog(win32.getWindowRect(640, 480));
+    window.setVisible(true);
     
     local glDriver = ogl.create(window);
     
@@ -184,10 +185,8 @@ function makeglwnd()
             program = false;
         end
         
-        if (program) then
-            -- Set cool uniforms.
-            program.setUniform("myColor", 1, 0, 1, 1);
-        end
+        -- Set cool uniforms.
+        program.setUniform("myColor", 1, 0, 1, 1);
     end
     
 	-- Set up an awesome framebuffer
@@ -213,7 +212,4 @@ function makeglwnd()
 			glDriver.present();
 		end
 	);
-    
-    -- After initialization, show the window.
-    window.setVisible(true);
 end
