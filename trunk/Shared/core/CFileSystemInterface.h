@@ -270,7 +270,7 @@ public:
     virtual fsOffsetNumber_t    GetSizeNative( void ) const
     {
         // Overwrite this function to enable actual native support.
-        return (fsOffsetNumber_t)GetSizeNative();
+        return (fsOffsetNumber_t)GetSize();
     }
 
     /*===================================================

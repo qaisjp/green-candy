@@ -18,6 +18,8 @@ inline DWORD F2DW( float val )  { return *(DWORD*)&val; }
 // RenderState functions.
 int RwD3D9SetFogColor                       ( unsigned int color );
 int RwD3D9ResetFogColor                     ( void );
+int RwD3D9SetFogTableMode                   ( unsigned int mode );
+int RwD3D9ResetFogTableMode                 ( void );
 int RwD3D9SetShadeMode                      ( unsigned int mode );
 int RwD3D9ResetShadeMode                    ( void );
 int RwD3D9SetZWriteEnable                   ( unsigned int enable );
@@ -50,7 +52,8 @@ int RwD3D9RasterStageSetAddressModeV        ( unsigned int stageIdx, unsigned in
 int RwD3D9RasterStageResetAddressModeV      ( unsigned int stageIdx );
 int RwD3D9RasterStageSetBorderColor         ( unsigned int stageIdx, unsigned int color );
 int RwD3D9RasterStageResetBorderColor       ( unsigned int stageIdx );
-int RwD3D9RasterStageSetMaxAnisotropy       ( unsigned int stageIdx, unsigned int maxAnisotropy );
+int RwD3D9RasterStageSetMaxAnisotropy       ( unsigned int stageIdx, int maxAnisotropy );
+int RwD3D9RasterStageGetMaxAnisotropy       ( unsigned int stageIdx );
 int RwD3D9RasterStageResetMaxAnisotropy     ( unsigned int stageIdx );
 
 // More RenderState functions.

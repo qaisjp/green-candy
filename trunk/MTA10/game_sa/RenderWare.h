@@ -479,8 +479,14 @@ typedef int                 (__cdecl*RwReadTexture_t) ( RwStream *stream, RwText
 
 enum eRwDeviceCmd : unsigned int
 {
-    RWSTATE_FOGENABLE = 14,
-    RWSTATE_FOGCOLOR
+    RWSTATE_COMBINEDTEXADDRESSMODE = 1,
+    RWSTATE_UTEXADDRESSMODE,
+    RWSTATE_VTEXADDRESSMODE,
+    RWSTATE_TEXFILTER = 8,
+    RWSTATE_FOGENABLE = 13,
+    RWSTATE_FOGCOLOR,
+    RWSTATE_FOGMODE,
+    RWSTATE_FOGDENSITY,
 };
 
 typedef void*               (__cdecl*RwMemAlloc_t) ( size_t size, unsigned int flags );
