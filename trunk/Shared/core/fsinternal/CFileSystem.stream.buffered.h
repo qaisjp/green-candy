@@ -195,7 +195,7 @@ public:
             SetChanged( false );
         }
 
-        inline bool FileSectorCompletion( CFile *srcFile, size_t completeTo )
+        inline bool FileSectorCompletion( CFile *srcFile, size_t completeTo, bool forceCompletion = true )
         {
             bool hasChanged = false;
 
@@ -212,17 +212,30 @@ public:
                     needToRead
                 );
 
-                // Fill the remaining bytes (that are missing from the stream) with zero.
-                if ( needToRead != haveReadCount )
-                {
-                    memset( this->storagePtr + this->actualFillCount + haveReadCount, 0, needToRead - haveReadCount );
-                }
+				if ( forceCompletion )
+				{
+					// Fill the remaining bytes (that are missing from the stream) with zero.
+					if ( needToRead != haveReadCount )
+					{
+						memset( this->storagePtr + this->actualFillCount + haveReadCount, 0, needToRead - haveReadCount );
+					}
 
-                // This routine must complete the buffer to this point.
-                // If it failed retrieving bytes from the stream, it is filling them with zero.
-                this->actualFillCount = completeTo;
+					// This routine must complete the buffer to this point.
+					// If it failed retrieving bytes from the stream, it is filling them with zero.
+					this->actualFillCount = completeTo;
 
-                hasChanged = true;
+					// We always change.
+					hasChanged = true;
+				}
+				else
+				{
+					// This routine only has to read what is can.
+					// If there is nothing in the file, it could have read zero.
+					this->actualFillCount += haveReadCount;
+
+					// We only change it we actually read something.
+					hasChanged = ( haveReadCount != 0 );
+				}
             }
 
             return hasChanged;
@@ -345,6 +358,22 @@ private:
         {
             return host.internalIOBuffer.GetStorageSize();
         }
+
+		AINLINE bool FloatingInvokation( const char *buffer, seekType_t readOffset, seekType_t readCount, seekSlice_t::eIntersectionResult intResult )
+		{
+			bool canContinue = true;
+
+			if ( intResult == seekSlice_t::INTERSECT_FLOATING_END )
+			{
+				// If the reading is inside the buffer but it has not been filled to the required count,
+				// then we terminate.
+				seekType_t awarenessOffset = ( readOffset - host.bufOffset.offsetOfBufferOnFileSpace );
+
+				canContinue = ( awarenessOffset >= host.internalIOBuffer.GetStorageSize() );
+			}
+
+			return canContinue;
+		}
     };
 
     struct ReadingSliceSelectorManager : public SharedSliceSelectorManager
@@ -395,7 +424,7 @@ private:
                 if ( host.IsSeekInsideBufferSpace_Clamped( allocateTo, localReadOffset ) )
                 {
                     hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
-                        host.underlyingStream, localReadOffset
+                        host.underlyingStream, localReadOffset, false
                     );
 
                     if ( hasToRepeat )
@@ -447,7 +476,7 @@ private:
                             // We should only do work if the buffer is not filled up to "localWriteOffset".
                             // This condition has to be checked by the "FileSectorCompletion" method.
                             hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
-                                host.underlyingStream, localReadOffset
+                                host.underlyingStream, localReadOffset, false
                             );
 
                             if ( hasToRepeat )
