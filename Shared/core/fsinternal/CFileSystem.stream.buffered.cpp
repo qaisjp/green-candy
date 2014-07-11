@@ -24,7 +24,7 @@
     Only use raw communication if you intend to put your
     own buffering!
 
-    While a file stream is wrapped usage of the toBeWrapped
+    While a file stream is wrapped, the usage of the toBeWrapped
     pointer outside of the wrapper class leads to
     undefined behavior.
 
@@ -256,15 +256,21 @@ repeatMethod:
     }
     else if ( seekSlice_t::isFloatingIntersect( intResult ) || intResult == seekSlice_t::INTERSECT_UNKNOWN )
     {
-        // Update buffer contents depending on the stream position.
-        UpdateStreamedBufferPosition(
-            bufOffset,
-            fileSeek,
-            cb
-        );
+		// Notify the callback about out-of-bounds content access.
+		bool shouldContinue = cb.FloatingInvokation( buffer, localFileSeek, requestedReadCount, intResult );
 
-        // Attempt to repeat reading.
-        goto repeatMethod;
+		if ( shouldContinue )
+		{
+			// Update buffer contents depending on the stream position.
+			UpdateStreamedBufferPosition(
+				bufOffset,
+				fileSeek,
+				cb
+			);
+
+			// Attempt to repeat reading.
+			goto repeatMethod;
+		}
     }
     else
     {

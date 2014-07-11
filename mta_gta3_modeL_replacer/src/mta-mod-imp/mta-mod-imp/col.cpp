@@ -22,7 +22,8 @@ Collision* Collision::ReadFromFile( CFile *stream )
     size_t dataSize = header.size - 0x18;
 
     // Validate if we can even read that much.
-    size_t bytesAhead = stream->GetSize() - stream->Tell();
+	// Perfectly supports containers bigger than 4GB.
+    fsOffsetNumber_t bytesAhead = stream->GetSizeNative() - stream->TellNative();
 
     if ( bytesAhead < dataSize )
         return NULL;

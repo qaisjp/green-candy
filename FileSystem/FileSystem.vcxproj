@@ -46,7 +46,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../Shared/core;../Shared/sdk;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../Shared/core;../Shared/sdk;.;..\vendor\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -66,7 +66,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
-      <AdditionalIncludeDirectories>../Shared/core;../Shared/sdk;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../Shared/core;../Shared/sdk;.;..\vendor\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <WarningLevel>Level3</WarningLevel>
@@ -83,11 +83,24 @@
     <ClInclude Include="..\Shared\core\CFileSystem.Utils.hxx" />
     <ClInclude Include="..\Shared\core\CFileSystem.zip.h" />
     <ClInclude Include="..\Shared\core\CFileSystemInterface.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.common.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.internal.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.stream.buffered.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.stream.raw.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.translator.pathutil.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.translator.system.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.zip.internal.h" />
+    <ClInclude Include="..\Shared\core\fsinternal\CFileSystem.zip.utils.hxx" />
     <ClInclude Include="StdInc.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Shared\core\CFileSystem.cpp" />
     <ClCompile Include="..\Shared\core\CFileSystem.zip.cpp" />
+    <ClCompile Include="..\Shared\core\fsinternal\CFileSystem.stream.buffered.cpp" />
+    <ClCompile Include="..\Shared\core\fsinternal\CFileSystem.stream.raw.cpp" />
+    <ClCompile Include="..\Shared\core\fsinternal\CFileSystem.translator.pathutil.cpp" />
+    <ClCompile Include="..\Shared\core\fsinternal\CFileSystem.translator.system.cpp" />
+    <ClCompile Include="..\Shared\core\fsinternal\CFileSystem.zip.translator.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
