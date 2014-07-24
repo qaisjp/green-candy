@@ -43,6 +43,21 @@ int RwD3D9ResetStencilMask                  ( void );
 int RwD3D9SetStencilWriteMask               ( unsigned int mask );
 int RwD3D9ResetStencilWriteMask             ( void );
 
+// Renderstate get functions.
+unsigned int RwD3D9GetFogColor              ( void );
+unsigned int RwD3D9GetFogTableMode          ( void );
+unsigned int RwD3D9GetShadeMode             ( void );
+unsigned int RwD3D9GetZWriteEnable          ( void );
+unsigned int RwD3D9GetDepthFunctionEnable   ( void );
+unsigned int RwD3D9GetStencilEnable         ( void );
+unsigned int RwD3D9GetStencilFail           ( void );
+unsigned int RwD3D9GetStencilZFail          ( void );
+unsigned int RwD3D9GetStencilPass           ( void );
+unsigned int RwD3D9GetStencilFunc           ( void );
+unsigned int RwD3D9GetStencilRef            ( void );
+unsigned int RwD3D9GetStencilMask           ( void );
+unsigned int RwD3D9GetStencilWriteMask      ( void );
+
 // Raster stage functions.
 int RwD3D9RasterStageSetFilterMode          ( unsigned int stageIdx, unsigned int filterMode );
 int RwD3D9RasterStageResetFilterMode        ( unsigned int stageIdx );
@@ -53,8 +68,14 @@ int RwD3D9RasterStageResetAddressModeV      ( unsigned int stageIdx );
 int RwD3D9RasterStageSetBorderColor         ( unsigned int stageIdx, unsigned int color );
 int RwD3D9RasterStageResetBorderColor       ( unsigned int stageIdx );
 int RwD3D9RasterStageSetMaxAnisotropy       ( unsigned int stageIdx, int maxAnisotropy );
-int RwD3D9RasterStageGetMaxAnisotropy       ( unsigned int stageIdx );
 int RwD3D9RasterStageResetMaxAnisotropy     ( unsigned int stageIdx );
+
+// Raster stage get functions.
+unsigned int RwD3D9RasterStageGetFilterMode     ( unsigned int stageIdx );
+unsigned int RwD3D9RasterStageGetAddressModeU   ( unsigned int stageIdx );
+unsigned int RwD3D9RasterStageGetAddressModeV   ( unsigned int stageIdx );
+unsigned int RwD3D9RasterStageGetBorderColor    ( unsigned int stageIdx );
+int RwD3D9RasterStageGetMaxAnisotropy           ( unsigned int stageIdx );
 
 // More RenderState functions.
 int RwD3D9SetSrcBlend                       ( unsigned int blendMode );
@@ -63,15 +84,24 @@ int RwD3D9SetDstBlend                       ( unsigned int blendMode );
 int RwD3D9ResetDstBlend                     ( void );
 int RwD3D9SetAlphaFunc                      ( unsigned int cmpOp );
 int RwD3D9ResetAlphaFunc                    ( void );
-int RwD3D9SetAlphaEnable                    ( unsigned int blendEnable, unsigned int testEnable );
-int RwD3D9ResetAlphaEnable                  ( void );
 int RwD3D9SetCullMode                       ( unsigned int cullMode );
 int RwD3D9ResetCullMode                     ( void );
 int RwD3D9SetFogEnable                      ( unsigned int enable );
 int RwD3D9ResetFogEnable                    ( void );
 
+// More RenderState get functions.
+unsigned int RwD3D9GetSrcBlend              ( void );
+unsigned int RwD3D9GetDstBlend              ( void );
+unsigned int RwD3D9GetAlphaFunc             ( void );
+unsigned int RwD3D9GetCullMode              ( void );
+unsigned int RwD3D9GetFogEnable             ( void );
+
 // Initializators.
 void __cdecl RwD3D9InitializeDeviceStates   ( void );
 void __cdecl RwD3D9ResetDeviceStates        ( void );
+
+// Module initialization.
+void RwRenderStatesD3D9_Init( void );
+void RwRenderStatesD3D9_Shutdown( void );
 
 #endif //_RENDERWARE_RENDERSTATES_

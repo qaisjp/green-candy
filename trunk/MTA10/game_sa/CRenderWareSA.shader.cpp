@@ -241,7 +241,7 @@ void CRenderWareSA::PulseWorldTextureWatch()
             {
                 RwTexture* texture = *iter;
                 const char* szTextureName = texture->name;
-                CD3DDUMMY* pD3DData = texture->raster ? (CD3DDUMMY*)texture->raster->renderResource : NULL;
+                CD3DDUMMY* pD3DData = (CD3DDUMMY*)RwTextureGetVideoData( texture );
                 AddActiveTexture ( action.usTxdId, szTextureName, pD3DData );
             }
         }

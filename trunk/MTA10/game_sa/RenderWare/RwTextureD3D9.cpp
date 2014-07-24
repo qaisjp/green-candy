@@ -14,36 +14,274 @@
 #include "../gamesa_renderware.h"
 #include "RwInternals.h"
 
-inline RwRaster*& GetCurrentRaster( void )
+#include "RwRenderTools.hxx"
+
+// Render state modification functions that are mainly used by this module.
+inline unsigned int& GetCurrentAlphaBlendEnable( void )     { return *(unsigned int*)0x00C9A4E8; }
+inline unsigned int& GetCurrentAlphaTestEnable( void )      { return *(unsigned int*)0x00C9A5D4; }
+inline unsigned int& GetIsVertexAlphaLocked( void )         { return *(unsigned int*)0x00C9A4EC; }
+
+inline void _RwD3D9UpdateAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
 {
-    return *((RwRaster**)0x00C9A4EC);
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, blendEnable );
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, ( blendEnable && testEnable ) );
 }
 
-int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
+// Used by RwD3D9RenderStateSetVertexAlphaEnabled.
+int _RwD3D9SetAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
 {
-#if 0
-    if ( !texture )
-    {
-        if ( stageIndex == 0 )
-        {
-            
-        }
+    _RwD3D9UpdateAlphaEnable( blendEnable, testEnable );
 
+    GetCurrentAlphaBlendEnable() = blendEnable;
+    GetCurrentAlphaTestEnable() = testEnable;
+    return 1;
+}
+
+int RwD3D9SetAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
+{
+    if ( GetCurrentAlphaBlendEnable() == blendEnable &&
+         GetCurrentAlphaTestEnable() == testEnable )
+    {
         return 1;
     }
-#else
-    return _RpD3D9SetTexture( texture, stageIndex );
-#endif
+
+    return _RwD3D9SetAlphaEnable( blendEnable, testEnable );
 }
 
-inline DWORD& GetIsVertexAlphaEnabled( void )
+int RwD3D9ResetAlphaEnable( void )
 {
-    return *(DWORD*)0x00C9A4E8;
+    _RwD3D9UpdateAlphaEnable( GetCurrentAlphaBlendEnable(), GetCurrentAlphaTestEnable() );
+    return 1;
 }
 
-inline DWORD& GetIsAlphaTestEnabled( void )
+int RwD3D9SetVirtualAlphaTestState( bool enable )
 {
-    return *(DWORD*)0x00C9A5D4;
+    DWORD currentAlphaBlendState;
+
+    HOOK_RwD3D9GetRenderState( D3DRS_ALPHABLENDENABLE, currentAlphaBlendState );
+
+    GetCurrentAlphaTestEnable() = enable;
+
+    if ( currentAlphaBlendState == TRUE )
+    {
+        HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, enable );
+    }
+
+    return 1;
+}
+
+// Direct3D9_texture plugin code.
+struct d3d9RasterData
+{
+    IDirect3DBaseTexture9*  renderResource;     // Direct3D texture resource
+    unsigned int            paletteNumber;
+    bool                    isAlpha;
+};
+
+AINLINE int GetPluginOffset( void )
+{
+    return *(int*)0x00B4E9E0;
+}
+
+AINLINE d3d9RasterData* GetRasterInfo( RwRaster *raster )
+{
+    if ( raster == NULL )
+        return NULL;
+
+    int offset = GetPluginOffset();
+
+    if ( offset == -1 )
+        return NULL;
+
+    return RW_PLUGINSTRUCT <d3d9RasterData> ( raster, offset );
+}
+
+AINLINE const d3d9RasterData* GetRasterInfoConst( const RwRaster *raster )
+{
+    if ( raster == NULL )
+        return NULL;
+
+    int offset = GetPluginOffset();
+
+    if ( offset == -1 )
+        return NULL;
+
+    return RW_PLUGINSTRUCT <const d3d9RasterData> ( raster, offset );
+}
+
+/*=========================================================
+    RwD3D9SetRasterForStage
+
+    Arguments:
+        raster - pointer to GPU texture data
+        stageIdx - the stage number to apply the texture data to
+    Purpose:
+        Sets the raster for the specified Direct3D stage index.
+        Renderstates are adjusted in this function, if stageIdx
+        is zero.
+    Binary offsets:
+        (1.0 US): 0x007FDCD0
+        (1.0 EU): 0x007FDD10
+=========================================================*/
+// virtual renderstates.
+inline unsigned int& GetIsVertexAlphaEnabled( void )        { return *(unsigned int*)0x00C9A4E8; }
+inline unsigned int& GetIsAlphaTestEnabled( void )          { return *(unsigned int*)0x00C9A5D4; }
+
+AINLINE void _RwD3D9LockVertexAlpha( unsigned int shouldLock )
+{
+    unsigned int& vertexAlphaLocked = GetIsVertexAlphaLocked();
+
+    if ( vertexAlphaLocked != shouldLock )
+    {
+        vertexAlphaLocked = shouldLock;
+
+        if ( GetIsVertexAlphaEnabled() == false )
+        {
+            bool enableAlphaBlend = ( shouldLock == TRUE );
+
+            _RwD3D9UpdateAlphaEnable( enableAlphaBlend, GetIsAlphaTestEnabled() );
+        }
+    }
+}
+
+int __cdecl RwD3D9SetRasterForStage( RwRaster *raster, unsigned int stageIdx )
+{
+    d3d9RasterData *info = GetRasterInfo( raster );
+
+    if ( stageIdx == 0 )
+    {
+        bool lockVertexAlpha = ( raster && info->isAlpha );
+        
+        _RwD3D9LockVertexAlpha( lockVertexAlpha );
+    }
+
+    // Update the Direct3D 9 texture data.
+    d3d9RasterStage& rasterStage = GetRasterStageInfo( stageIdx );
+
+    if ( rasterStage.raster != raster )
+    {
+        rasterStage.raster = raster;
+
+        IDirect3DBaseTexture9 *gpuTextureData = NULL;
+        bool hasTexturePalette = false;
+        unsigned int paletteNumber = 0;
+
+        if ( raster != NULL )
+        {
+            gpuTextureData = info->renderResource;
+
+            if ( info->paletteNumber != 0 )
+            {
+                hasTexturePalette = true;
+                paletteNumber = info->paletteNumber;
+            }
+        }
+
+        {
+            IDirect3DDevice9 *renderDevice = GetRenderDevice_Native();
+
+            renderDevice->SetTexture( stageIdx, gpuTextureData );
+
+            if ( hasTexturePalette )
+            {
+                renderDevice->SetCurrentTexturePalette( paletteNumber );
+            }
+        }
+    }
+
+    return 1;
+}
+
+template <typename numberType>
+AINLINE numberType easyPow( numberType base, numberType exp )
+{
+    const numberType zero_val = (numberType)0;
+
+    numberType current = (numberType)1;
+
+    while ( exp != 0 )
+    {
+        current *= base;
+    }
+
+    return current;
+}
+
+unsigned int GetBitRegion( unsigned int value, unsigned int offset, unsigned int span )
+{
+    return ( value << offset ) & ( easyPow( 2u, span ) - 1 );
+}
+
+int& GetSharedTextureAnisotOffset( void )
+{
+    return *(int*)0x00C9A5E8;
+}
+
+struct d3d9TextureAnisotropyInfo
+{
+    unsigned char anisotropy;
+
+    BYTE pad[3];
+};
+
+d3d9TextureAnisotropyInfo* GetTextureAnisotropyInfo( RwTexture *tex )
+{
+    if ( tex == NULL )
+        return NULL;
+
+    int pluginOffset = GetSharedTextureAnisotOffset();
+
+    return ( pluginOffset >= 0 ) ? ( RW_PLUGINSTRUCT <d3d9TextureAnisotropyInfo> ( tex, pluginOffset ) ) : ( NULL );
+}
+
+/*=========================================================
+    RwD3D9SetTexture
+
+    Arguments:
+        texture - texture information with raster
+        stageIdx - the stage number to apply the texture data to
+    Purpose:
+        Updates the given raster stage (stageIndex) by texture
+        information of the texture object. If texture is NULL,
+        then the raster stage is disabled.
+    Binary offsets:
+        (1.0 US): 0x007FDE70
+        (1.0 EU): 0x007FDEB0
+=========================================================*/
+int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
+{
+    RwRaster *texRaster = NULL;
+
+    if ( texture )
+    {
+        // Set Texture address modes.
+        RwD3D9RasterStageSetAddressModeU( stageIndex, texture->u_addressMode );
+        RwD3D9RasterStageSetAddressModeV( stageIndex, texture->v_addressMode );
+
+        // Attempt to get the texture plugin struct.
+        // It does not have to be loaded.
+        d3d9TextureAnisotropyInfo *anisot = GetTextureAnisotropyInfo( texture );
+
+        unsigned int filterMode = texture->filterMode;
+
+        if ( anisot )
+        {
+            RwD3D9RasterStageSetMaxAnisotropy( stageIndex, anisot->anisotropy );
+
+            if ( anisot->anisotropy > 1 )
+            {
+                filterMode = 7;
+            }
+        }
+
+        // Set Texture filter mode.
+        RwD3D9RasterStageSetFilterMode( stageIndex, filterMode );
+
+        texRaster = texture->raster;
+    }
+
+    RwD3D9SetRasterForStage( texRaster, stageIndex );
+    return 1;
 }
 
 /*=========================================================
@@ -63,22 +301,22 @@ inline DWORD& GetIsAlphaTestEnabled( void )
 =========================================================*/
 // note: RenderWare must have a way to determine alpha by raster.
 // having access to this feature could greatly improve rendering.
-void __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( DWORD enabled )
+int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( DWORD enabled )
 {
-    if ( enabled == GetIsVertexAlphaEnabled() )
-        return;
+    if ( enabled != GetIsVertexAlphaEnabled() )
+    {
+        GetIsVertexAlphaEnabled() = enabled;
 
-    GetIsVertexAlphaEnabled() = enabled;
+        if ( GetIsVertexAlphaLocked() == false )
+        {
+            // Actually an inlined-always-change call, but we do it thisway rather.
+            // If the implementation follows its own rules, everything is fine.
+            // This asserts, that MTA will not set rogue render states anymore!
+            _RwD3D9SetAlphaEnable( enabled, GetIsAlphaTestEnabled() );
+        }
+    }
 
-#if 0
-    if ( GetCurrentRaster() )
-        return;
-#endif
-
-    // Actually an inlined-always-change call, but we do it thisway rather.
-    // If the implementation follows its own rules, everything is fine.
-    // This asserts, that MTA will not set rogue render states anymore!
-    RwD3D9SetAlphaEnable( enabled, GetIsAlphaTestEnabled() );
+    return 1;
 }
 
 /*=========================================================
@@ -110,7 +348,35 @@ int __cdecl RwTextureHasAlpha( RwTexture *tex )
 {
     RwRaster *raster = tex->raster;
 
-    return raster ? raster->isAlpha : false;
+    if ( raster )
+    {
+        const d3d9RasterData *rasterInfo = GetRasterInfoConst( raster );
+
+        return rasterInfo ? rasterInfo->isAlpha : false;
+    }
+
+    return false;
+}
+
+/*=========================================================
+    RwTextureGetVideoData (MTA extension)
+
+    Arguments:
+        tex - the texture to get the video data pointer of
+    Purpose:
+        Returns the Direct3D 9 video data pointer from the
+        given texture.
+=========================================================*/
+IDirect3DBaseTexture9* RwTextureGetVideoData( RwTexture *tex )
+{
+    RwRaster *raster = tex->raster;
+
+    if ( !raster )
+        return NULL;
+
+    const d3d9RasterData *rasterInfo = GetRasterInfoConst( raster );
+
+    return rasterInfo ? rasterInfo->renderResource : NULL;
 }
 
 void RwTextureD3D9_Init( void )
@@ -120,10 +386,14 @@ void RwTextureD3D9_Init( void )
     case VERSION_EU_10:
         HookInstall( 0x007FE0E0, (DWORD)RwD3D9RenderStateSetVertexAlphaEnabled, 5 );
         HookInstall( 0x007FE1D0, (DWORD)RwD3D9RenderStateIsVertexAlphaEnabled, 5 );
+        HookInstall( 0x007FDEB0, (DWORD)RwD3D9SetTexture, 5 );
+        HookInstall( 0x007FDD10, (DWORD)RwD3D9SetRasterForStage, 5 );
         break;
     case VERSION_US_10:
         HookInstall( 0x007FE0A0, (DWORD)RwD3D9RenderStateSetVertexAlphaEnabled, 5 );
         HookInstall( 0x007FE190, (DWORD)RwD3D9RenderStateIsVertexAlphaEnabled, 5 );
+        HookInstall( 0x007FDE70, (DWORD)RwD3D9SetTexture, 5 );
+        HookInstall( 0x007FDCD0, (DWORD)RwD3D9SetRasterForStage, 5 );
         break;
     }
 }

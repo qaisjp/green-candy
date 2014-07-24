@@ -29,12 +29,10 @@ inline unsigned int& GetCurrentStencilFunc( void )          { return *(unsigned 
 inline unsigned int& GetCurrentStencilRef( void )           { return *(unsigned int*)0x00C9A4DC; }
 inline unsigned int& GetCurrentStencilMask( void )          { return *(unsigned int*)0x00C9A4E0; }
 inline unsigned int& GetCurrentStencilWriteMask( void )     { return *(unsigned int*)0x00C9A4E4; }
-inline unsigned int& GetCurrentAlphaBlendEnable( void )     { return *(unsigned int*)0x00C9A4E8; }
 inline unsigned int& GetCurrentCullMode( void )             { return *(unsigned int*)0x00C9A4F0; }
 inline unsigned int& GetCurrentSrcBlend( void )             { return *(unsigned int*)0x00C9A5C8; }
 inline unsigned int& GetCurrentDstBlend( void )             { return *(unsigned int*)0x00C9A5CC; }
 inline unsigned int& GetCurrentAlphaRefFunc( void )         { return *(unsigned int*)0x00C9A5D0; }
-inline unsigned int& GetCurrentAlphaTestEnable( void )      { return *(unsigned int*)0x00C9A5D4; }
 
 static const D3DFOGMODE _fogTableModes[] =
 {
@@ -58,6 +56,11 @@ int RwD3D9SetFogColor( unsigned int color )
         return 1;
 
     return _RwD3D9SetFogColor( color );
+}
+
+unsigned int RwD3D9GetFogColor( void )
+{
+    return GetCurrentFogColor();
 }
 
 inline int RwD3D9ResetFogColor( void )
@@ -85,6 +88,11 @@ int RwD3D9SetFogDensity( float density )
         return 1;
 
     return _RwD3D9SetFogDensity( density );
+}
+
+float RwD3D9GetFogDensity( void )
+{
+    return GetCurrentFogDensity();
 }
 
 inline int RwD3D9ResetFogDensity( void )
@@ -121,7 +129,7 @@ int RwD3D9SetFogTableMode( unsigned int mode )
 {
     int result = 1;
 
-    if ( GetCurrentFogTableIndex() != value )
+    if ( GetCurrentFogTableIndex() != mode )
     {
         result = _RwD3D9SetFogTableMode( mode );
     }
@@ -138,6 +146,11 @@ int RwD3D9SetFogTableMode( unsigned int mode )
     }
 
     return result;
+}
+
+unsigned int RwD3D9GetFogTableMode( void )
+{
+    return GetCurrentFogTableIndex();
 }
 
 inline int RwD3D9ResetFogTableMode( void )
@@ -169,9 +182,14 @@ int RwD3D9SetShadeMode( unsigned int mode )
     return _RwD3D9SetShadeMode( mode );
 }
 
+unsigned int RwD3D9GetShadeMode( void )
+{
+    return GetCurrentShadeMode();
+}
+
 inline int RwD3D9ResetShadeMode( void )
 {
-    HOOK_RwD3D9SetRenderState( D3DRS_SHADEMODE, _shadeModeTable[GetCurrentShadeMode()] );
+    HOOK_RwD3D9SetRenderState( D3DRS_SHADEMODE, _shadeModeTable[ GetCurrentShadeMode() ] );
     return 1;
 }
 
@@ -188,7 +206,17 @@ int RwD3D9SetZWriteEnable( unsigned int enable )
     if ( GetCurrentZWriteEnable() == enable )
         return 1;
 
+    if ( GetCurrentDepthFunctionEnable() == false )
+    {
+        HOOK_RwD3D9SetRenderState( D3DRS_ZENABLE, enable );
+    }
+
     return _RwD3D9SetZWriteEnable( enable );
+}
+
+unsigned int RwD3D9GetZWriteEnable( void )
+{
+    return GetCurrentZWriteEnable();
 }
 
 inline int RwD3D9ResetZWriteEnable( void )
@@ -200,6 +228,7 @@ inline int RwD3D9ResetZWriteEnable( void )
 static inline void _RwD3D9UpdateDepthFunctionEnable( unsigned int enable )
 {
     HOOK_RwD3D9SetRenderState( D3DRS_ZFUNC, ( enable ) ? D3DCMP_LESSEQUAL : D3DCMP_ALWAYS );
+    HOOK_RwD3D9SetRenderState( D3DRS_ZENABLE, enable );
 }
 
 inline int _RwD3D9SetDepthFunctionEnable( unsigned int enable )
@@ -215,7 +244,17 @@ int RwD3D9SetDepthFunctionEnable( unsigned int enable )
     if ( GetCurrentDepthFunctionEnable() == enable )
         return 1;
 
+    if ( GetCurrentZWriteEnable() == false )
+    {
+        HOOK_RwD3D9SetRenderState( D3DRS_ZENABLE, enable );
+    }
+
     return _RwD3D9SetDepthFunctionEnable( enable );
+}
+
+unsigned int RwD3D9GetDepthFunctionEnable( void )
+{
+    return GetCurrentDepthFunctionEnable();
 }
 
 inline int RwD3D9ResetDepthFunctionEnable( void )
@@ -238,6 +277,11 @@ int RwD3D9SetStencilEnable( unsigned int enable )
         return 1;
 
     return _RwD3D9SetStencilEnable( enable );
+}
+
+unsigned int RwD3D9GetStencilEnable( void )
+{
+    return GetCurrentStencilEnable();
 }
 
 inline int RwD3D9ResetStencilEnable( void )
@@ -276,6 +320,11 @@ int RwD3D9SetStencilFail( unsigned int opMode )
     return _RwD3D9SetStencilFail( opMode );
 }
 
+unsigned int RwD3D9GetStencilFail( void )
+{
+    return GetCurrentStencilFail();
+}
+
 inline int RwD3D9ResetStencilFail( void )
 {
     HOOK_RwD3D9SetRenderState( D3DRS_STENCILFAIL, _stencilOpTable[GetCurrentStencilFail()] );
@@ -298,6 +347,11 @@ int RwD3D9SetStencilZFail( unsigned int opMode )
     return _RwD3D9SetStencilZFail( opMode );
 }
 
+unsigned int RwD3D9GetStencilZFail( void )
+{
+    return GetCurrentStencilZFail();
+}
+
 inline int RwD3D9ResetStencilZFail( void )
 {
     HOOK_RwD3D9SetRenderState( D3DRS_STENCILZFAIL, _stencilOpTable[GetCurrentStencilZFail()] );
@@ -318,6 +372,11 @@ int RwD3D9SetStencilPass( unsigned int opMode )
         return 1;
 
     return _RwD3D9SetStencilPass( opMode );
+}
+
+unsigned int RwD3D9GetStencilPass( void )
+{
+    return GetCurrentStencilPass();
 }
 
 inline int RwD3D9ResetStencilPass( void )
@@ -355,6 +414,11 @@ int RwD3D9SetStencilFunc( unsigned int cmpOp )
     return _RwD3D9SetStencilFunc( cmpOp );
 }
 
+unsigned int RwD3D9GetStencilFunc( void )
+{
+    return GetCurrentStencilFunc();
+}
+
 inline int RwD3D9ResetStencilFunc( void )
 {
     HOOK_RwD3D9SetRenderState( D3DRS_STENCILFUNC, _cmpOpTable[GetCurrentStencilFunc()] );
@@ -375,6 +439,11 @@ int RwD3D9SetStencilRef( unsigned int ref )
         return 1;
 
     return _RwD3D9SetStencilRef( ref );
+}
+
+unsigned int RwD3D9GetStencilRef( void )
+{
+    return GetCurrentStencilRef();
 }
 
 inline int RwD3D9ResetStencilRef( void )
@@ -399,6 +468,11 @@ int RwD3D9SetStencilMask( unsigned int mask )
     return _RwD3D9SetStencilMask( mask );
 }
 
+unsigned int RwD3D9GetStencilMask( void )
+{
+    return GetCurrentStencilMask();
+}
+
 inline int RwD3D9ResetStencilMask( void )
 {
     HOOK_RwD3D9SetRenderState( D3DRS_STENCILMASK, GetCurrentStencilMask() );
@@ -419,6 +493,11 @@ int RwD3D9SetStencilWriteMask( unsigned int mask )
         return 1;
 
     return _RwD3D9SetStencilWriteMask( mask );
+}
+
+unsigned int RwD3D9GetStencilWriteMask( void )
+{
+    return GetCurrentStencilWriteMask();
 }
 
 inline int RwD3D9ResetStencilWriteMask( void )
@@ -477,6 +556,11 @@ int RwD3D9RasterStageSetFilterMode( unsigned int stageIdx, unsigned int filterMo
     return _RwD3D9RasterStageSetFilterMode( stageIdx, filterMode );
 }
 
+unsigned int RwD3D9RasterStageGetFilterMode( unsigned int stageIdx )
+{
+    return GetRasterStageInfo( stageIdx ).filterType;
+}
+
 inline int RwD3D9RasterStageResetFilterMode( unsigned int stageIdx )
 {
     d3d9RasterStage& rasterStage = GetRasterStageInfo( stageIdx );
@@ -518,7 +602,12 @@ int RwD3D9RasterStageSetAddressModeU( unsigned int stageIdx, unsigned int modeId
     if ( rasterStage.u_addressMode == modeIdx )
         return 1;
 
-    return _RwD3D9RasterStageUpdateAddressModeU( stageIdx, modeIdx );
+    return _RwD3D9RasterStageSetAddressModeU( stageIdx, modeIdx );
+}
+
+unsigned int RwD3D9RasterStageGetAddressModeU( unsigned int stageIdx )
+{
+    return GetRasterStageInfo( stageIdx ).u_addressMode;
 }
 
 int RwD3D9RasterStageResetAddressModeU( unsigned int stageIdx )
@@ -548,10 +637,15 @@ int RwD3D9RasterStageSetAddressModeV( unsigned int stageIdx, unsigned int modeId
 {
     d3d9RasterStage& rasterStage = GetRasterStageInfo( stageIdx );
 
-    if ( rasterStage.,v_addressMode == modeIdx )
+    if ( rasterStage.v_addressMode == modeIdx )
         return 1;
 
     return _RwD3D9RasterStageSetAddressModeV( stageIdx, modeIdx );
+}
+
+unsigned int RwD3D9RasterStageGetAddressModeV( unsigned int stageIdx )
+{
+    return GetRasterStageInfo( stageIdx ).v_addressMode;
 }
 
 inline int RwD3D9RasterStageResetAddressModeV( unsigned int stageIdx )
@@ -585,6 +679,11 @@ int RwD3D9RasterStageSetBorderColor( unsigned int stageIdx, unsigned int color )
         return 1;
 
     return _RwD3D9RasterStageSetBorderColor( stageIdx, color );
+}
+
+unsigned int RwD3D9RasterStageGetBorderColor( unsigned int stageIdx )
+{
+    return GetRasterStageInfo( stageIdx ).borderColor;
 }
 
 inline int RwD3D9RasterStageResetBorderColor( unsigned int stageIdx )
@@ -671,6 +770,11 @@ int RwD3D9SetSrcBlend( unsigned int blendMode )
     return 1;
 }
 
+unsigned int RwD3D9GetSrcBlend( void )
+{
+    return GetCurrentSrcBlend();
+}
+
 inline int RwD3D9ResetDstBlend( void )
 {
     HOOK_RwD3D9SetRenderState( D3DRS_DESTBLEND, blendModes[GetCurrentDstBlend()] );
@@ -693,9 +797,14 @@ int RwD3D9SetDstBlend( unsigned int blendMode )
     return 1;
 }
 
+unsigned int RwD3D9GetDstBlend( void )
+{
+    return GetCurrentDstBlend();
+}
+
 inline int RwD3D9ResetAlphaFunc( void )
 {
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, _cmpOpTable[GetCurrentAlphaRefFunc()] );
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, _cmpOpTable[ GetCurrentAlphaRefFunc() ] );
     return 1;
 }
 
@@ -712,39 +821,14 @@ int RwD3D9SetAlphaFunc( unsigned int cmpOp )
     if ( GetCurrentAlphaRefFunc() == cmpOp )
         return 1;
 
+    RwD3D9SetVirtualAlphaTestState( cmpOp != 8 );
+
     return _RwD3D9SetAlphaFunc( cmpOp );
 }
 
-inline void _RwD3D9UpdateAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
+unsigned int RwD3D9GetAlphaFunc( void )
 {
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, blendEnable );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, ( blendEnable && testEnable ) );
-}
-
-inline int _RwD3D9SetAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
-{
-    _RwD3D9UpdateAlphaEnable( blendEnable, testEnable );
-
-    GetCurrentAlphaBlendEnable() = blendEnable;
-    GetCurrentAlphaTestEnable() = testEnable;
-    return 1;
-}
-
-int RwD3D9SetAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
-{
-    if ( GetCurrentAlphaBlendEnable() == blendEnable &&
-         GetCurrentAlphaTestEnable() == testEnable )
-    {
-        return 1;
-    }
-
-    return _RwD3D9SetAlphaEnable( blendEnable, testEnable );
-}
-
-inline int RwD3D9ResetAlphaEnable( void )
-{
-    _RwD3D9UpdateAlphaEnable( GetCurrentAlphaBlendEnable(), GetCurrentAlphaTestEnable() );
-    return 1;
+    return GetCurrentAlphaRefFunc();
 }
 
 static const D3DCULL cullModes[] =
@@ -771,9 +855,14 @@ int RwD3D9SetCullMode( unsigned int cullMode )
     return _RwD3D9SetCullMode( cullMode );
 }
 
+unsigned int RwD3D9GetCullMode( void )
+{
+    return GetCurrentCullMode();
+}
+
 inline int RwD3D9ResetCullMode( void )
 {
-    HOOK_RwD3D9SetRenderState( D3DRS_CULLMODE, cullModes[GetCurrentCullMode()] );
+    HOOK_RwD3D9SetRenderState( D3DRS_CULLMODE, cullModes[ GetCurrentCullMode() ] );
     return 1;
 }
 
@@ -790,10 +879,15 @@ int RwD3D9SetFogEnable( unsigned int enable )
     if ( GetCurrentFogEnable() == enable )
         return 1;
 
-    if ( value == false && IS_ANY_FLAG( *(unsigned int*)0x00C9BF20, 0x180 ) )
+    if ( enable == TRUE && !IS_ANY_FLAG( *(unsigned int*)0x00C9BF20, 0x180 ) )
         return 1;
 
     return _RwD3D9SetFogEnable( enable );
+}
+
+unsigned int RwD3D9GetFogEnable( void )
+{
+    return GetCurrentFogEnable();
 }
 
 inline int RwD3D9ResetFogEnable( void )
@@ -818,21 +912,27 @@ inline int RwD3D9ResetFogEnable( void )
 =========================================================*/
 int __cdecl RwD3D9RenderStateTextureFilter( unsigned int mode )
 {
-    
+    // Make sure max anisotropy does not overshoot 1.
+    {
+        int maxAliasing = RwD3D9RasterStageGetMaxAnisotropy( 0 );
+
+        if ( maxAliasing > 1 )
+        {
+            _RwD3D9RasterStageSetMaxAnisotropy( 0, 1 );   
+        }
+    }
+
+    return RwD3D9RasterStageSetFilterMode( 0, mode );
 }
 
 int __cdecl RwD3D9_RwSetRenderState( eRwDeviceCmd deviceType, unsigned int value )
 {
     switch( deviceType )
     {
-    case RWSTATE_FOGENABLE:
-        return RwD3D9SetFogEnable( value );
-    case RWSTATE_FOGCOLOR:
-        return RwD3D9SetFogColor( value );
-    case RWSTATE_FOGMODE:
-        return RwD3D9SetFogTableMode( value );
-    case RWSTATE_FOGDENSITY:
-        return RwD3D9SetFogDensity( value );
+    case RWSTATE_FOGENABLE:                 return RwD3D9SetFogEnable( value );
+    case RWSTATE_FOGCOLOR:                  return RwD3D9SetFogColor( value );
+    case RWSTATE_FOGMODE:                   return RwD3D9SetFogTableMode( value );
+    case RWSTATE_FOGDENSITY:                return RwD3D9SetFogDensity( *(float*)value );
     case RWSTATE_COMBINEDTEXADDRESSMODE:
         RwD3D9RasterStageSetAddressModeU( 0, value );
         RwD3D9RasterStageSetAddressModeV( 0, value );
@@ -843,11 +943,93 @@ int __cdecl RwD3D9_RwSetRenderState( eRwDeviceCmd deviceType, unsigned int value
     case RWSTATE_VTEXADDRESSMODE:
         RwD3D9RasterStageSetAddressModeV( 0, value );
         return 1;
-    case RWSTATE_TEXFILTER:
-        return RwD3D9RenderStateTextureFilter( value );
+    case RWSTATE_TEXFILTER:                 return RwD3D9RenderStateTextureFilter( value );
+    case RWSTATE_CURRENTRASTER:             return RwD3D9SetRasterForStage( (RwRaster*)value, 0 );
+    case RWSTATE_ZWRITEENABLE:              return RwD3D9SetZWriteEnable( value );
+    case RWSTATE_ZTESTENABLE:               return RwD3D9SetDepthFunctionEnable( value );
+    case RWSTATE_SRCBLEND:                  return RwD3D9SetSrcBlend( value );
+    case RWSTATE_DSTBLEND:                  return RwD3D9SetDstBlend( value );
+    case RWSTATE_SHADEMODE:                 return RwD3D9SetShadeMode( value );
+    case RWSTATE_ALPHABLENDENABLE:          return RwD3D9RenderStateSetVertexAlphaEnabled( value );
+    case RWSTATE_TEXTUREBORDERCOLOR:        return RwD3D9RasterStageSetBorderColor( 0, value );
+    case RWSTATE_UNKNOWN1:                  return ( value == TRUE );
+    case RWSTATE_CULLMODE:                  return RwD3D9SetCullMode( value );
+    case RWSTATE_STENCILENABLE:             return RwD3D9SetStencilEnable( value );
+    case RWSTATE_STENCILFAIL:               return RwD3D9SetStencilFail( value );
+    case RWSTATE_STENCILZFAIL:              return RwD3D9SetStencilZFail( value );
+    case RWSTATE_STENCILPASS:               return RwD3D9SetStencilPass( value );
+    case RWSTATE_STENCILFUNC:               return RwD3D9SetStencilFunc( value );
+    case RWSTATE_STENCILREF:                return RwD3D9SetStencilRef( value );
+    case RWSTATE_STENCILMASK:               return RwD3D9SetStencilMask( value );
+    case RWSTATE_STENCILWRITEMASK:          return RwD3D9SetStencilWriteMask( value );
+    case RWSTATE_ALPHAFUNC:                 return RwD3D9SetAlphaFunc( value );
+    case RWSTATE_ALPHAREF:
+        HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, (DWORD)value );
+        return 1;
     }
 
-    return true;
+    return 1;
+}
+
+/*=========================================================
+    RwD3D9_RwGetRenderState
+
+    Arguments:
+        deviceType - type of the device state to get
+        valuePtr - pointer to write current state to
+    Purpose:
+        Retrieves the current render state value that is
+        exposed by RenderWare in general. The returned
+        RenderWare renderstate does not have to match the
+        actual device state.
+    Binary offsets:
+        (1.0 US): 0x007FD810
+        (1.0 EU): 0x007FD850
+=========================================================*/
+int __cdecl RwD3D9_RwGetRenderState( eRwDeviceCmd deviceType, unsigned int *valuePtr )
+{
+    switch( deviceType )
+    {
+    case RWSTATE_FOGENABLE:                     *valuePtr = RwD3D9GetFogEnable(); return 1;
+    case RWSTATE_FOGMODE:                       *valuePtr = RwD3D9GetFogTableMode(); return 1;
+    case RWSTATE_FOGCOLOR:                      *valuePtr = RwD3D9GetFogColor(); return 1;
+    case RWSTATE_FOGDENSITY:                    *(float*)valuePtr = RwD3D9GetFogDensity(); return 1;
+    case RWSTATE_COMBINEDTEXADDRESSMODE:
+        {
+            bool success = ( RwD3D9RasterStageGetAddressModeU( 0 ) == RwD3D9RasterStageGetAddressModeV( 0 ) );
+
+            *valuePtr = ( success ) ? ( TRUE ) : ( FALSE );
+            
+            return success;
+        }
+        break;
+    case RWSTATE_UTEXADDRESSMODE:               *valuePtr = RwD3D9RasterStageGetAddressModeU( 0 ); return 1;
+    case RWSTATE_VTEXADDRESSMODE:               *valuePtr = RwD3D9RasterStageGetAddressModeV( 0 ); return 1;
+    case RWSTATE_TEXFILTER:                     *valuePtr = RwD3D9RasterStageGetFilterMode( 0 ); return 1;
+    case RWSTATE_CURRENTRASTER:                 *(RwRaster**)valuePtr = GetRasterStageInfo( 0 ).raster; return 1;
+    case RWSTATE_ZWRITEENABLE:                  *valuePtr = RwD3D9GetZWriteEnable(); return 1;
+    case RWSTATE_ZTESTENABLE:                   *valuePtr = RwD3D9GetDepthFunctionEnable(); return 1;
+    case RWSTATE_SRCBLEND:                      *valuePtr = RwD3D9GetSrcBlend(); return 1;
+    case RWSTATE_DSTBLEND:                      *valuePtr = RwD3D9GetDstBlend(); return 1;
+    case RWSTATE_SHADEMODE:                     *valuePtr = RwD3D9GetShadeMode(); return 1;
+    case RWSTATE_ALPHABLENDENABLE:              *valuePtr = RwD3D9RenderStateIsVertexAlphaEnabled(); return 1;
+    case RWSTATE_TEXTUREBORDERCOLOR:            *valuePtr = RwD3D9RasterStageGetBorderColor( 0 ); return 1;
+    case RWSTATE_CULLMODE:                      *valuePtr = RwD3D9GetCullMode(); return 1;
+    case RWSTATE_STENCILENABLE:                 *valuePtr = RwD3D9GetStencilEnable(); return 1;
+    case RWSTATE_STENCILFAIL:                   *valuePtr = RwD3D9GetStencilFail(); return 1;
+    case RWSTATE_STENCILZFAIL:                  *valuePtr = RwD3D9GetStencilZFail(); return 1;
+    case RWSTATE_STENCILPASS:                   *valuePtr = RwD3D9GetStencilPass(); return 1;
+    case RWSTATE_STENCILFUNC:                   *valuePtr = RwD3D9GetStencilFunc(); return 1;
+    case RWSTATE_STENCILREF:                    *valuePtr = RwD3D9GetStencilRef(); return 1;
+    case RWSTATE_STENCILMASK:                   *valuePtr = RwD3D9GetStencilMask(); return 1;
+    case RWSTATE_STENCILWRITEMASK:              *valuePtr = RwD3D9GetStencilWriteMask(); return 1;
+    case RWSTATE_ALPHAFUNC:                     *valuePtr = RwD3D9GetAlphaFunc(); return 1;
+    case RWSTATE_ALPHAREF:                      HOOK_RwD3D9GetRenderState( D3DRS_ALPHAREF, *(DWORD*)valuePtr ); return 1;
+    default:
+        return 0;
+    }
+
+    return 1;
 }
 
 /*=========================================================
@@ -987,9 +1169,8 @@ void __cdecl RwD3D9ResetDeviceStates( void )
     
     RwD3D9ResetShadeMode();
 
+    RwD3D9ResetZWriteEnable();
     RwD3D9ResetDepthFunctionEnable();
-    _RwD3D9SetZWriteEnable( true );
-    HOOK_RwD3D9SetRenderState( D3DRS_ZENABLE, true );
 
     RwD3D9ResetStencilEnable();
     RwD3D9ResetStencilFail();
@@ -1045,4 +1226,25 @@ void __cdecl RwD3D9ResetDeviceStates( void )
     RwD3D9SetupRenderingTransformation();
 
     RwD3D9ApplyDeviceStates();
+}
+
+// Module initialization.
+void RwRenderStatesD3D9_Init( void )
+{
+    switch( pGame->GetGameVersion() )
+    {
+    case VERSION_EU_10:
+        HookInstall( 0x007FE460, (DWORD)RwD3D9_RwSetRenderState, 5 );
+        HookInstall( 0x007FD850, (DWORD)RwD3D9_RwGetRenderState, 5 );
+        break;
+    case VERSION_US_10:
+        HookInstall( 0x007FE420, (DWORD)RwD3D9_RwSetRenderState, 5 );
+        HookInstall( 0x007FD810, (DWORD)RwD3D9_RwGetRenderState, 5 );
+        break;
+    }
+}
+
+void RwRenderStatesD3D9_Shutdown( void )
+{
+    return;
 }
