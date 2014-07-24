@@ -136,17 +136,23 @@ RwTexture* RwTextureStreamReadEx( RwStream *stream )
         return NULL;
     }
 
-    // Apply special flags
-    unsigned int flags = tex->flags_a;
+    // Correct the filter mode.
+    unsigned int filterMode = tex->filterMode;
 
-    if ( flags == 1 )
-        tex->flags_a = 2;
-    else if ( flags == 3 )
-        tex->flags_b = 4;
+    if ( filterMode == 1 )
+    {
+        tex->filterMode = 2;
+    }
+    else if ( filterMode == 3 )
+    {
+        tex->filterMode = 4;
+    }
 
     // Note: MTA usually has a fxQuality hook here, but it did nothing for the texture loading.
     if ( *(bool*)0x00C87FFC && tex->anisotropy > 0 && g_effectManager->GetEffectQuality() > 1 )
+    {
         tex->anisotropy = RenderWare::GetDeviceInformation().maxAnisotropy;
+    }
 
     return tex;
 }

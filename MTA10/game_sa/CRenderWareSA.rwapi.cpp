@@ -216,8 +216,15 @@ void RenderWareAPI_Init( void )
         _freeMemGame    = (_freeMemGame_t)0x008214BD;
         break;
     }
+
+    // Initialize remaining modules.
+    RwRenderStatesD3D9_Init();
+    RwTextureD3D9_Init();
 }
 
 void RenderWareAPI_Shutdown( void )
 {
+    // Shutdown remaining modules.
+    RwTextureD3D9_Shutdown();
+    RwRenderStatesD3D9_Shutdown();
 }

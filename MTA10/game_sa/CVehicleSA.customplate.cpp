@@ -107,7 +107,7 @@ RwTexture* _CreateVehicleNameplateTexture( const char *plateText, unsigned char 
     // Set the texture name to the raster text.
     plateTexture->SetName( plateText );
 
-    plateTexture->flags_a = true;
+    plateTexture->filterMode = 1;
 
     return plateTexture;
 }

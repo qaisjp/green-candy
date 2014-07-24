@@ -28,11 +28,6 @@ struct RwRaster
     unsigned char           format;                             // 35
     unsigned char*          origPixels;                         // 36
     int                     origWidth, origHeight, origDepth;   // 40
-
-    // Begin of Direct3D9_Raster extension
-    IDirect3DBaseTexture9*  renderResource;                     // 52, Direct3D texture resource
-    BYTE                    pad[4];                             // 56
-    bool                    isAlpha;                            // 60
 };
 struct RwTexture
 {
@@ -48,10 +43,9 @@ struct RwTexture
 
         struct
         {
-            unsigned char       flags_a;                        // 80
-            unsigned char       flags_b;                        // 81
-            unsigned char       flags_c;                        // 82
-            unsigned char       flags_d;                        // 83
+            unsigned char       filterMode : 8;                 // 80
+			unsigned char		u_addressMode : 4;              // 81
+            unsigned char       v_addressMode : 4;
         };
     };
     unsigned int                refs;                           // 84
