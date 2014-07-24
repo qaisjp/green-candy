@@ -123,7 +123,6 @@ RW_PLUGIN_INTERFACE_INST( RwRaster );
 // Texture functions
 RwTextureCreate_t                       RwTextureCreate                         = (RwTextureCreate_t)                       invalid_ptr;
 RwTextureDestroy_t                      RwTextureDestroy                        = (RwTextureDestroy_t)                      invalid_ptr;
-RpD3D9SetTexture_t                      _RpD3D9SetTexture                       = (RpD3D9SetTexture_t)                      invalid_ptr;
 RW_PLUGIN_INTERFACE_INST( RwTexture );
 
 // TexDictionary functions
@@ -279,7 +278,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         // Texture functions
         RwTextureCreate                     = (RwTextureCreate_t)                       0x007F3800;
         RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3860;
-        _RpD3D9SetTexture                   = (RpD3D9SetTexture_t)                      0x007FDEB0;
         RwTextureRegisterPlugin             = (RwTextureRegisterPlugin_t)               0x007F3BF0;
         RwTextureRegisterPluginStream       = (RwTextureRegisterPluginStream_t)         0x00804590;
 
@@ -418,7 +416,6 @@ CRenderWareSA::CRenderWareSA( eGameVersion version )
         // Texture functions
         RwTextureCreate                     = (RwTextureCreate_t)                       0x007F37C0;
         RwTextureDestroy                    = (RwTextureDestroy_t)                      0x007F3820;
-        _RpD3D9SetTexture                   = (RpD3D9SetTexture_t)                      0x007FDE70;
         RwTextureRegisterPlugin             = (RwTextureRegisterPlugin_t)               0x007f3bb0;
         RwTextureRegisterPluginStream       = (RwTextureRegisterPluginStream_t)         0x00804550;
 

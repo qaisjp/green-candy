@@ -19,8 +19,13 @@ int RwD3D9SetAlphaEnable                            ( rwDeviceValue_t blendEnabl
 int RwD3D9ResetAlphaEnable                          ( void );
 int RwD3D9SetVirtualAlphaTestState                  ( bool enable );
 
+// Texture render state event functions.
+void RwTextureD3D9_InitializeDeviceStates           ( void );
+void RwTextureD3D9_ResetDeviceStates                ( void );
+
 // Main Direct3D 9 RenderWare texture runtime functions.
 int __cdecl RwD3D9SetRasterForStage                 ( RwRaster *raster, unsigned int stageIdx );
+RwRaster* __cdecl RwD3D9GetRasterForStage           ( unsigned int stageIdx );
 int __cdecl RwD3D9SetTexture                        ( RwTexture *texture, unsigned int stageIndex );
 
 int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled              ( rwDeviceValue_t enabled );

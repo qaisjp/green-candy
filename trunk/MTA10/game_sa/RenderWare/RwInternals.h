@@ -15,7 +15,6 @@
 
 #define MAX_SAMPLERS    8
 
-// padlevel: 2
 struct d3d9RasterStage  //size: 24 bytes
 {
     AINLINE d3d9RasterStage( void )
@@ -40,7 +39,13 @@ extern d3d9RasterStage _currentRasterStages[];      // Binary offsets: (1.0 US a
 
 inline d3d9RasterStage& GetRasterStageInfo( unsigned int index )
 {
-    return _currentRasterStages[index];
+#if 1
+    assert( index < MAX_SAMPLERS );
+
+    return _currentRasterStages[ index ];
+#else
+    return ((d3d9RasterStage*)0x00C9A508)[ index ];
+#endif
 }
 
 // Template parameters for easier management.

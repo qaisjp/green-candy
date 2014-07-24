@@ -1191,7 +1191,7 @@ int __cdecl RwD3D9_RwGetRenderState( eRwDeviceCmd deviceType, rwDeviceValue_t *v
     case RWSTATE_UTEXADDRESSMODE:               *valuePtr = RwD3D9RasterStageGetAddressModeU( 0 ); return 1;
     case RWSTATE_VTEXADDRESSMODE:               *valuePtr = RwD3D9RasterStageGetAddressModeV( 0 ); return 1;
     case RWSTATE_TEXFILTER:                     *valuePtr = RwD3D9RasterStageGetFilterMode( 0 ); return 1;
-    case RWSTATE_CURRENTRASTER:                 *(RwRaster**)valuePtr = GetRasterStageInfo( 0 ).raster; return 1;
+    case RWSTATE_CURRENTRASTER:                 *(RwRaster**)valuePtr = RwD3D9GetRasterForStage( 0 ); return 1;
     case RWSTATE_ZWRITEENABLE:                  *valuePtr = RwD3D9GetZWriteEnable(); return 1;
     case RWSTATE_ZTESTENABLE:                   *valuePtr = RwD3D9GetDepthFunctionEnable(); return 1;
     case RWSTATE_SRCBLEND:                      *valuePtr = RwD3D9GetSrcBlend(); return 1;
@@ -1310,7 +1310,7 @@ void __cdecl RwD3D9InitializeDeviceStates( void )
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 0 );
     _RwD3D9SetAlphaEnable( false, true );
 
-    *(RwRaster**)0x00C9A4EC = NULL;
+    RwTextureD3D9_InitializeDeviceStates();
 
     HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, false );
     
@@ -1399,10 +1399,10 @@ void __cdecl RwD3D9ResetDeviceStates( void )
 
     RwD3D9ResetAlphaFunc();
 
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, previousAlphaRef );
     RwD3D9ResetAlphaEnable();
+    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, previousAlphaRef );
 
-    *(RwRaster**)0x00C9A4EC = NULL;
+    RwTextureD3D9_ResetDeviceStates();
 
     HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, false );
     
