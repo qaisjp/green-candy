@@ -45,8 +45,8 @@ struct CSpecMapMaterialSA    //size: 8 bytes
 struct matFXBlendData
 {
     RwTexture*          fxTexture;          // 0
-    unsigned int        srcBlend;           // 4
-    unsigned int        dstBlend;           // 8
+    rwBlendModeState    srcBlend;           // 4
+    rwBlendModeState    dstBlend;           // 8
     BYTE                pad[12];            // 12
 };
 struct CSpecialFXMatSA

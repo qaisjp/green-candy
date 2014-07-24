@@ -576,10 +576,10 @@ inline void _SpecialFXDualBlendRenderPass( RwRenderCallbackTraverseImpl *rtinfo,
 
         RwInterface *rwInterface = RenderWare::GetInterface();
 
-        int unkStatus1, unkStatus2;
+        rwDeviceValue_t prevSrcBlend, prevDstBlend;
 
-        rwInterface->m_getDeviceCommand( (eRwDeviceCmd)10, unkStatus1 );
-        rwInterface->m_getDeviceCommand( (eRwDeviceCmd)11, unkStatus2 );
+        rwInterface->m_getDeviceCommand( RWSTATE_SRCBLEND, prevSrcBlend );
+        rwInterface->m_getDeviceCommand( RWSTATE_DSTBLEND, prevDstBlend );
 
         RwD3D9SetSrcBlend( blendData->srcBlend );
         RwD3D9SetDstBlend( blendData->dstBlend );
@@ -628,8 +628,8 @@ inline void _SpecialFXDualBlendRenderPass( RwRenderCallbackTraverseImpl *rtinfo,
 
         RwD3D9RenderStateSetVertexAlphaEnabled( false );
 
-        rwInterface->m_deviceCommand( (eRwDeviceCmd)10, unkStatus1 );
-        rwInterface->m_deviceCommand( (eRwDeviceCmd)11, unkStatus2 );
+        rwInterface->m_deviceCommand( RWSTATE_SRCBLEND, prevSrcBlend );
+        rwInterface->m_deviceCommand( RWSTATE_DSTBLEND, prevDstBlend );
     }
     else
     {
@@ -881,7 +881,7 @@ __forceinline void RenderReflectiveEnvMap( renderObjType *renderObj, CEnvMapMate
     // Crashfix (imported from MP_SA)
     if ( enableEnvMapRendering && envMapMat )
     {
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)2, 1 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_COMBINEDTEXADDRESSMODE, 1 );
 
         // Notify the reflective manager.
         reflectMan.OnMaterialEnvMapRender( renderObj, envMapMat );
@@ -1334,7 +1334,7 @@ struct ReflectiveVehicleRenderManager
             if ( specialEffect2 && enableEnvMapRendering )
             {
                 // Render the reflection as seen on all vehicle chasis.
-                RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)2, 1 );
+                RenderWare::GetInterface()->m_deviceCommand( RWSTATE_COMBINEDTEXADDRESSMODE, 1 );
 
                 float reflectParams[2] = { 0, 0 };
 

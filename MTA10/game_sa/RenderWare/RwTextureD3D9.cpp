@@ -17,18 +17,22 @@
 #include "RwRenderTools.hxx"
 
 // Render state modification functions that are mainly used by this module.
-inline unsigned int& GetCurrentAlphaBlendEnable( void )     { return *(unsigned int*)0x00C9A4E8; }
-inline unsigned int& GetCurrentAlphaTestEnable( void )      { return *(unsigned int*)0x00C9A5D4; }
-inline unsigned int& GetIsVertexAlphaLocked( void )         { return *(unsigned int*)0x00C9A4EC; }
+static rwDeviceValue_t _currentAlphaBlendEnable = false;        // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A4E8
+static rwDeviceValue_t _currentAlphaTestEnable = false;         // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5D4
+static rwDeviceValue_t _currentIsVertexAlphaLocked = false;     // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A4EC
 
-inline void _RwD3D9UpdateAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
+inline unsigned int& GetCurrentAlphaBlendEnable( void )     { return _currentAlphaBlendEnable; }
+inline unsigned int& GetCurrentAlphaTestEnable( void )      { return _currentAlphaTestEnable; }
+inline unsigned int& GetIsVertexAlphaLocked( void )         { return _currentIsVertexAlphaLocked; }
+
+inline void _RwD3D9UpdateAlphaEnable( rwDeviceValue_t blendEnable, rwDeviceValue_t testEnable )
 {
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, blendEnable );
     HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, ( blendEnable && testEnable ) );
 }
 
 // Used by RwD3D9RenderStateSetVertexAlphaEnabled.
-int _RwD3D9SetAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
+int _RwD3D9SetAlphaEnable( rwDeviceValue_t blendEnable, rwDeviceValue_t testEnable )
 {
     _RwD3D9UpdateAlphaEnable( blendEnable, testEnable );
 
@@ -37,7 +41,7 @@ int _RwD3D9SetAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
     return 1;
 }
 
-int RwD3D9SetAlphaEnable( unsigned int blendEnable, unsigned int testEnable )
+int RwD3D9SetAlphaEnable( rwDeviceValue_t blendEnable, rwDeviceValue_t testEnable )
 {
     if ( GetCurrentAlphaBlendEnable() == blendEnable &&
          GetCurrentAlphaTestEnable() == testEnable )
@@ -123,9 +127,15 @@ AINLINE const d3d9RasterData* GetRasterInfoConst( const RwRaster *raster )
         (1.0 US): 0x007FDCD0
         (1.0 EU): 0x007FDD10
 =========================================================*/
+// raster stage descriptors.
+d3d9RasterStage _currentRasterStages[ MAX_SAMPLERS ];           // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A508
+
 // virtual renderstates.
-inline unsigned int& GetIsVertexAlphaEnabled( void )        { return *(unsigned int*)0x00C9A4E8; }
-inline unsigned int& GetIsAlphaTestEnabled( void )          { return *(unsigned int*)0x00C9A5D4; }
+static rwDeviceValue_t _currentIsVertexAlphaEnabled = false;    // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A4E8
+static rwDeviceValue_t _currentIsAlphaTestEnabled = false;      // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5D4
+
+inline rwDeviceValue_t& GetIsVertexAlphaEnabled( void )         { return _currentIsVertexAlphaEnabled; }
+inline rwDeviceValue_t& GetIsAlphaTestEnabled( void )           { return _currentIsAlphaTestEnabled; }
 
 AINLINE void _RwD3D9LockVertexAlpha( unsigned int shouldLock )
 {
@@ -192,6 +202,7 @@ int __cdecl RwD3D9SetRasterForStage( RwRaster *raster, unsigned int stageIdx )
     return 1;
 }
 
+// Utilities that do not necessaringly belong here.
 template <typename numberType>
 AINLINE numberType easyPow( numberType base, numberType exp )
 {
@@ -234,6 +245,16 @@ d3d9TextureAnisotropyInfo* GetTextureAnisotropyInfo( RwTexture *tex )
     return ( pluginOffset >= 0 ) ? ( RW_PLUGINSTRUCT <d3d9TextureAnisotropyInfo> ( tex, pluginOffset ) ) : ( NULL );
 }
 
+const d3d9TextureAnisotropyInfo* GetTextureAnisotropyInfoConst( const RwTexture *tex )
+{
+    if ( tex == NULL )
+        return NULL;
+
+    int pluginOffset = GetSharedTextureAnisotOffset();
+
+    return ( pluginOffset >= 0 ) ? ( RW_PLUGINSTRUCT <const d3d9TextureAnisotropyInfo> ( tex, pluginOffset ) ) : ( NULL );
+}
+
 /*=========================================================
     RwD3D9SetTexture
 
@@ -258,13 +279,11 @@ int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
         RwD3D9RasterStageSetAddressModeU( stageIndex, texture->u_addressMode );
         RwD3D9RasterStageSetAddressModeV( stageIndex, texture->v_addressMode );
 
-        // Attempt to get the texture plugin struct.
-        // It does not have to be loaded.
-        d3d9TextureAnisotropyInfo *anisot = GetTextureAnisotropyInfo( texture );
-
         unsigned int filterMode = texture->filterMode;
 
-        if ( anisot )
+        // Attempt to get the texture plugin struct.
+        // It does not have to be loaded.
+        if ( d3d9TextureAnisotropyInfo *anisot = GetTextureAnisotropyInfo( texture ) )
         {
             RwD3D9RasterStageSetMaxAnisotropy( stageIndex, anisot->anisotropy );
 
@@ -301,7 +320,7 @@ int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
 =========================================================*/
 // note: RenderWare must have a way to determine alpha by raster.
 // having access to this feature could greatly improve rendering.
-int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( DWORD enabled )
+int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( rwDeviceValue_t enabled )
 {
     if ( enabled != GetIsVertexAlphaEnabled() )
     {
@@ -329,7 +348,7 @@ int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( DWORD enabled )
         (1.0 US): 0x007FE190
         (1.0 EU): 0x007FE1D0
 =========================================================*/
-DWORD __cdecl RwD3D9RenderStateIsVertexAlphaEnabled( void )
+rwDeviceValue_t __cdecl RwD3D9RenderStateIsVertexAlphaEnabled( void )
 {
     return GetIsVertexAlphaEnabled();
 }
