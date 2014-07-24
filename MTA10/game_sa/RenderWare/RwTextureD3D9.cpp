@@ -21,9 +21,9 @@ static rwDeviceValue_t _currentAlphaBlendEnable = false;        // Binary offset
 static rwDeviceValue_t _currentAlphaTestEnable = false;         // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5D4
 static rwDeviceValue_t _currentIsVertexAlphaLocked = false;     // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A4EC
 
-inline unsigned int& GetCurrentAlphaBlendEnable( void )     { return _currentAlphaBlendEnable; }
-inline unsigned int& GetCurrentAlphaTestEnable( void )      { return _currentAlphaTestEnable; }
-inline unsigned int& GetIsVertexAlphaLocked( void )         { return _currentIsVertexAlphaLocked; }
+inline rwDeviceValue_t& GetCurrentAlphaBlendEnable( void )  { return _currentAlphaBlendEnable; }
+inline rwDeviceValue_t& GetCurrentAlphaTestEnable( void )   { return _currentAlphaTestEnable; }
+inline rwDeviceValue_t& GetIsVertexAlphaLocked( void )      { return _currentIsVertexAlphaLocked; }
 
 inline void _RwD3D9UpdateAlphaEnable( rwDeviceValue_t blendEnable, rwDeviceValue_t testEnable )
 {
@@ -72,6 +72,17 @@ int RwD3D9SetVirtualAlphaTestState( bool enable )
     }
 
     return 1;
+}
+
+// Texture render state environment device events.
+void RwTextureD3D9_InitializeDeviceStates( void )
+{
+    GetIsVertexAlphaLocked() = false;
+}
+
+void RwTextureD3D9_ResetDeviceStates( void )
+{
+    GetIsVertexAlphaLocked() = false;
 }
 
 // Direct3D9_texture plugin code.
@@ -130,26 +141,19 @@ AINLINE const d3d9RasterData* GetRasterInfoConst( const RwRaster *raster )
 // raster stage descriptors.
 d3d9RasterStage _currentRasterStages[ MAX_SAMPLERS ];           // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A508
 
-// virtual renderstates.
-static rwDeviceValue_t _currentIsVertexAlphaEnabled = false;    // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A4E8
-static rwDeviceValue_t _currentIsAlphaTestEnabled = false;      // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A5D4
-
-inline rwDeviceValue_t& GetIsVertexAlphaEnabled( void )         { return _currentIsVertexAlphaEnabled; }
-inline rwDeviceValue_t& GetIsAlphaTestEnabled( void )           { return _currentIsAlphaTestEnabled; }
-
-AINLINE void _RwD3D9LockVertexAlpha( unsigned int shouldLock )
+AINLINE void _RwD3D9LockVertexAlpha( rwDeviceValue_t shouldLock )
 {
-    unsigned int& vertexAlphaLocked = GetIsVertexAlphaLocked();
+    rwDeviceValue_t& vertexAlphaLocked = GetIsVertexAlphaLocked();
 
     if ( vertexAlphaLocked != shouldLock )
     {
         vertexAlphaLocked = shouldLock;
 
-        if ( GetIsVertexAlphaEnabled() == false )
+        if ( GetCurrentAlphaBlendEnable() == false )
         {
             bool enableAlphaBlend = ( shouldLock == TRUE );
 
-            _RwD3D9UpdateAlphaEnable( enableAlphaBlend, GetIsAlphaTestEnabled() );
+            _RwD3D9UpdateAlphaEnable( enableAlphaBlend, GetCurrentAlphaTestEnable() );
         }
     }
 }
@@ -162,7 +166,7 @@ int __cdecl RwD3D9SetRasterForStage( RwRaster *raster, unsigned int stageIdx )
     {
         bool lockVertexAlpha = ( raster && info->isAlpha );
         
-        _RwD3D9LockVertexAlpha( lockVertexAlpha );
+        _RwD3D9LockVertexAlpha( ( lockVertexAlpha ) ? TRUE : FALSE );
     }
 
     // Update the Direct3D 9 texture data.
@@ -200,6 +204,24 @@ int __cdecl RwD3D9SetRasterForStage( RwRaster *raster, unsigned int stageIdx )
     }
 
     return 1;
+}
+
+/*=========================================================
+    RwD3D9GetRasterForStage
+
+    Arguments:
+        stageIdx - the stage number to get texture data of
+    Purpose:
+        Returns the raster texture data that is assigned to
+        raster stage denoted by stageIdx. Can return NULL
+        if no texture data is assigned to it.
+    Binary offsets:
+        (1.0 US): 0x007FDE50
+        (1.0 EU): 0x007FDE90
+=========================================================*/
+RwRaster* __cdecl RwD3D9GetRasterForStage( unsigned int stageIdx )
+{
+    return GetRasterStageInfo( stageIdx ).raster;
 }
 
 // Utilities that do not necessaringly belong here.
@@ -322,16 +344,16 @@ int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
 // having access to this feature could greatly improve rendering.
 int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( rwDeviceValue_t enabled )
 {
-    if ( enabled != GetIsVertexAlphaEnabled() )
+    if ( enabled != GetCurrentAlphaBlendEnable() )
     {
-        GetIsVertexAlphaEnabled() = enabled;
+        GetCurrentAlphaBlendEnable() = enabled;
 
         if ( GetIsVertexAlphaLocked() == false )
         {
             // Actually an inlined-always-change call, but we do it thisway rather.
             // If the implementation follows its own rules, everything is fine.
             // This asserts, that MTA will not set rogue render states anymore!
-            _RwD3D9SetAlphaEnable( enabled, GetIsAlphaTestEnabled() );
+            _RwD3D9SetAlphaEnable( enabled, GetCurrentAlphaTestEnable() );
         }
     }
 
@@ -350,7 +372,7 @@ int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled( rwDeviceValue_t enabled )
 =========================================================*/
 rwDeviceValue_t __cdecl RwD3D9RenderStateIsVertexAlphaEnabled( void )
 {
-    return GetIsVertexAlphaEnabled();
+    return GetCurrentAlphaBlendEnable();
 }
 
 /*=========================================================
@@ -407,12 +429,14 @@ void RwTextureD3D9_Init( void )
         HookInstall( 0x007FE1D0, (DWORD)RwD3D9RenderStateIsVertexAlphaEnabled, 5 );
         HookInstall( 0x007FDEB0, (DWORD)RwD3D9SetTexture, 5 );
         HookInstall( 0x007FDD10, (DWORD)RwD3D9SetRasterForStage, 5 );
+        HookInstall( 0x007FDE90, (DWORD)RwD3D9GetRasterForStage, 5 );
         break;
     case VERSION_US_10:
         HookInstall( 0x007FE0A0, (DWORD)RwD3D9RenderStateSetVertexAlphaEnabled, 5 );
         HookInstall( 0x007FE190, (DWORD)RwD3D9RenderStateIsVertexAlphaEnabled, 5 );
         HookInstall( 0x007FDE70, (DWORD)RwD3D9SetTexture, 5 );
         HookInstall( 0x007FDCD0, (DWORD)RwD3D9SetRasterForStage, 5 );
+        HookInstall( 0x007FDE50, (DWORD)RwD3D9GetRasterForStage, 5 );
         break;
     }
 }

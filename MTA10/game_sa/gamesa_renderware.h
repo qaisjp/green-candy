@@ -119,7 +119,6 @@ typedef void                    (__cdecl *RwRasterDestroy_t)                    
 // Texture functions
 typedef RwTexture*              (__cdecl *RwTextureCreate_t)                    (RwRaster *raster);
 typedef int                     (__cdecl *RwTextureDestroy_t)                   (RwTexture *texture);
-typedef int                     (__cdecl *RpD3D9SetTexture_t)                   (RwTexture *texture, unsigned int index);
 
 // TexDictionary functions
 typedef RwTexDictionary*        (__cdecl *RwTexDictionaryStreamRead_t)          (RwStream *stream);
@@ -254,7 +253,6 @@ RW_PLUGIN_INTERFACE_EXTERN( RwRaster );
 // Texture functions
 extern RwTextureCreate_t                        RwTextureCreate;
 extern RwTextureDestroy_t                       RwTextureDestroy;
-extern RpD3D9SetTexture_t                       _RpD3D9SetTexture;
 
 // TexDictionary functions
 extern RwTexDictionaryStreamRead_t              RwTexDictionaryStreamRead;
