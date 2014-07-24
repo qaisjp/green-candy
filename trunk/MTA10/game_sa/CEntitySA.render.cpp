@@ -235,7 +235,7 @@ void __cdecl _RenderEntity( CEntitySAInterface *entity )
     else if ( !( entity->m_entityFlags & ENTITY_BACKFACECULL ) )
     {
         // Change texture stage
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_NONE );
     }
 
     if ( AreScreenEffectsEnabled() )
@@ -268,7 +268,7 @@ void __cdecl _RenderEntity( CEntitySAInterface *entity )
     else if ( !( entity->m_entityFlags & ENTITY_BACKFACECULL ) )
     {
         // Set texture stage back to two
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_CLOCKWISE );
     }
 
     // Does the entity have alpha enabled?
@@ -317,13 +317,13 @@ void __cdecl RenderEntity( CEntitySAInterface *entity )
 inline void InitModelRendering( CBaseModelInfoSAInterface *info )
 {
     if ( info->renderFlags & RENDER_ADDITIVE )
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)11, 2 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_DSTBLEND, RWBLEND_ONE );
 }
 
 inline void ShutdownModelRendering( CBaseModelInfoSAInterface *info )
 {
     if ( info->renderFlags & RENDER_ADDITIVE )
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)11, 6 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_DSTBLEND, RWBLEND_INVSRCALPHA );
 }
 
 static void __cdecl RenderAtomicWithAlpha( CBaseModelInfoSAInterface *info, RpAtomic *atom, unsigned int alpha )
@@ -382,11 +382,11 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
     CBaseModelInfoSAInterface *info = entity->GetModelInfo();
 
     if ( info->renderFlags & RENDER_NOSHADOW )
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)8, 0 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_ZWRITEENABLE, false );
 
     if ( entity->m_entityFlags & ENTITY_FADE )
     {
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 0 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_ALPHAREF, 0 );
 
         // Make sure we keep this entity alive till next render cycle.
         // This is to make sure that we do not crash due to deep render links.
@@ -400,7 +400,7 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
         entity->m_entityFlags = flags;
 
         if ( flags & ENTITY_BACKFACECULL )
-            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+            RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_NONE );
 
         unsigned char lightIndex = entity->SetupLighting();
 
@@ -415,22 +415,22 @@ void __cdecl EntityRender::DefaultRenderEntityHandler( CEntitySAInterface *entit
         entity->m_entityFlags = flags;
 
         if ( flags & ENTITY_BACKFACECULL )
-            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+            RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_CLOCKWISE );
 
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 100 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_ALPHAREF, 100 );
     }
     else
     {
         if ( !*(unsigned int*)VAR_currArea && !( info->renderFlags & RENDER_NOSHADOW ) )
-            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 100 );
+            RenderWare::GetInterface()->m_deviceCommand( RWSTATE_ALPHAREF, 100 );
         else
-            RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)30, 0 );
+            RenderWare::GetInterface()->m_deviceCommand( RWSTATE_ALPHAREF, 0 );
 
         RenderEntity( entity );
     }
 
     if ( info->renderFlags & RENDER_NOSHADOW )
-        RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)8, 1 );
+        RenderWare::GetInterface()->m_deviceCommand( RWSTATE_ZWRITEENABLE, true );
 }
 
 // System callbacks to notify the mods about important progress.
@@ -672,9 +672,9 @@ void __cdecl PostProcessRenderEntities( void )
 {
     RwInterface *rwInterface = RenderWare::GetInterface();
 
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    rwInterface->m_deviceCommand( RWSTATE_FOGENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_ALPHABLENDENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_CLOCKWISE );
     
     {
         // Configure lighting.
@@ -814,12 +814,12 @@ void __cdecl RenderWorldEntities( void )
 {
     RwInterface *rwInterface = RenderWare::GetInterface();
 
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    rwInterface->m_deviceCommand( RWSTATE_FOGENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_ALPHABLENDENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_CLOCKWISE );
 
     if ( *(unsigned int*)VAR_currArea == 0 )
-        rwInterface->m_deviceCommand( (eRwDeviceCmd)30, 140 );
+        rwInterface->m_deviceCommand( RWSTATE_ALPHAREF, 140 );
 
     {
         StaticRenderStage staticCallback;
@@ -867,14 +867,14 @@ void __cdecl RenderGrassHouseEntities( void )
 {
     RwInterface *rwInterface = RenderWare::GetInterface();
 
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)1, 0 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)6, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)8, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)12, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)10, 5 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)11, 6 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 1 );
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+    rwInterface->m_deviceCommand( RWSTATE_CURRENTRASTER, NULL );
+    rwInterface->m_deviceCommand( RWSTATE_ZTESTENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_ZWRITEENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_ALPHABLENDENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_SRCBLEND, RWBLEND_SRCALPHA );
+    rwInterface->m_deviceCommand( RWSTATE_DSTBLEND, RWBLEND_INVSRCALPHA );
+    rwInterface->m_deviceCommand( RWSTATE_FOGENABLE, true );
+    rwInterface->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_NONE );
 
     {
         WorldLightingWrap wLighting;
@@ -882,7 +882,7 @@ void __cdecl RenderGrassHouseEntities( void )
         EntityRender::GetAlphaEntityRenderChain().Execute();
     }
 
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)14, 0 );
+    rwInterface->m_deviceCommand( RWSTATE_FOGENABLE, false );
 }
 
 /*=========================================================
@@ -948,11 +948,11 @@ void __cdecl RenderBoatAtomics( void )
 {
     RwInterface *rwInterface = RenderWare::GetInterface();
 
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+    rwInterface->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_NONE );
 
     EntityRender::GetBoatRenderChain().Execute();
 
-    rwInterface->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    rwInterface->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_CLOCKWISE );
 }
 
 /*=========================================================

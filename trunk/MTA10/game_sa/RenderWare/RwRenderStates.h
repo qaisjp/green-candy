@@ -16,47 +16,47 @@
 inline DWORD F2DW( float val )  { return *(DWORD*)&val; }
 
 // RenderState functions.
-int RwD3D9SetFogColor                       ( unsigned int color );
+int RwD3D9SetFogColor                       ( rwDeviceValue_t color );
 int RwD3D9ResetFogColor                     ( void );
-int RwD3D9SetFogTableMode                   ( unsigned int mode );
+int RwD3D9SetFogTableMode                   ( rwFogModeState mode );
 int RwD3D9ResetFogTableMode                 ( void );
-int RwD3D9SetShadeMode                      ( unsigned int mode );
+int RwD3D9SetShadeMode                      ( rwShadeModeState mode );
 int RwD3D9ResetShadeMode                    ( void );
-int RwD3D9SetZWriteEnable                   ( unsigned int enable );
+int RwD3D9SetZWriteEnable                   ( rwDeviceValue_t enable );
 int RwD3D9ResetZWriteEnable                 ( void );
-int RwD3D9SetDepthFunctionEnable            ( unsigned int enable );
+int RwD3D9SetDepthFunctionEnable            ( rwDeviceValue_t enable );
 int RwD3D9ResetDepthFunctionEnable          ( void );
-int RwD3D9SetStencilEnable                  ( unsigned int enable );
+int RwD3D9SetStencilEnable                  ( rwDeviceValue_t enable );
 int RwD3D9ResetStencilEnable                ( void );
-int RwD3D9SetStencilFail                    ( unsigned int opMode );
+int RwD3D9SetStencilFail                    ( rwStencilOpState opMode );
 int RwD3D9ResetStencilFail                  ( void );
-int RwD3D9SetStencilZFail                   ( unsigned int opMode );
+int RwD3D9SetStencilZFail                   ( rwStencilOpState opMode );
 int RwD3D9ResetStencilZFail                 ( void );
-int RwD3D9SetStencilPass                    ( unsigned int opMode );
+int RwD3D9SetStencilPass                    ( rwStencilOpState opMode );
 int RwD3D9ResetStencilPass                  ( void );
-int RwD3D9SetStencilFunc                    ( unsigned int cmpOp );
+int RwD3D9SetStencilFunc                    ( rwCompareOpState cmpOp );
 int RwD3D9ResetStencilFunc                  ( void );
-int RwD3D9SetStencilRef                     ( unsigned int ref );
+int RwD3D9SetStencilRef                     ( rwDeviceValue_t ref );
 int RwD3D9ResetStencilRef                   ( void );
-int RwD3D9SetStencilMask                    ( unsigned int mask );
+int RwD3D9SetStencilMask                    ( rwDeviceValue_t mask );
 int RwD3D9ResetStencilMask                  ( void );
-int RwD3D9SetStencilWriteMask               ( unsigned int mask );
+int RwD3D9SetStencilWriteMask               ( rwDeviceValue_t mask );
 int RwD3D9ResetStencilWriteMask             ( void );
 
 // Renderstate get functions.
-unsigned int RwD3D9GetFogColor              ( void );
-unsigned int RwD3D9GetFogTableMode          ( void );
-unsigned int RwD3D9GetShadeMode             ( void );
-unsigned int RwD3D9GetZWriteEnable          ( void );
-unsigned int RwD3D9GetDepthFunctionEnable   ( void );
-unsigned int RwD3D9GetStencilEnable         ( void );
-unsigned int RwD3D9GetStencilFail           ( void );
-unsigned int RwD3D9GetStencilZFail          ( void );
-unsigned int RwD3D9GetStencilPass           ( void );
-unsigned int RwD3D9GetStencilFunc           ( void );
-unsigned int RwD3D9GetStencilRef            ( void );
-unsigned int RwD3D9GetStencilMask           ( void );
-unsigned int RwD3D9GetStencilWriteMask      ( void );
+rwDeviceValue_t RwD3D9GetFogColor               ( void );
+rwFogModeState RwD3D9GetFogTableMode            ( void );
+rwShadeModeState RwD3D9GetShadeMode             ( void );
+rwDeviceValue_t RwD3D9GetZWriteEnable           ( void );
+rwDeviceValue_t RwD3D9GetDepthFunctionEnable    ( void );
+rwDeviceValue_t RwD3D9GetStencilEnable          ( void );
+rwStencilOpState RwD3D9GetStencilFail           ( void );
+rwStencilOpState RwD3D9GetStencilZFail          ( void );
+rwStencilOpState RwD3D9GetStencilPass           ( void );
+rwCompareOpState RwD3D9GetStencilFunc           ( void );
+rwDeviceValue_t RwD3D9GetStencilRef             ( void );
+rwDeviceValue_t RwD3D9GetStencilMask            ( void );
+rwDeviceValue_t RwD3D9GetStencilWriteMask       ( void );
 
 // Raster stage functions.
 int RwD3D9RasterStageSetFilterMode          ( unsigned int stageIdx, unsigned int filterMode );
@@ -78,23 +78,23 @@ unsigned int RwD3D9RasterStageGetBorderColor    ( unsigned int stageIdx );
 int RwD3D9RasterStageGetMaxAnisotropy           ( unsigned int stageIdx );
 
 // More RenderState functions.
-int RwD3D9SetSrcBlend                       ( unsigned int blendMode );
+int RwD3D9SetSrcBlend                       ( rwBlendModeState blendMode );
 int RwD3D9ResetSrcBlend                     ( void );
-int RwD3D9SetDstBlend                       ( unsigned int blendMode );
+int RwD3D9SetDstBlend                       ( rwBlendModeState blendMode );
 int RwD3D9ResetDstBlend                     ( void );
-int RwD3D9SetAlphaFunc                      ( unsigned int cmpOp );
+int RwD3D9SetAlphaFunc                      ( rwCompareOpState cmpOp );
 int RwD3D9ResetAlphaFunc                    ( void );
-int RwD3D9SetCullMode                       ( unsigned int cullMode );
+int RwD3D9SetCullMode                       ( rwCullModeState cullMode );
 int RwD3D9ResetCullMode                     ( void );
-int RwD3D9SetFogEnable                      ( unsigned int enable );
+int RwD3D9SetFogEnable                      ( rwDeviceValue_t enable );
 int RwD3D9ResetFogEnable                    ( void );
 
 // More RenderState get functions.
-unsigned int RwD3D9GetSrcBlend              ( void );
-unsigned int RwD3D9GetDstBlend              ( void );
-unsigned int RwD3D9GetAlphaFunc             ( void );
-unsigned int RwD3D9GetCullMode              ( void );
-unsigned int RwD3D9GetFogEnable             ( void );
+rwBlendModeState RwD3D9GetSrcBlend              ( void );
+rwBlendModeState RwD3D9GetDstBlend              ( void );
+rwCompareOpState RwD3D9GetAlphaFunc             ( void );
+rwCullModeState RwD3D9GetCullMode               ( void );
+rwDeviceValue_t RwD3D9GetFogEnable              ( void );
 
 // Initializators.
 void __cdecl RwD3D9InitializeDeviceStates   ( void );

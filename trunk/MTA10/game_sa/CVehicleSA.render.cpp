@@ -84,7 +84,7 @@ void CVehicleSAInterface::SetupRender( CVehicleSA *mtaVeh )
     // Wire in the hook done by MTA team.
     OnMY_CAutomobile_CustomCarPlate_BeforeRenderingStart( this, info );
 
-    RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 1 );
+    RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_NONE );
 
     if ( m_vehicleType == VEHICLE_CAR )
         SetPlateTextureForRendering( info );
@@ -156,8 +156,8 @@ void CVehicleSAInterface::LeaveRender( void )
     // Wire in the hook done by MTA team.
     OnMY_CAutomobile_CustomCarPlate_AfterRenderingStop( modelInfo );
 
-    // Change texture stage (?)
-    RenderWare::GetInterface()->m_deviceCommand( (eRwDeviceCmd)20, 2 );
+    // Set culling.
+    RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_CLOCKWISE );
 
     // Restore clump data
     RpClumpRestoreVehicleMaterials( (RpClump*)GetRwObject() );

@@ -18,6 +18,16 @@
 // padlevel: 2
 struct d3d9RasterStage  //size: 24 bytes
 {
+    AINLINE d3d9RasterStage( void )
+    {
+        raster = NULL;
+        u_addressMode = 0;
+        v_addressMode = 0;
+        filterType = 0;
+        borderColor = 0;
+        maxAnisotropy = 0;
+    }
+
     RwRaster *raster;                   // 0
     unsigned int u_addressMode;         // 4
     unsigned int v_addressMode;         // 8
@@ -26,9 +36,11 @@ struct d3d9RasterStage  //size: 24 bytes
     int maxAnisotropy;                  // 20
 };
 
+extern d3d9RasterStage _currentRasterStages[];      // Binary offsets: (1.0 US and 1.0 EU): 0x00C9A508
+
 inline d3d9RasterStage& GetRasterStageInfo( unsigned int index )
 {
-    return ((d3d9RasterStage*)0x00C9A508)[index];
+    return _currentRasterStages[index];
 }
 
 // Template parameters for easier management.

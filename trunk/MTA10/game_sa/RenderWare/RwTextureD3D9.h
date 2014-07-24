@@ -14,8 +14,8 @@
 #define _RENDERWARE_TEXTURE_PLUGIN_D3D9_
 
 // Exported renderstate functions.
-int _RwD3D9SetAlphaEnable                           ( unsigned int blendEnable, unsigned int testEnable );
-int RwD3D9SetAlphaEnable                            ( unsigned int blendEnable, unsigned int testEnable );
+int _RwD3D9SetAlphaEnable                           ( rwDeviceValue_t blendEnable, rwDeviceValue_t testEnable );
+int RwD3D9SetAlphaEnable                            ( rwDeviceValue_t blendEnable, rwDeviceValue_t testEnable );
 int RwD3D9ResetAlphaEnable                          ( void );
 int RwD3D9SetVirtualAlphaTestState                  ( bool enable );
 
@@ -23,8 +23,8 @@ int RwD3D9SetVirtualAlphaTestState                  ( bool enable );
 int __cdecl RwD3D9SetRasterForStage                 ( RwRaster *raster, unsigned int stageIdx );
 int __cdecl RwD3D9SetTexture                        ( RwTexture *texture, unsigned int stageIndex );
 
-int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled  ( DWORD enabled );
-DWORD __cdecl RwD3D9RenderStateIsVertexAlphaEnabled ( void );
+int __cdecl RwD3D9RenderStateSetVertexAlphaEnabled              ( rwDeviceValue_t enabled );
+rwDeviceValue_t __cdecl RwD3D9RenderStateIsVertexAlphaEnabled   ( void );
 
 // TODO: think about improving my RenderWare definitions:
 // * plugins should not plant OOP functions into the classes.

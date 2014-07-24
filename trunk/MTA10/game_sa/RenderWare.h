@@ -93,6 +93,98 @@ enum RwRasterType : unsigned int
     RASTER_TEXTURE = 4
 };
 
+// RenderState enums.
+// The implementation has to map these to internal device states.
+enum eRwDeviceCmd : unsigned int
+{
+    RWSTATE_NONE,
+    RWSTATE_CURRENTRASTER = 1,
+    RWSTATE_COMBINEDTEXADDRESSMODE,
+    RWSTATE_UTEXADDRESSMODE,
+    RWSTATE_VTEXADDRESSMODE,
+    RWSTATE_UNKNOWN1,
+    RWSTATE_ZTESTENABLE,
+    RWSTATE_SHADEMODE,
+    RWSTATE_ZWRITEENABLE,
+    RWSTATE_TEXFILTER,
+    RWSTATE_SRCBLEND,
+    RWSTATE_DSTBLEND,
+    RWSTATE_ALPHABLENDENABLE,
+    RWSTATE_TEXTUREBORDERCOLOR,
+    RWSTATE_FOGENABLE,
+    RWSTATE_FOGCOLOR,
+    RWSTATE_FOGMODE,
+    RWSTATE_FOGDENSITY,
+    RWSTATE_CULLMODE = 20,
+    RWSTATE_STENCILENABLE,
+    RWSTATE_STENCILFAIL,
+    RWSTATE_STENCILZFAIL,
+    RWSTATE_STENCILPASS,
+    RWSTATE_STENCILFUNC,
+    RWSTATE_STENCILREF,
+    RWSTATE_STENCILMASK,
+    RWSTATE_STENCILWRITEMASK,
+    RWSTATE_ALPHAFUNC,
+    RWSTATE_ALPHAREF
+};
+
+typedef unsigned int rwDeviceValue_t;
+
+enum rwFogModeState : rwDeviceValue_t
+{
+    RWFOG_DISABLE,
+    RWFOG_LINEAR,
+    RWFOG_EXP,
+    RWFOG_EXP2
+};
+enum rwShadeModeState : rwDeviceValue_t
+{
+    RWSHADE_FLAT = 1,
+    RWSHADE_GOURAUD
+};
+enum rwStencilOpState : rwDeviceValue_t
+{
+    RWSTENCIL_KEEP = 1,
+    RWSTENCIL_ZERO,
+    RWSTENCIL_REPLACE,
+    RWSTENCIL_INCRSAT,
+    RWSTENCIL_DECRSAT,
+    RWSTENCIL_INVERT,
+    RWSTENCIL_INCR,
+    RWSTENCIL_DECR
+};
+enum rwCompareOpState : rwDeviceValue_t
+{
+    RWCMP_NEVER = 1,
+    RWCMP_LESS,
+    RWCMP_EQUAL,
+    RWCMP_LESSEQUAL,
+    RWCMP_GREATER,
+    RWCMP_NOTEQUAL,
+    RWCMP_GREATEREQUAL,
+    RWCMP_ALWAYS
+};
+enum rwCullModeState : rwDeviceValue_t
+{
+    RWCULL_NONE = 1,
+    RWCULL_CLOCKWISE,
+    RWCULL_COUNTERCLOCKWISE
+};
+enum rwBlendModeState : rwDeviceValue_t
+{
+    RWBLEND_ZERO = 1,
+    RWBLEND_ONE,
+    RWBLEND_SRCCOLOR,
+    RWBLEND_INVSRCCOLOR,
+    RWBLEND_SRCALPHA,
+    RWBLEND_INVSRCALPHA,
+    RWBLEND_DESTALPHA,
+    RWBLEND_INVDESTALPHA,
+    RWBLEND_DESTCOLOR,
+    RWBLEND_INVDESTCOLOR,
+    RWBLEND_SRCALPHASAT
+};
+
 /*==================================================================
     RenderWare Structure Definitions
 
@@ -477,39 +569,6 @@ typedef int                 (__cdecl*RwFileTell_t) ( void *fp );
 
 typedef int                 (__cdecl*RwReadTexture_t) ( RwStream *stream, RwTexture **out, size_t blockSize );
 
-enum eRwDeviceCmd : unsigned int
-{
-    RWSTATE_NONE,
-    RWSTATE_CURRENTRASTER = 1,
-    RWSTATE_COMBINEDTEXADDRESSMODE,
-    RWSTATE_UTEXADDRESSMODE,
-    RWSTATE_VTEXADDRESSMODE,
-    RWSTATE_UNKNOWN1,
-    RWSTATE_ZTESTENABLE,
-    RWSTATE_SHADEMODE,
-    RWSTATE_ZWRITEENABLE,
-    RWSTATE_TEXFILTER,
-    RWSTATE_SRCBLEND,
-    RWSTATE_DSTBLEND,
-    RWSTATE_ALPHABLENDENABLE,
-    RWSTATE_TEXTUREBORDERCOLOR,
-    RWSTATE_FOGENABLE,
-    RWSTATE_FOGCOLOR,
-    RWSTATE_FOGMODE,
-    RWSTATE_FOGDENSITY,
-    RWSTATE_CULLMODE = 20,
-    RWSTATE_STENCILENABLE,
-    RWSTATE_STENCILFAIL,
-    RWSTATE_STENCILZFAIL,
-    RWSTATE_STENCILPASS,
-    RWSTATE_STENCILFUNC,
-    RWSTATE_STENCILREF,
-    RWSTATE_STENCILMASK,
-    RWSTATE_STENCILWRITEMASK,
-    RWSTATE_ALPHAFUNC,
-    RWSTATE_ALPHAREF
-};
-
 typedef void*               (__cdecl*RwMemAlloc_t) ( size_t size, unsigned int flags );
 typedef void                (__cdecl*RwMemFree_t) ( void *ptr );
 typedef void*               (__cdecl*RwMemRealloc_t) ( void *ptr, size_t size, unsigned int flags );
@@ -535,8 +594,8 @@ struct RwInterface   // size: 1456
     RwRenderSystem          m_renderSystem;                                 // 16
 
     BYTE                    m_pad[8];                                       // 24
-    void                    (*m_deviceCommand)( eRwDeviceCmd cmd, int param );  // 32
-    void                    (*m_getDeviceCommand)( eRwDeviceCmd cmd, int& param );  // 36
+    void                    (*m_deviceCommand)( eRwDeviceCmd cmd, rwDeviceValue_t param );      // 32
+    void                    (*m_getDeviceCommand)( eRwDeviceCmd cmd, rwDeviceValue_t& param );  // 36
     BYTE                    m_pad20[72];                                    // 40
 
     RwStructInfo*           m_sceneInfo;                                    // 112
