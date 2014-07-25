@@ -234,7 +234,7 @@ void __cdecl _RenderEntity( CEntitySAInterface *entity )
     }
     else if ( !( entity->m_entityFlags & ENTITY_BACKFACECULL ) )
     {
-        // Change texture stage
+        // If we do not want to cull, tell it to the rendering device.
         RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_NONE );
     }
 
@@ -267,7 +267,7 @@ void __cdecl _RenderEntity( CEntitySAInterface *entity )
     }   
     else if ( !( entity->m_entityFlags & ENTITY_BACKFACECULL ) )
     {
-        // Set texture stage back to two
+        // Enable back the culling.
         RenderWare::GetInterface()->m_deviceCommand( RWSTATE_CULLMODE, RWCULL_CLOCKWISE );
     }
 
@@ -482,20 +482,28 @@ struct SetupChainEntitiesForRender
 
 void __cdecl PreRender( void )
 {
-    groundAlphaEntities.ExecuteCustom( SetupDefaultEntitiesForRender() );
-    staticRenderEntities.ExecuteCustom( SetupDefaultEntitiesForRender() );
+    {
+        SetupDefaultEntitiesForRender callback;
 
-    // Left out unused render list.
-    // Probably left in for Rockstars internal development tools (like map editor).
+        groundAlphaEntities.ExecuteCustom( callback );
+        staticRenderEntities.ExecuteCustom( callback );
 
-    // We notify our system.
-    if ( _preRenderCallback )
-        _preRenderCallback();
+        // Left out unused render list.
+        // Probably left in for Rockstars internal development tools (like map editor).
 
-    lowPriorityRenderEntities.ExecuteCustom( SetupDefaultEntitiesForRender() );
+        // We notify our system.
+        if ( _preRenderCallback )
+            _preRenderCallback();
 
-    EntityRender::GetDefaultEntityRenderChain().ExecuteCustom( SetupChainEntitiesForRender() );
-    EntityRender::GetUnderwaterEntityRenderChain().ExecuteCustom( SetupChainEntitiesForRender() );
+        lowPriorityRenderEntities.ExecuteCustom( callback );
+    }
+
+    {
+        SetupChainEntitiesForRender callback;
+
+        EntityRender::GetDefaultEntityRenderChain().ExecuteCustom( callback );
+        EntityRender::GetUnderwaterEntityRenderChain().ExecuteCustom( callback );
+    }
 
     ((void (__cdecl*)( void ))0x00707FA0)();
 }

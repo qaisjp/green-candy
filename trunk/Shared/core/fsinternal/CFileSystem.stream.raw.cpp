@@ -284,7 +284,7 @@ fsOffsetNumber_t CRawFile::TellNative( void ) const
 bool CRawFile::IsEOF( void ) const
 {
 #ifdef _WIN32
-    // Check that the current file seek is beyond the maximum size.
+    // Check that the current file seek is beyond or equal the maximum size.
     return this->TellNative() >= this->GetSizeNative();
 #elif defined(__linux__)
     return feof( m_file );

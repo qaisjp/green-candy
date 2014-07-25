@@ -214,11 +214,9 @@ void CTaskManagerSA::ClearTaskEventResponse()
 
 void CTaskManagerSA::Flush( eTaskPriority priority )
 {
-    unsigned int i;
-
     DEBUG_TRACE("void CTaskManagerSA::Flush( eTaskPriority priority )");
 
-    for ( i=0; i < TASK_PRIORITY_MAX; i++ )
+    for ( unsigned int i = 0; i < TASK_PRIORITY_MAX; i++ )
     {
         CTaskSA *task = GetTask ( (eTaskPriority)i );
 
@@ -228,7 +226,7 @@ void CTaskManagerSA::Flush( eTaskPriority priority )
         task->MakeAbortable( m_ped, priority );
     }
 
-    for ( i=0; i < TASK_SECONDARY_MAX; i++ )
+    for ( unsigned int i = 0; i < TASK_SECONDARY_MAX; i++ )
     {
         CTaskSA *task = GetTaskSecondary ( i );
 
