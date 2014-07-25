@@ -119,7 +119,7 @@ repeatMethod:
     methodRepeatCount++;
 
     if ( methodRepeatCount == 6000000 )
-        throw std::exception( "infinite buffered read repetition count" );
+        throw std::exception( "infinite buffered select repetition count" );
 #endif //FILESYSTEM_PERFORM_SANITY_CHECKS
 
     // Do the actual logic.
@@ -393,7 +393,7 @@ fsOffsetNumber_t CBufferedStreamWrap::TellNative( void ) const
 bool CBufferedStreamWrap::IsEOF( void ) const
 {
     // Update the underlying stream's seek ptr and see if it finished.
-    const_cast <virtualStreamSeekPtr&> ( fileSeek ).Update();
+    fileSeek.Update();
 
     return underlyingStream->IsEOF();
 }

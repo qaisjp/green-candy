@@ -325,7 +325,7 @@ private:
         AINLINE void FlushBuffer( void )
         {
             // Has the buffer content been updated at all?
-            if ( host.internalIOBuffer.HasChanged() )
+            if ( host.IsWriteable() && host.internalIOBuffer.HasChanged() )
             {
                 // Push buffer contents to disk.
                 seekType_t currentFileSeek = host.fileSeek.Tell();
@@ -770,7 +770,7 @@ public:
 
 private:
     // 64bit number that is the file's seek ptr.
-    virtualStreamSeekPtr fileSeek;
+    mutable virtualStreamSeekPtr fileSeek;
 };
 
 class CBufferedFile : public CFile

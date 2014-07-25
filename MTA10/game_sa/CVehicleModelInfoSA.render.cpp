@@ -1159,7 +1159,7 @@ void CVehicleModelInfoSAInterface::SetRenderColor( unsigned char color1, unsigne
     Binary offsets:
         (1.0 US and 1.0 EU): 0x004C8C90
 =========================================================*/
-bool vehLightFlags[4];
+static bool vehLightFlags[4];
 static CVehicleSA *gameVehicle;
 
 void __cdecl SetVehicleLightsFlags( CVehicleSAInterface *veh )
