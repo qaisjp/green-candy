@@ -65,12 +65,12 @@ struct RenderStateManager
 
     AINLINE void GetDeviceState( const stateAddress& address, valueType& value )
     {
-        RwD3D9GetRenderState( address.type, value );
+        GetRenderDevice_Native()->GetRenderState( address.type, &value.value );
     }
 
     AINLINE void SetDeviceState( const stateAddress& address, const valueType& value )
     {
-        RwD3D9SetRenderState( address.type, value );
+        GetRenderDevice_Native()->SetRenderState( address.type, value.value );
     }
 
     AINLINE void ResetDeviceState( const stateAddress& address )

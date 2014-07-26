@@ -137,14 +137,14 @@ void CClientStreamElement::NotifyCreate()
     CEntity *entity = GetGameEntity();
 
     // Set up the collision properties
-    for ( collisionEntities_t::const_iterator iter = m_collidableWith.begin(); iter != m_collidableWith.end(); iter++ )
+    for ( collisionEntities_t::const_iterator iter = m_notCollidableWith.begin(); iter != m_notCollidableWith.end(); iter++ )
     {
         CEntity *gameTarget = (*iter)->GetGameEntity();
 
         if ( !gameTarget )
             continue;
 
-        entity->SetCollidableWith( gameTarget, true );
+        entity->SetCollidableWith( gameTarget, false );
     }
 
     CallEvent( "onClientElementStreamIn", m_lua, 0 );

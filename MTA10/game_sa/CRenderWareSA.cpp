@@ -729,3 +729,8 @@ eWorldRenderMode CRenderWareSA::GetWorldRenderMode( void ) const
 {
     return Entity::GetWorldRenderMode();
 }
+
+void CRenderWareSA::GetRenderBucketStatistics( renderBucketStats& statsOut )
+{
+    statsOut = RenderBucket::GetRuntimeStatistics();
+}

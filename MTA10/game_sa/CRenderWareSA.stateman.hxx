@@ -137,11 +137,18 @@ struct RwStateManager
     };
     typedef growableArray <stateValueType, 8, 0, stateDeviceArrayManager, unsigned int> stateDeviceArray;
 
+    // Forward declaration.
+    struct changeSet;
+
     struct __declspec(novtable) deviceStateReferenceDevice abstract
     {
         virtual ~deviceStateReferenceDevice( void )     {}
 
         virtual bool GetDeviceState( const stateAddress& address, stateValueType& value ) const = 0;
+
+        // Returns the parent changeSet.
+        // That change set is used to update the super changeSet.
+        virtual changeSet* GetUpdateChangeSet( void ) = 0;
     };
 
     AINLINE RwStateManager( void ) : allocator( 128 ), changeSetAllocator( 16 )
@@ -211,9 +218,17 @@ struct RwStateManager
 
         localStates.SetItem( value, address.GetArrayIndex() );
 
-        // Notify the change sets.
+        // Notify our root change set about our change directly.
+        changeSet *theRootChangeSet = this->rootChangeSet;
+        
+        theRootChangeSet->OnDeviceStateChange( address, value );
+
+        // Invalidate the (other) change sets.
         LIST_FOREACH_BEGIN( changeSet, activeChangeSets.root, node )
-            item->OnDeviceStateChange( address, value );
+            if ( item != theRootChangeSet )
+            {
+                item->Invalidate();
+            }
         LIST_FOREACH_END
 
         UnlockLocalState();
@@ -256,6 +271,13 @@ struct RwStateManager
         {
             value = manager.deviceStates.ObtainItem( address.GetArrayIndex() );
             return true;
+        }
+
+        AINLINE changeSet* GetUpdateChangeSet( void )
+        {
+            // There is nothing to update the root states by.
+            // It must be updated directly at the spot.
+            return NULL;
         }
 
         RwStateManager& manager;
@@ -324,6 +346,8 @@ struct RwStateManager
         {
             referenceDevice = NULL;
             manager = NULL;
+
+            hasBeenCommitted = false;
         }
 
         AINLINE void SetManager( RwStateManager *manager )
@@ -343,11 +367,49 @@ struct RwStateManager
                 isQueried.SetItem( false, n );
             }
             changedStates.Clear();
+
+            hasBeenCommitted = false;
+        }
+
+        AINLINE void Invalidate( void )
+        {
+            hasBeenCommitted = false;
+        }
+
+        AINLINE void CommitStates( void )
+        {
+            // If we have been committed already, do not bother.
+            if ( hasBeenCommitted )
+                return;
+
+            changeSet *rootChangeSet = NULL;
+
+            if ( referenceDevice )
+            {
+                rootChangeSet = referenceDevice->GetUpdateChangeSet();
+            }
+
+            if ( rootChangeSet )
+            {
+                // Make sure that states are applied to the change set we want to check out.
+                rootChangeSet->CommitStates();
+
+                for ( changeSet::changeSetIterator iterator = rootChangeSet->GetIterator(); !iterator.IsEnd(); iterator.Increment() )
+                {
+                    const stateAddress& address = iterator.Resolve();
+
+                    const stateValueType& currentValue = manager->localStates.Get( address.GetArrayIndex() );
+
+                    OnDeviceStateChange( address, currentValue );
+                }
+            }
+
+            hasBeenCommitted = true;
         }
 
         AINLINE void SetChanged( const stateAddress& address, bool isChanged )
         {
-            bool isInsideQuery = IsChanged( address );
+            bool isInsideQuery = _IsChanged( address );
 
             isQueried.SetItem( isChanged, address.GetArrayIndex() );
             
@@ -367,7 +429,7 @@ struct RwStateManager
             }
         }
 
-        AINLINE bool IsChanged( const stateAddress& address ) const
+        AINLINE bool _IsChanged( const stateAddress& address )
         {
             unsigned int arrayIndex = address.GetArrayIndex();
 
@@ -377,6 +439,14 @@ struct RwStateManager
             }
 
             return false;
+        }
+
+        AINLINE bool IsChanged( const stateAddress& address )
+        {
+            // If we are not yet committed, do so now.
+            CommitStates();
+
+            return _IsChanged( address );
         }
 
         AINLINE void OnDeviceStateChange( const stateAddress& address, const stateValueType& value )
@@ -391,14 +461,18 @@ struct RwStateManager
             }
         }
         
-        AINLINE bool HasChanges( void ) const
+        AINLINE bool HasChanges( void )
         {
+            CommitStates();
+
             return ( changedStates.GetCount() != 0 );
         }
 
         AINLINE void Reset( void )
         {
             changedStates.Clear();
+
+            hasBeenCommitted = false;
         }
 
         AINLINE bool GetOriginalDeviceState( const stateAddress& address, stateValueType& refVal )
@@ -434,6 +508,9 @@ struct RwStateManager
 
         AINLINE changeSetIterator GetIterator( void )
         {
+            // Make sure we are committed.
+            this->CommitStates();
+
             return changeSetIterator( *this );
         }
 
@@ -454,6 +531,8 @@ struct RwStateManager
         deviceStateReferenceDevice *referenceDevice;
 
         RwStateManager *manager;
+
+        bool hasBeenCommitted;
     };
 
     typedef CachedConstructedClassAllocator <changeSet> changeSetAllocator_t;
@@ -542,6 +621,11 @@ struct RwStateManager
                 return true;
             }
 
+            AINLINE changeSet* GetUpdateChangeSet( void )
+            {
+                return state.manager->bucketChangeSet;
+            }
+
             capturedState& state;
         };
 
@@ -597,12 +681,18 @@ struct RwStateManager
 
         AINLINE bool IsCurrent( void ) const
         {
+            // Make sure our change set is committed before checking.
+            stateChangeSet->CommitStates();
+
             for ( changeSet::changeSetIterator iterator( *stateChangeSet ); !iterator.IsEnd(); iterator.Increment() )
             {
                 const stateAddress& address = iterator.Resolve();
 
+                // Get the reference to the current value.
+                const capturedStateValueType& deviceCurrentValue = deviceStates.Get( address.GetArrayIndex() );
+
                 // Check that the state is even required for us.
-                if ( deviceStates.Get( address.GetArrayIndex() ).managedType.isRequired )
+                if ( deviceCurrentValue.managedType.isRequired )
                 {
                     // De-facto changed.
                     return false;
@@ -700,6 +790,11 @@ struct RwStateManager
         {
             value = manager.bucketStates.ObtainItem( address.GetArrayIndex() );
             return true;
+        }
+
+        AINLINE changeSet* GetUpdateChangeSet( void )
+        {
+            return manager.rootChangeSet;
         }
 
         RwStateManager& manager;

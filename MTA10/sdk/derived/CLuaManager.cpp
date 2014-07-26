@@ -518,6 +518,7 @@ static void LoadCFunctions( lua_State *L )
     LUA_REGISTER( L, engineSetWorldRenderMode );
     LUA_REGISTER( L, engineGetWorldRenderMode );
     LUA_REGISTER( L, engineIsModelBeingUsed );
+    LUA_REGISTER( L, engineGetRenderBucketStatistics );
 
     // Drawing funcs (low-level)
     LUA_REGISTER( L, dxDrawLine );

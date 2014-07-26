@@ -100,7 +100,7 @@ typedef void (__cdecl*rxRenderCallback_t)( RwRenderCallbackTraverse *rtinfo, RwO
 // Helper function to decide whether alpha rendering is required.
 inline bool RwD3D9IsAlphaRenderingRequired( unsigned int renderFlags, DWORD& lightValue )
 {
-    HOOK_RwD3D9GetRenderState( D3DRS_LIGHTING, lightValue );
+    RwD3D9GetRenderState( D3DRS_LIGHTING, lightValue );
 
     return !IS_ANY_FLAG( renderFlags, 0x08 ) && !lightValue;
 }
@@ -476,5 +476,29 @@ inline void RwD3D9SetTexturedRenderStates( bool hasTexture )
         RwD3D9SetTextureStageState( 0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE );
     }
 }
+
+// Rendering object context pushing tools.
+inline void RwD3D9OnRenderingContextEstablish( RwObject *renderingObject )
+{
+    eRwType objType = renderingObject->type;
+
+    if ( objType == RW_ATOMIC )
+    {
+        RpAtomic *theAtomic = (RpAtomic*)renderingObject;
+
+        // Tell the bucket rasterization system.
+        RenderBucket::SetContextAtomic( theAtomic );
+    }
+}
+
+inline void RwD3D9OnRenderingContextBreak( void )
+{
+    // Notify all rasterizers about the loss of contextual instance data.
+    RenderBucket::SetContextAtomic( NULL );
+}
+
+// Bucket management routines (RpAtomicD3D9)
+bool __cdecl RpAtomicSetContextualRenderBucket                              ( RpAtomic *theAtomic, RenderBucket::RwRenderBucket *theBucket );
+RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket     ( RpAtomic *theAtomic );
 
 #endif //_RENDERWARE_RENDER_TOOLS_

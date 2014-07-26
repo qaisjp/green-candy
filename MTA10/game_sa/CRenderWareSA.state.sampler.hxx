@@ -71,12 +71,12 @@ struct SamplerStateManager
 
     AINLINE void GetDeviceState( const stateAddress& address, valueType& value )
     {
-        RwD3D9GetSamplerState( address.samplerId, address.stateType, value );
+        GetRenderDevice_Native()->GetSamplerState( address.samplerId, address.stateType, &value.value );
     }
 
     AINLINE void SetDeviceState( const stateAddress& address, const valueType& value )
     {
-        RwD3D9SetSamplerState( address.samplerId, address.stateType, value );
+        GetRenderDevice_Native()->SetSamplerState( address.samplerId, address.stateType, value.value );
     }
 
     AINLINE void ResetDeviceState( const stateAddress& address )

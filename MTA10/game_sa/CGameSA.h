@@ -106,6 +106,7 @@ public:
                                         ~CGameSA();
 
     void                                RegisterMultiplayer( CMultiplayer *mp );
+    void                                UnregisterMultiplayer( CMultiplayer *mp );
 
     inline CPoolsSA*                    GetPools()                      { return m_pPools; };
     inline CPlayerInfoSA*               GetPlayerInfo()                 { return m_pPlayerInfo; };

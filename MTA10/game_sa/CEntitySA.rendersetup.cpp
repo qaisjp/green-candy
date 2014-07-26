@@ -316,10 +316,10 @@ void __cdecl EntityRender::ClearAllRenderChains( void )
     ClearFallbackRenderChains();
 
     // Reset things for grass.
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
+    RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+    RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+    RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
+    RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
 }
 
 /*=========================================================
