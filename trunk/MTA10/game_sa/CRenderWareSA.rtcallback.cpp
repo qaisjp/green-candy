@@ -311,7 +311,7 @@ inline void _SpecialFXDualBlendRenderPass( RwRenderCallbackTraverseImpl *rtinfo,
             }
             else
             {
-                HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFFFFFFFF );
+                RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFFFFFFFF );
 
                 RwD3D9SetTexture( blendTexture, 0 );
 
@@ -571,7 +571,7 @@ inline void _SpecialFXDualBlendRenderPass( RwRenderCallbackTraverseImpl *rtinfo,
              blendData->srcBlend == 1 && blendData->dstBlend == 3 ||
              blendData->srcBlend == 9 && blendData->dstBlend == 3 )
         {
-            HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, false );
+            RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, false );
         }
 
         RwInterface *rwInterface = RenderWare::GetInterface();
@@ -585,25 +585,25 @@ inline void _SpecialFXDualBlendRenderPass( RwRenderCallbackTraverseImpl *rtinfo,
         RwD3D9SetDstBlend( blendData->dstBlend );
 
         DWORD zwriteStatus;
-        HOOK_RwD3D9GetRenderState( D3DRS_ZWRITEENABLE, zwriteStatus );
-        HOOK_RwD3D9SetRenderState( D3DRS_ZWRITEENABLE, false );
+        RwD3D9GetRenderState( D3DRS_ZWRITEENABLE, zwriteStatus );
+        RwD3D9SetRenderState( D3DRS_ZWRITEENABLE, false );
 
         DWORD fogEnableStatus;
-        HOOK_RwD3D9GetRenderState( D3DRS_FOGENABLE, fogEnableStatus );
+        RwD3D9GetRenderState( D3DRS_FOGENABLE, fogEnableStatus );
 
         DWORD fogColor;
 
         if ( fogEnableStatus )
         {
-            HOOK_RwD3D9GetRenderState( D3DRS_FOGCOLOR, fogColor );
+            RwD3D9GetRenderState( D3DRS_FOGCOLOR, fogColor );
 
             if ( blendData->dstBlend == 2 )
             {
-                HOOK_RwD3D9SetRenderState( D3DRS_FOGCOLOR, 0 );
+                RwD3D9SetRenderState( D3DRS_FOGCOLOR, 0 );
             }
             else if ( blendData->srcBlend == 9 || blendData->dstBlend == 3 )
             {
-                HOOK_RwD3D9SetRenderState( D3DRS_FOGCOLOR, 0xFFFFFFFF );
+                RwD3D9SetRenderState( D3DRS_FOGCOLOR, 0xFFFFFFFF );
             }
         }
 
@@ -614,11 +614,11 @@ inline void _SpecialFXDualBlendRenderPass( RwRenderCallbackTraverseImpl *rtinfo,
 
         RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
 
-        HOOK_RwD3D9SetRenderState( D3DRS_ZWRITEENABLE, zwriteStatus );
+        RwD3D9SetRenderState( D3DRS_ZWRITEENABLE, zwriteStatus );
 
         if ( fogEnableStatus )
         {
-            HOOK_RwD3D9SetRenderState( D3DRS_FOGCOLOR, fogColor );
+            RwD3D9SetRenderState( D3DRS_FOGCOLOR, fogColor );
         }
 
         if ( IS_ANY_FLAG( renderFlags, 0x80 ) )
@@ -829,7 +829,7 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
     {
         RwD3D9SetTexture( NULL, 0 );
 
-        HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFF000000 );
+        RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFF000000 );
 
         RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG2 );
         RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG2, D3DTA_TFACTOR );
@@ -844,21 +844,29 @@ __forceinline void __cdecl GameRenderGeneric( RwRenderCallbackTraverse *rtnative
 
     RwD3D9SetCurrentVertexDeclaration( rtinfo->m_vertexDecl );
 
-    cb.OnRenderPrepare( lightingEnabled );
-
-    // Do the rendering logic.
     {
-        // Set up the rendering managers.
-        lightRenderManager lightMan;
+        // Notify rasterizers about contextual instance data.
+        RwD3D9OnRenderingContextEstablish( renderObject );
 
-        MeshRenderManager meshRenderMan;
-        GameMeshRenderCallback myRenderCB( lightMan, lightingEnabled, renderFlags, enableAlpha );
+        cb.OnRenderPrepare( lightingEnabled );
 
-        meshRenderMan.Render( rtinfo, cb, myRenderCB );
+        // Do the rendering logic.
+        {
+            // Set up the rendering managers.
+            lightRenderManager lightMan;
+
+            MeshRenderManager meshRenderMan;
+            GameMeshRenderCallback myRenderCB( lightMan, lightingEnabled, renderFlags, enableAlpha );
+
+            meshRenderMan.Render( rtinfo, cb, myRenderCB );
+        }
+
+        // Notify the render manager that we quit.
+        cb.OnRenderFinish();
+
+        // No more contextual instance data.
+        RwD3D9OnRenderingContextBreak();
     }
-
-    // Notify the render manager that we quit.
-    cb.OnRenderFinish();
 }
 
 __forceinline void RwD3D9ResetCommonColorChannels( void )
@@ -898,7 +906,7 @@ __forceinline void RenderReflectiveEnvMap( renderObjType *renderObj, CEnvMapMate
         envMapColor = ( envMapColor | colorComponent ) << 8;
         envMapColor = ( envMapColor | colorComponent );
 
-        HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, envMapColor );
+        RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, envMapColor );
 
         RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_MULTIPLYADD );
         RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG0, D3DTA_CURRENT );
@@ -1036,7 +1044,9 @@ void __cdecl HOOK_ReflectiveRenderCallback( RwRenderCallbackTraverse *rtnative, 
 {
     typedef ReflectiveGeneralRenderManager <SunReflectManager, RwObject> reflectMan;
 
-    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, reflectMan( renderObject ) );
+    reflectMan renderMan( renderObject );
+
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, renderMan );
 }
 
 struct SpecialReflectManager
@@ -1062,7 +1072,9 @@ void __cdecl HOOK_SpecialObjectRenderCallback( RwRenderCallbackTraverse *rtnativ
 {
     typedef ReflectiveGeneralRenderManager <SpecialReflectManager, RwObject> reflectMan;
 
-    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, reflectMan( renderObject ) );
+    reflectMan renderMan( renderObject );
+
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, renderMan );
 }
 
 inline float modulo_transform( float coord, float cap )
@@ -1313,12 +1325,12 @@ struct ReflectiveVehicleRenderManager
             specularFloat2 = specMapMat->specular * 100.0f;
         }
 
-        HOOK_RwD3D9SetRenderState( D3DRS_SPECULARENABLE, doSpecularTransform );
+        RwD3D9SetRenderState( D3DRS_SPECULARENABLE, doSpecularTransform );
 
         if ( doSpecularTransform )
         {
-            HOOK_RwD3D9SetRenderState( D3DRS_LOCALVIEWER, 0 );
-            HOOK_RwD3D9SetRenderState( D3DRS_SPECULARMATERIALSOURCE, 0 );
+            RwD3D9SetRenderState( D3DRS_LOCALVIEWER, 0 );
+            RwD3D9SetRenderState( D3DRS_SPECULARMATERIALSOURCE, 0 );
         }
 
         RwD3D9ResetCommonColorChannels();
@@ -1366,7 +1378,7 @@ struct ReflectiveVehicleRenderManager
 
                 DWORD colorValue = ( 0x00FFFFFF | ( specularComponent << 24 ) );
 
-                HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, colorValue );
+                RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, colorValue );
 
                 RwD3D9SetTextureStageState( 1, D3DTSS_COLOROP, D3DTOP_BLENDFACTORALPHA );
                 RwD3D9SetTextureStageState( 1, D3DTSS_COLORARG1, D3DTA_TEXTURE );
@@ -1450,7 +1462,7 @@ struct ReflectiveVehicleRenderManager
     {
         if ( m_unk3 && lightValue )
         {
-            HOOK_RwD3D9SetRenderState( D3DRS_SPECULARENABLE, false );
+            RwD3D9SetRenderState( D3DRS_SPECULARENABLE, false );
 
             if ( hasMaterialLighting )
             {
@@ -1523,7 +1535,9 @@ void __cdecl HOOK_VehicleAtomicRenderCallback( RwRenderCallbackTraverse *rtnativ
 
     assume( renderType == RW_ATOMIC );
 
-    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, ReflectiveVehicleRenderManager( (RpAtomic*&)renderObject ) );
+    ReflectiveVehicleRenderManager renderMan( (RpAtomic*&)renderObject );
+
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, renderMan );
 }
 
 struct FXAtomicRenderManager
@@ -1632,7 +1646,9 @@ struct FXAtomicRenderManager
 void __cdecl HOOK_FXAtomicRenderCallback( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags )
 {
 #if 1
-    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, FXAtomicRenderManager() );
+    FXAtomicRenderManager renderMan;
+
+    GameRenderGeneric( rtnative, renderObject, renderType, renderFlags, renderMan );
 #else
     ((void (__cdecl*)( RwRenderCallbackTraverse *rtnative, RwObject *renderObject, eRwType renderType, unsigned int renderFlags))0x00815C20)( rtnative, renderObject, renderType, renderFlags );
 #endif

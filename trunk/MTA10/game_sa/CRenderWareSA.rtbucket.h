@@ -19,6 +19,9 @@
 */
 namespace RenderBucket
 {
+    // Forward declarations.
+    struct RwRenderBucket;
+
     void                    Initialize              ( void );
     void                    Shutdown                ( void );
 
@@ -28,6 +31,10 @@ namespace RenderBucket
     void                    BeginPass               ( void );
     void                    RenderPass              ( void );
     void                    EndPass                 ( void );
+
+    void                    SetContextAtomic        ( RpAtomic *renderObject );
+
+    renderBucketStats       GetRuntimeStatistics    ( void );
 
     bool                    OnCachedRenderCall      ( const RwD3D9RenderCallbackData& callbackData );
 };

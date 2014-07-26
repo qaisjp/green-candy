@@ -33,6 +33,13 @@ enum eShaderLightingMode
     SHADER_LIGHTING_MULTI
 };
 
+struct renderBucketStats
+{
+    unsigned int totalNumberOfRenderCalls;
+    unsigned int totalNumberOfActiveBuckets;
+    unsigned int maxRenderCallsPerBucket;
+};
+
 struct RwTexture;
 
 class CRenderWare
@@ -62,6 +69,8 @@ public:
     // Rendering modes.
     virtual void                    SetWorldRenderMode                  ( eWorldRenderMode mode ) = 0;
     virtual eWorldRenderMode        GetWorldRenderMode                  ( void ) const = 0;
+
+    virtual void                    GetRenderBucketStatistics           ( renderBucketStats& statsOut ) = 0;
 
     virtual CColModel*              ReadCOL                             ( CFile *file ) = 0;
 

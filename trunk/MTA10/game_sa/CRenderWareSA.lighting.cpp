@@ -363,10 +363,11 @@ static int __cdecl RpD3D9InitializeLightingPlugin( void )
     // Initialize other lighting plugins.
     RpLightInit();
 
-#ifdef _MTA_BLUE
     // Do some other plugins as well.
+#ifdef _MTA_BLUE
     RenderWareStats_RegisterPlugins();
 #endif
+    RpAtomicD3D9_RegisterPlugins();
 
     return successful;
 }
@@ -2182,7 +2183,7 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
     // This way we behave like original GTA:SA.
     RpD3D9GlobalLightingPrePass();
 
-    HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, ( requiresAmbientLighting ) ? 0xFFFFFFFF : 0x00000000 );
+    RwD3D9SetRenderState( D3DRS_AMBIENT, ( requiresAmbientLighting ) ? 0xFFFFFFFF : 0x00000000 );
 
     if ( hasLocalLighting )
     {
@@ -2190,7 +2191,7 @@ void __cdecl HOOK_DefaultAtomicLightingCallback( RpAtomic *atomic )
         localLightPassMan.SetLightingShader( lightingShader );
     }
 
-    HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, ( requiresAmbientLighting || hasGlobalLighting && globalLightPassMan.IsFixedFunction() ) );
+    RwD3D9SetRenderState( D3DRS_LIGHTING, ( requiresAmbientLighting || hasGlobalLighting && globalLightPassMan.IsFixedFunction() ) );
 }
 
 /*=========================================================
@@ -2407,7 +2408,7 @@ void __cdecl RpD3D9ResetLightStatus( void )
     hasGlobalLighting = false;
     hasLocalLighting = false;
 
-    HOOK_RwD3D9SetRenderState( D3DRS_LIGHTING, false );
+    RwD3D9SetRenderState( D3DRS_LIGHTING, false );
 }
 
 /*=========================================================

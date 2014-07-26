@@ -354,8 +354,8 @@ CClientEntity::CClientEntity( ElementID ID, bool system, lua_State *L ) : LuaEle
 CClientEntity::~CClientEntity()
 {
     // Remove collision properties
-    while ( !m_collidableWith.empty() )
-        SetCollidableWith( m_collidableWith.front(), false );
+    while ( !m_notCollidableWith.empty() )
+        SetCollidableWith( m_notCollidableWith.front(), true );
 
     // Reset our index in the element array
     if ( m_ID != INVALID_ELEMENT_ID )
@@ -1386,7 +1386,7 @@ void CClientEntity::_GetEntitiesFromRoot ( unsigned int uiTypeHash, std::map < C
 
 bool CClientEntity::IsCollidableWith( CClientEntity *entity ) const
 {
-    return std::find( m_collidableWith.begin(), m_collidableWith.end(), entity ) != m_collidableWith.end();
+    return std::find( m_notCollidableWith.begin(), m_notCollidableWith.end(), entity ) == m_notCollidableWith.end();
 }
 
 void CClientEntity::SetCollidableWith( CClientEntity *entity, bool enable )
@@ -1399,18 +1399,21 @@ void CClientEntity::SetCollidableWith( CClientEntity *entity, bool enable )
         g_entity->SetCollidableWith( collision, enable );
     }
 
-    collisionEntities_t::iterator iter = std::find( m_collidableWith.begin(), m_collidableWith.end(), entity );
+    // Attempt to find our entity in the list.
+    collisionEntities_t::iterator iter = std::find( m_notCollidableWith.begin(), m_notCollidableWith.end(), entity );
 
-    if ( enable && iter == m_collidableWith.end() )
+    // If it is in the list, then collisions should be disabled for that entity.
+    // We assume that every entity that is not in the list has a green light for collision.
+    if ( !enable && iter == m_notCollidableWith.end() )
     {
         // Set it for the entities
-        m_collidableWith.push_back( entity );
-        entity->m_collidableWith.push_back( this );
+        m_notCollidableWith.push_back( entity );
+        entity->m_notCollidableWith.push_back( this );
     }
-    else if ( !enable && iter != m_collidableWith.end() )
+    else if ( enable && iter != m_notCollidableWith.end() )
     {
-        m_collidableWith.erase( iter );
-        entity->m_collidableWith.erase( std::find( entity->m_collidableWith.begin(), entity->m_collidableWith.end(), this ) );
+        m_notCollidableWith.erase( iter );
+        entity->m_notCollidableWith.erase( std::find( entity->m_notCollidableWith.begin(), entity->m_notCollidableWith.end(), this ) );
     }
 }
 

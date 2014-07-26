@@ -59,11 +59,11 @@ rwDeviceValue_t RwD3D9GetStencilMask            ( void );
 rwDeviceValue_t RwD3D9GetStencilWriteMask       ( void );
 
 // Raster stage functions.
-int RwD3D9RasterStageSetFilterMode          ( unsigned int stageIdx, unsigned int filterMode );
+int RwD3D9RasterStageSetFilterMode          ( unsigned int stageIdx, rwRasterStageFilterMode filterMode );
 int RwD3D9RasterStageResetFilterMode        ( unsigned int stageIdx );
-int RwD3D9RasterStageSetAddressModeU        ( unsigned int stageIdx, unsigned int modeIdx );
+int RwD3D9RasterStageSetAddressModeU        ( unsigned int stageIdx, rwRasterStageAddressMode modeIdx );
 int RwD3D9RasterStageResetAddressModeU      ( unsigned int stageIdx );
-int RwD3D9RasterStageSetAddressModeV        ( unsigned int stageIdx, unsigned int modeIdx );
+int RwD3D9RasterStageSetAddressModeV        ( unsigned int stageIdx, rwRasterStageAddressMode modeIdx );
 int RwD3D9RasterStageResetAddressModeV      ( unsigned int stageIdx );
 int RwD3D9RasterStageSetBorderColor         ( unsigned int stageIdx, unsigned int color );
 int RwD3D9RasterStageResetBorderColor       ( unsigned int stageIdx );
@@ -71,11 +71,11 @@ int RwD3D9RasterStageSetMaxAnisotropy       ( unsigned int stageIdx, int maxAnis
 int RwD3D9RasterStageResetMaxAnisotropy     ( unsigned int stageIdx );
 
 // Raster stage get functions.
-unsigned int RwD3D9RasterStageGetFilterMode     ( unsigned int stageIdx );
-unsigned int RwD3D9RasterStageGetAddressModeU   ( unsigned int stageIdx );
-unsigned int RwD3D9RasterStageGetAddressModeV   ( unsigned int stageIdx );
-unsigned int RwD3D9RasterStageGetBorderColor    ( unsigned int stageIdx );
-int RwD3D9RasterStageGetMaxAnisotropy           ( unsigned int stageIdx );
+rwRasterStageFilterMode RwD3D9RasterStageGetFilterMode      ( unsigned int stageIdx );
+rwRasterStageAddressMode RwD3D9RasterStageGetAddressModeU   ( unsigned int stageIdx );
+rwRasterStageAddressMode RwD3D9RasterStageGetAddressModeV   ( unsigned int stageIdx );
+unsigned int RwD3D9RasterStageGetBorderColor                ( unsigned int stageIdx );
+int RwD3D9RasterStageGetMaxAnisotropy                       ( unsigned int stageIdx );
 
 // More RenderState functions.
 int RwD3D9SetSrcBlend                       ( rwBlendModeState blendMode );

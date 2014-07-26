@@ -1804,6 +1804,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CRenderWareSA.rtbucket.hxx"
+				>
+			</File>
+			<File
 				RelativePath=".\CRenderWareSA.rtcallback.h"
 				>
 			</File>
@@ -1813,6 +1817,34 @@
 			</File>
 			<File
 				RelativePath=".\CRenderWareSA.shader.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.state.lighting.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.state.rs.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.state.sampler.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.state.stream.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.state.transf.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.state.tss.hxx"
+				>
+			</File>
+			<File
+				RelativePath=".\CRenderWareSA.stateman.hxx"
 				>
 			</File>
 			<File

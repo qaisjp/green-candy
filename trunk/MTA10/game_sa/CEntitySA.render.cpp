@@ -207,7 +207,7 @@ void __cdecl _RenderEntity( CEntitySAInterface *entity )
     if ( alpha != 255 )
     {
         // This has to stay enabled anyway
-        HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+        RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
 
         // Ensure the RenderStates necessary for proper alpha blending
         alphaRef = new (rsAlloc.Allocate()) RwRenderStateLock( D3DRS_ALPHAREF, 0x00 );
@@ -987,10 +987,10 @@ void __cdecl RenderDefaultOrderedWorldEntities( void )
     RenderBucket::EndPass();
 
     // This has to stay enabled anyway
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
+    RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, true );
+    RwD3D9SetRenderState( D3DRS_ALPHAFUNC, D3DCMP_GREATER );
+    RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, true );
+    RwD3D9SetRenderState( D3DRS_ALPHAREF, 100 );
 
     // Lets apply the render states for safety.
     // Who knows whether R* produced clean logic? So let us play safe.

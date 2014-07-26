@@ -184,6 +184,24 @@ enum rwBlendModeState : rwDeviceValue_t
     RWBLEND_INVDESTCOLOR,
     RWBLEND_SRCALPHASAT
 };
+enum rwRasterStageFilterMode : rwDeviceValue_t
+{
+    RWFILTER_DISABLE,
+    RWFILTER_POINT,
+    RWFILTER_LINEAR,
+    RWFILTER_POINT_POINT,
+    RWFILTER_LINEAR_POINT,
+    RWFILTER_POINT_LINEAR,
+    RWFILTER_LINEAR_LINEAR,
+    RWFILTER_ANISOTROPY
+};
+enum rwRasterStageAddressMode : rwDeviceValue_t
+{
+    RWTEXADDRESS_WRAP = 1,
+    RWTEXADDRESS_MIRROR,
+    RWTEXADDRESS_CLAMP,
+    RWTEXADDRESS_BORDER
+};
 
 /*==================================================================
     RenderWare Structure Definitions

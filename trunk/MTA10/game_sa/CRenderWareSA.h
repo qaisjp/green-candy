@@ -86,6 +86,8 @@ public:
     void                SetWorldRenderMode              ( eWorldRenderMode mode );
     eWorldRenderMode    GetWorldRenderMode              ( void ) const;
 
+    void                GetRenderBucketStatistics       ( renderBucketStats& statsOut );
+
     // uiModelID == 0 means no collisions will be loaded
     RpClump*            ReadDFF                         ( CFile *file, unsigned short usModelID, CColModelSA*& colOut );
     CColModel*          ReadCOL                         ( CFile *file );

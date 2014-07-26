@@ -1016,6 +1016,9 @@ void CCore::DestroyMultiplayer()
 {
     WriteDebugEvent( "CCore::DestroyMultiplayer" );
 
+    // Unregister from modules.
+    m_pGame->UnregisterMultiplayer( m_pMultiplayer );
+
     if ( m_pMultiplayer )
         m_pMultiplayer = NULL;
 

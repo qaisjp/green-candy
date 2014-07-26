@@ -1158,4 +1158,24 @@ namespace CLuaFunctionDefs
         lua_pushboolean( L, false );
         return 1;
     }
+
+    LUA_DECLARE( engineGetRenderBucketStatistics )
+    {
+        renderBucketStats currentRenderStats;
+
+        g_pGame->GetRenderWare()->GetRenderBucketStatistics( currentRenderStats );
+
+        lua_newtable( L );
+
+        lua_pushnumber( L, currentRenderStats.totalNumberOfRenderCalls );
+        lua_setfield( L, -2, "totalNumberOfRenderCalls" );
+
+        lua_pushnumber( L, currentRenderStats.totalNumberOfActiveBuckets );
+        lua_setfield( L, -2, "totalNumberOfActiveBuckets" );
+
+        lua_pushnumber( L, currentRenderStats.maxRenderCallsPerBucket );
+        lua_setfield( L, -2, "maxRenderCallsPerBucket" );
+
+        return 1;
+    }
 }

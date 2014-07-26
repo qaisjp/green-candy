@@ -16,231 +16,31 @@
 #include "StdInc.h"
 #include "RenderWare/RwRenderTools.hxx"
 
-#include "CRenderWareSA.state.rs.hxx"
-#include "CRenderWareSA.state.tss.hxx"
-#include "CRenderWareSA.state.lighting.hxx"
-#include "CRenderWareSA.state.sampler.hxx"
-#include "CRenderWareSA.state.transf.hxx"
-#include "CRenderWareSA.state.stream.hxx"
+// Include internal definitions.
+#include "CRenderWareSA.rtbucket.hxx"
 
-// Internal definitions.
-namespace RenderBucket
+// Keep statistics about our efficiency.
+struct runtimeStatistics
 {
-    struct renderSystemState
+    AINLINE runtimeStatistics( void )
     {
-        typedef RwVertexStreamStateManager::capturedState vsState;
-        typedef RwRenderStateManager::capturedState rsState;
-        typedef RwTextureStageStateManager::capturedState tssState;
-        typedef RwSamplerStateManager::capturedState samplState;
-        typedef RwLightingStateManager::capturedState lighState;
-        typedef RwTransformationStateManager::capturedState transfState;
+        Reset();
+    }
 
-        // Variables here describe an invariant render state.
-        vsState*                        vertexStreamState;
-        rsState*                        renderState;
-        tssState*                       textureStageState;
-        samplState*                     samplerState;
-        lighState*                      lightingState;
-        transfState*                    transformationState;
-
-        renderSystemState( void )
-        {
-            vertexStreamState = NULL;
-            renderState = NULL;
-            textureStageState = NULL;
-            samplerState = NULL;
-            lightingState = NULL;
-            transformationState = NULL;
-        }
-
-        ~renderSystemState( void )
-        {
-            Terminate();
-        }
-
-        void Terminate( void )
-        {
-            if ( vertexStreamState )
-            {
-                g_vertexStreamStateManager.FreeState( vertexStreamState );
-
-                vertexStreamState = NULL;
-            }
-
-            if ( renderState )
-            {
-                g_renderStateManager.FreeState( renderState );
-
-                renderState = NULL;
-            }
-
-            if ( textureStageState )
-            {
-                g_textureStageStateManager.FreeState( textureStageState );
-
-                textureStageState = NULL;
-            }
-
-            if ( samplerState )
-            {
-                g_samplerStateManager.FreeState( samplerState );
-
-                samplerState = NULL;
-            }
-
-            if ( lightingState )
-            {
-                g_lightingStateManager.FreeState( lightingState );
-
-                lightingState = NULL;
-            }
-
-            if ( transformationState )
-            {
-                g_transformationStateManager.FreeState( transformationState );
-
-                transformationState = NULL;
-            }
-        }
-
-        void Capture( void )
-        {
-            // Capture all current states.
-            if ( vertexStreamState )
-            {
-                vertexStreamState->Capture();
-            }
-            else
-            {
-                vertexStreamState = g_vertexStreamStateManager.CaptureState();
-            }
-
-            if ( renderState )
-            {
-                renderState->Capture();
-            }
-            else
-            {
-                renderState = g_renderStateManager.CaptureState();
-            }
-
-            if ( textureStageState )
-            {
-                textureStageState->Capture();
-            }
-            else
-            {
-                textureStageState = g_textureStageStateManager.CaptureState();
-            }
-
-            if ( lightingState )
-            {
-                lightingState->Capture();
-            }
-            else
-            {
-                lightingState = g_lightingStateManager.CaptureState();
-            }
-
-            if ( transformationState )
-            {
-                transformationState->Capture();
-            }
-            else
-            {
-                transformationState = g_transformationStateManager.CaptureState();
-            }
-
-            if ( samplerState )
-            {
-                samplerState->Capture();
-            }
-            else
-            {
-                samplerState = g_samplerStateManager.CaptureState();
-            }
-        }
-
-        bool IsCurrent( void ) const
-        {
-            if ( !vertexStreamState->IsCurrent() )
-                return false;
-
-            if ( !renderState->IsCurrent() )
-                return false;
-
-            if ( !textureStageState->IsCurrent() )
-                return false;
-
-            if ( !lightingState->IsCurrent() )
-                return false;
-
-            if ( !transformationState->IsCurrent() )
-                return false;
-
-            if ( !samplerState->IsCurrent() )
-                return false;
-
-            return true;
-        }
-
-        void AcquireContext( void )
-        {
-            vertexStreamState->SetDeviceTo();
-            renderState->SetDeviceTo();
-            textureStageState->SetDeviceTo();
-            lightingState->SetDeviceTo();
-            transformationState->SetDeviceTo();
-            samplerState->SetDeviceTo();
-        }
-    };
-
-    struct renderDataCachedMesh
+    AINLINE void Reset( void )
     {
-        // Variables here describe states that are not as expensive.
-        D3DMATERIAL9                    materialState;
-        D3DMATRIX                       worldMatrix;
+        maxEntriesPerBucket = 0;
+        totalRenderedEntries = 0;
+        totalNumberOfBuckets = 0;
+    }
 
-        void Capture( void )
-        {
-            RwD3D9GetMaterial( materialState );
-
-            RwD3D9GetTransform( D3DTS_WORLD, &worldMatrix );
-        }
-
-        void Apply( void )
-        {
-            RwD3D9SetMaterial( materialState );
-
-            RwD3D9SetTransform( D3DTS_WORLD, &worldMatrix );
-        }
-
-        // Members deciding the rendering call.
-        RwD3D9RenderCallbackData        renderCall;
-    };
-
-    struct RwRenderBucket
-    {
-        renderSystemState renderState;
-
-        struct bucketRenderEntry
-        {
-            renderDataCachedMesh renderData;
-            unsigned int globListIndex;
-        };
-
-        struct renderDataArrayManager
-        {
-            AINLINE void InitField( bucketRenderEntry& data )
-            {
-                return;
-            }
-        };
-        typedef growableArray <bucketRenderEntry, 12, 0, renderDataArrayManager, unsigned int> renderItems_t;
-
-        renderItems_t renderItems;
-    };
+    unsigned int maxEntriesPerBucket;
+    unsigned int totalRenderedEntries;
+    unsigned int totalNumberOfBuckets;
 };
+
+static runtimeStatistics _currentPassStats;
+static runtimeStatistics _lastPassStats;
 
 namespace RenderBucket
 {
@@ -248,6 +48,9 @@ namespace RenderBucket
 
     // RenderBucket variables.
     static bool isInPhase = false;
+
+    // Pointer to the currently rendering atomic object.
+    static RpAtomic *currentlyRenderingAtomic = NULL;
 
     struct pipelineArrayManager
     {
@@ -295,12 +98,29 @@ namespace RenderBucket
     {
         RwRenderBucket *currentBucket = NULL;
 
-        if ( currentPipeData && currentPipeData->renderState.IsCurrent() )
+        // Check the most notable render bucket first.
+        // This one is very likely to succeed.
+        if ( currentBucket == NULL )
         {
-            currentBucket = currentPipeData;
+            RwRenderBucket *lastBestBucket = RpAtomicGetContextualRenderBucket( NULL );
+
+            if ( lastBestBucket && lastBestBucket->renderState.IsCurrent() )
+            {
+                currentBucket = lastBestBucket;
+            }
         }
 
-        if ( !currentBucket )
+        if ( currentBucket == NULL )
+        {
+            RwRenderBucket *likelyBucket = currentPipeData;
+
+            if ( likelyBucket && likelyBucket->renderState.IsCurrent() )
+            {
+                currentBucket = likelyBucket;
+            }
+        }
+
+        if ( currentBucket == NULL )
         {
             unsigned int n = pipelineData.GetCount();
 
@@ -319,9 +139,11 @@ namespace RenderBucket
             }
         }
 
-        if ( !currentBucket )
+        if ( currentBucket == NULL )
         {
             currentBucket = AllocateRenderBucket();
+
+            _currentPassStats.totalNumberOfBuckets++;
         }
 
         return currentBucket;
@@ -452,6 +274,9 @@ void RenderBucket::BeginPass( void )
     g_lightingStateManager.BeginBucketPass();
     g_transformationStateManager.BeginBucketPass();
 
+    // Reset statistics.
+    _currentPassStats.Reset();
+
     // Enter the phase.
     isInPhase = true;
 }
@@ -547,8 +372,26 @@ void RenderBucket::EndPass( void )
     g_lightingStateManager.EndBucketPass();
     g_transformationStateManager.EndBucketPass();
 
+    // Put finished statistics into the global storage.
+    _lastPassStats = _currentPassStats;
+
     // Leave the phase.
     isInPhase = false;
+}
+
+void RenderBucket::SetContextAtomic( RpAtomic *renderObject )
+{
+    currentlyRenderingAtomic = renderObject;
+}
+
+renderBucketStats RenderBucket::GetRuntimeStatistics( void )
+{
+    renderBucketStats statsOut;
+    statsOut.totalNumberOfRenderCalls = _lastPassStats.totalRenderedEntries;
+    statsOut.totalNumberOfActiveBuckets = _lastPassStats.totalNumberOfBuckets;
+    statsOut.maxRenderCallsPerBucket = _lastPassStats.maxEntriesPerBucket;
+
+    return statsOut;
 }
 
 // Since this is the lowest rendering layer, it is very important to keep this code as optimized as possible.
@@ -602,6 +445,16 @@ bool RenderBucket::OnCachedRenderCall( const RwD3D9RenderCallbackData& callbackD
     }
 
     currentBucket->renderItems.AddItem( entry );
+
+    // Update statistics.
+    {
+        if ( _currentPassStats.maxEntriesPerBucket < currentBucket->renderItems.GetCount() )
+        {
+            _currentPassStats.maxEntriesPerBucket = currentBucket->renderItems.GetCount();
+        }
+
+        _currentPassStats.totalRenderedEntries++;
+    }
 
     // TODO: actually handle rendering requests.
     return true;

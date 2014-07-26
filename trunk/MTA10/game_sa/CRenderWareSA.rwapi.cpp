@@ -220,11 +220,13 @@ void RenderWareAPI_Init( void )
     // Initialize remaining modules.
     RwRenderStatesD3D9_Init();
     RwTextureD3D9_Init();
+    RpAtomicD3D9_Init();
 }
 
 void RenderWareAPI_Shutdown( void )
 {
     // Shutdown remaining modules.
+    RpAtomicD3D9_Shutdown();
     RwTextureD3D9_Shutdown();
     RwRenderStatesD3D9_Shutdown();
 }

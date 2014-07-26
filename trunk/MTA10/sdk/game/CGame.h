@@ -109,6 +109,7 @@ public:
     virtual                             ~CGame()    {};
 
     virtual void                        RegisterMultiplayer( CMultiplayer *mp ) = 0;
+    virtual void                        UnregisterMultiplayer( CMultiplayer *mp ) = 0;
 
     virtual CPools*                     GetPools() = 0;
     virtual CPlayerInfo*                GetPlayerInfo() = 0;

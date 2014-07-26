@@ -31,10 +31,6 @@ void RpD3D9InitializeMaterialEnvironment( void );
 void __cdecl RwD3D9SetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD value );
 void __cdecl RwD3D9GetTextureStageState ( DWORD stageId, D3DTEXTURESTAGESTATETYPE stateType, DWORD& value );
 
-// GTA:SA native functions for compatibility when reversing.
-void __cdecl HOOK_RwD3D9SetRenderState  ( D3DRENDERSTATETYPE type, DWORD value );
-void __cdecl HOOK_RwD3D9GetRenderState  ( D3DRENDERSTATETYPE type, DWORD& value );
-
 // MTA extensions
 void RwD3D9ForceRenderState             ( D3DRENDERSTATETYPE type, DWORD value );
 void RwD3D9FreeRenderState              ( D3DRENDERSTATETYPE type );
@@ -142,7 +138,7 @@ struct RwRenderStateLock
         if ( ++_rsLockInfo[type].refCount > 1 )
         {
             // Only have to store the previous RenderState value now
-            HOOK_RwD3D9GetRenderState( type, m_prevValue );
+            RwD3D9GetRenderState( type, m_prevValue );
         }
 
         // Apply our RenderState and save the original GTA:SA one.

@@ -136,16 +136,16 @@ RwTexture* RwTextureStreamReadEx( RwStream *stream )
         return NULL;
     }
 
-    // Correct the filter mode.
-    unsigned int filterMode = tex->filterMode;
+    // Upgrade the filter mode to enable anti-aliasing.
+    rwRasterStageFilterMode filterMode = (rwRasterStageFilterMode)tex->filterMode;
 
-    if ( filterMode == 1 )
+    if ( filterMode == RWFILTER_POINT )
     {
-        tex->filterMode = 2;
+        tex->filterMode = (unsigned char)RWFILTER_LINEAR;
     }
-    else if ( filterMode == 3 )
+    else if ( filterMode == RWFILTER_POINT_POINT )
     {
-        tex->filterMode = 4;
+        tex->filterMode = (unsigned char)RWFILTER_LINEAR_POINT;
     }
 
     // Note: MTA usually has a fxQuality hook here, but it did nothing for the texture loading.

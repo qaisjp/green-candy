@@ -31,53 +31,6 @@ RwVertexStreamStateManager g_vertexStreamStateManager;
 RwRenderStateLock::_rsLockDesc RwRenderStateLock::_rsLockInfo[210];
 
 /*=========================================================
-    RwD3D9SetRenderState
-
-    Arguments:
-        type - D3D9 RenderState id
-        value - integer with the new RenderState value
-    Purpose:
-        Sets a RenderState to the RenderWare D3D9 pipeline
-        system and applies it during next atomic render.
-    Binary offsets:
-        (1.0 US): 0x007FC2D0
-        (1.0 EU): 0x007FC310
-=========================================================*/
-struct _renderStateDesc
-{
-    deviceStateValue value;
-    int addedToQuery;
-};
-
-inline _renderStateDesc& GetNativeRenderStateDesc( D3DRENDERSTATETYPE type )
-{
-    return ((_renderStateDesc*)0x00C991D0)[type];
-}
-
-void __cdecl RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
-{
-    // The reason we use the native table is because a lot of calls to
-    // RwD3D9SetRenderState have been inlined by the compiler. I realized
-    // that the render state locks are flawed until we reverse all such
-    // inlined calls.
-    // * RenderWare appears to have a native inlined routine for setting render
-    //   states that always assumes they need updating (1.0 US): 0x007FE0D0
-    _renderStateDesc& desc = GetNativeRenderStateDesc( type );
-
-    if ( desc.value == value )
-        return;
-
-    desc.value = value;
-
-    if ( !desc.addedToQuery )
-    {
-        desc.addedToQuery = 1;
-
-        ((D3DRENDERSTATETYPE*)0x00C98B40)[ (*(unsigned int*)0x00C9A5EC)++ ] = type;
-    }
-}
-
-/*=========================================================
     RwD3D9ForceRenderState (MTA extension)
 
     Arguments:
@@ -104,24 +57,27 @@ static _internalRenderStateDesc _intRenderStates[210];
 
 void RwD3D9ForceRenderState( D3DRENDERSTATETYPE type, DWORD value )
 {
+    RwRenderStateManager::stateAddress theAddress;
+    theAddress.type = type;
+
     _internalRenderStateDesc& desc = _intRenderStates[type];
 
     // Notify the system that we force a RenderState
     if ( !desc.isForced )
     {
         desc.isForced = true;
-        RwD3D9GetRenderState( type, desc.value );
+        desc.value = g_renderStateManager.GetDeviceState( theAddress );
     }
 
     // Store the forced renderstate so we ensure sync with native code.
     desc.forceValue = value;
 
     // Set the MTA RenderState
-    RwD3D9SetRenderState( type, value );
+    g_renderStateManager.SetDeviceStateChecked( theAddress, value );
 }
 
 /*=========================================================
-    HOOK_RwD3D9SetRenderState
+    RwD3D9SetRenderState
 
     Arguments:
         type - D3D9 RenderState id
@@ -135,12 +91,12 @@ void RwD3D9ForceRenderState( D3DRENDERSTATETYPE type, DWORD value )
         (1.0 US): 0x007FC2D0
         (1.0 EU): 0x007FC310
 =========================================================*/
-void __cdecl HOOK_RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
+void __cdecl RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
 {
     // Actual bugfix.
     __asm push edx
 
-    _internalRenderStateDesc& desc = _intRenderStates[type];
+    _internalRenderStateDesc& desc = _intRenderStates[ type ];
 
     // Check whether MTA wants to force a RenderState
     if ( desc.isForced )
@@ -149,32 +105,14 @@ void __cdecl HOOK_RwD3D9SetRenderState( D3DRENDERSTATETYPE type, DWORD value )
         desc.value = value;
     }
     else    // Otherwise we just set it
-        RwD3D9SetRenderState( type, value );
+    {
+        RwRenderStateManager::stateAddress theAddress;
+        theAddress.type = type;
+
+        g_renderStateManager.SetDeviceStateChecked( theAddress, value );
+    }
 
     __asm pop edx
-}
-
-/*=========================================================
-    RwD3D9GetRenderState
-
-    Arguments:
-        type - D3D9 RenderState id
-    Purpose:
-        Retrieves the current RenderWare D3D9 pipeline
-        RenderState.
-    Binary offsets:
-        (1.0 US): 0x007FC320
-        (1.0 EU): 0x007FC360
-    Note:
-        When dealing with API that tries to adapt to proprietory
-        APIs like Direct3D, we better leave the usage as close to
-        the original as possible. I had the idea to let this
-        function return a DWORD, but decided against it since I
-        realized that it did not match the GTA:SA representation.
-=========================================================*/
-void __cdecl RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
-{
-    value = GetNativeRenderStateDesc( type ).value;
 }
 
 /*=========================================================
@@ -239,7 +177,7 @@ void __cdecl RwD3D9GetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE
 }
 
 /*=========================================================
-    HOOK_RwD3D9GetRenderState
+    RwD3D9GetRenderState
 
     Arguments:
         type - D3D9 RenderState id
@@ -250,7 +188,7 @@ void __cdecl RwD3D9GetTextureStageState( DWORD stageId, D3DTEXTURESTAGESTATETYPE
         (1.0 US): 0x007FC320
         (1.0 EU): 0x007FC360
 =========================================================*/
-void __cdecl HOOK_RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
+void __cdecl RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
 {
     // Actual bugfix.
     __asm push edx
@@ -260,7 +198,12 @@ void __cdecl HOOK_RwD3D9GetRenderState( D3DRENDERSTATETYPE type, DWORD& value )
     if ( desc.isForced )
         value = desc.forceValue;
     else
-        RwD3D9GetRenderState( type, value );
+    {
+        RwRenderStateManager::stateAddress theAddress;
+        theAddress.type = type;
+
+        value = g_renderStateManager.GetDeviceState( theAddress );
+    }
 
     __asm pop edx
 }
@@ -291,12 +234,15 @@ void RwD3D9FreeRenderState( D3DRENDERSTATETYPE type )
     // since we do not control the whole GTA:SA codebase yet).
     DWORD curState = 0;
 
-    RwD3D9GetRenderState( type, curState );
+    RwRenderStateManager::stateAddress theAddress;
+    theAddress.type = type;
+
+    curState = g_renderStateManager.GetDeviceState( theAddress );
 
     if ( curState == desc.forceValue )
     {
         // Revert to the GTA:SA version
-        RwD3D9SetRenderState( type, desc.value );
+        g_renderStateManager.SetDeviceStateChecked( theAddress, desc.value );
     }
 }
 
@@ -332,11 +278,6 @@ void RwD3D9FreeRenderStates( void )
         (1.0 US): 0x007FC200
         (1.0 EU): 0x007FC240
 =========================================================*/
-inline deviceStateValue& GetNativeCurrentRenderState( D3DRENDERSTATETYPE type )
-{
-    return ((deviceStateValue*)0x00C98E88)[type];
-}
-
 void __cdecl RwD3D9ApplyDeviceStates( void )
 {
     IDirect3DDevice9 *renderDevice = GetRenderDevice();
@@ -345,45 +286,13 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
     g_vertexStreamStateManager.ApplyDeviceStates();
     
     // Apply RenderStates
-    unsigned int renderStates = *(unsigned int*)0x00C9A5EC;
-
-    for ( unsigned int n = 0; n < renderStates; n++ )
-    {
-        D3DRENDERSTATETYPE type = ((D3DRENDERSTATETYPE*)0x00C98B40)[n];
-        _renderStateDesc& desc = GetNativeRenderStateDesc( type );
-        
-        DWORD newState = desc.value;
-        deviceStateValue& currentState = GetNativeCurrentRenderState( type );
-
-        // We processed this entry
-        desc.addedToQuery = false;
-
-        if ( currentState != newState )
-        {
-            // Check whether native code conflicts with our implementation here.
-            // If so, fix the render state representation.
-            _internalRenderStateDesc& intInfo = _intRenderStates[type];
-
-            if ( intInfo.isForced && intInfo.forceValue != newState )
-            {
-                desc.value = intInfo.forceValue;
-                intInfo.value = newState;
-            }
-            else
-            {
-                // RS change is legit, apply it.
-                renderDevice->SetRenderState( type, newState );
-
-                currentState = newState;
-            }
-        }
-    }
-
-    // Processed, so zero out
-    *(unsigned int*)0x00C9A5EC = 0;
+    g_renderStateManager.ApplyDeviceStates();
 
     // Apply texture stage states
     g_textureStageStateManager.ApplyDeviceStates();
+
+    // Apply sampler states.
+    g_samplerStateManager.ApplyDeviceStates();
 
     // Apply transformations.
     g_transformationStateManager.ApplyDeviceStates();
@@ -406,28 +315,13 @@ void __cdecl RwD3D9ValidateDeviceStates( void )
     IDirect3DDevice9 *renderDevice = GetRenderDevice();
 
     // Validate renderstates.
-    for ( unsigned int n = 0; n < 210; n++ )
-    {
-        D3DRENDERSTATETYPE type = (D3DRENDERSTATETYPE)n;
-
-        deviceStateValue& currentState = GetNativeCurrentRenderState( type );
-
-        DWORD realCurrent = 0xFFFFFFFF;
-        if ( renderDevice->GetRenderState( type, &realCurrent ) == D3D_OK )
-        {
-            if ( currentState != realCurrent )
-            {
-#ifdef DEBUG_DEVICE_STATE_INTEGRITY
-                __asm int 3
-#endif //DEBUG_DEVICE_STATE_INTEGRITY
-
-                currentState = realCurrent;
-            }
-        }
-    }
+    g_renderStateManager.ValidateDeviceStates();
 
     // Validate texture stage states.
     g_textureStageStateManager.ValidateDeviceStates();
+
+    // Validate sampler states.
+    g_samplerStateManager.ValidateDeviceStates();
 }
 
 /*=========================================================
@@ -448,25 +342,13 @@ void __cdecl RwD3D9ValidateDeviceStates( void )
         GTA:SA does never change the sampler states during
         runtime.
 =========================================================*/
-typedef deviceStateValue samplerStates[14];
-
-inline deviceStateValue& GetNativeCurrentSamplerStateValue( DWORD samplerId, D3DSAMPLERSTATETYPE stateType )
-{
-    assume( samplerId < MAX_SAMPLERS );
-
-    return ((samplerStates*)0x00C98938)[samplerId][stateType];
-}
-
 void __cdecl RwD3D9SetSamplerState( DWORD samplerId, D3DSAMPLERSTATETYPE stateType, DWORD value )
 {
-    deviceStateValue& currentState = GetNativeCurrentSamplerStateValue( samplerId, stateType );
+    RwSamplerStateManager::stateAddress theAddress;
+    theAddress.samplerId = samplerId;
+    theAddress.stateType = stateType;
 
-    if ( currentState != value )
-    {
-        currentState = value;
-
-        GetRenderDevice()->SetSamplerState( samplerId, stateType, value );
-    }
+    g_samplerStateManager.SetDeviceStateChecked( theAddress, value );
 }
 
 /*=========================================================
@@ -490,7 +372,11 @@ void __cdecl RwD3D9SetSamplerState( DWORD samplerId, D3DSAMPLERSTATETYPE stateTy
 =========================================================*/
 void __cdecl RwD3D9GetSamplerState( DWORD samplerId, D3DSAMPLERSTATETYPE stateType, DWORD& valueOut )
 {
-    valueOut = GetNativeCurrentSamplerStateValue( samplerId, stateType );
+    RwSamplerStateManager::stateAddress theAddress;
+    theAddress.samplerId = samplerId;
+    theAddress.stateType = stateType;
+
+    valueOut = g_samplerStateManager.GetDeviceState( theAddress );
 }
 
 /*=========================================================
@@ -677,11 +563,11 @@ int __cdecl RpD3D9SetSurfaceProperties( RpMaterialLighting& matLight, RwColor& m
             gpuAmbientColor = matColor.ToD3DColor();
         }
 
-        HOOK_RwD3D9SetRenderState( D3DRS_AMBIENT, gpuAmbientColor );
-        HOOK_RwD3D9SetRenderState( D3DRS_COLORVERTEX, useVertexColor );
+        RwD3D9SetRenderState( D3DRS_AMBIENT, gpuAmbientColor );
+        RwD3D9SetRenderState( D3DRS_COLORVERTEX, useVertexColor );
 
-        HOOK_RwD3D9SetRenderState( D3DRS_AMBIENTMATERIALSOURCE, ambientMaterialSource );
-        HOOK_RwD3D9SetRenderState( D3DRS_EMISSIVEMATERIALSOURCE, emissiveMaterialSource );
+        RwD3D9SetRenderState( D3DRS_AMBIENTMATERIALSOURCE, ambientMaterialSource );
+        RwD3D9SetRenderState( D3DRS_EMISSIVEMATERIALSOURCE, emissiveMaterialSource );
     }
 
     // Generate ambient color (only RGB).
@@ -1073,8 +959,8 @@ inline void RwD3D9EnableClippingIfNeeded( RwObject *renderObject, eRwType render
 
     // Clip polygons if the object is not visible.
     // todo: fix this; it bugs for old GPUs!
-    //HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, !isObjectVisible );
-    HOOK_RwD3D9SetRenderState( D3DRS_CLIPPING, true );
+    //RwD3D9SetRenderState( D3DRS_CLIPPING, !isObjectVisible );
+    RwD3D9SetRenderState( D3DRS_CLIPPING, true );
 }
 
 /*=========================================================
@@ -1093,15 +979,15 @@ struct GenericVideoPassRender
     __forceinline GenericVideoPassRender( unsigned int& _renderFlags ) : renderFlags( _renderFlags )
     {
         // Store some render states.
-        HOOK_RwD3D9GetRenderState( D3DRS_DITHERENABLE, ditheringEnabled );
-        HOOK_RwD3D9GetRenderState( D3DRS_SHADEMODE, shadeMode );
+        RwD3D9GetRenderState( D3DRS_DITHERENABLE, ditheringEnabled );
+        RwD3D9GetRenderState( D3DRS_SHADEMODE, shadeMode );
 
         // Change render states.
         RwD3D9RenderStateSetVertexAlphaEnabled( false );
 
-        HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFF000000 );
-        HOOK_RwD3D9SetRenderState( D3DRS_DITHERENABLE, FALSE );
-        HOOK_RwD3D9SetRenderState( D3DRS_SHADEMODE, D3DSHADE_FLAT );
+        RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0xFF000000 );
+        RwD3D9SetRenderState( D3DRS_DITHERENABLE, FALSE );
+        RwD3D9SetRenderState( D3DRS_SHADEMODE, D3DSHADE_FLAT );
 
         RwD3D9SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG2 );
         RwD3D9SetTextureStageState( 0, D3DTSS_COLORARG1, D3DTA_TEXTURE );
@@ -1119,8 +1005,8 @@ struct GenericVideoPassRender
     __forceinline ~GenericVideoPassRender( void )
     {
         // Restore some render states.
-        HOOK_RwD3D9SetRenderState( D3DRS_SHADEMODE, shadeMode );
-        HOOK_RwD3D9SetRenderState( D3DRS_DITHERENABLE, ditheringEnabled );
+        RwD3D9SetRenderState( D3DRS_SHADEMODE, shadeMode );
+        RwD3D9SetRenderState( D3DRS_DITHERENABLE, ditheringEnabled );
     }
 
     __forceinline void OnRenderPass( RwRenderPass *rtPass )
@@ -1236,7 +1122,7 @@ struct AlphaTexturedVideoPassRender
         {
             stateFlags |= 0x02;
 
-            HOOK_RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, curMat->color.ToD3DColor() );
+            RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, curMat->color.ToD3DColor() );
         }
 
         // Update texture status.
@@ -1363,19 +1249,29 @@ void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtna
     // Set the vertex type.
     RwD3D9SetCurrentVertexDeclaration( rtinfo->m_vertexDecl );
 
-    // Do we want vertex alpha?
-    // Kind of an important flag here.
-    DWORD lightValue;
-
-    bool enableAlpha = RwD3D9IsAlphaRenderingRequired( renderFlags, lightValue );
-
-    if ( enableAlpha )
+    // Perform the rendering.
     {
-        _RenderVideoDataGeneric( rtinfo, GenericVideoPassRender( renderFlags ) );
-    }
-    else
-    {
-        _RenderVideoDataGeneric( rtinfo, AlphaTexturedVideoPassRender( renderFlags, lightValue ) );
+        // Make sure we tell rasterizazion contexts about our rendering object.
+        // This is done for instance-based optimizations.
+        RwD3D9OnRenderingContextEstablish( renderObject );
+
+        // Do we want vertex alpha?
+        // Kind of an important flag here.
+        DWORD lightValue;
+
+        bool enableAlpha = RwD3D9IsAlphaRenderingRequired( renderFlags, lightValue );
+
+        if ( enableAlpha )
+        {
+            _RenderVideoDataGeneric( rtinfo, GenericVideoPassRender( renderFlags ) );
+        }
+        else
+        {
+            _RenderVideoDataGeneric( rtinfo, AlphaTexturedVideoPassRender( renderFlags, lightValue ) );
+        }
+
+        // Tell rasterizers that the contextual rendering phase ended.
+        RwD3D9OnRenderingContextBreak();
     }
 }
 
@@ -1392,47 +1288,15 @@ void __cdecl HOOK_DefaultAtomicRenderingCallback( RwRenderCallbackTraverse *rtna
 void RwD3D9InitializeCurrentStates( void )
 {
     // The_GTA: fixed current-ness of device states by actually querying the device.
-    IDirect3DDevice9 *renderDevice = GetRenderDevice();
 
     // Set up the current renderstates.
-    for ( unsigned int n = 0; n < 210; n++ )
-    {
-        D3DRENDERSTATETYPE type = (D3DRENDERSTATETYPE)n;
-
-        deviceStateValue& currentRenderState = GetNativeCurrentRenderState( type );
-
-        renderDevice->GetRenderState( type, &currentRenderState.value );
-    }
-
-    // Initialize the renderstates maintenance array based on the current render states.
-    for ( unsigned int n = 0; n < 210; n++ )
-    {
-        D3DRENDERSTATETYPE type = (D3DRENDERSTATETYPE)n;
-
-        _renderStateDesc& rsDesc = GetNativeRenderStateDesc( type );
-
-        rsDesc.value = GetNativeCurrentRenderState( type );
-        rsDesc.addedToQuery = false;
-    }
-
-    // Reset the renderstate query.
-    *(unsigned int*)0x00C9A5EC = 0;
+    g_renderStateManager.Initialize();
 
     // Set up the current TSS values.
     g_textureStageStateManager.Initialize();
 
     // Set up the sampler states array.
-    for ( unsigned int samplerIndex = 0; samplerIndex < MAX_SAMPLERS; samplerIndex++ )
-    {
-        for ( unsigned int stateType = 0; stateType < 14; stateType++ )
-        {
-            D3DSAMPLERSTATETYPE type = (D3DSAMPLERSTATETYPE)stateType;
-
-            deviceStateValue& samplerValue = GetNativeCurrentSamplerStateValue( samplerIndex, type );
-
-            renderDevice->GetSamplerState( samplerIndex, type, &samplerValue.value );
-        }
-    }
+    g_samplerStateManager.Initialize();
 
     // Initialize material environment.
     RpD3D9InitializeMaterialEnvironment();
@@ -1671,8 +1535,8 @@ void RenderWarePipeline_Init( void )
     switch( pGame->GetGameVersion() )
     {
     case VERSION_EU_10:
-        HookInstall( 0x007FC310, (DWORD)HOOK_RwD3D9SetRenderState, 5 );
-        HookInstall( 0x007FC360, (DWORD)HOOK_RwD3D9GetRenderState, 5 );
+        HookInstall( 0x007FC310, (DWORD)RwD3D9SetRenderState, 5 );
+        HookInstall( 0x007FC360, (DWORD)RwD3D9GetRenderState, 5 );
         HookInstall( 0x007FC380, (DWORD)RwD3D9SetTextureStageState, 5 );
         HookInstall( 0x007FC3E0, (DWORD)RwD3D9GetTextureStageState, 5 );
         HookInstall( 0x007FC400, (DWORD)RwD3D9SetSamplerState, 5 );
@@ -1690,8 +1554,8 @@ void RenderWarePipeline_Init( void )
         //HookInstall( 0x007FC510, (DWORD)RpD3D9SetSurfaceProperties, 5 );
         break;
     case VERSION_US_10:
-        HookInstall( 0x007FC2D0, (DWORD)HOOK_RwD3D9SetRenderState, 5 );
-        HookInstall( 0x007FC320, (DWORD)HOOK_RwD3D9GetRenderState, 5 );
+        HookInstall( 0x007FC2D0, (DWORD)RwD3D9SetRenderState, 5 );
+        HookInstall( 0x007FC320, (DWORD)RwD3D9GetRenderState, 5 );
         HookInstall( 0x007FC340, (DWORD)RwD3D9SetTextureStageState, 5 );
         HookInstall( 0x007FC3A0, (DWORD)RwD3D9GetTextureStageState, 5 );
         HookInstall( 0x007FC3C0, (DWORD)RwD3D9SetSamplerState, 5 );

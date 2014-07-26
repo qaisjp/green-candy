@@ -297,6 +297,13 @@ void CGameSA::RegisterMultiplayer( CMultiplayer *mp )
     multiplayer->SetProcessCollisionHandler( ProcessCollisions );
 }
 
+void CGameSA::UnregisterMultiplayer( CMultiplayer *mp )
+{
+    assert( mp == multiplayer );
+
+    multiplayer->SetProcessCollisionHandler( NULL );
+}
+
 CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )
 { 
     DEBUG_TRACE("CWeaponInfoSA* CGameSA::GetWeaponInfo( eWeaponType weapon, eWeaponSkill skill )");

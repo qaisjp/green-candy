@@ -27,8 +27,8 @@ inline rwDeviceValue_t& GetIsVertexAlphaLocked( void )      { return _currentIsV
 
 inline void _RwD3D9UpdateAlphaEnable( rwDeviceValue_t blendEnable, rwDeviceValue_t testEnable )
 {
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, blendEnable );
-    HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, ( blendEnable && testEnable ) );
+    RwD3D9SetRenderState( D3DRS_ALPHABLENDENABLE, blendEnable );
+    RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, ( blendEnable && testEnable ) );
 }
 
 // Used by RwD3D9RenderStateSetVertexAlphaEnabled.
@@ -62,13 +62,13 @@ int RwD3D9SetVirtualAlphaTestState( bool enable )
 {
     DWORD currentAlphaBlendState;
 
-    HOOK_RwD3D9GetRenderState( D3DRS_ALPHABLENDENABLE, currentAlphaBlendState );
+    RwD3D9GetRenderState( D3DRS_ALPHABLENDENABLE, currentAlphaBlendState );
 
     GetCurrentAlphaTestEnable() = enable;
 
     if ( currentAlphaBlendState == TRUE )
     {
-        HOOK_RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, enable );
+        RwD3D9SetRenderState( D3DRS_ALPHATESTENABLE, enable );
     }
 
     return 1;
@@ -298,10 +298,15 @@ int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
     if ( texture )
     {
         // Set Texture address modes.
-        RwD3D9RasterStageSetAddressModeU( stageIndex, texture->u_addressMode );
-        RwD3D9RasterStageSetAddressModeV( stageIndex, texture->v_addressMode );
+        {
+            rwRasterStageAddressMode u_addressMode = (rwRasterStageAddressMode)texture->u_addressMode;
+            rwRasterStageAddressMode v_addressMode = (rwRasterStageAddressMode)texture->v_addressMode;
 
-        unsigned int filterMode = texture->filterMode;
+            RwD3D9RasterStageSetAddressModeU( stageIndex, u_addressMode );
+            RwD3D9RasterStageSetAddressModeV( stageIndex, v_addressMode );
+        }
+
+        rwRasterStageFilterMode filterMode = (rwRasterStageFilterMode)texture->filterMode;
 
         // Attempt to get the texture plugin struct.
         // It does not have to be loaded.
@@ -311,7 +316,7 @@ int __cdecl RwD3D9SetTexture( RwTexture *texture, unsigned int stageIndex )
 
             if ( anisot->anisotropy > 1 )
             {
-                filterMode = 7;
+                filterMode = RWFILTER_ANISOTROPY;
             }
         }
 

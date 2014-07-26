@@ -287,7 +287,7 @@ protected:
     bool                                        m_bDoubleSidedInit;
 
     typedef std::vector <CClientEntity*> collisionEntities_t;
-    collisionEntities_t                         m_collidableWith;
+    collisionEntities_t                         m_notCollidableWith;
 
 public:
     // Optimization for getElementsByType starting at root
