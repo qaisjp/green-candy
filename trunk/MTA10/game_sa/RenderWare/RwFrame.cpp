@@ -581,7 +581,7 @@ RpAtomic* RwFrame::GetFirstAtomic( void )
 =========================================================*/
 static int RwObjectAtomicSetComponentFlags( RpAtomic *atomic, unsigned short flags )
 {
-    atomic->componentFlags |= flags;
+    RpAtomicAddComponentFlags( atomic, flags );
     return true;
 }
 
@@ -616,12 +616,14 @@ struct _rwFrameComponentAtomics
 
 static int RwFrameAtomicFindComponents( RpAtomic *atomic, _rwFrameComponentAtomics *info )
 {
-    if ( atomic->componentFlags & 0x01 )
+    unsigned int componentFlags = RpAtomicGetComponentFlags( atomic );
+
+    if ( componentFlags & 0x01 )
     {
         if ( info->primary )
             *info->primary = atomic;
     }
-    else if ( atomic->componentFlags & 0x02 )
+    else if ( componentFlags & 0x02 )
     {
         if ( info->secondary )
             *info->secondary = atomic;

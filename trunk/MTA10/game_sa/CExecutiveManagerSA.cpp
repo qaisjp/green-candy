@@ -54,6 +54,11 @@ CExecutiveManagerSA::CExecutiveManagerSA( void )
     LIST_CLEAR( fibers.root );
     LIST_CLEAR( groups.root );
 
+    // Initialize sub modules
+    InitThreads();
+    InitFibers();
+    InitializeTasks();
+
     // Set up runtime callbacks.
     ExecutiveFiber::setmemfuncs( fiberMemAllocate, fiberMemFree );
 
@@ -61,16 +66,10 @@ CExecutiveManagerSA::CExecutiveManagerSA( void )
 
     frameTime = ExecutiveManager::GetPerformanceTimer();
     frameDuration = 0;
-
-    // Initialize sub modules
-    InitializeTasks();
 }
 
 CExecutiveManagerSA::~CExecutiveManagerSA( void )
 {
-    // Shutdown sub modules.
-    ShutdownTasks();
-
     // Destroy all groups.
     while ( !LIST_EMPTY( groups.root ) )
     {
@@ -86,13 +85,25 @@ CExecutiveManagerSA::~CExecutiveManagerSA( void )
 
         CloseFiber( fiber );
     }
+
+    // Shutdown sub modules.
+    ShutdownTasks();
+    ShutdownFibers();
+    ShutdownThreads();
 }
 
-CFiberSA* CExecutiveManagerSA::CreateFiber( CFiberSA::fiberexec_t proc, void *userdata )
+CFiberSA* CExecutiveManagerSA::CreateFiber( CFiberSA::fiberexec_t proc, void *userdata, size_t stackSize )
 {
     CFiberSA *fiber = new CFiberSA( this, NULL, NULL );
 
-    Fiber *runtime = ExecutiveFiber::newfiber( fiber, 0, _FiberProc, _FiberTerm );
+    // Make sure we have an appropriate stack size.
+    if ( stackSize != 0 )
+    {
+        // At least two hundred bytes.
+        stackSize = std::max( (size_t)200, stackSize );
+    }
+
+    Fiber *runtime = ExecutiveFiber::newfiber( fiber, stackSize, _FiberProc, _FiberTerm );
 
     // Set first step into it, so the fiber can set itself up.
     fiber->runtime = runtime;
@@ -151,23 +162,6 @@ void CExecutiveManagerSA::CloseFiber( CFiberSA *fiber )
     LIST_REMOVE( fiber->groupNode );
 
     delete fiber;
-}
-
-void CExecutiveManagerSA::PushFiber( CFiberSA *currentFiber )
-{
-    fiberStack.AddItem( currentFiber );
-}
-
-void CExecutiveManagerSA::PopFiber( void )
-{
-    fiberStack.Pop();
-}
-
-CFiberSA* CExecutiveManagerSA::GetCurrentFiber( void )
-{
-    unsigned int fiberCount = fiberStack.GetCount();
-
-    return ( fiberCount != 0 ) ? ( fiberStack.Get( fiberCount - 1 ) ) : ( NULL );
 }
 
 CExecutiveGroupSA* CExecutiveManagerSA::CreateGroup( void )

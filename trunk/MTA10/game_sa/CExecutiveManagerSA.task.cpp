@@ -12,7 +12,7 @@
 
 #include "StdInc.h"
 
-static HANDLE shedulerThread;
+static CExecThreadSA *shedulerThread = NULL;
 
 struct hyperSignal
 {
@@ -52,7 +52,7 @@ struct hyperSignal
         isWaiting = true;
 
         WaitForSingleObject( pingEvent, INFINITE );
-        
+
         isWaiting = false;
 
         EnterCriticalSection( &pingLock );
@@ -100,7 +100,7 @@ static AINLINE bool ProcessSheduleItem( void )
     return hasSheduledItem;
 }
 
-static DWORD WINAPI TaskShedulerThread( LPVOID memPtr )
+static void __stdcall TaskShedulerThread( CExecThreadSA *threadInfo, void *param )
 {
     while ( true )
     {
@@ -108,20 +108,29 @@ static DWORD WINAPI TaskShedulerThread( LPVOID memPtr )
 
         while ( ProcessSheduleItem() );
     }
-
-    return 0;
 }
 
 void CExecutiveManagerSA::InitializeTasks( void )
 {
     // Initialize synchronization objects.
-    shedulerThread = CreateThread( NULL, 0, TaskShedulerThread, NULL, 0, NULL );
+    shedulerThread = CreateThread( TaskShedulerThread, NULL );
+
+    if ( shedulerThread )
+    {
+        // Start the thread.
+        shedulerThread->Resume();
+    }
 }
 
 void CExecutiveManagerSA::ShutdownTasks( void )
 {
-    // Shutdown synchronization objects.
-    TerminateThread( shedulerThread, 0 );
+    if ( shedulerThread )
+    {
+        // Shutdown synchronization objects.
+        TerminateThread( shedulerThread );
+
+        shedulerThread = NULL;
+    }
 }
 
 struct execWrapStruct
@@ -149,14 +158,14 @@ static void __stdcall TaskFiberWrap( CFiberSA *theFiber, void *memPtr )
     theTask->callback( theTask, userdata );
 }
 
-CExecTaskSA* CExecutiveManagerSA::CreateTask( CExecTaskSA::taskexec_t callback, void *userdata )
+CExecTaskSA* CExecutiveManagerSA::CreateTask( CExecTaskSA::taskexec_t callback, void *userdata, size_t stackSize )
 {
     // Create the underlying fiber.
     execWrapStruct info;
     info.theTask = NULL;
     info.userdata = userdata;
 
-    CFiberSA *theFiber = CreateFiber( TaskFiberWrap, &info );
+    CFiberSA *theFiber = CreateFiber( TaskFiberWrap, &info, stackSize );
 
     if ( !theFiber )
         return NULL;

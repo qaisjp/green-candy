@@ -20,6 +20,7 @@
 #include "CRenderWareSA.state.tss.hxx"
 #include "CRenderWareSA.state.sampler.hxx"
 #include "CRenderWareSA.state.transf.hxx"
+#include "CRenderWareSA.state.lighting.hxx"
 #include "CRenderWareSA.state.stream.hxx"
 
 // Definitions of device state managers.
@@ -293,6 +294,9 @@ void __cdecl RwD3D9ApplyDeviceStates( void )
 
     // Apply sampler states.
     g_samplerStateManager.ApplyDeviceStates();
+
+    // Apply lighting states.
+    g_lightingStateManager.ApplyDeviceStates();
 
     // Apply transformations.
     g_transformationStateManager.ApplyDeviceStates();
@@ -717,7 +721,7 @@ void __cdecl RwD3D9SetStreams( const RwD3D9Streams& streams, int useOffset )
             // Clear the vertex stream if it has been unloaded in the given streams info.
             if ( g_vertexStreamStateManager.GetDeviceState( address ).m_vertexBuf )
             {
-                g_vertexStreamStateManager.ResetDeviceState( address );
+                RwD3D9SetStreamSource( n, NULL, 0, 0 );
             }
         }
     }

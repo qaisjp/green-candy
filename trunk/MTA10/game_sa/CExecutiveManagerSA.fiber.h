@@ -13,6 +13,8 @@
 #ifndef _EXECUTIVE_MANAGER_FIBER_
 #define _EXECUTIVE_MANAGER_FIBER_
 
+#define THREAD_PLUGIN_FIBER_STACK       0x00000001
+
 struct FiberStatus;
 
 struct Fiber

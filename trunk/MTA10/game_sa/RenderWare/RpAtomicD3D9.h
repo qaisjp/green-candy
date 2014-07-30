@@ -15,6 +15,9 @@
 
 #define RW_PLUGIN_BUCKETSORT        0x52729854
 
+// RenderWare Atomic Direct3D Environment Reflection Map Plugin.
+CEnvMapAtomicSA* __cdecl RpAtomicGetEnvironmentReflectionMap( RpAtomic *atomic );
+
 // RenderWare Direct3D Atomic Bucket Sorting Extension.
 void RpAtomicD3D9_RegisterPlugins( void );
 

@@ -1176,6 +1176,40 @@ namespace CLuaFunctionDefs
         lua_pushnumber( L, currentRenderStats.maxRenderCallsPerBucket );
         lua_setfield( L, -2, "maxRenderCallsPerBucket" );
 
+        lua_pushnumber( L, currentRenderStats.bucketCacheMissCount );
+        lua_setfield( L, -2, "bucketCacheMissCount" );
+
+        lua_pushnumber( L, currentRenderStats.bucketAllocationCount );
+        lua_setfield( L, -2, "bucketAllocationCount" );
+
+        lua_pushnumber( L, currentRenderStats.bucketAdaptionCount );
+        lua_setfield( L, -2, "bucketAdaptionCount" );
+
+        // Conflict counts.
+        lua_pushnumber( L, currentRenderStats.cacheNumVertexStreamConflicts );
+        lua_setfield( L, -2, "cacheNumVertexStreamConflicts" );
+
+        lua_pushnumber( L, currentRenderStats.cacheNumRenderStateConflicts );
+        lua_setfield( L, -2, "cacheNumRenderStateConflicts" );
+
+        lua_pushnumber( L, currentRenderStats.cacheNumTextureStageStateConflicts );
+        lua_setfield( L, -2, "cacheNumTextureStageStateConflicts" );
+
+        lua_pushnumber( L, currentRenderStats.cacheNumLightingStateConflicts );
+        lua_setfield( L, -2, "cacheNumLightingStateConflicts" );
+
+        lua_pushnumber( L, currentRenderStats.cacheNumTransformationStateConflicts );
+        lua_setfield( L, -2, "cacheNumTransformationStateConflicts" );
+
+        lua_pushnumber( L, currentRenderStats.cacheNumSamplerStateConflicts );
+        lua_setfield( L, -2, "cacheNumSamplerStateConflicts" );
+
+        lua_pushnumber( L, currentRenderStats.uniqueBucketUsageCount );
+        lua_setfield( L, -2, "uniqueBucketUsageCount" );
+
+        lua_pushnumber( L, currentRenderStats.bucketTerminationCount );
+        lua_setfield( L, -2, "bucketTerminationCount" );
+
         return 1;
     }
 }

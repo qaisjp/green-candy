@@ -32,15 +32,46 @@ struct runtimeStatistics
         maxEntriesPerBucket = 0;
         totalRenderedEntries = 0;
         totalNumberOfBuckets = 0;
+        bucketCacheMissCount = 0;
+        bucketAllocationCount = 0;
+        bucketAdaptionCount = 0;
+
+        cacheNumVertexStreamConflicts = 0;
+        cacheNumRenderStateConflicts = 0;
+        cacheNumTextureStageStateConflicts = 0;
+        cacheNumLightingStateConflicts = 0;
+        cacheNumTransformationStateConflicts = 0;
+        cacheNumSamplerStateConflicts = 0;
+
+        uniqueBucketUsageCount = 0;
+        bucketTerminationCount = 0;
     }
 
     unsigned int maxEntriesPerBucket;
     unsigned int totalRenderedEntries;
     unsigned int totalNumberOfBuckets;
+    unsigned int bucketCacheMissCount;
+    unsigned int bucketAllocationCount;
+    unsigned int bucketAdaptionCount;
+
+    // Conflict counts.
+    unsigned int cacheNumVertexStreamConflicts;
+    unsigned int cacheNumRenderStateConflicts;
+    unsigned int cacheNumTextureStageStateConflicts;
+    unsigned int cacheNumLightingStateConflicts;
+    unsigned int cacheNumTransformationStateConflicts;
+    unsigned int cacheNumSamplerStateConflicts;
+
+    unsigned int uniqueBucketUsageCount;
+    unsigned int bucketTerminationCount;
 };
 
+// Per-pass statistics.
 static runtimeStatistics _currentPassStats;
 static runtimeStatistics _lastPassStats;
+
+// Persistent statistics.
+static unsigned int totalAllocatedBuckets;
 
 namespace RenderBucket
 {
@@ -80,18 +111,50 @@ namespace RenderBucket
         renderBucket->renderState.Capture();
         renderBucket->renderItems.Clear();
 
-        pipelineData.AddItem( renderBucket );
-
-        currentPipeData = renderBucket;
-
         return renderBucket;
     }
 
     void FreeRenderBucket( RwRenderBucket *bucket )
     {
+        if ( currentPipeData == bucket )
+        {
+            currentPipeData = NULL;
+        }
+
         bucket->renderState.Terminate();
 
         bucketAlloc.Free( bucket );
+
+        _currentPassStats.bucketTerminationCount++;
+    }
+
+    // Array of all active render buckets.
+    static RwList <RwRenderBucket> activeRenderBuckets;
+
+    // Reference counting algorithms of render buckets.
+    void RwRenderBucket::Reference( void )
+    {
+        if ( refCount == 0 )
+        {
+            // Insert our render bucket into the active list.
+            LIST_INSERT( activeRenderBuckets.root, activeListNode );
+        }
+
+        refCount++;
+    }
+
+    void RwRenderBucket::Dereference( void )
+    {
+        refCount--;
+
+        if ( refCount == 0 )
+        {
+            // Remove our bucket from the active list.
+            LIST_REMOVE( activeListNode );
+
+            // Deallocate the bucket.
+            FreeRenderBucket( this );
+        }
     }
 
     RwRenderBucket* FindRenderBucket( void )
@@ -102,11 +165,61 @@ namespace RenderBucket
         // This one is very likely to succeed.
         if ( currentBucket == NULL )
         {
-            RwRenderBucket *lastBestBucket = RpAtomicGetContextualRenderBucket( NULL );
-
-            if ( lastBestBucket && lastBestBucket->renderState.IsCurrent() )
+            if ( RpAtomic *renderingAtomic = currentlyRenderingAtomic )
             {
-                currentBucket = lastBestBucket;
+                RwRenderBucket *lastBestBucket = RpAtomicGetContextualRenderBucket( renderingAtomic );
+
+                if ( lastBestBucket )
+                {
+                    if ( lastBestBucket->renderState.IsCurrent() )
+                    {
+                        currentBucket = lastBestBucket;
+                    }
+                    else
+                    {
+                        _currentPassStats.bucketCacheMissCount++;
+
+                        // Check what conflict we encountered and log it.
+                        {
+                            renderSystemState::eRenderStateConflict conflictType = lastBestBucket->renderState.GetLastConflict();
+
+                            if ( conflictType == renderSystemState::CONFLICT_VERTEXSTREAM )
+                            {
+                                _currentPassStats.cacheNumVertexStreamConflicts++;
+                            }
+                            else if ( conflictType == renderSystemState::CONFLICT_RENDERSTATE )
+                            {
+                                if ( _currentPassStats.cacheNumRenderStateConflicts > 2000 )
+                                    __asm nop
+
+                                _currentPassStats.cacheNumRenderStateConflicts++;
+                            }
+                            else if ( conflictType == renderSystemState::CONFLICT_TEXTURESTAGESTATE )
+                            {
+                                _currentPassStats.cacheNumTextureStageStateConflicts++;
+                            }
+                            else if ( conflictType == renderSystemState::CONFLICT_TRANSFORMATIONSTATE )
+                            {
+                                _currentPassStats.cacheNumTransformationStateConflicts++;
+                            }
+                            else if ( conflictType == renderSystemState::CONFLICT_SAMPLERSTATE )
+                            {
+                                _currentPassStats.cacheNumSamplerStateConflicts++;
+                            }
+                        }
+
+                        // Try to adapt the bucket if nothing has scheduled a render with it yet.
+                        // This is breaking bucket unique-ness in favour of performance.
+                        if ( lastBestBucket->renderItems.GetCount() == 0 )
+                        {
+                            lastBestBucket->renderState.Capture();
+
+                            currentBucket = lastBestBucket;
+
+                            _currentPassStats.bucketAdaptionCount++;
+                        }
+                    }
+                }
             }
         }
 
@@ -126,7 +239,7 @@ namespace RenderBucket
 
             while ( n != 0 )
             {
-                RwRenderBucket *rtBucket = pipelineData.Get( --n );
+                RwRenderBucket *rtBucket = pipelineData.GetFast( --n );
 
                 if ( rtBucket && rtBucket != currentPipeData )
                 {
@@ -139,11 +252,43 @@ namespace RenderBucket
             }
         }
 
+#if 0
+        // Slowest method.
+        if ( currentBucket == NULL )
+        {
+            LIST_FOREACH_BEGIN( RwRenderBucket, activeRenderBuckets.root, activeListNode )
+                if ( item->renderState.IsCurrent() )
+                {
+                    currentBucket = item;
+                    break;
+                }
+            LIST_FOREACH_END
+        }
+#endif
+
         if ( currentBucket == NULL )
         {
             currentBucket = AllocateRenderBucket();
 
-            _currentPassStats.totalNumberOfBuckets++;
+            if ( currentBucket != NULL )
+            {
+                _currentPassStats.bucketAllocationCount++;
+            }
+        }
+
+        if ( currentBucket != NULL )
+        {
+            if ( !currentBucket->IsOnList() )
+            {
+                pipelineData.AddItem( currentBucket );
+
+                currentBucket->SetOnList( true );
+
+                // Reference our render bucket so we start using it.
+                currentBucket->Reference();
+
+                _currentPassStats.uniqueBucketUsageCount++;
+            }
         }
 
         return currentBucket;
@@ -243,6 +388,8 @@ void RenderBucket::Initialize( void )
     isInPhase = false;
     currentPipeData = NULL;
 
+    LIST_CLEAR( activeRenderBuckets.root );
+
     // Create the sorting task for multi-threaded execution.
     sortingTask = pGame->GetExecutiveManager()->CreateTask( RenderBucketSortingTask, NULL );
 
@@ -276,6 +423,11 @@ void RenderBucket::BeginPass( void )
 
     // Reset statistics.
     _currentPassStats.Reset();
+
+    // For all active render buckets, initialize them.
+    LIST_FOREACH_BEGIN( RwRenderBucket, activeRenderBuckets.root, activeListNode )
+        item->renderItems.Clear();
+    LIST_FOREACH_END
 
     // Enter the phase.
     isInPhase = true;
@@ -313,13 +465,8 @@ namespace RenderBucket
 
 static const bool allowBucketRendering = false;
 
-void RenderBucket::RenderPass( void )
+AINLINE void ResetToBucketState( void )
 {
-    assert( isInPhase == true );
-
-    if ( !allowBucketRendering )
-        return;
-
     // Reset all state managers to bucket states.
     g_vertexStreamStateManager.SetBucketStates();
     g_renderStateManager.SetBucketStates();
@@ -327,6 +474,17 @@ void RenderBucket::RenderPass( void )
     g_samplerStateManager.SetBucketStates();
     g_lightingStateManager.SetBucketStates();
     g_transformationStateManager.SetBucketStates();
+}
+
+void RenderBucket::RenderPass( void )
+{
+    assert( isInPhase == true );
+
+    if ( !allowBucketRendering )
+        return;
+
+    // Make sure we are initially at the bucket states.
+    ResetToBucketState();
 
     // Render all items.
     BucketedRasterizer rasterizer;
@@ -356,7 +514,10 @@ void RenderBucket::EndPass( void )
     // Free all rendering data.
     for ( unsigned int n = 0; n < pipelineData.GetCount(); n++ )
     {
-        FreeRenderBucket( pipelineData.Get( n ) );
+        RwRenderBucket *bucket = pipelineData.GetFast( n );
+
+        bucket->Dereference();
+        bucket->SetOnList( false );
     }
 
     // Clear runtime variables.
@@ -381,6 +542,13 @@ void RenderBucket::EndPass( void )
 
 void RenderBucket::SetContextAtomic( RpAtomic *renderObject )
 {
+    // Only allow context atomics during bucket phase.
+    if ( !isInPhase )
+        return;
+
+    if ( renderObject == currentlyRenderingAtomic )
+        return;
+
     currentlyRenderingAtomic = renderObject;
 }
 
@@ -388,8 +556,28 @@ renderBucketStats RenderBucket::GetRuntimeStatistics( void )
 {
     renderBucketStats statsOut;
     statsOut.totalNumberOfRenderCalls = _lastPassStats.totalRenderedEntries;
-    statsOut.totalNumberOfActiveBuckets = _lastPassStats.totalNumberOfBuckets;
     statsOut.maxRenderCallsPerBucket = _lastPassStats.maxEntriesPerBucket;
+
+    unsigned int totalBucketCount = 0;
+
+    LIST_FOREACH_BEGIN( RwRenderBucket, activeRenderBuckets.root, activeListNode )
+        totalBucketCount++;
+    LIST_FOREACH_END
+
+    statsOut.totalNumberOfActiveBuckets = totalBucketCount;
+    statsOut.bucketCacheMissCount = _lastPassStats.bucketCacheMissCount;
+    statsOut.bucketAllocationCount = _lastPassStats.bucketAllocationCount;
+    statsOut.bucketAdaptionCount = _lastPassStats.bucketAdaptionCount;
+
+    statsOut.cacheNumVertexStreamConflicts = _lastPassStats.cacheNumVertexStreamConflicts;
+    statsOut.cacheNumRenderStateConflicts = _lastPassStats.cacheNumRenderStateConflicts;
+    statsOut.cacheNumTextureStageStateConflicts = _lastPassStats.cacheNumTextureStageStateConflicts;
+    statsOut.cacheNumLightingStateConflicts = _lastPassStats.cacheNumLightingStateConflicts;
+    statsOut.cacheNumTransformationStateConflicts = _lastPassStats.cacheNumTransformationStateConflicts;
+    statsOut.cacheNumSamplerStateConflicts = _lastPassStats.cacheNumSamplerStateConflicts;
+
+    statsOut.uniqueBucketUsageCount = _lastPassStats.uniqueBucketUsageCount;
+    statsOut.bucketTerminationCount = _lastPassStats.bucketTerminationCount;
 
     return statsOut;
 }
@@ -427,6 +615,8 @@ bool RenderBucket::OnCachedRenderCall( const RwD3D9RenderCallbackData& callbackD
 
     RwRenderBucket *currentBucket = FindRenderBucket();
 
+    currentPipeData = currentBucket;
+
     RwRenderBucket::bucketRenderEntry entry;
 
     renderDataCachedMesh& cachedData = entry.renderData;
@@ -445,6 +635,12 @@ bool RenderBucket::OnCachedRenderCall( const RwD3D9RenderCallbackData& callbackD
     }
 
     currentBucket->renderItems.AddItem( entry );
+
+    // If we have a rendering atomic, inform it about the render bucket.
+    if ( RpAtomic *renderingAtomic = currentlyRenderingAtomic )
+    {
+        RpAtomicSetContextualRenderBucket( renderingAtomic, currentBucket );
+    }
 
     // Update statistics.
     {

@@ -146,7 +146,7 @@ void RpClumpAtomicActivator( RpAtomic *atom, modelId_t replacerId )
 
     atom->AddToFrame( RwFrameCreate() );
     
-    atom->modelId = replacerId;
+    RpAtomicSetModelIndex( atom, replacerId );
 }
 
 /*=========================================================

@@ -75,6 +75,7 @@ struct RpAtomic : public RwObjectFrame
     RwScene*                scene;              // 112
     RpAtomic*               (*syncCallback)( RpAtomic *atom );  // 116
 
+#if 0
     RpAnimHierarchy*        anim;               // 120
 
     unsigned short          modelId;            // 124
@@ -84,6 +85,7 @@ struct RpAtomic : public RwObjectFrame
 
     CEnvMapAtomicSA*        envMap;             // 132, atomic environment map plugin, allocated from pool (on demand)
     unsigned int            pipeline;           // 136
+#endif
 
     // Methods.
     const RwSphere&         GetWorldBoundingSphere      ( void );
@@ -106,5 +108,26 @@ struct RpAtomicContainer
 
 // Atomic API.
 RpAtomic* __cdecl RpAtomicSetFrame( RpAtomic *atomic, RwFrame *frame );
+
+// Plugin routines (animHierarchyStore).
+void __cdecl RpAtomicSetAnimHierarchy( RpAtomic *atomic, RpAnimHierarchy *anim );
+RpAnimHierarchy* __cdecl RpAtomicGetAnimHierarchy( RpAtomic *atomic );
+
+// Plugin routines (atomicModelInfo).
+class CBaseModelInfoSAInterface;
+
+void __cdecl                        RpAtomicSetModelIndex           ( RpAtomic *atomic, unsigned short modelIndex );
+unsigned short __cdecl              RpAtomicGetModelIndex           ( RpAtomic *atomic );
+CBaseModelInfoSAInterface* __cdecl  RpAtomicGetModelInfo            ( RpAtomic *atomic );
+void __cdecl                        RpAtomicAssignComponentFlags    ( RpAtomic *atomic, unsigned int flags );
+void __cdecl                        RpAtomicAddComponentFlags       ( RpAtomic *atomic, unsigned int flags );
+void __cdecl                        RpAtomicRemoveComponentFlags    ( RpAtomic *atomic, unsigned int flags );
+unsigned int __cdecl                RpAtomicGetComponentFlags       ( RpAtomic *atomic );
+void __cdecl                        RpAtomicSetComponentFlagsUShort ( RpAtomic *atomic, unsigned short flags );
+unsigned short __cdecl              RpAtomicGetComponentFlagsUShort ( RpAtomic *atomic );
+
+// RenderWare Atomic Rendering Pipeline Store Plugin.
+unsigned int __cdecl        RpAtomicGetRenderPipeline( RpAtomic *atomic );
+void __cdecl                RpAtomicSetRenderPipeline( RpAtomic *atomic, unsigned int pipeline );
 
 #endif //_RENDERWARE_ATOMIC_

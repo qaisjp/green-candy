@@ -38,6 +38,20 @@ struct renderBucketStats
     unsigned int totalNumberOfRenderCalls;
     unsigned int totalNumberOfActiveBuckets;
     unsigned int maxRenderCallsPerBucket;
+    unsigned int bucketCacheMissCount;
+    unsigned int bucketAllocationCount;
+    unsigned int bucketAdaptionCount;
+
+    // Conflict counts.
+    unsigned int cacheNumVertexStreamConflicts;
+    unsigned int cacheNumRenderStateConflicts;
+    unsigned int cacheNumTextureStageStateConflicts;
+    unsigned int cacheNumLightingStateConflicts;
+    unsigned int cacheNumTransformationStateConflicts;
+    unsigned int cacheNumSamplerStateConflicts;
+
+    unsigned int uniqueBucketUsageCount;
+    unsigned int bucketTerminationCount;
 };
 
 struct RwTexture;

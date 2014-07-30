@@ -24,6 +24,6 @@ void CDamageAtomicModelInfoSA::SetupPipeline( RpAtomic *link )
 
     if ( link->IsNight() )
         RpAtomicSetupObjectPipeline( link );
-    else if ( link->pipeline == RW_ATOMIC_RENDER_VEHICLE )
+    else if ( RpAtomicGetRenderPipeline( link ) == RW_ATOMIC_RENDER_VEHICLE )
         RpAtomicSetupVehiclePipeline( link );
 }

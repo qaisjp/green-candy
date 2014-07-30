@@ -384,6 +384,9 @@ struct MeshRenderManager
                 if ( !passRequiresAlpha )
                     continue;
 
+                // Set pass index for contextual render feedback.
+                RpAtomicContextualRenderSetPassIndex( n );
+
                 RpMaterial *useMat = rtPass->m_useMaterial;
 
                 RwRenderStateLock tfactor( D3DRS_TEXTUREFACTOR, useMat->color.ToD3DColor() );
@@ -402,6 +405,13 @@ bool AlphaSort_IsEnabled( void );
 bool AlphaSort_CanRenderOpaquePrimitives( void );
 bool AlphaSort_CanRenderTranslucentPrimitives( void );
 bool AlphaSort_CanRenderDepthLayer( void );
+
+// Bucket management routines (RpAtomicD3D9)
+bool __cdecl RpAtomicSetContextualRenderBucket                              ( RpAtomic *theAtomic, RenderBucket::RwRenderBucket *theBucket );
+RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket     ( RpAtomic *theAtomic );
+
+void __cdecl RpAtomicContextualRenderSetPassIndex( unsigned int passIndex );
+void __cdecl RpAtomicContextualRenderSetStageIndex( unsigned int stageIndex );
 
 // Generic mesh render manager.
 struct GenericMeshRenderCallback
@@ -423,18 +433,23 @@ struct GenericMeshRenderCallback
             if ( !CanProcessPass( RwD3D9IsVertexAlphaRenderingRequiredEx( rtPass, rtPass->m_useMaterial ), renderType ) )
                 continue;
 
-            m_lightMan.OnPrePass( rtinfo, rtPass );
+            {
+                // Set the current pass index for contextual render feedback.
+                RpAtomicContextualRenderSetPassIndex( n );
 
-            // Notify the callback template.
-            cb.OnRenderPass( rtPass );
+                m_lightMan.OnPrePass( rtinfo, rtPass );
 
-            // Update vertex shader status.
-            RwD3D9SetCurrentVertexShader( rtPass->m_vertexShader );
+                // Notify the callback template.
+                cb.OnRenderPass( rtPass );
 
-            // Draw the primitive.
-            RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
+                // Update vertex shader status.
+                RwD3D9SetCurrentVertexShader( rtPass->m_vertexShader );
 
-            m_lightMan.OnPass( rtinfo, rtPass );
+                // Draw the primitive.
+                RwD3D9DrawRenderPassPrimitive( rtinfo, rtPass );
+
+                m_lightMan.OnPass( rtinfo, rtPass );
+            }
         }
     }
 
@@ -496,9 +511,5 @@ inline void RwD3D9OnRenderingContextBreak( void )
     // Notify all rasterizers about the loss of contextual instance data.
     RenderBucket::SetContextAtomic( NULL );
 }
-
-// Bucket management routines (RpAtomicD3D9)
-bool __cdecl RpAtomicSetContextualRenderBucket                              ( RpAtomic *theAtomic, RenderBucket::RwRenderBucket *theBucket );
-RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket     ( RpAtomic *theAtomic );
 
 #endif //_RENDERWARE_RENDER_TOOLS_
