@@ -110,7 +110,7 @@ void RpClump::InitStaticSkeleton( void )
     if ( boneCount != 0 )
     {
         CVector *offset = boneOffsets;
-        RpAnimHierarchy *anim = atomic->anim;  
+        RpAnimHierarchy *anim = RpAtomicGetAnimHierarchy( atomic );  
         RwBoneInfo *bone = anim->boneInfo;
         RwAnimInfo *info = anim->anim->info;
 
@@ -218,7 +218,7 @@ RpAnimHierarchy* RpClump::GetAtomicAnimHierarchy( void )
     if ( !atomic )
         return NULL;
     
-    return atomic->anim;
+    return RpAtomicGetAnimHierarchy( atomic );
 }
 
 /*=========================================================
@@ -365,7 +365,7 @@ static int RwAtomicSetupPipeline( RpAtomic *child, int )
 {
     if ( child->IsNight() )
         RpAtomicSetupObjectPipeline( child );
-    else if ( child->pipeline == RW_ATOMIC_RENDER_VEHICLE )
+    else if ( RpAtomicGetRenderPipeline( child ) == RW_ATOMIC_RENDER_VEHICLE )
         RpAtomicSetupVehiclePipeline( child );
 
     return true;
@@ -387,7 +387,7 @@ void RpClump::SetupAtomicRender( void )
 =========================================================*/
 static int RwAtomicRemoveComponentFlags( RpAtomic *child, unsigned short flags )
 {
-    child->componentFlags &= ~flags;
+    RpAtomicRemoveComponentFlags( child, flags );
     return true;
 }
 
@@ -447,7 +447,7 @@ void RpClump::GetBoneTransform( CVector *offset )
     atomic = GetFirstAtomic();
     skel = atomic->geometry->skeleton;
 
-    anim = atomic->anim;
+    anim = RpAtomicGetAnimHierarchy( atomic );
 
     // Reset the matrix
     offset->fX = 0;

@@ -35,7 +35,7 @@
 #include <dirent.h>
 #endif //__linux__
 
-#include "CFileSystem.common.h"
+#include "CFileSystem.internal.common.h"
 #include "CFileSystem.stream.raw.h"
 #include "CFileSystem.stream.buffered.h"
 #include "CFileSystem.translator.pathutil.h"

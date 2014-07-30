@@ -51,7 +51,7 @@ RpAtomic* CRpAtomicSA::CreateInstance( unsigned short id ) const
 
     RpAtomicSetFrame( atom, RwFrameCreate() );
 
-    atom->modelId = id;
+    RpAtomicSetModelIndex( atom, id );
     return atom;
 }
 

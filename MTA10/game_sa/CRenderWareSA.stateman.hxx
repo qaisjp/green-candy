@@ -82,6 +82,136 @@ struct CachedConstructedClassAllocator
     RwList <dataEntry> m_freeList;
 };
 
+template <typename dataType>
+struct IterativeSwitchedList
+{
+    struct iterativeDataArrayManager
+    {
+        AINLINE void InitField( dataType& theField )
+        {
+            return;
+        }
+    };
+    typedef growableArray <dataType, 8, 0, iterativeDataArrayManager, unsigned int> dataArray_t;
+
+    struct iterativeSwitchArrayManager
+    {
+        AINLINE void InitField( bool& theField )
+        {
+            theField = false;
+        }
+    };
+    typedef growableArray <bool, 8, 0, iterativeSwitchArrayManager, unsigned int> switchArray_t;
+
+    inline IterativeSwitchedList( void )
+    {
+        lowestFreeSlot = 0;
+    }
+
+    inline ~IterativeSwitchedList( void )
+    {
+        return;
+    }
+
+    inline void PutItem( const dataType& theItem )
+    {
+        unsigned int n = lowestFreeSlot;
+
+        while ( true )
+        {
+            bool& slotActivator = allocatedSlots.ObtainItem( n );
+
+            if ( slotActivator == false )
+            {
+                slotActivator = true;
+
+                lowestFreeSlot = n + 1;
+                break;
+            }
+
+            n = n + 1;
+        }
+
+        data.SetItem( theItem, n );
+    }
+
+    inline void RemoveItem( const dataType& theItem )
+    {
+        for ( unsigned int n = 0; n < data.GetSizeCount(); n++ )
+        {
+            bool& slotActivator = allocatedSlots.Get( n );
+
+            if ( slotActivator && data.Get( n ) == theItem )
+            {
+                slotActivator = false;
+
+                if ( n < lowestFreeSlot )
+                {
+                    lowestFreeSlot = n;
+                }
+                break;
+            }
+        }
+    }
+
+    inline void Clear( void )
+    {
+        for ( unsigned int n = 0; n < allocatedSlots.GetSizeCount(); n++ )
+        {
+            allocatedSlots.SetFast( false, n );
+        }
+
+        lowestFreeSlot = 0;
+    }
+
+    struct itemIterator
+    {
+        AINLINE itemIterator( IterativeSwitchedList& manager ) : manager( manager )
+        {
+            iter = 0;
+
+            FindValidSlot();
+        }
+
+        AINLINE const dataType& Resolve( void )
+        {
+            return manager.data.Get( iter );
+        }
+
+        AINLINE void Increment( void )
+        {
+            iter++;
+
+            FindValidSlot();
+        }
+
+        AINLINE void FindValidSlot( void )
+        {
+            while ( !IsEnd() && manager.allocatedSlots.Get( iter ) == false )
+            {
+                iter++;
+            }
+        }
+
+        AINLINE bool IsEnd( void ) const
+        {
+            return ( iter >= manager.data.GetSizeCount() );
+        }
+
+        unsigned int iter;
+        IterativeSwitchedList& manager;
+    };
+
+    AINLINE itemIterator GetIterator( void )
+    {
+        return itemIterator( *this );
+    }
+
+    unsigned int lowestFreeSlot;
+    dataArray_t data;
+    switchArray_t allocatedSlots;
+};
+
 template <typename stateGenericType>
 struct RwStateManager
 {
@@ -151,9 +281,46 @@ struct RwStateManager
         virtual changeSet* GetUpdateChangeSet( void ) = 0;
     };
 
-    AINLINE RwStateManager( void ) : allocator( 128 ), changeSetAllocator( 16 )
+    struct localStateReferenceDevice : deviceStateReferenceDevice
     {
+        RwStateManager& manager;
+
+        AINLINE localStateReferenceDevice( RwStateManager& man ) : manager( man )
+        {
+            return;
+        }
+
+        AINLINE bool GetDeviceState( const stateAddress& address, stateValueType& value ) const
+        {
+            unsigned int arrayIndex = address.GetArrayIndex();
+
+            bool success = false;
+
+            if ( arrayIndex < manager.localStates.GetSizeCount() )
+            {
+                value = manager.localStates.GetFast( arrayIndex );
+
+                success = true;
+            }
+
+            return success;
+        }
+
+        AINLINE changeSet* GetUpdateChangeSet( void )
+        {
+            return NULL;
+        }
+    };
+
+    localStateReferenceDevice _localStateRefDevice;
+
+    AINLINE RwStateManager( void ) : allocator( 128 ), changeSetAllocator( 16 ), _localStateRefDevice( *this )
+    {
+        // Clear runtime lists for usage.
         LIST_CLEAR( activeChangeSets.root );
+        LIST_CLEAR( activeCapturedStates.root );
+        LIST_CLEAR( validCapturedStates.root );
+        LIST_CLEAR( toBeSynchronizedStates.root );
 
         // In the beginning we cannot set device states and will get only invalidated states.
         isValid = false;
@@ -168,6 +335,7 @@ struct RwStateManager
         bucketChangeRefDevice = new changeSetBucketReferenceDevice( *this );
 
         bucketChangeSet = NULL;
+        bucketValidationChange = NULL;
         isInBucketPass = false;
 
         InitializeCriticalSection( &localStateLock );
@@ -216,20 +384,22 @@ struct RwStateManager
         // Make sure threads can lock the local state.
         LockLocalState();
 
-        localStates.SetItem( value, address.GetArrayIndex() );
+        {
+            unsigned int arrayIndex = address.GetArrayIndex();
 
-        // Notify our root change set about our change directly.
-        changeSet *theRootChangeSet = this->rootChangeSet;
-        
-        theRootChangeSet->OnDeviceStateChange( address, value );
+            localStates.SetItem( value, arrayIndex );
 
-        // Invalidate the (other) change sets.
-        LIST_FOREACH_BEGIN( changeSet, activeChangeSets.root, node )
-            if ( item != theRootChangeSet )
+            // Notify our root change set about our change directly.
+            changeSet *theRootChangeSet = this->rootChangeSet;
+            
+            theRootChangeSet->OnDeviceStateChange( address, value );
+
+            // Notify the bucket change set, too, if it exists.
+            if ( changeSet *bucketChangeSet = this->bucketChangeSet )
             {
-                item->Invalidate();
+                bucketChangeSet->OnDeviceStateChange( address, value );
             }
-        LIST_FOREACH_END
+        }
 
         UnlockLocalState();
     }
@@ -371,9 +541,15 @@ struct RwStateManager
             hasBeenCommitted = false;
         }
 
+        // Must only be called by the manager!
         AINLINE void Invalidate( void )
         {
             hasBeenCommitted = false;
+        }
+
+        AINLINE void SetValid( void )
+        {
+            hasBeenCommitted = true;
         }
 
         AINLINE void CommitStates( void )
@@ -470,9 +646,7 @@ struct RwStateManager
 
         AINLINE void Reset( void )
         {
-            changedStates.Clear();
-
-            hasBeenCommitted = false;
+            Initialize();
         }
 
         AINLINE bool GetOriginalDeviceState( const stateAddress& address, stateValueType& refVal )
@@ -535,6 +709,16 @@ struct RwStateManager
         bool hasBeenCommitted;
     };
 
+    // List of changeSets.
+    struct changeSetListManager
+    {
+        AINLINE void InitField( changeSet*& theField )
+        {
+            return;
+        }
+    };
+    typedef growableArray <changeSet*, 8, 0, changeSetListManager, unsigned int> changeSetList_t;
+
     typedef CachedConstructedClassAllocator <changeSet> changeSetAllocator_t;
 
     changeSetAllocator_t changeSetAllocator;
@@ -556,6 +740,29 @@ struct RwStateManager
 
         changeSetAllocator.Free( set );
     }
+
+    // Forward declaration.
+    struct capturedState;
+
+    struct capturedStateArrayManager
+    {
+        AINLINE void InitField( capturedState*& theField )
+        {
+            return;
+        }
+    };
+    typedef growableArray <capturedState*, 16, 0, capturedStateArrayManager, unsigned int> capturedStateList_t;
+
+    // List of all allocated captured states.
+    RwList <capturedState> activeCapturedStates;
+
+    // List of capturedStates that are valid. They have acquired a state from the bucketStates device difference.
+    // They need to be invalidated when the bucket states change.
+    RwList <capturedState> validCapturedStates;
+
+    // List of capturesStates that await synchronization by bucketValidationChange changeSet.
+    // If they are not synchronized by the end of the bucket pass, they are removed from the caching cycle.
+    RwList <capturedState> toBeSynchronizedStates;
 
     struct capturedState
     {
@@ -582,64 +789,19 @@ struct RwStateManager
         AINLINE capturedState( void )
         {
             manager = NULL;
-            stateChangeSet = NULL;
-            refDevice = new changeSetCapturedReferenceDevice( *this );
+
+            isValid = false;
+            isAwaitingSynchronization = false;
+            isAwaitingFullSynchronization = false;
         }
 
         AINLINE ~capturedState( void )
         {
             Terminate();
-
-            delete refDevice;
         }
 
-        struct changeSetCapturedReferenceDevice : public deviceStateReferenceDevice
+        AINLINE void ClearSetDeviceStates( void )
         {
-            AINLINE changeSetCapturedReferenceDevice( capturedState& state ) : state( state )
-            {
-                return;
-            }
-
-            AINLINE bool GetDeviceState( const stateAddress& address, stateValueType& value ) const
-            {
-                unsigned int arrayIndex = address.GetArrayIndex();
-
-                const capturedStateValueType& stateValue = state.deviceStates.ObtainItem( arrayIndex );
-
-                if ( !stateValue.managedType.isRequired )
-                    return false;
-
-                if ( !stateValue.isSet )
-                {
-                    value = state.manager->bucketStates.ObtainItem( arrayIndex );
-                }
-                else
-                {
-                    value = stateValue.managedType;
-                }
-
-                return true;
-            }
-
-            AINLINE changeSet* GetUpdateChangeSet( void )
-            {
-                return state.manager->bucketChangeSet;
-            }
-
-            capturedState& state;
-        };
-
-        AINLINE void SetManager( RwStateManager *manager )
-        {
-            this->manager = manager;
-
-            if ( !stateChangeSet )
-            {
-                stateChangeSet = manager->AllocateChangeSet();
-
-                stateChangeSet->SetReferenceDevice( refDevice );
-            }
-
             // Reset our device states.
             for ( unsigned int n = 0; n < deviceStates.GetSizeCount(); n++ )
             {
@@ -647,20 +809,67 @@ struct RwStateManager
 
                 value.isSet = false;
             }
+
+            // We have no device state set.
+            setDeviceStates.Clear();
+        }
+
+        AINLINE void SetManager( RwStateManager *manager )
+        {
+            this->manager = manager;
+
+            // Add ourselves to the active list.
+            LIST_INSERT( manager->activeCapturedStates.root, activeListNode );
+
+            isValid = false;
+            isAwaitingSynchronization = false;
+            isAwaitingFullSynchronization = false;
+
+            ClearSetDeviceStates();
         }
 
         AINLINE void Terminate( void )
         {
-            if ( stateChangeSet )
+            if ( isAwaitingSynchronization )
             {
-                manager->FreeChangeSet( stateChangeSet );
+                LIST_REMOVE( awaitSyncNode );
 
-                stateChangeSet = NULL;
+                isAwaitingSynchronization = false;
+            }
+
+            // We are not active anymore, so remove ourselves.
+            LIST_REMOVE( activeListNode );
+
+            Invalidate();
+        }
+
+        AINLINE void Validate( void ) const
+        {
+            if ( !isValid )
+            {
+                LIST_INSERT( manager->validCapturedStates.root, validListNode );
+
+                isValid = true;
+            }
+        }
+
+        AINLINE void OnDeviceStateSet( const stateAddress& theAddress, bool isSet ) const
+        {
+            if ( isSet )
+            {
+                setDeviceStates.AddItem( theAddress );
+            }
+            else
+            {
+                setDeviceStates.RemoveItem( theAddress );
             }
         }
 
         AINLINE void Capture( void )
         {
+            // Unset all states that were had before.
+            ClearSetDeviceStates();
+
             for ( stateChangeIterator iterator( *manager ); !iterator.IsEnd(); iterator.Increment() )
             {
                 const stateAddress& address = iterator.Resolve();
@@ -669,54 +878,264 @@ struct RwStateManager
 
                 capturedStateValueType value;
 
-                bool isRequired = manager->stateGeneric.IsDeviceStateRequired( address, *manager->changeRefDevice );
+                bool isRequired = manager->stateGeneric.IsDeviceStateRequired( address, manager->_localStateRefDevice );
 
-                value.managedType.isRequired = isRequired;
+                value.managedType.isRequired = isRequired;  // whether it is required in the context of the device states.
                 value.managedType.value = manager->GetDeviceState( address );
                 value.isSet = true;
 
+                OnDeviceStateSet( address, true );
+
                 deviceStates.SetItem( value, arrayIndex );
             }
+
+            Validate();
+        }
+
+        AINLINE void Invalidate( void ) const
+        {
+            // Remove ourselves from the valid list if we are valid.
+            if ( isValid )
+            {
+                LIST_REMOVE( validListNode );
+
+                isValid = false;
+            }
+        }
+
+        // MUST only be called by the MANAGER!
+        AINLINE void _Invalidate( void )
+        {
+            isValid = false;
+        }
+
+        struct syncStateIterator
+        {
+            AINLINE syncStateIterator( const capturedState& manager )
+            {
+                partialSync = manager.isAwaitingSynchronization;
+                fullSync = manager.isAwaitingFullSynchronization;
+
+                if ( partialSync )
+                {
+                    partialChangeIterator = new (iterAlloc.Allocate()) changeSet::changeSetIterator( manager.synchronizeWithSet->GetIterator() );
+                }
+                else if ( fullSync )
+                {
+                    deviceStates = &manager.manager->bucketStates;
+                }
+            }
+
+            AINLINE ~syncStateIterator( void )
+            {
+                if ( fullSync )
+                {
+                    partialChangeIterator->~changeSetIterator();
+                }
+            }
+
+            AINLINE bool IsEnd( void ) const
+            {
+                bool isEnd = true;
+
+                if ( partialSync )
+                {
+                    isEnd = ( partialChangeIterator->IsEnd() );
+                }
+                else if ( fullSync )
+                {
+                    isEnd = ( fullChangeIterator.IsEnd() || fullChangeIterator.GetArrayIndex() >= deviceStates->GetSizeCount() );
+                }
+
+                return isEnd;
+            }
+
+            AINLINE const stateAddress& Resolve( void )
+            {
+                if ( partialSync )
+                {
+                    return partialChangeIterator->Resolve();
+                }
+                else if ( fullSync )
+                {
+                    return fullChangeIterator;
+                }
+
+                static stateAddress nullAddressPtr;
+
+                return nullAddressPtr;
+            }
+
+            AINLINE void Increment( void )
+            {
+                if ( partialSync )
+                {
+                    partialChangeIterator->Increment();
+                }
+                else if ( fullSync )
+                {
+                    fullChangeIterator.Increment();
+                }
+            }
+
+            StaticAllocator <typename changeSet::changeSetIterator, 1> iterAlloc;
+
+            typename changeSet::changeSetIterator *partialChangeIterator;
+            stateAddress fullChangeIterator;
+            stateDeviceArray *deviceStates;
+            bool partialSync;
+            bool fullSync;
+        };
+
+        AINLINE void Synchronize( void ) const
+        {
+            // Synchronize ourselves.
+            for ( syncStateIterator iter( *this ); !iter.IsEnd(); iter.Increment() )
+            {
+                const stateAddress& theAddress = iter.Resolve();
+
+                unsigned int arrayIndex = theAddress.GetArrayIndex();
+
+                capturedStateValueType& currentCapturedValue = deviceStates.ObtainItem( arrayIndex );
+
+                if ( currentCapturedValue.isSet )
+                {
+                    const stateValueType& newStateValue = manager->bucketStates.Get( arrayIndex );
+
+                    bool isChanged = !manager->CompareDeviceStates(
+                        currentCapturedValue.managedType.value,
+                        newStateValue
+                    );
+
+                    if ( !isChanged )
+                    {
+                        currentCapturedValue.isSet = false;
+
+                        OnDeviceStateSet( theAddress, false );
+                    }
+
+                    // Update required-ness.
+                    currentCapturedValue.managedType.isRequired =
+                        manager->stateGeneric.IsDeviceStateRequired( theAddress, *manager->bucketChangeRefDevice );
+                }
+            }
+
+            if ( isAwaitingSynchronization )
+            {
+                isAwaitingSynchronization = false;
+
+                LIST_REMOVE( awaitSyncNode );
+            }
+
+            isAwaitingFullSynchronization = false;
+
+            Validate();
+        }   
+
+        // ONLY CALLED BY THE MANAGER!
+        AINLINE void SynchronizeWith( changeSet *syncChange )
+        {
+            assert( isAwaitingSynchronization == false );
+
+            synchronizeWithSet = syncChange;
+
+            isAwaitingSynchronization = true;
+
+            _Invalidate();
+        }
+
+        // MUST only be called by THE MANAGER!
+        AINLINE void CancelSynchronization( void )
+        {
+            isAwaitingSynchronization = false;
+            isAwaitingFullSynchronization = true;
         }
 
         AINLINE bool IsCurrent( void ) const
         {
-            // Make sure our change set is committed before checking.
-            stateChangeSet->CommitStates();
+            // Make sure we are synchronized.
+            Synchronize();
 
-            for ( changeSet::changeSetIterator iterator( *stateChangeSet ); !iterator.IsEnd(); iterator.Increment() )
+            // Check for changes by the bucket change set.
+            // This is done to find changes that are definately changed.
+            for ( stateChangeIterator iterator( *manager ); !iterator.IsEnd(); iterator.Increment() )
             {
                 const stateAddress& address = iterator.Resolve();
 
-                // Get the reference to the current value.
-                const capturedStateValueType& deviceCurrentValue = deviceStates.Get( address.GetArrayIndex() );
+                // We definately changed if this captured state has no meaning for the changed state address.
+                unsigned int arrayIndex = address.GetArrayIndex();
 
-                // Check that the state is even required for us.
-                if ( deviceCurrentValue.managedType.isRequired )
+#ifdef _DEBUG
+                // Get the local value just for debugging.
+                const stateValueType& localValue = manager->localStates.Get( arrayIndex );
+
+                const stateValueType& bucketValue = manager->bucketStates.Get( arrayIndex );
+
+                _asm nop
+#endif
+
+                if ( arrayIndex < deviceStates.GetSizeCount() )
                 {
-                    // De-facto changed.
-                    return false;
+                    const capturedStateValueType& deviceCurrentValue = deviceStates.Get( arrayIndex );
+
+                    if ( deviceCurrentValue.isSet == false )
+                    {
+                        // We changed because a state that was not covered by us has changed.
+                        return false;
+                    }
+                }
+            }
+
+            // Check things the old fashioned way.
+            for ( unsigned int n = 0; n < setDeviceStates.GetCount(); n++ )
+            {
+                const stateAddress& activeAddress = setDeviceStates.GetFast( n );
+
+                unsigned int arrayIndex = activeAddress.GetArrayIndex();
+
+                const capturedStateValueType& capturedValue = deviceStates.Get( arrayIndex );
+
+                if ( capturedValue.managedType.isRequired )
+                {
+                    const stateValueType& localValue = manager->localStates.Get( arrayIndex );
+
+                    bool isChanged = !manager->CompareDeviceStates(
+                        capturedValue.managedType.value,
+                        localValue
+                    );
+
+                    if ( isChanged )
+                    {
+                        return false;
+                    }
                 }
             }
 
             return true;
         }
 
-        AINLINE changeSet* GetChangeSet( void )
-        {
-            return stateChangeSet;
-        }
-
         AINLINE void SetDeviceTo( void )
         {
-            manager->RestoreToChangeSetState( stateChangeSet );
+            //manager->RestoreToChangeSetState( stateChangeSet );
         }
 
         RwStateManager *manager;
-        capturedStateValueArray deviceStates;
+        mutable capturedStateValueArray deviceStates;
 
-        changeSet *stateChangeSet;
-        changeSetCapturedReferenceDevice *refDevice;
+        mutable stateAddressArray setDeviceStates;      // addresses of device states that are set
+
+        RwListEntry <capturedState> activeListNode;
+
+        typedef IterativeSwitchedList <stateAddress> fastStateAddressArray;
+
+        mutable bool isValid;
+        mutable RwListEntry <capturedState> validListNode;
+
+        mutable bool isAwaitingSynchronization;
+        mutable RwListEntry <capturedState> awaitSyncNode;
+        mutable changeSet *synchronizeWithSet;
+
+        mutable bool isAwaitingFullSynchronization;
     };
 
     typedef CachedConstructedClassAllocator <capturedState> stateAllocator;
@@ -758,7 +1177,7 @@ struct RwStateManager
         // We are now valid.
         isValid = true;
 
-        // Reset change sets.
+        // Reset change sets that are active.
         LIST_FOREACH_BEGIN( changeSet, activeChangeSets.root, node )
             item->Initialize();
         LIST_FOREACH_END
@@ -804,12 +1223,91 @@ struct RwStateManager
     {
         assert( isInBucketPass == false );
 
-        bucketChangeSet = AllocateChangeSet();
-
         // Clone the current local states into the bucket reference states.
         bucketStates = localStates;
 
-        bucketChangeSet->SetReferenceDevice( bucketChangeRefDevice );
+        changeSet *bucketChangeSet = this->bucketChangeSet;
+
+        if ( !bucketChangeSet )
+        {
+            bucketChangeSet = AllocateChangeSet();
+
+            bucketChangeSet->SetReferenceDevice( bucketChangeRefDevice );
+
+            this->bucketChangeSet = bucketChangeSet;
+        }
+        else
+        {
+            bucketChangeSet->Reset();
+
+            // Determine the change of last time's bucket states to current.
+            changeSet *validationChange = bucketValidationChange;
+
+            if ( !validationChange )
+            {
+                validationChange = AllocateChangeSet();
+
+                bucketValidationChange = validationChange;
+            }
+            else
+            {
+                validationChange->Reset();
+            }
+
+            bool hasAnyChange = false;
+
+            for ( stateAddress address; !address.IsEnd(); address.Increment() )
+            {
+                unsigned int arrayIndex = address.GetArrayIndex();
+
+                if ( arrayIndex < bucketStates.GetSizeCount() )
+                {
+                    const stateValueType& currentBucketState = bucketStates.GetFast( arrayIndex );
+                    const stateValueType& lastBucketState = lastBucketStates.GetFast( arrayIndex );
+
+                    bool isChanged = !CompareDeviceStates( currentBucketState, lastBucketState );
+
+                    if ( isChanged )
+                    {
+                        hasAnyChange = true;
+                    }
+
+                    validationChange->SetChanged( address, isChanged );
+                }
+            }
+
+            // If there was any change at all, we need to tell our valid captured states that they must
+            // validate themselves.
+            if ( hasAnyChange )
+            {
+                // Anything that has missed validating itself to bucket states must reset
+                // and recapture its context completely.
+                if ( !LIST_EMPTY( toBeSynchronizedStates.root ) )
+                {
+                    LIST_FOREACH_BEGIN( capturedState, toBeSynchronizedStates.root, awaitSyncNode )
+                        item->CancelSynchronization();
+                    LIST_FOREACH_END
+
+                    LIST_CLEAR( toBeSynchronizedStates.root );
+                }
+
+                // Valid device states have to be told to revalidate themselves.
+                if ( !LIST_EMPTY( validCapturedStates.root ) )
+                {
+                    LIST_FOREACH_BEGIN( capturedState, validCapturedStates.root, validListNode )
+                        item->SynchronizeWith( validationChange );
+
+                        LIST_INSERT( toBeSynchronizedStates.root, item->awaitSyncNode );
+                    LIST_FOREACH_END
+
+                    // Hence we have no more valid captured states.
+                    LIST_CLEAR( validCapturedStates.root );
+                }
+            }
+        }
+
+        // Keep track of last time's bucket states.
+        bucketStates.SetArrayCachedTo( lastBucketStates );
 
         isInBucketPass = true;
     }
@@ -851,8 +1349,6 @@ struct RwStateManager
     AINLINE void EndBucketPass( void )
     {
         assert( isInBucketPass == true );
-
-        FreeChangeSet( bucketChangeSet );
 
         isInBucketPass = false;
     }
@@ -934,9 +1430,12 @@ struct RwStateManager
     changeSet* rootChangeSet;
 
     // Variables for bucket management.
-    changeSet* bucketChangeSet;
+    stateDeviceArray lastBucketStates;  // last bucket states
+    stateDeviceArray bucketStates;  // current bucket states
+    changeSet* bucketChangeSet;     // change of local states in comparison to current bucket states.
     changeSetBucketReferenceDevice *bucketChangeRefDevice;
     bool isInBucketPass;
+    changeSet* bucketValidationChange;  // change from last to current bucket states
 
     RwList <changeSet> activeChangeSets;
 
@@ -946,8 +1445,6 @@ struct RwStateManager
     // Boolean whether the state manager is valid.
     // It it valid if the device is valid.
     bool isValid;
-
-    stateDeviceArray bucketStates;
 
     // Lock object used to state management.
     CRITICAL_SECTION localStateLock;

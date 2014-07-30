@@ -539,6 +539,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CExecutiveManagerSA.thread.cpp"
+				>
+			</File>
+			<File
 				RelativePath="CExplosionManagerSA.cpp"
 				>
 			</File>
@@ -1520,6 +1524,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CExecutiveManagerSA.thread.h"
+				>
+			</File>
+			<File
 				RelativePath="CExplosionManagerSA.h"
 				>
 			</File>
@@ -1589,6 +1597,10 @@
 			</File>
 			<File
 				RelativePath="CMarkerSA.h"
+				>
+			</File>
+			<File
+				RelativePath=".\CMemoryUtilsSA.h"
 				>
 			</File>
 			<File

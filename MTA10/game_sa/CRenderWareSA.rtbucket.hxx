@@ -49,6 +49,8 @@ namespace RenderBucket
             samplerState = NULL;
             lightingState = NULL;
             transformationState = NULL;
+
+            _lastConflict = CONFLICT_NONE;
         }
 
         ~renderSystemState( void )
@@ -159,27 +161,64 @@ namespace RenderBucket
             }
         }
 
-        bool IsCurrent( void ) const
+        enum eRenderStateConflict
+        {
+            CONFLICT_NONE,
+            CONFLICT_VERTEXSTREAM,
+            CONFLICT_RENDERSTATE,
+            CONFLICT_TEXTURESTAGESTATE,
+            CONFLICT_LIGHTINGSTATE,
+            CONFLICT_TRANSFORMATIONSTATE,
+            CONFLICT_SAMPLERSTATE
+        };
+
+        eRenderStateConflict _lastConflict;
+
+        bool IsCurrent( void )
         {
             if ( !vertexStreamState->IsCurrent() )
+            {
+                _lastConflict = CONFLICT_VERTEXSTREAM;
                 return false;
+            }
 
             if ( !renderState->IsCurrent() )
+            {
+                _lastConflict = CONFLICT_RENDERSTATE;
                 return false;
+            }
 
             if ( !textureStageState->IsCurrent() )
+            {
+                _lastConflict = CONFLICT_TEXTURESTAGESTATE;
                 return false;
+            }
 
             if ( !lightingState->IsCurrent() )
+            {
+                _lastConflict = CONFLICT_LIGHTINGSTATE;
                 return false;
+            }
 
             if ( !transformationState->IsCurrent() )
+            {
+                _lastConflict = CONFLICT_TRANSFORMATIONSTATE;
                 return false;
+            }
 
             if ( !samplerState->IsCurrent() )
+            {
+                _lastConflict = CONFLICT_SAMPLERSTATE;
                 return false;
+            }
 
+            _lastConflict = CONFLICT_NONE;
             return true;
+        }
+
+        eRenderStateConflict GetLastConflict( void )
+        {
+            return _lastConflict;
         }
 
         void AcquireContext( void )
@@ -242,15 +281,33 @@ namespace RenderBucket
         renderItems_t renderItems;
 
         // Management methods.
-        unsigned int refCount;
+        unsigned int refCount;      // reference count to prevent destruction at critical areas.
+        RwListEntry <RwRenderBucket> activeListNode;
+
+        unsigned int usageCount;    // how many atomics are using this bucket.
 
         AINLINE RwRenderBucket( void )
         {
             refCount = 0;
+            usageCount = 0;
+
+            _isOnList = false;
         }
 
         void Reference( void );
         void Dereference( void );
+
+        bool _isOnList;
+
+        void SetOnList( bool bSwitch )
+        {
+            _isOnList = bSwitch;
+        }
+
+        bool IsOnList( void )
+        {
+            return _isOnList;
+        }
     };
 };
 

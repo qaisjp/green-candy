@@ -266,3 +266,88 @@ void CFiberSA::yield_proc( void )
     if ( needYield )
         yield();
 }
+
+// Management variables for the fiber-stack-per-thread extension.
+struct threadFiberStackPluginInfo
+{
+    struct fiberArrayAllocManager
+    {
+        AINLINE void InitField( CFiberSA*& fiber )
+        {
+            fiber = NULL;
+        }
+    };
+    typedef growableArray <CFiberSA*, 2, 0, fiberArrayAllocManager, unsigned int> fiberArray;
+
+    // Fiber stacks per thread!
+    fiberArray fiberStack;
+};
+
+struct fiberStackThreadPluginInterface : public ExecutiveManager::threadPluginContainer_t::pluginInterface
+{
+    bool OnPluginConstruct( CExecThreadSA *thread, void *mem, unsigned int id )
+    {
+        new (mem) threadFiberStackPluginInfo;
+
+        return true;
+    }
+
+    void OnPluginDestroy( CExecThreadSA *thread, void *mem, unsigned int id )
+    {
+        ((threadFiberStackPluginInfo*)mem)->~threadFiberStackPluginInfo();
+    }
+};
+
+void CExecutiveManagerSA::PushFiber( CFiberSA *currentFiber )
+{
+    CExecThreadSA *currentThread = GetCurrentThread();
+
+    if ( threadFiberStackPluginInfo *info = (threadFiberStackPluginInfo*)currentThread->pluginSentry.GetPluginByID( THREAD_PLUGIN_FIBER_STACK ) )
+    {
+        info->fiberStack.AddItem( currentFiber );
+    }
+}
+
+void CExecutiveManagerSA::PopFiber( void )
+{
+    CExecThreadSA *currentThread = GetCurrentThread();
+
+    if ( threadFiberStackPluginInfo *info = (threadFiberStackPluginInfo*)currentThread->pluginSentry.GetPluginByID( THREAD_PLUGIN_FIBER_STACK ) )
+    {
+        info->fiberStack.Pop();
+    }
+}
+
+CFiberSA* CExecutiveManagerSA::GetCurrentFiber( void )
+{
+    CFiberSA *currentFiber = NULL;
+
+    CExecThreadSA *currentThread = GetCurrentThread();
+
+    if ( threadFiberStackPluginInfo *info = (threadFiberStackPluginInfo*)currentThread->pluginSentry.GetPluginByID( THREAD_PLUGIN_FIBER_STACK ) )
+    {
+        unsigned int fiberCount = info->fiberStack.GetCount();
+
+        return ( fiberCount != 0 ) ? ( info->fiberStack.Get( fiberCount - 1 ) ) : ( NULL );
+    }
+
+    return currentFiber;
+}
+
+void CExecutiveManagerSA::InitFibers( void )
+{
+    // Create the fiber-stack-per-thread extension for the threads.
+    fiberStackThreadPluginInterface *fiberStackPlug = new fiberStackThreadPluginInterface();
+
+    if ( fiberStackPlug )
+    {
+        threadPlugins.RegisterPlugin( sizeof( threadFiberStackPluginInfo ), THREAD_PLUGIN_FIBER_STACK, fiberStackPlug );
+    }
+
+    this->threadFiberStackPlugin = fiberStackPlug;
+}
+
+void CExecutiveManagerSA::ShutdownFibers( void )
+{
+
+}

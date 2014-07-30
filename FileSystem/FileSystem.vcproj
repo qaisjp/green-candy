@@ -153,11 +153,15 @@
 			Name="Include"
 			>
 			<File
-				RelativePath="..\Shared\core\fsinternal\CFileSystem.common.h"
+				RelativePath="..\Shared\core\CFileSystem.common.h"
 				>
 			</File>
 			<File
 				RelativePath="..\Shared\core\CFileSystem.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.internal.common.h"
 				>
 			</File>
 			<File

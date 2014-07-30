@@ -245,10 +245,15 @@ struct CachedRenderCallback
     }
 };
 
+inline bool ShouldRenderComplex( void )
+{
+    return g_effectManager->GetEffectQuality() > 1 || RenderCallbacks::IsAlphaSortingEnabled();
+}
+
 void __cdecl ExecuteVehicleRenderChains( unsigned int renderAlpha )
 {
     // Do special alpha blending if quality is set to high/very high
-    if ( g_effectManager->GetEffectQuality() > 1 || RenderCallbacks::IsAlphaSortingEnabled() )
+    if ( ShouldRenderComplex() )
     {
         CachedRenderCallback callback;
 
@@ -300,9 +305,14 @@ static void __cdecl _renderAtomicCommon( RpAtomic *atom )
 
 static void __cdecl _renderAtomicDirect( RpAtomic *atom )
 {
-    SingularRenderCallback callback( atom );
+    if ( ShouldRenderComplex() )
+    {
+        SingularRenderCallback callback( atom );
 
-    VehicleRenderAtomicGeneric( vehicleRenderAlpha, callback );
+        VehicleRenderAtomicGeneric( vehicleRenderAlpha, callback );
+    }
+    else // do what GTA:SA usually does.
+        _renderAtomicCommon( atom );
 }
 
 /*=========================================================
@@ -316,7 +326,7 @@ static void __cdecl _renderAtomicDirect( RpAtomic *atom )
 =========================================================*/
 inline static float RwAtomicGetVisibilityCalculation( RpAtomic *atomic )
 {
-    return RwMatrixUnknown( atomic->parent->GetLTM(), atomic->clump->parent->GetLTM(), atomic->componentFlags );
+    return RwMatrixUnknown( atomic->parent->GetLTM(), atomic->clump->parent->GetLTM(), RpAtomicGetComponentFlagsUShort( atomic ) );
 }
 
 /*=========================================================
@@ -331,7 +341,7 @@ inline static float RwAtomicGetVisibilityCalculation( RpAtomic *atomic )
 =========================================================*/
 inline static bool RwAtomicIsVisibleBasic( RpAtomic *atomic, float calc )
 {
-    return !( atomic->componentFlags & 0x0400 ) || GetRenderObjectOffsetRotation( atomic ) < 0.2f || calc > 0.0f;
+    return !( RpAtomicGetComponentFlags( atomic ) & 0x0400 ) || GetRenderObjectOffsetRotation( atomic ) < 0.2f || calc > 0.0f;
 }
 
 /*=========================================================
@@ -346,7 +356,7 @@ inline static bool RwAtomicIsVisibleBasic( RpAtomic *atomic, float calc )
 =========================================================*/
 inline static bool RwAtomicIsVisible( RpAtomic *atomic, float calc, float camDistanceSq )
 {
-    return RwAtomicIsVisibleBasic( atomic, calc ) || !( atomic->componentFlags & 0x80 ) && ( calc * calc ) >= camDistanceSq * 0.1f;
+    return RwAtomicIsVisibleBasic( atomic, calc ) || !( RpAtomicGetComponentFlags( atomic ) & 0x80 ) && ( calc * calc ) >= camDistanceSq * 0.1f;
 }
 
 /*=========================================================
@@ -362,9 +372,9 @@ inline static bool RwAtomicIsVisible( RpAtomic *atomic, float calc, float camDis
 inline static void RwAtomicHandleHighDetail( RpAtomic *atomic, float camDistanceSq )
 {
     if ( camDistanceSq < highDetailDistance )
-        atomic->componentFlags &= ~0x2000;
+        RpAtomicRemoveComponentFlags( atomic, 0x2000 );
     else
-        atomic->componentFlags |= 0x2000;
+        RpAtomicAddComponentFlags( atomic, 0x2000 );
 }
 
 /*=========================================================
@@ -459,7 +469,7 @@ static RpAtomic* RwAtomicRenderTranslucentTrain( RpAtomic *atomic )
     if ( !( camDistanceSq <= *(float*)0x00C8802C || RwAtomicIsVisible( atomic, calc, camDistanceSq ) ) )
         return atomic;
 
-    if ( !highQualityRender && !(atomic->componentFlags & 0x40) )
+    if ( !highQualityRender && !( RpAtomicGetComponentFlags( atomic ) & 0x40) )
     {
         camDistanceSq += calc;
     }
@@ -563,7 +573,7 @@ static RpAtomic* RwAtomicRenderTranslucentBoat( RpAtomic *atomic )
 
     RwAtomicHandleHighDetail( atomic, camDistanceSq );
 
-    if ( atomic->componentFlags & 0x40 )
+    if ( RpAtomicGetComponentFlags( atomic ) & 0x40 )
     {
         vehicleRenderChain_t::depthLevel level;
         level.callback = _renderAtomicCommon;
@@ -650,7 +660,7 @@ inline static void RwAtomicRenderTranslucentCommon( RpAtomic *atomic, float camD
     // Perform special sorting
     if ( !highQualityRender )
     {
-        if ( atomic->componentFlags & 0x40 )
+        if ( RpAtomicGetComponentFlags( atomic ) & 0x40 )
             camDistanceSq -= 0.0001f;
         else
             camDistanceSq += calc;
@@ -814,7 +824,7 @@ static RpAtomic* RwAtomicRenderTranslucentPlane( RpAtomic *atomic )
 
     if ( !highQualityRender )
     {
-        if ( atomic->componentFlags & 0x40 )
+        if ( RpAtomicGetComponentFlags( atomic ) & 0x40 )
             camDistanceSq -= 0.0001f;
         else
             camDistanceSq += calc;
@@ -941,13 +951,13 @@ static bool RwAtomicSetupVehicleDamaged( RpAtomic *child )
     {
         child->flags = 0;
 
-        child->componentFlags = 2;
+        RpAtomicAssignComponentFlags( child, 2 );
         return true;
     }
 
     if ( strstr( child->parent->szName, "_ok" ) )
     {
-        child->componentFlags = 1;
+        RpAtomicAssignComponentFlags( child, 1 );
         return true;
     }
 
@@ -1410,7 +1420,7 @@ static int RpClumpAtomicSetupVehicleMaterials( RpAtomic *atomic, _colorTextureSt
     RpMaterials& mats = atomic->geometry->materials;
 
     // Accelerate things by using only one loop
-    bool blankOut = ( atomic->componentFlags & 0x1000 ) != 0;
+    bool blankOut = ( RpAtomicGetComponentFlags( atomic ) & 0x1000 ) != 0;
     unsigned int alpha = vehAlpha;
 
     for ( unsigned int n = 0; n < mats.entries; n++ )

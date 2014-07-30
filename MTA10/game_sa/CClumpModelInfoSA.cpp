@@ -118,7 +118,7 @@ RwObject* CClumpModelInfoSAInterface::CreateRwObjectEx( RwMatrix& mat )
 =========================================================*/
 static int RpSetAtomicAnimHierarchy( RpAtomic *child, RpAnimHierarchy *anim )
 {
-    child->anim = anim;
+    RpAtomicSetAnimHierarchy( child, anim );
     return false;
 }
 
@@ -257,14 +257,18 @@ CColModelSAInterface* CClumpModelInfoSAInterface::GetCollision( void )
 =========================================================*/
 static int RwAtomicSetupAnimHierarchy( RpAtomic *child, RpAnimHierarchy *anim )
 {
-    if ( anim )
+    bool continueThis = false;
+
+    if ( !anim )
     {
-        child->anim = anim;
-        return false;
+        continueThis = true;
+
+        anim = child->parent->GetAnimHierarchy();
     }
 
-    child->anim = child->parent->GetAnimHierarchy();
-    return true;
+    RpAtomicSetAnimHierarchy( child, anim );
+
+    return continueThis;
 }
 
 void CClumpModelInfoSAInterface::SetClump( RpClump *clump )

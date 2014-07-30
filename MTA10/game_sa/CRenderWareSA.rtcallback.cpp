@@ -806,6 +806,9 @@ struct GameMeshRenderCallback
             if ( !CanProcessPass( passRequiresAlpha, renderType ) )
                 continue;
 
+            // Set pass count for contextual render feedback.
+            RpAtomicContextualRenderSetPassIndex( n );
+
             GameRenderPassGeneric( rtinfo, rtPass, passRequiresAlpha, m_lightingEnabled, m_renderFlags, m_enableAlpha, m_lightMan, cb );
         }
     }
@@ -1270,8 +1273,10 @@ struct ReflectiveVehicleRenderManager
     __forceinline ReflectiveVehicleRenderManager( RpAtomic*& atom ) : m_atomic( atom )
     {
         m_unk = *(float*)0x008D12D0 * 1.85f;
-        m_unk2 = IS_ANY_FLAG( atom->componentFlags, 0x6000 );
+        m_unk2 = IS_ANY_FLAG( RpAtomicGetComponentFlags( atom ), 0x6000 );
         m_geomFlags = atom->geometry->flags;
+
+        hasModifiedTextureTransform = false;
     }
 
     __forceinline void OnRenderPrepare( DWORD _lightValue )
@@ -1340,7 +1345,11 @@ struct ReflectiveVehicleRenderManager
             if ( specialEffect1 )
             {
                 // Render the reflection as seen on upgraded vehicle parts.
-                RenderReflectiveEnvMap( m_atomic, envMapMat, VehAtomicReflectManager( m_unk ) );
+                VehAtomicReflectManager reflectMan( m_unk );
+
+                RenderReflectiveEnvMap( m_atomic, envMapMat, reflectMan );
+
+                hasModifiedTextureTransform = true;
             }
 
             if ( specialEffect2 && enableEnvMapRendering )
@@ -1350,12 +1359,7 @@ struct ReflectiveVehicleRenderManager
 
                 float reflectParams[2] = { 0, 0 };
 
-                CEnvMapAtomicSA*& envMapAtom = m_atomic->envMap;
-
-                if ( !envMapAtom )
-                {
-                    envMapAtom = new CEnvMapAtomicSA( 0.0f, 0.0f, 0.0f );
-                }
+                CEnvMapAtomicSA *envMapAtom = RpAtomicGetEnvironmentReflectionMap( m_atomic );
 
                 if ( envMapAtom )
                     CalculateVehicleReflectiveMapParamsAtomic( envMapMat, envMapAtom, m_atomic, reflectParams );
@@ -1371,6 +1375,8 @@ struct ReflectiveVehicleRenderManager
                 specEffMat.m[2][1] = reflectParams[1];
 
                 RwD3D9SetTransform( D3DTS_TEXTURE1, &specEffMat );
+
+                hasModifiedTextureTransform = true;
 
                 RwD3D9SetTexture( envMapMat->envTexture, 1 );
 
@@ -1478,6 +1484,14 @@ struct ReflectiveVehicleRenderManager
 
         // Restore some rendering settings.
         RwD3D9DisableSecondTextureStage();
+
+        if ( hasModifiedTextureTransform )
+        {
+            // Reset some device states that cause dirt.
+            RwD3D9SetRenderState( D3DRS_TEXTUREFACTOR, 0x00000000 );
+
+            RwD3D9SetTransform( D3DTS_TEXTURE1, NULL );
+        }
     }
 
     __forceinline bool IsProperlyDepthSorted( void )
@@ -1523,6 +1537,9 @@ struct ReflectiveVehicleRenderManager
     float specularFloat1;
     float specularFloat2;
     bool hasMaterialLighting;
+
+    // Our properties.
+    bool hasModifiedTextureTransform;
 };
 
 // This gotta be the vehicle atomic render routine; it uses component flags.

@@ -14,6 +14,10 @@
 
 #include "../gamesa_renderware.h"
 
+/*=========================================================
+    RenderWare Atomic Direct3D Environment Reflection Map Plugin
+=========================================================*/
+
 void* CEnvMapAtomicSA::operator new ( size_t )
 {
     return RenderWare::GetEnvMapAtomicPool()->Allocate();
@@ -25,26 +29,74 @@ void CEnvMapAtomicSA::operator delete ( void *ptr )
 }
 
 /*=========================================================
+    RpAtomicGetEnvironmentReflectionMap
+
+    Purpose:
+        Returns the environment reflection map associated
+        with the given atomic. It is allocated if it does
+        not already exist.
+    Binary offsets:
+        (1.0 US and 1.0 EU): 0x005D96F0
+=========================================================*/
+struct _atomicReflectionMapStorePlugin
+{
+    CEnvMapAtomicSA *envMap;
+};
+
+inline int GetAtomicReflectionMapStorePluginOffset( void )
+{
+    return *(int*)0x008D12C8;
+}
+
+inline _atomicReflectionMapStorePlugin* GetAtomicReflectionMapStorePlugin( RpAtomic *atomic )
+{
+    int pluginOffset = GetAtomicReflectionMapStorePluginOffset();
+
+    if ( pluginOffset == -1 )
+        return NULL;
+
+    return ( atomic ) ? ( RW_PLUGINSTRUCT <_atomicReflectionMapStorePlugin> ( atomic, pluginOffset ) ) : ( NULL );
+}
+
+CEnvMapAtomicSA* __cdecl RpAtomicGetEnvironmentReflectionMap( RpAtomic *atomic )
+{
+    CEnvMapAtomicSA *envMap = NULL;
+
+    if ( _atomicReflectionMapStorePlugin *info = GetAtomicReflectionMapStorePlugin( atomic ) )
+    {
+        envMap = info->envMap;
+
+        if ( !envMap )
+        {
+            envMap = new CEnvMapAtomicSA( 0, 0, 0 );
+
+            info->envMap = envMap;
+        }
+    }
+
+    return envMap;
+}
+
+/*=========================================================
     RenderWare Atomic Direct3D Bucket Sorting Extension
 =========================================================*/
 // Include internal bucket sorting definitions.
 #include "CRenderWareSA.rtbucket.hxx"
 
-/*=========================================================
-    RpAtomic::GetWorldBoundingSphere
-
-    Purpose:
-        Calculates and returns a bounding sphere in world space
-        which entirely contains the geometry.
-    Binary offsets:
-        (1.0 US): 0x00749330
-        (1.0 EU): 0x00749380
-=========================================================*/
 static int _atomicBucketSortPluginOffset = -1;
+
+struct renderBucketListManager
+{
+    AINLINE void InitField( RenderBucket::RwRenderBucket*& theField )
+    {
+        theField = NULL;
+    }
+};
+typedef growableArray <RenderBucket::RwRenderBucket*, 4, 0, renderBucketListManager, unsigned int> renderBucketList_t;
 
 struct atomicBucketSortPlugin
 {
-    RenderBucket::RwRenderBucket *lastBestBucket;
+    renderBucketList_t lastBestBucketPass;
 };
 
 inline atomicBucketSortPlugin* GetBucketSortInfo( RpAtomic *atomic )
@@ -71,7 +123,8 @@ RpAtomic* __cdecl RpAtomicD3D9ConstructBucketSort( RpAtomic *rwobj, size_t plugi
 {
     atomicBucketSortPlugin *info = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( rwobj, pluginOffset );
     
-    info->lastBestBucket = NULL;
+    // Construct the struct.
+    new (info) atomicBucketSortPlugin();
 
     return rwobj;
 }
@@ -80,8 +133,21 @@ void __cdecl RpAtomicD3D9DestructBucketSort( RpAtomic *rwobj, size_t pluginOffse
 {
     atomicBucketSortPlugin *info = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( rwobj, pluginOffset );
 
-    // todo.
-    
+    // If we have render buckets, dereference them.
+    for ( unsigned int n = 0; n < info->lastBestBucketPass.GetSizeCount(); n++ )
+    {
+        RenderBucket::RwRenderBucket *theBucket = info->lastBestBucketPass.GetFast( n );
+
+        if ( theBucket )
+        {
+            theBucket->Dereference();
+
+            info->lastBestBucketPass.SetFast( NULL, n );
+        }
+    }
+
+    // Destruct the info.
+    info->~atomicBucketSortPlugin();
 }
 
 RpAtomic* __cdecl RpAtomicD3D9CopyConstructBucketSort( RpAtomic *dstObject, const RpAtomic *srcObject, size_t pluginOffset, unsigned int pluginId )
@@ -89,7 +155,23 @@ RpAtomic* __cdecl RpAtomicD3D9CopyConstructBucketSort( RpAtomic *dstObject, cons
     atomicBucketSortPlugin *dstInfo = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( dstObject, pluginOffset );
     const atomicBucketSortPlugin *srcInfo = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( srcObject, pluginOffset );
 
-    // todo.
+    // Construct the struct at dstInfo.
+    new (dstInfo) atomicBucketSortPlugin();
+
+    // Take over all the buckets from the source info.
+    for ( unsigned int n = 0; n < srcInfo->lastBestBucketPass.GetSizeCount(); n++ )
+    {
+        RenderBucket::RwRenderBucket *theBucket = srcInfo->lastBestBucketPass.GetFast( n );
+
+        if ( theBucket )
+        {
+            // Reference the bucket.
+            theBucket->Reference();
+
+            // Add it to the dstInfo container.
+            dstInfo->lastBestBucketPass.SetItem( theBucket, n );
+        }
+    }
 
     return dstObject;
 }
@@ -103,25 +185,118 @@ void RpAtomicD3D9_RegisterPlugins( void )
     );
 }
 
+/*=========================================================
+    RpAtomicContextualRenderSetPassIndex (MTA extension/plugin)
+
+    Arguments:
+        passIndex - the pass index to set for the current
+            rendering context
+    Purpose:
+        Sets the current pass index for the current
+        rendering context.
+=========================================================*/
+static unsigned int contextualPassIndex = 0;
+static unsigned int contextualStageIndex = 0;
+
+void __cdecl RpAtomicContextualRenderSetPassIndex( unsigned int passIndex )
+{
+    contextualPassIndex = passIndex;
+}
+
+/*=========================================================
+    RpAtomicContextualRenderSetStageIndex (MTA extension/plugin)
+
+    Arguments:
+        stageIndex - the stage index to set for the current
+            rendering context
+    Purpose:
+        Sets the current stage index for the current
+        rendering context.
+=========================================================*/
+void __cdecl RpAtomicContextualRenderSetStageIndex( unsigned int stageIndex )
+{
+    contextualStageIndex = stageIndex;
+}
+
+/*=========================================================
+    RpAtomicSetContextualRenderBucket (MTA extension/plugin)
+
+    Arguments:
+        theAtomic - the atomic to put the render bucket link in
+        theBucket - bucket to put into the atomic
+    Purpose:
+        Stores a render bucket link into the specified atomic.
+        This is used to accelerate bucket sorting in the
+        bucket rasterizer.
+=========================================================*/
 bool __cdecl RpAtomicSetContextualRenderBucket( RpAtomic *theAtomic, RenderBucket::RwRenderBucket *theBucket )
 {
     bool success = false;
 
     if ( atomicBucketSortPlugin *thePlugin = GetBucketSortInfo( theAtomic ) )
     {
-        // todo.
+        // Only perform if we have a new render bucket.
+        RenderBucket::RwRenderBucket *currentBucket = NULL;
+
+        {
+            renderBucketList_t& currentPass = thePlugin->lastBestBucketPass;
+
+            if ( contextualPassIndex < currentPass.GetSizeCount() )
+            {
+                currentBucket = currentPass.Get( contextualPassIndex );
+            }
+        }
+
+        if ( currentBucket != theBucket )
+        {
+            // If we had a bucket already, dereference it.
+            if ( currentBucket )
+            {
+                currentBucket->Dereference();
+
+                // Decrement the usage count.
+                currentBucket->usageCount--;
+            }
+
+            // Assign us the new bucket.
+            thePlugin->lastBestBucketPass.SetItem( theBucket, contextualPassIndex );
+
+            if ( theBucket )
+            {
+                // Increment the usage count.
+                theBucket->usageCount++;
+                
+                theBucket->Reference();
+            }
+        }
     }
 
     return success;
 }
 
+/*=========================================================
+    RpAtomicGetContextualRenderBucket (MTA extension/plugin)
+
+    Arguments:
+        theAtomic - the atomic to get a render bucket link from
+    Purpose:
+        Attempts to return a render bucket link from the atomic
+        in the current rendering context. If returned, it is
+        assumed to contain a render bucket that is most-likely
+        same to the current context.
+=========================================================*/
 RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket( RpAtomic *theAtomic )
 {
     RenderBucket::RwRenderBucket *theBucket = NULL;
 
     if ( atomicBucketSortPlugin *thePlugin = GetBucketSortInfo( theAtomic ) )
     {
-        theBucket = thePlugin->lastBestBucket;
+        renderBucketList_t& currentPass = thePlugin->lastBestBucketPass;
+
+        if ( contextualPassIndex < currentPass.GetSizeCount() )
+        {
+            theBucket = currentPass.Get( contextualPassIndex );
+        }
     }
 
     return theBucket;
