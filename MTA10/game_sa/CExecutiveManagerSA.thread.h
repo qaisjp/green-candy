@@ -13,7 +13,7 @@
 #ifndef _EXECUTIVE_MANAGER_THREADS_
 #define _EXECUTIVE_MANAGER_THREADS_
 
-#define THREAD_PLUGIN_NATIVE        0x00000000  // plugin for OS implementation
+#define THREAD_PLUGIN_NATIVE        0x00000000  // plugin id for OS implementation
 
 enum eThreadStatus
 {
@@ -42,6 +42,12 @@ public:
     bool Suspend( void );
     bool Resume( void );
 
+    bool IsCurrent( void );
+
+    void Lock( void );
+    void Unlock( void );
+
+    // These parameters are only valid if this thread is not a remote thread!
     threadEntryPoint_t entryPoint;
     void *userdata;
     size_t stackSize;

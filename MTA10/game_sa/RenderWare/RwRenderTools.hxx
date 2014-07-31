@@ -196,6 +196,7 @@ AINLINE void RwD3D9DrawRenderPassPrimitive( RwRenderCallbackTraverseImpl *rtinfo
     // Pass the data to the GPU.
     if ( RenderBucket::OnCachedRenderCall( renderCall ) == false )
     {
+        // If we failed to cache the rendering, we do what GTA:SA usually does.
         RwD3D9DrawRenderPassPrimitiveNative( rtinfo->m_indexBuffer != NULL, renderCall );
     }
 }

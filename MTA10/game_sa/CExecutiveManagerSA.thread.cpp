@@ -21,8 +21,84 @@ struct nativeThreadPlugin
     HANDLE hThread;
     mutable CRITICAL_SECTION threadLock;
     volatile eThreadStatus status;
+    Fiber *terminationReturn;   // if not NULL, the thread yields to this state when it successfully terminated.
 
     RwListEntry <nativeThreadPlugin> node;
+};
+
+// Safe critical sections.
+namespace LockSafety
+{
+    // When something horribly dangerous to the runtime happens (hacks, etc),
+    // the attackers must contend this lock. It is used when actions happen that
+    // must not be interrupted at any cost!
+    // Ideally, we would control all of the possible OS locks through wrappers,
+    // so they would be secure.
+    static CRITICAL_SECTION lock_section;
+
+    static void Init( void )
+    {
+        InitializeCriticalSection( &lock_section );
+    }
+
+    static void Shutdown( void )
+    {
+        DeleteCriticalSection( &lock_section );
+    }
+
+    static void Lock( void )
+    {
+        EnterCriticalSection( &lock_section );
+    }
+
+    static void Unlock( void )
+    {
+        LeaveCriticalSection( &lock_section );
+    }
+        
+    static AINLINE void EnterLockSafely( CRITICAL_SECTION& theSection )
+    {
+        // Lock all things that do critical activity!
+        Lock();
+
+        // Now enter.
+        {
+            EnterCriticalSection( &theSection );
+        }
+
+        // Leave the very important space.
+        Unlock();
+    }
+
+    static AINLINE void LeaveLockSafely( CRITICAL_SECTION& theSection )
+    {
+        // Make sure we are safe in doing stuff.
+        Lock();
+
+        // Now leave.
+        {
+            LeaveCriticalSection( &theSection );
+        }
+
+        // Leave the very important space, again.
+        Unlock();
+    }
+}
+
+// Struct for exception safety.
+struct nativeLock
+{
+    CRITICAL_SECTION& critical_section;
+
+    AINLINE nativeLock( CRITICAL_SECTION& theSection ) : critical_section( theSection )
+    {
+        LockSafety::EnterLockSafely( critical_section );
+    }
+
+    AINLINE ~nativeLock( void )
+    {
+        LockSafety::LeaveLockSafely( critical_section );
+    }
 };
 
 struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContainer_t::pluginInterface
@@ -91,13 +167,148 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         // Put our executing thread information into our TLS value.
         info->manager->TlsSetCurrentThreadInfo( info );
 
-        // Enter the routine.
-        threadInfo->entryPoint( threadInfo, threadInfo->userdata );
+        // Make sure we intercept termination requests!
+        try
+        {
+            // Enter the routine.
+            threadInfo->entryPoint( threadInfo, threadInfo->userdata );
 
-        // Terminate our thread.
-        threadInfo->Terminate();
+            // Terminate our thread.
+            threadInfo->Terminate();
+        }
+        catch( ... )
+        {
+            // We are terminated.
+            info->status = THREAD_TERMINATED;
+
+            // If we have a termination info, we want to leave into it.
+            if ( Fiber *termContext = info->terminationReturn )
+            {
+                ExecutiveFiber::leave( termContext );
+
+                // We do not reach this point anymore.
+            }
+        }
 
         return ERROR_SUCCESS;
+    }
+
+    static void __stdcall _ThreadTerminationProto( void )
+    {
+        CExecThreadSA *thisThread;
+
+        __asm
+        {
+            mov thisThread,ebx
+        }
+
+        throw threadTerminationException( thisThread );
+    }
+
+    typedef struct _NT_TIB
+    {
+        PVOID ExceptionList;
+        PVOID StackBase;
+        PVOID StackLimit;
+    } NT_TIB;
+
+    void RtlTerminateThread( nativeThreadPlugin *threadInfo )
+    {
+        CExecThreadSA *theThread = threadInfo->self;
+
+        assert( theThread->isRemoteThread == false );
+
+        // If we are not the current thread, we must do certain precautions.
+        bool isCurrentThread = theThread->IsCurrent();
+
+        if ( !isCurrentThread )
+        {
+            // Make sure we are outside of critical code.
+            LockSafety::Lock();
+
+            // Suspend our thread.
+            // We must not use locking functions for that.
+            DWORD suspendCount = SuspendThread( threadInfo->hThread );
+
+            // Now that we are "suspended", cannot continue even if the lock
+            // gets lifted.
+            LockSafety::Unlock();
+        }
+
+        // Depends on whether we are the current thread or not.
+        if ( isCurrentThread )
+        {
+            // Just do the termination.
+            throw threadTerminationException( theThread );
+        }
+        else
+        {
+            // NOTE: this is a fucking insecure hack that changes the executing thread of a thread runtime.
+            // It is written with the hope that no code makes assumptions about a certain thread having to execute
+            // termination logic. If this feature will be required, I will still have certain work-arounds!
+
+            // It works, so do not fuck around with it.
+
+            // Create a fiber that we have to walk down the thread context with.
+            Fiber terminationFiber;
+            Fiber returnFiber;
+
+            // Get the complete WIN32 i86 context.
+            CONTEXT currentContext;
+            currentContext.ContextFlags = ( CONTEXT_INTEGER | CONTEXT_CONTROL | CONTEXT_SEGMENTS );
+
+            BOOL threadContextGet = GetThreadContext( threadInfo->hThread, &currentContext );
+
+            if ( threadContextGet == TRUE )
+            {
+                // Put our context into the fiber.
+                terminationFiber.ebp = currentContext.Ebp;
+                terminationFiber.edi = currentContext.Edi;
+                terminationFiber.esi = currentContext.Esi;
+                terminationFiber.esp = currentContext.Esp;
+
+                // Grab exception information of that thread, too!
+                // This especially is quite an ugly hack.
+                {
+                    LDT_ENTRY fsSegmentEntry;
+
+                    BOOL selectorGet = GetThreadSelectorEntry( threadInfo->hThread, currentContext.SegFs, &fsSegmentEntry );
+                    
+                    assert( selectorGet == TRUE );
+
+                    // Construct the real pointer to NT_TIB.
+                    DWORD fsPointer =
+                        ( fsSegmentEntry.BaseLow ) |
+                        ( fsSegmentEntry.HighWord.Bytes.BaseMid << 16 ) |
+                        ( fsSegmentEntry.HighWord.Bytes.BaseHi << 24 );
+
+                    const NT_TIB *threadInfoBlock = (NT_TIB*)fsPointer;
+
+                    terminationFiber.stack_base = (unsigned int*)threadInfoBlock->StackBase;
+                    terminationFiber.stack_limit = (unsigned int*)threadInfoBlock->StackLimit;
+                    terminationFiber.except_info = (void*)threadInfoBlock->ExceptionList;
+                }
+
+                // Modify it so we point to the termination routine.
+                terminationFiber.ebx = (unsigned int)theThread;
+                terminationFiber.eip = (unsigned int)_ThreadTerminationProto;
+                    
+                // Make the thread now that it should jump back here at termination.
+                threadInfo->terminationReturn = &returnFiber;
+
+                // Jump!!!
+                ExecutiveFiber::eswitch( &returnFiber, &terminationFiber );
+
+                // If we return here, the thread must be terminated.
+                assert( threadInfo->status == THREAD_TERMINATED );
+            }
+
+            // We can now terminate the handle.
+            TerminateThread( threadInfo->hThread, ERROR_SUCCESS );
+        }
+
+        // If we were the current thread, we cannot reach this point.
+        assert( isCurrentThread == false );
     }
 
     bool OnPluginConstruct( CExecThreadSA *thread, void *mem, unsigned int id )
@@ -127,15 +338,19 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         info->self = thread;
         info->manager = this;
 
+        // This field is used by the runtime dispatcher to execute a "controlled return"
+        // from different threads.
+        info->terminationReturn = NULL;
+
         // We assume the thread is (always) running if its a remote thread.
         // Otherwise we know that it starts suspended.
         info->status = ( !thread->isRemoteThread ) ? THREAD_SUSPENDED : THREAD_RUNNING;
 
-        EnterCriticalSection( &this->runningThreadListLock );
         {
+            nativeLock lock( this->runningThreadListLock );
+
             LIST_INSERT( runningThreads.root, info->node );
         }
-        LeaveCriticalSection( &this->runningThreadListLock );
 
         // Set up synchronization object.
         InitializeCriticalSection( &info->threadLock );
@@ -156,17 +371,19 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         // Delete synchronization object.
         DeleteCriticalSection( &info->threadLock );
 
-        EnterCriticalSection( &this->runningThreadListLock );
         {
+            nativeLock lock( this->runningThreadListLock );
+
             LIST_REMOVE( runningThreads.root );
         }
-        LeaveCriticalSection( &this->runningThreadListLock );
 
         CloseHandle( info->hThread );
     }
 };
 
 #endif
+
+// todo: add other OSes too when it becomes necessary.
 
 CExecThreadSA::CExecThreadSA( CExecutiveManagerSA *manager, bool isRemoteThread )
 {
@@ -190,17 +407,16 @@ eThreadStatus CExecThreadSA::GetStatus( void ) const
 
     if ( info )
     {
-        EnterCriticalSection( &info->threadLock );
+        nativeLock lock( info->threadLock );
 
         status = info->status;
-
-        LeaveCriticalSection( &info->threadLock );
     }
 #endif
 
     return status;
 }
 
+// WARNING: terminating threads in general is very naughty and causes shit to go haywire!
 bool CExecThreadSA::Terminate( void )
 {
     bool returnVal = false;
@@ -210,21 +426,43 @@ bool CExecThreadSA::Terminate( void )
 
     if ( info && info->status != THREAD_TERMINATED )
     {
-        EnterCriticalSection( &info->threadLock );
+        nativeLock lock( info->threadLock );
 
         if ( info->status != THREAD_TERMINATED )
         {
-            BOOL success = TerminateThread( info->hThread, ERROR_SUCCESS );
+            // Termination depends on what kind of thread we face.
+            bool terminationSuccessful = false;
 
-            if ( success == TRUE )
+            if ( this->isRemoteThread )
             {
+                // Remote threads must be killed just like that.
+                BOOL success = TerminateThread( info->hThread, ERROR_SUCCESS );
+
+                if ( success == TRUE )
+                {
+                    terminationSuccessful = true;
+                }
+            }
+            else
+            {
+                // User-mode threads have to be cleanly terminated.
+                // This means going down the exception stack.
+                nativeThreadPluginInterface *nativeInterface = (nativeThreadPluginInterface*)manager->threadNativePlugin;
+
+                nativeInterface->RtlTerminateThread( info );
+
+                // We may not actually get here!
+            }
+
+            if ( terminationSuccessful )
+            {
+                // Put the status as terminated.
                 info->status = THREAD_TERMINATED;
 
+                // Return true.
                 returnVal = true;
             }
         }
-
-        LeaveCriticalSection( &info->threadLock );
     }
 #endif
 
@@ -243,7 +481,7 @@ bool CExecThreadSA::Suspend( void )
     {
         if ( info && info->status == THREAD_RUNNING )
         {
-            EnterCriticalSection( &info->threadLock );
+            nativeLock lock( info->threadLock );
 
             if ( info->status == THREAD_RUNNING )
             {
@@ -256,8 +494,6 @@ bool CExecThreadSA::Suspend( void )
                     returnVal = true;
                 }
             }
-
-            LeaveCriticalSection( &info->threadLock );
         }
     }
 #endif
@@ -277,7 +513,7 @@ bool CExecThreadSA::Resume( void )
     {
         if ( info && info->status == THREAD_SUSPENDED )
         {
-            EnterCriticalSection( &info->threadLock );
+            nativeLock lock( info->threadLock );
 
             if ( info->status == THREAD_SUSPENDED )
             {
@@ -290,8 +526,6 @@ bool CExecThreadSA::Resume( void )
                     returnVal = true;
                 }
             }
-
-            LeaveCriticalSection( &info->threadLock );
         }
     }
 #endif
@@ -299,8 +533,45 @@ bool CExecThreadSA::Resume( void )
     return returnVal;
 }
 
+bool CExecThreadSA::IsCurrent( void )
+{
+    return ( this->manager->GetCurrentThread() == this );
+}
+
+void CExecThreadSA::Lock( void )
+{
+#ifdef _WIN32
+    nativeThreadPlugin *info = (nativeThreadPlugin*)pluginSentry.GetPluginByID( THREAD_PLUGIN_NATIVE );
+
+    if ( info )
+    {
+        LockSafety::EnterLockSafely( info->threadLock );
+    }
+#else
+    assert( 0 );
+#endif
+}
+
+void CExecThreadSA::Unlock( void )
+{
+#ifdef _WIN32
+    nativeThreadPlugin *info = (nativeThreadPlugin*)pluginSentry.GetPluginByID( THREAD_PLUGIN_NATIVE );
+
+    if ( info )
+    {
+        LockSafety::LeaveLockSafely( info->threadLock );
+    }
+#else
+    assert( 0 );
+#endif
+}
+
 CExecThreadSA* CExecutiveManagerSA::CreateThread( CExecThreadSA::threadEntryPoint_t entryPoint, void *userdata, size_t stackSize )
 {
+    // No point in creating threads if we have no native implementation.
+    if ( !threadNativePlugin )
+        return NULL;
+
     CExecThreadSA *threadInfo = new CExecThreadSA( this, false );
 
     if ( !threadInfo )
@@ -315,16 +586,17 @@ CExecThreadSA* CExecutiveManagerSA::CreateThread( CExecThreadSA::threadEntryPoin
 
     // Make sure we synchronize access to plugin containers!
     // This only has to happen when the API has to be thread-safe.
-    EnterCriticalSection( &threadPluginsLock );
+    {
+        nativeLock lock( threadPluginsLock );
 
-    // Initialize the thread structure here.
-    threadPlugins.OnPluginObjectCreate( threadInfo );
-
-    LeaveCriticalSection( &threadPluginsLock );
+        // Initialize the thread structure here.
+        threadPlugins.OnPluginObjectCreate( threadInfo );
+    }
 
     // Check that the native threading plugin got successfully initialized.
     if ( threadInfo->pluginSentry.GetPluginByID( THREAD_PLUGIN_NATIVE ) == NULL )
     {
+        // There is no point in allowing function-less threads, so terminate the struct and return nothing.
         CloseThread( threadInfo );
         return NULL;
     }
@@ -358,7 +630,7 @@ CExecThreadSA* CExecutiveManagerSA::GetCurrentThread( void )
             }
             else
             {
-                EnterCriticalSection( &nativeInterface->runningThreadListLock );
+                nativeLock lock( nativeInterface->runningThreadListLock );
 
                 // Else we have to go the slow way by checking every running thread information in existance.
                 LIST_FOREACH_BEGIN( nativeThreadPlugin, nativeInterface->runningThreads.root, node )
@@ -368,8 +640,6 @@ CExecThreadSA* CExecutiveManagerSA::GetCurrentThread( void )
                         break;
                     }
                 LIST_FOREACH_END
-
-                LeaveCriticalSection( &nativeInterface->runningThreadListLock );
             }
 
             // If we have not found a thread handle representing this native thread, we should create one.
@@ -379,12 +649,13 @@ CExecThreadSA* CExecutiveManagerSA::GetCurrentThread( void )
 
                 if ( newThreadInfo )
                 {
-                    EnterCriticalSection( &threadPluginsLock );
+                    {
+                        // Make sure to lock plugin activity!
+                        nativeLock lock( threadPluginsLock );
 
-                    // Initialize plugin objects for this thread object.
-                    threadPlugins.OnPluginObjectCreate( newThreadInfo );
-
-                    LeaveCriticalSection( &threadPluginsLock );
+                        // Initialize plugin objects for this thread object.
+                        threadPlugins.OnPluginObjectCreate( newThreadInfo );
+                    }
 
                     bool successPluginCreation = false;
 
@@ -417,11 +688,11 @@ CExecThreadSA* CExecutiveManagerSA::GetCurrentThread( void )
                     
                     if ( successPluginCreation == false )
                     {
-                        EnterCriticalSection( &threadPluginsLock );
+                        {
+                            nativeLock lock( threadPluginsLock );
 
-                        threadPlugins.OnPluginObjectDestroy( newThreadInfo );
-
-                        LeaveCriticalSection( &threadPluginsLock );
+                            threadPlugins.OnPluginObjectDestroy( newThreadInfo );
+                        }
 
                         delete newThreadInfo;
                     }
@@ -436,18 +707,20 @@ CExecThreadSA* CExecutiveManagerSA::GetCurrentThread( void )
 
 void CExecutiveManagerSA::CloseThread( CExecThreadSA *thread )
 {
-    // Only allow this from a remote thread if we are the current thread.
+    // Only allow this from the current thread if we are a remote thread.
     if ( GetCurrentThread() == thread )
     {
         if ( !thread->isRemoteThread )
             return;
     }
 
-    EnterCriticalSection( &threadPluginsLock );
+    {
+#ifdef _WIN32
+        nativeLock lock( threadPluginsLock );
+#endif
 
-    threadPlugins.OnPluginObjectDestroy( thread );
-
-    LeaveCriticalSection( &threadPluginsLock );
+        threadPlugins.OnPluginObjectDestroy( thread );
+    }
 
     delete thread;
 }
@@ -456,9 +729,11 @@ void CExecutiveManagerSA::InitThreads( void )
 {
     LIST_CLEAR( threads.root );
 
+#ifdef _WIN32
+    LockSafety::Init();
+
     InitializeCriticalSection( &threadPluginsLock );
 
-#ifdef _WIN32
     nativeThreadPluginInterface *nativeInterface = new nativeThreadPluginInterface();
 
     if ( nativeInterface )
@@ -467,6 +742,8 @@ void CExecutiveManagerSA::InitThreads( void )
     }
 
     this->threadNativePlugin = nativeInterface;
+#else
+    this->threadNativePlugin = NULL;
 #endif
 }
 
@@ -496,5 +773,9 @@ void CExecutiveManagerSA::ShutdownThreads( void )
         this->threadNativePlugin = NULL;
     }
 
+#ifdef _WIN32
     DeleteCriticalSection( &threadPluginsLock );
+
+    LockSafety::Shutdown();
+#endif
 }

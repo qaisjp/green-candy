@@ -196,7 +196,7 @@ void __declspec(naked) ExecutiveFiber::qswitch( Fiber *from, Fiber *to )
     __asm
     {
         // Save current environment
-        mov eax,[esp+4]
+        mov eax,[esp+4]         // grab the "from" context
         mov [eax]Fiber.ebx,ebx
         mov [eax]Fiber.edi,edi
         mov [eax]Fiber.esi,esi
@@ -213,7 +213,34 @@ void __declspec(naked) ExecutiveFiber::qswitch( Fiber *from, Fiber *to )
 #endif
 
         // Apply registers
-        mov eax,[esp+4]
+        mov eax,[esp+4]         // grab the "to" context 
+        mov ebx,[eax]Fiber.ebx
+        mov edi,[eax]Fiber.edi
+        mov esi,[eax]Fiber.esi
+        mov esp,[eax]Fiber.esp
+        mov ebp,[eax]Fiber.ebp
+
+#ifdef _WIN32
+        // Apply exception and stack info
+        mov ecx,[eax]Fiber.stack_base
+        mov edx,[eax]Fiber.stack_limit
+        mov fs:[4],ecx
+        mov fs:[8],edx
+        mov ecx,[eax]Fiber.except_info
+        mov fs:[0],ecx
+#endif
+
+        jmp dword ptr[eax]Fiber.eip
+    }
+}
+
+// For use with one-sided context switching.
+void __declspec(naked) ExecutiveFiber::leave( Fiber *to )
+{
+    __asm
+    {
+        // Apply registers
+        mov eax,[esp+4]         // grab the "to" context 
         mov ebx,[eax]Fiber.ebx
         mov edi,[eax]Fiber.edi
         mov esi,[eax]Fiber.esi

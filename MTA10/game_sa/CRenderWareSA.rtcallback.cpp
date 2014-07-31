@@ -927,12 +927,6 @@ __forceinline void RenderReflectiveEnvMap( renderObjType *renderObj, CEnvMapMate
     }
 }
 
-static inline bool UseDualWorldRendering( void )
-{
-    // If true, improved alpha blending is used.
-    return true;
-}
-
 template <typename reflectiveManager, typename renderObjType>
 struct ReflectiveGeneralRenderManager
 {

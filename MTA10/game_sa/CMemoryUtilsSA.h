@@ -510,7 +510,8 @@ class CPluginContainerSA
 public:
     // pluginType requirements:
     /*
-        pluginSentry_t pluginSentry;  // data member
+        pluginSentry_t pluginSentry;  // data member, for OnPluginObjectCreate, OnPluginObjectDestroy
+        pluginType::pluginMemory_t pluginMemory;    // data member, for OnPluginObjectCreate
     */
 
     struct pluginInterface
@@ -618,6 +619,9 @@ public:
             pluginSentry_t::regPlugInfo& regInfo = sentry.plugins.Get( n );
 
             regInfo.descriptor->plugInterface->OnPluginDestroy( obj, regInfo.allocMem, regInfo.descriptor->pluginId );
+
+            // Free the plugin memory again.
+            obj->pluginMemory.Free( regInfo.allocMem );
         }
     }
 };

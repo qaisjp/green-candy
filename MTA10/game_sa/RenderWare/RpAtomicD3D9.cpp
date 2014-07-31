@@ -176,6 +176,15 @@ RpAtomic* __cdecl RpAtomicD3D9CopyConstructBucketSort( RpAtomic *dstObject, cons
     return dstObject;
 }
 
+static CExecThreadSA *uniquenessThread = NULL;
+
+// Thread that is supposed to increase bucket unique-ness over time.
+static void __stdcall BucketUniquenessQuantifierThread( CExecThreadSA *thread, void *userdata )
+{
+    // todo: do something.
+    return;
+}
+
 void RpAtomicD3D9_RegisterPlugins( void )
 {
     _atomicBucketSortPluginOffset = RpAtomicRegisterPlugin( sizeof( atomicBucketSortPlugin ), RW_PLUGIN_BUCKETSORT,
@@ -183,6 +192,15 @@ void RpAtomicD3D9_RegisterPlugins( void )
         RpAtomicD3D9DestructBucketSort,
         RpAtomicD3D9CopyConstructBucketSort
     );
+
+    // Start our thread that should merge buckets which are same by device states.
+    uniquenessThread = pGame->GetExecutiveManager()->CreateThread( BucketUniquenessQuantifierThread, NULL, 0 );
+
+    if ( CExecThreadSA *thread = uniquenessThread )
+    {
+        // Start our thread if we successfully created it.
+        thread->Resume();
+    }
 }
 
 /*=========================================================
@@ -305,8 +323,15 @@ RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket( RpAtomi
 // Module initialization.
 void RpAtomicD3D9_Init( void )
 {
+    uniquenessThread = NULL;
 }
 
 void RpAtomicD3D9_Shutdown( void )
 {
+    if ( uniquenessThread )
+    {
+        pGame->GetExecutiveManager()->CloseThread( uniquenessThread );
+
+        uniquenessThread = NULL;
+    }
 }
