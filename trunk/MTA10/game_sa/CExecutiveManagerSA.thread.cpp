@@ -22,6 +22,7 @@ struct nativeThreadPlugin
     mutable CRITICAL_SECTION threadLock;
     volatile eThreadStatus status;
     Fiber *terminationReturn;   // if not NULL, the thread yields to this state when it successfully terminated.
+    volatile bool hasThreadBeenInitialized;
 
     RwListEntry <nativeThreadPlugin> node;
 };
@@ -157,7 +158,8 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         return plugin;
     }
 
-    static DWORD WINAPI _ThreadProc( LPVOID param )
+    // This is a C++ proto. We must leave into a ASM proto to finish operation.
+    static DWORD WINAPI _ThreadProcCPP( LPVOID param )
     {
         // Get the thread plugin information.
         nativeThreadPlugin *info = (nativeThreadPlugin*)param;
@@ -170,6 +172,9 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         // Make sure we intercept termination requests!
         try
         {
+            // We are properly initialized now.
+            info->hasThreadBeenInitialized = true;
+
             // Enter the routine.
             threadInfo->entryPoint( threadInfo, threadInfo->userdata );
 
@@ -180,14 +185,6 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         {
             // We are terminated.
             info->status = THREAD_TERMINATED;
-
-            // If we have a termination info, we want to leave into it.
-            if ( Fiber *termContext = info->terminationReturn )
-            {
-                ExecutiveFiber::leave( termContext );
-
-                // We do not reach this point anymore.
-            }
         }
 
         return ERROR_SUCCESS;
@@ -246,143 +243,182 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         }
         else
         {
-            // NOTE: this is a fucking insecure hack that changes the executing thread of a thread runtime.
-            // It is written with the hope that no code makes assumptions about a certain thread having to execute
-            // termination logic. If this feature will be required, I will still have certain work-arounds!
-
-            // It works, so do not fuck around with it.
-
-            // Create a fiber that we have to walk down the thread context with.
-            Fiber terminationFiber;
-            Fiber returnFiber;
-
-            // Get the complete WIN32 x86 context.
-            CONTEXT currentContext;
-            currentContext.ContextFlags = ( CONTEXT_INTEGER | CONTEXT_CONTROL | CONTEXT_SEGMENTS );
-
-            BOOL threadContextGet = GetThreadContext( threadInfo->hThread, &currentContext );
-
-            if ( threadContextGet == TRUE )
+            // Only do termination if the thread has been initialized.
+            if ( threadInfo->hasThreadBeenInitialized )
             {
-                // Put our context into the fiber.
-                terminationFiber.ebp = currentContext.Ebp;
-                terminationFiber.edi = currentContext.Edi;
-                terminationFiber.esi = currentContext.Esi;
-                terminationFiber.esp = currentContext.Esp;
+                // NOTE: this is a fucking insecure hack that changes the executing thread of a thread runtime.
+                // It is written with the hope that no code makes assumptions about a certain thread having to execute
+                // termination logic. If this feature will be required, I will still have certain work-arounds!
 
-                // Grab exception information of that thread, too!
-                // This especially is quite an ugly hack.
+                // It works, so do not fuck around with it.
+
+                // Create a fiber that we have to walk down the thread context with.
+                Fiber terminationFiber;
+                Fiber returnFiber;
+
+                // Get the complete WIN32 x86 context.
+                CONTEXT currentContext;
+                currentContext.ContextFlags = ( CONTEXT_INTEGER | CONTEXT_CONTROL | CONTEXT_SEGMENTS );
+
+                BOOL threadContextGet = GetThreadContext( threadInfo->hThread, &currentContext );
+
+                if ( threadContextGet == TRUE )
                 {
-                    LDT_ENTRY fsSegmentEntry;
+                    // Put our context into the fiber.
+                    terminationFiber.ebp = currentContext.Ebp;
+                    terminationFiber.edi = currentContext.Edi;
+                    terminationFiber.esi = currentContext.Esi;
+                    terminationFiber.esp = currentContext.Esp;
 
-                    BOOL selectorGet = GetThreadSelectorEntry( threadInfo->hThread, currentContext.SegFs, &fsSegmentEntry );
-                    
-                    assert( selectorGet == TRUE );
+                    // Grab exception information of that thread, too!
+                    // This especially is quite an ugly hack.
+                    {
+                        LDT_ENTRY fsSegmentEntry;
 
-                    // Construct the real pointer to NT_TIB.
-                    DWORD fsPointer =
-                        ( fsSegmentEntry.BaseLow ) |
-                        ( fsSegmentEntry.HighWord.Bytes.BaseMid << 16 ) |
-                        ( fsSegmentEntry.HighWord.Bytes.BaseHi << 24 );
+                        BOOL selectorGet = GetThreadSelectorEntry( threadInfo->hThread, currentContext.SegFs, &fsSegmentEntry );
+                        
+                        assert( selectorGet == TRUE );
 
-                    const NT_TIB *threadInfoBlock = (NT_TIB*)fsPointer;
+                        // Construct the real pointer to NT_TIB.
+                        DWORD fsPointer =
+                            ( fsSegmentEntry.BaseLow ) |
+                            ( fsSegmentEntry.HighWord.Bytes.BaseMid << 16 ) |
+                            ( fsSegmentEntry.HighWord.Bytes.BaseHi << 24 );
 
-                    terminationFiber.stack_base = (unsigned int*)threadInfoBlock->StackBase;
-                    terminationFiber.stack_limit = (unsigned int*)threadInfoBlock->StackLimit;
-                    terminationFiber.except_info = (void*)threadInfoBlock->ExceptionList;
+                        const NT_TIB *threadInfoBlock = (NT_TIB*)fsPointer;
+
+                        terminationFiber.stack_base = (unsigned int*)threadInfoBlock->StackBase;
+                        terminationFiber.stack_limit = (unsigned int*)threadInfoBlock->StackLimit;
+                        terminationFiber.except_info = (void*)threadInfoBlock->ExceptionList;
+                    }
+
+                    // Modify it so we point to the termination routine.
+                    terminationFiber.ebx = (unsigned int)theThread;
+                    terminationFiber.eip = (unsigned int)_ThreadTerminationProto;
+                        
+                    // Make the thread now that it should jump back here at termination.
+                    threadInfo->terminationReturn = &returnFiber;
+
+                    // Jump!!!
+                    ExecutiveFiber::eswitch( &returnFiber, &terminationFiber );
+
+                    // If we return here, the thread must be terminated.
+                    assert( threadInfo->status == THREAD_TERMINATED );
                 }
-
-                // Modify it so we point to the termination routine.
-                terminationFiber.ebx = (unsigned int)theThread;
-                terminationFiber.eip = (unsigned int)_ThreadTerminationProto;
-                    
-                // Make the thread now that it should jump back here at termination.
-                threadInfo->terminationReturn = &returnFiber;
-
-                // Jump!!!
-                ExecutiveFiber::eswitch( &returnFiber, &terminationFiber );
-
-                // If we return here, the thread must be terminated.
-                assert( threadInfo->status == THREAD_TERMINATED );
             }
 
             // We can now terminate the handle.
             TerminateThread( threadInfo->hThread, ERROR_SUCCESS );
+
+            // The thread is now terminated.
+            threadInfo->status = THREAD_TERMINATED;
         }
 
         // If we were the current thread, we cannot reach this point.
         assert( isCurrentThread == false );
     }
 
-    bool OnPluginConstruct( CExecThreadSA *thread, void *mem, unsigned int id )
-    {
-        nativeThreadPlugin *info = (nativeThreadPlugin*)mem;
-
-        // If we are not a remote thread...
-        HANDLE hOurThread = NULL;
-
-        if ( !thread->isRemoteThread )
-        {
-            // ... create a local thread!
-            DWORD threadIdOut;
-
-            HANDLE hThread = ::CreateThread( NULL, (SIZE_T)thread->stackSize, _ThreadProc, info, CREATE_SUSPENDED, &threadIdOut );
-
-            if ( hThread == NULL )
-                return false;
-
-            hOurThread = hThread;
-        }
-        info->hThread = hOurThread;
-
-        // NOTE: we initialize remote threads in the GetCurrentThread routine!
-
-        // Give ourselves a self reference pointer.
-        info->self = thread;
-        info->manager = this;
-
-        // This field is used by the runtime dispatcher to execute a "controlled return"
-        // from different threads.
-        info->terminationReturn = NULL;
-
-        // We assume the thread is (always) running if its a remote thread.
-        // Otherwise we know that it starts suspended.
-        info->status = ( !thread->isRemoteThread ) ? THREAD_SUSPENDED : THREAD_RUNNING;
-
-        {
-            nativeLock lock( this->runningThreadListLock );
-
-            LIST_INSERT( runningThreads.root, info->node );
-        }
-
-        // Set up synchronization object.
-        InitializeCriticalSection( &info->threadLock );
-        return true;
-    }
-
-    void OnPluginDestroy( CExecThreadSA *thread, void *mem, unsigned int id )
-    {
-        nativeThreadPlugin *info = (nativeThreadPlugin*)mem;
-
-        // Only terminate if we have not acquired a remote thread.
-        if ( !thread->isRemoteThread )
-        {
-            // Terminate the thread.
-            thread->Terminate();
-        }
-
-        // Delete synchronization object.
-        DeleteCriticalSection( &info->threadLock );
-
-        {
-            nativeLock lock( this->runningThreadListLock );
-
-            LIST_REMOVE( runningThreads.root );
-        }
-
-        CloseHandle( info->hThread );
-    }
+    bool OnPluginConstruct( CExecThreadSA *thread, void *mem, unsigned int id );
+    void OnPluginDestroy( CExecThreadSA *thread, void *mem, unsigned int id );
 };
+
+// This is a native ASM routine. In this there can be no language objects, so its perfect for
+// ASM hacks.
+__declspec(naked) void _ThreadProcNative( void )
+{
+    __asm
+    {
+        // Call the C++ thread runtime with our argument.
+        mov ebx,[esp+4] // nativeThreadPlugin type
+        push ebx
+        call nativeThreadPluginInterface::_ThreadProcCPP
+
+        // Check for a termination fiber.
+        mov edx,[ebx]nativeThreadPlugin.terminationReturn
+
+        test edx,edx
+        jz NoTerminationReturn
+
+        // Since we have a termination return fiber, leave to it.
+        mov eax,edx
+        jmp ExecutiveFiber::leave
+
+NoTerminationReturn:
+        // We return to the WinNT thread dispatcher.
+        ret
+    }
+}
+
+bool nativeThreadPluginInterface::OnPluginConstruct( CExecThreadSA *thread, void *mem, unsigned int id )
+{
+    nativeThreadPlugin *info = (nativeThreadPlugin*)mem;
+
+    // If we are not a remote thread...
+    HANDLE hOurThread = NULL;
+
+    if ( !thread->isRemoteThread )
+    {
+        // ... create a local thread!
+        DWORD threadIdOut;
+
+        HANDLE hThread = ::CreateThread( NULL, (SIZE_T)thread->stackSize, (LPTHREAD_START_ROUTINE)_ThreadProcNative, info, CREATE_SUSPENDED, &threadIdOut );
+
+        if ( hThread == NULL )
+            return false;
+
+        hOurThread = hThread;
+    }
+    info->hThread = hOurThread;
+
+    // NOTE: we initialize remote threads in the GetCurrentThread routine!
+
+    // Give ourselves a self reference pointer.
+    info->self = thread;
+    info->manager = this;
+
+    // This field is used by the runtime dispatcher to execute a "controlled return"
+    // from different threads.
+    info->terminationReturn = NULL;
+
+    info->hasThreadBeenInitialized = false;
+
+    // We assume the thread is (always) running if its a remote thread.
+    // Otherwise we know that it starts suspended.
+    info->status = ( !thread->isRemoteThread ) ? THREAD_SUSPENDED : THREAD_RUNNING;
+
+    {
+        nativeLock lock( this->runningThreadListLock );
+
+        LIST_INSERT( runningThreads.root, info->node );
+    }
+
+    // Set up synchronization object.
+    InitializeCriticalSection( &info->threadLock );
+    return true;
+}
+
+void nativeThreadPluginInterface::OnPluginDestroy( CExecThreadSA *thread, void *mem, unsigned int id )
+{
+    nativeThreadPlugin *info = (nativeThreadPlugin*)mem;
+
+    // Only terminate if we have not acquired a remote thread.
+    if ( !thread->isRemoteThread )
+    {
+        // Terminate the thread.
+        thread->Terminate();
+    }
+
+    // Delete synchronization object.
+    DeleteCriticalSection( &info->threadLock );
+
+    {
+        nativeLock lock( this->runningThreadListLock );
+
+        LIST_REMOVE( runningThreads.root );
+    }
+
+    CloseHandle( info->hThread );
+}
 
 #endif
 
@@ -422,6 +458,7 @@ eThreadStatus CExecThreadSA::GetStatus( void ) const
 // WARNING: terminating threads in general is very naughty and causes shit to go haywire!
 // No matter what thread state, this function guarrantees to terminate a thread cleanly according to
 // C++ stack unwinding logic!
+// Termination of a thread is allowed to be executed by another thread (e.g. the "main" thread).
 bool CExecThreadSA::Terminate( void )
 {
     bool returnVal = false;
@@ -431,41 +468,41 @@ bool CExecThreadSA::Terminate( void )
 
     if ( info && info->status != THREAD_TERMINATED )
     {
-        nativeLock lock( info->threadLock );
-
-        if ( info->status != THREAD_TERMINATED )
+        // We cannot terminate a terminating thread.
+        if ( info->status != THREAD_TERMINATING )
         {
-            // Termination depends on what kind of thread we face.
-            bool terminationSuccessful = false;
+            nativeLock lock( info->threadLock );
 
-            if ( this->isRemoteThread )
+            if ( info->status != THREAD_TERMINATED )
             {
-                // Remote threads must be killed just like that.
-                BOOL success = TerminateThread( info->hThread, ERROR_SUCCESS );
-
-                if ( success == TRUE )
+                // Termination depends on what kind of thread we face.
+                if ( this->isRemoteThread )
                 {
-                    terminationSuccessful = true;
+                    // Remote threads must be killed just like that.
+                    BOOL success = TerminateThread( info->hThread, ERROR_SUCCESS );
+
+                    if ( success == TRUE )
+                    {
+                        // Put the status as terminated.
+                        info->status = THREAD_TERMINATED;
+
+                        // Return true.
+                        returnVal = true;
+                    }
                 }
-            }
-            else
-            {
-                // User-mode threads have to be cleanly terminated.
-                // This means going down the exception stack.
-                nativeThreadPluginInterface *nativeInterface = (nativeThreadPluginInterface*)manager->threadNativePlugin;
+                else
+                {
+                    // User-mode threads have to be cleanly terminated.
+                    // This means going down the exception stack.
+                    nativeThreadPluginInterface *nativeInterface = (nativeThreadPluginInterface*)manager->threadNativePlugin;
 
-                nativeInterface->RtlTerminateThread( info );
+                    nativeInterface->RtlTerminateThread( info );
 
-                // We may not actually get here!
-            }
+                    // We may not actually get here!
 
-            if ( terminationSuccessful )
-            {
-                // Put the status as terminated.
-                info->status = THREAD_TERMINATED;
-
-                // Return true.
-                returnVal = true;
+                    // We have successfully terminated the thread.
+                    returnVal = true;
+                }
             }
         }
     }

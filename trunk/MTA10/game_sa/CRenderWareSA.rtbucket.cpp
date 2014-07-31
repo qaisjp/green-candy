@@ -102,10 +102,17 @@ namespace RenderBucket
 
     static bucketAlloc_t bucketAlloc( 512 );
 
+    // Lock used for bucket allocation and termination.
+    static CRITICAL_SECTION bucketAllocLock;
+
     // Utility functions.
     RwRenderBucket* AllocateRenderBucket( void )
     {
+        EnterCriticalSection( &bucketAllocLock );
+
         RwRenderBucket *renderBucket = bucketAlloc.Allocate();
+
+        LeaveCriticalSection( &bucketAllocLock );
 
         // Initialize the members.
         renderBucket->renderState.Capture();
@@ -123,7 +130,11 @@ namespace RenderBucket
 
         bucket->renderState.Terminate();
 
+        EnterCriticalSection( &bucketAllocLock );
+
         bucketAlloc.Free( bucket );
+
+        LeaveCriticalSection( &bucketAllocLock );
 
         _currentPassStats.bucketTerminationCount++;
     }
@@ -131,26 +142,51 @@ namespace RenderBucket
     // Array of all active render buckets.
     static RwList <RwRenderBucket> activeRenderBuckets;
 
+    // Lock used when iterating through the list
+    static CRITICAL_SECTION activeRenderBuckets_lock;
+
+    void GetActiveRenderBuckets( renderBuckets_t& list )
+    {
+        EnterCriticalSection( &activeRenderBuckets_lock );
+
+        // Add them to the list.
+        LIST_FOREACH_BEGIN( RwRenderBucket, activeRenderBuckets.root, activeListNode )
+            item->Reference();
+
+            list.AddItem( item );
+        LIST_FOREACH_END
+
+        LeaveCriticalSection( &activeRenderBuckets_lock );
+    }
+
     // Reference counting algorithms of render buckets.
     void RwRenderBucket::Reference( void )
     {
-        if ( refCount == 0 )
+        LONG prevRefValue = InterlockedExchangeAdd( &this->refCount, (LONG)1 );
+
+        if ( prevRefValue == 0 )
         {
+            EnterCriticalSection( &activeRenderBuckets_lock );
+
             // Insert our render bucket into the active list.
             LIST_INSERT( activeRenderBuckets.root, activeListNode );
-        }
 
-        refCount++;
+            LeaveCriticalSection( &activeRenderBuckets_lock );
+        }
     }
 
     void RwRenderBucket::Dereference( void )
     {
-        refCount--;
+        LONG prevRefCount = InterlockedExchangeAdd( &this->refCount, (LONG)-1 );
 
-        if ( refCount == 0 )
+        if ( prevRefCount == 1 )
         {
+            EnterCriticalSection( &activeRenderBuckets_lock );
+
             // Remove our bucket from the active list.
             LIST_REMOVE( activeListNode );
+
+            LeaveCriticalSection( &activeRenderBuckets_lock );
 
             // Deallocate the bucket.
             FreeRenderBucket( this );
@@ -390,6 +426,9 @@ void RenderBucket::Initialize( void )
 
     LIST_CLEAR( activeRenderBuckets.root );
 
+    InitializeCriticalSection( &activeRenderBuckets_lock );
+    InitializeCriticalSection( &bucketAllocLock );
+
     // Create the sorting task for multi-threaded execution.
     sortingTask = pGame->GetExecutiveManager()->CreateTask( RenderBucketSortingTask, NULL );
 
@@ -405,6 +444,9 @@ void RenderBucket::Shutdown( void )
 
         sortingTask = NULL;
     }
+
+    DeleteCriticalSection( &bucketAllocLock );
+    DeleteCriticalSection( &activeRenderBuckets_lock );
 
     assert( isInPhase == false );
 }

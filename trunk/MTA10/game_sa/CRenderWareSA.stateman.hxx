@@ -13,8 +13,26 @@
 #ifndef _RENDERWARE_STATE_MANAGER_
 #define _RENDERWARE_STATE_MANAGER_
 
+// Define this to enable thread-safety for captured states of RwStateManager.
+//#define RENDERWARE_STATEMAN_THREADING_SUPPORT
+
 #include "RenderWare/RwInternals.h"
 #include "RenderWare/RwRenderTools.hxx"
+
+struct objectOrrientedLock
+{
+    CRITICAL_SECTION& section;
+
+    inline objectOrrientedLock( CRITICAL_SECTION& section ) : section( section )
+    {
+        EnterCriticalSection( &this->section );
+    }
+
+    inline ~objectOrrientedLock( void )
+    {
+        LeaveCriticalSection( &this->section );
+    }
+};
 
 template <typename dataType>
 struct CachedConstructedClassAllocator
@@ -790,6 +808,10 @@ struct RwStateManager
         {
             manager = NULL;
 
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+            InitializeCriticalSection( &stateLock );
+#endif
+
             isValid = false;
             isAwaitingSynchronization = false;
             isAwaitingFullSynchronization = false;
@@ -798,6 +820,10 @@ struct RwStateManager
         AINLINE ~capturedState( void )
         {
             Terminate();
+
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+            DeleteCriticalSection( &stateLock );
+#endif
         }
 
         AINLINE void ClearSetDeviceStates( void )
@@ -867,26 +893,33 @@ struct RwStateManager
 
         AINLINE void Capture( void )
         {
-            // Unset all states that were had before.
-            ClearSetDeviceStates();
-
-            for ( stateChangeIterator iterator( *manager ); !iterator.IsEnd(); iterator.Increment() )
             {
-                const stateAddress& address = iterator.Resolve();
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+                // We must be thread-safe.
+                objectOrrientedLock lockState( stateLock );
+#endif
 
-                unsigned int arrayIndex = address.GetArrayIndex();
+                // Unset all states that were had before.
+                ClearSetDeviceStates();
 
-                capturedStateValueType value;
+                for ( stateChangeIterator iterator( *manager ); !iterator.IsEnd(); iterator.Increment() )
+                {
+                    const stateAddress& address = iterator.Resolve();
 
-                bool isRequired = manager->stateGeneric.IsDeviceStateRequired( address, manager->_localStateRefDevice );
+                    unsigned int arrayIndex = address.GetArrayIndex();
 
-                value.managedType.isRequired = isRequired;  // whether it is required in the context of the device states.
-                value.managedType.value = manager->GetDeviceState( address );
-                value.isSet = true;
+                    capturedStateValueType value;
 
-                OnDeviceStateSet( address, true );
+                    bool isRequired = manager->stateGeneric.IsDeviceStateRequired( address, manager->_localStateRefDevice );
 
-                deviceStates.SetItem( value, arrayIndex );
+                    value.managedType.isRequired = isRequired;  // whether it is required in the context of the device states.
+                    value.managedType.value = manager->GetDeviceState( address );
+                    value.isSet = true;
+
+                    OnDeviceStateSet( address, true );
+
+                    deviceStates.SetItem( value, arrayIndex );
+                }
             }
 
             Validate();
@@ -989,34 +1022,41 @@ struct RwStateManager
 
         AINLINE void Synchronize( void ) const
         {
-            // Synchronize ourselves.
-            for ( syncStateIterator iter( *this ); !iter.IsEnd(); iter.Increment() )
             {
-                const stateAddress& theAddress = iter.Resolve();
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+                // Thread safety goes first.
+                objectOrrientedLock lockState( stateLock );
+#endif
 
-                unsigned int arrayIndex = theAddress.GetArrayIndex();
-
-                capturedStateValueType& currentCapturedValue = deviceStates.ObtainItem( arrayIndex );
-
-                if ( currentCapturedValue.isSet )
+                // Synchronize ourselves.
+                for ( syncStateIterator iter( *this ); !iter.IsEnd(); iter.Increment() )
                 {
-                    const stateValueType& newStateValue = manager->bucketStates.Get( arrayIndex );
+                    const stateAddress& theAddress = iter.Resolve();
 
-                    bool isChanged = !manager->CompareDeviceStates(
-                        currentCapturedValue.managedType.value,
-                        newStateValue
-                    );
+                    unsigned int arrayIndex = theAddress.GetArrayIndex();
 
-                    if ( !isChanged )
+                    capturedStateValueType& currentCapturedValue = deviceStates.ObtainItem( arrayIndex );
+
+                    if ( currentCapturedValue.isSet )
                     {
-                        currentCapturedValue.isSet = false;
+                        const stateValueType& newStateValue = manager->bucketStates.Get( arrayIndex );
 
-                        OnDeviceStateSet( theAddress, false );
+                        bool isChanged = !manager->CompareDeviceStates(
+                            currentCapturedValue.managedType.value,
+                            newStateValue
+                        );
+
+                        if ( !isChanged )
+                        {
+                            currentCapturedValue.isSet = false;
+
+                            OnDeviceStateSet( theAddress, false );
+                        }
+
+                        // Update required-ness.
+                        currentCapturedValue.managedType.isRequired =
+                            manager->stateGeneric.IsDeviceStateRequired( theAddress, *manager->bucketChangeRefDevice );
                     }
-
-                    // Update required-ness.
-                    currentCapturedValue.managedType.isRequired =
-                        manager->stateGeneric.IsDeviceStateRequired( theAddress, *manager->bucketChangeRefDevice );
                 }
             }
 
@@ -1086,27 +1126,34 @@ struct RwStateManager
                 }
             }
 
-            // Check things the old fashioned way.
-            for ( unsigned int n = 0; n < setDeviceStates.GetCount(); n++ )
             {
-                const stateAddress& activeAddress = setDeviceStates.GetFast( n );
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+                // Thread safety!
+                objectOrrientedLock lockState( stateLock );
+#endif
 
-                unsigned int arrayIndex = activeAddress.GetArrayIndex();
-
-                const capturedStateValueType& capturedValue = deviceStates.Get( arrayIndex );
-
-                if ( capturedValue.managedType.isRequired )
+                // Check things the old fashioned way.
+                for ( unsigned int n = 0; n < setDeviceStates.GetCount(); n++ )
                 {
-                    const stateValueType& localValue = manager->localStates.Get( arrayIndex );
+                    const stateAddress& activeAddress = setDeviceStates.GetFast( n );
 
-                    bool isChanged = !manager->CompareDeviceStates(
-                        capturedValue.managedType.value,
-                        localValue
-                    );
+                    unsigned int arrayIndex = activeAddress.GetArrayIndex();
 
-                    if ( isChanged )
+                    const capturedStateValueType& capturedValue = deviceStates.Get( arrayIndex );
+
+                    if ( capturedValue.managedType.isRequired )
                     {
-                        return false;
+                        const stateValueType& localValue = manager->localStates.Get( arrayIndex );
+
+                        bool isChanged = !manager->CompareDeviceStates(
+                            capturedValue.managedType.value,
+                            localValue
+                        );
+
+                        if ( isChanged )
+                        {
+                            return false;
+                        }
                     }
                 }
             }
@@ -1123,50 +1170,57 @@ struct RwStateManager
                 return false;
             }
 
-            // 2. same device states set at both.
-            // 3. device states have the same values.
-            for ( unsigned int n = 0; n < this->setDeviceStates.GetCount(); n++ )
             {
-                const stateAddress& address = this->setDeviceStates.Get( n );
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+                objectOrrientedLock lockStateThis( stateLock );
+                objectOrrientedLock lockStateRemote( compareWith->stateLock );
+#endif
 
-                unsigned int arrayIndex = address.GetArrayIndex();
-
-                // Attempt to get the device state.
-                const capturedStateValueType *remoteState = NULL;
-                
-                if ( arrayIndex < compareWith->deviceStates.GetSizeCount() )
+                // 2. same device states set at both.
+                // 3. device states have the same values.
+                for ( unsigned int n = 0; n < this->setDeviceStates.GetCount(); n++ )
                 {
-                    remoteState = &compareWith->deviceStates.Get( n );
-                }
+                    const stateAddress& address = this->setDeviceStates.Get( n );
 
-                if ( !remoteState )
-                {
-                    // compareWith is lacking a device state that this has.
-                    return false;
-                }
+                    unsigned int arrayIndex = address.GetArrayIndex();
 
-                // Check that the device state is set at compareWith.
-                {
-                    bool isDeviceStateSetAtOther = remoteState->isSet;
-
-                    if ( !isDeviceStateSetAtOther )
+                    // Attempt to get the device state.
+                    const capturedStateValueType *remoteState = NULL;
+                    
+                    if ( arrayIndex < compareWith->deviceStates.GetSizeCount() )
                     {
-                        // A device state is missing that is set at this captured state.
+                        remoteState = &compareWith->deviceStates.Get( arrayIndex );
+                    }
+
+                    if ( !remoteState )
+                    {
+                        // compareWith is lacking a device state that this has.
                         return false;
                     }
-                }
 
-                // Check that the states have same values.
-                {
-                    const stateValueType& thisValue = this->deviceStates.Get( arrayIndex ).managedType.value;
-                    const stateValueType& compareValue = remoteState->managedType.value;
-
-                    bool isChanged = !manager->CompareDeviceStates( thisValue, compareValue );
-
-                    if ( isChanged )
+                    // Check that the device state is set at compareWith.
                     {
-                        // The device state values are not the same.
-                        return false;
+                        bool isDeviceStateSetAtOther = remoteState->isSet;
+
+                        if ( !isDeviceStateSetAtOther )
+                        {
+                            // A device state is missing that is set at this captured state.
+                            return false;
+                        }
+                    }
+
+                    // Check that the states have same values.
+                    {
+                        const stateValueType& thisValue = this->deviceStates.Get( arrayIndex ).managedType.value;
+                        const stateValueType& compareValue = remoteState->managedType.value;
+
+                        bool isChanged = !manager->CompareDeviceStates( thisValue, compareValue );
+
+                        if ( isChanged )
+                        {
+                            // The device state values are not the same.
+                            return false;
+                        }
                     }
                 }
             }
@@ -1197,6 +1251,10 @@ struct RwStateManager
         mutable changeSet *synchronizeWithSet;
 
         mutable bool isAwaitingFullSynchronization;
+
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+        mutable CRITICAL_SECTION stateLock;
+#endif
     };
 
     typedef CachedConstructedClassAllocator <capturedState> stateAllocator;

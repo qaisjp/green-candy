@@ -75,6 +75,7 @@ namespace ExecutiveFiber
     void __cdecl    eswitch         ( Fiber *from, Fiber *to );
     void __cdecl    qswitch         ( Fiber *from, Fiber *to );
 
+    // Native methods. Use with caution! RTFM!
     void __cdecl    leave           ( Fiber *to );
 };
 
