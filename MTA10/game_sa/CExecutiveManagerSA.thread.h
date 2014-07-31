@@ -19,6 +19,7 @@ enum eThreadStatus
 {
     THREAD_SUSPENDED,
     THREAD_RUNNING,
+    THREAD_TERMINATING,
     THREAD_TERMINATED
 };
 

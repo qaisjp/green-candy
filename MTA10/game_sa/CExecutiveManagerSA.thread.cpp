@@ -235,6 +235,9 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
             LockSafety::Unlock();
         }
 
+        // Set our status to terminating.
+        threadInfo->status = THREAD_TERMINATING;
+
         // Depends on whether we are the current thread or not.
         if ( isCurrentThread )
         {
@@ -253,7 +256,7 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
             Fiber terminationFiber;
             Fiber returnFiber;
 
-            // Get the complete WIN32 i86 context.
+            // Get the complete WIN32 x86 context.
             CONTEXT currentContext;
             currentContext.ContextFlags = ( CONTEXT_INTEGER | CONTEXT_CONTROL | CONTEXT_SEGMENTS );
 
@@ -417,6 +420,8 @@ eThreadStatus CExecThreadSA::GetStatus( void ) const
 }
 
 // WARNING: terminating threads in general is very naughty and causes shit to go haywire!
+// No matter what thread state, this function guarrantees to terminate a thread cleanly according to
+// C++ stack unwinding logic!
 bool CExecThreadSA::Terminate( void )
 {
     bool returnVal = false;
