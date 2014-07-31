@@ -74,6 +74,8 @@ namespace ExecutiveFiber
 
     void __cdecl    eswitch         ( Fiber *from, Fiber *to );
     void __cdecl    qswitch         ( Fiber *from, Fiber *to );
+
+    void __cdecl    leave           ( Fiber *to );
 };
 
 class CFiberSA : public FiberStatus

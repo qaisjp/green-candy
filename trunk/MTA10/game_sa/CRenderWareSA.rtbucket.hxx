@@ -216,6 +216,29 @@ namespace RenderBucket
             return true;
         }
 
+        template <typename stateType>
+        AINLINE bool CompareStates( const stateType *left, const stateType *right ) const
+        {
+            return 
+                ( left != NULL ) != ( right != NULL ) ||
+                  left &&
+                  left->CompareWith( right );
+        }
+
+        bool CompareWith( const renderSystemState& compareWith ) const
+        {
+            // Check the vertex streams.
+            if ( !CompareStates( this->vertexStreamState, compareWith.vertexStreamState ) )     return false;
+            if ( !CompareStates( this->renderState, compareWith.renderState ) )                 return false;
+            if ( !CompareStates( this->textureStageState, compareWith.textureStageState ) )     return false;
+            if ( !CompareStates( this->lightingState, compareWith.lightingState ) )             return false;
+            if ( !CompareStates( this->transformationState, compareWith.transformationState ) ) return false;
+            if ( !CompareStates( this->samplerState, compareWith.samplerState ) )               return false;
+
+            // We are same because there are no conflicts!
+            return true;
+        }
+
         eRenderStateConflict GetLastConflict( void )
         {
             return _lastConflict;
@@ -269,14 +292,7 @@ namespace RenderBucket
             unsigned int globListIndex;
         };
 
-        struct renderDataArrayManager
-        {
-            AINLINE void InitField( bucketRenderEntry& data )
-            {
-                return;
-            }
-        };
-        typedef growableArray <bucketRenderEntry, 12, 0, renderDataArrayManager, unsigned int> renderItems_t;
+        typedef iterativeGrowableArray <bucketRenderEntry, 12, 0, unsigned int> renderItems_t;
 
         renderItems_t renderItems;
 

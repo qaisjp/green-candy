@@ -114,6 +114,24 @@ public:
     }
 };
 
+// Exception that gets thrown by threads when they terminate.
+struct threadTerminationException : public std::exception
+{
+    inline threadTerminationException( CExecThreadSA *theThread ) : std::exception( "thread termination" )
+    {
+        this->terminatedThread = theThread;
+
+        theThread->Lock();
+    }
+
+    inline ~threadTerminationException( void )
+    {
+        this->terminatedThread->Unlock();
+    }
+
+    CExecThreadSA *terminatedThread;
+};
+
 class CExecutiveGroupSA
 {
     friend class CExecutiveManagerSA;

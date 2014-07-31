@@ -1114,6 +1114,67 @@ struct RwStateManager
             return true;
         }
 
+        AINLINE bool CompareWith( const capturedState *compareWith ) const
+        {
+            // Make sure that all states that are set at both sides are the same.
+            // 1. same amount of set device states.
+            if ( this->setDeviceStates.GetCount() != compareWith->setDeviceStates.GetCount() )
+            {
+                return false;
+            }
+
+            // 2. same device states set at both.
+            // 3. device states have the same values.
+            for ( unsigned int n = 0; n < this->setDeviceStates.GetCount(); n++ )
+            {
+                const stateAddress& address = this->setDeviceStates.Get( n );
+
+                unsigned int arrayIndex = address.GetArrayIndex();
+
+                // Attempt to get the device state.
+                const capturedStateValueType *remoteState = NULL;
+                
+                if ( arrayIndex < compareWith->deviceStates.GetSizeCount() )
+                {
+                    remoteState = &compareWith->deviceStates.Get( n );
+                }
+
+                if ( !remoteState )
+                {
+                    // compareWith is lacking a device state that this has.
+                    return false;
+                }
+
+                // Check that the device state is set at compareWith.
+                {
+                    bool isDeviceStateSetAtOther = remoteState->isSet;
+
+                    if ( !isDeviceStateSetAtOther )
+                    {
+                        // A device state is missing that is set at this captured state.
+                        return false;
+                    }
+                }
+
+                // Check that the states have same values.
+                {
+                    const stateValueType& thisValue = this->deviceStates.Get( arrayIndex ).managedType.value;
+                    const stateValueType& compareValue = remoteState->managedType.value;
+
+                    bool isChanged = !manager->CompareDeviceStates( thisValue, compareValue );
+
+                    if ( isChanged )
+                    {
+                        // The device state values are not the same.
+                        return false;
+                    }
+                }
+            }
+
+            // Success! We have the same states with the same values!
+            return true;
+        }
+
         AINLINE void SetDeviceTo( void )
         {
             //manager->RestoreToChangeSetState( stateChangeSet );
