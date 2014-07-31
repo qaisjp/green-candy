@@ -96,8 +96,35 @@ typedef growableArray <RenderBucket::RwRenderBucket*, 4, 0, renderBucketListMana
 
 struct atomicBucketSortPlugin
 {
+    atomicBucketSortPlugin( void );
+    ~atomicBucketSortPlugin( void );
+
     renderBucketList_t lastBestBucketPass;
+
+    CRITICAL_SECTION bucketPassLock;
+
+    RwListEntry <atomicBucketSortPlugin> managerNode;
 };
+
+static RwList <atomicBucketSortPlugin> atomicBucketContainers;
+
+static CRITICAL_SECTION atomicBucketContainers_lock;
+
+atomicBucketSortPlugin::atomicBucketSortPlugin( void )
+{
+    // Add ourselves to the atomic bucket container list.
+    LIST_INSERT( atomicBucketContainers.root, managerNode );
+
+    InitializeCriticalSection( &bucketPassLock );
+}
+
+atomicBucketSortPlugin::~atomicBucketSortPlugin( void )
+{
+    DeleteCriticalSection( &bucketPassLock );
+
+    // Remove ourselves from the bucket container list.
+    LIST_REMOVE( managerNode );
+}
 
 inline atomicBucketSortPlugin* GetBucketSortInfo( RpAtomic *atomic )
 {
@@ -123,8 +150,12 @@ RpAtomic* __cdecl RpAtomicD3D9ConstructBucketSort( RpAtomic *rwobj, size_t plugi
 {
     atomicBucketSortPlugin *info = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( rwobj, pluginOffset );
     
-    // Construct the struct.
-    new (info) atomicBucketSortPlugin();
+    EnterCriticalSection( &atomicBucketContainers_lock );
+    {
+        // Construct the struct.
+        new (info) atomicBucketSortPlugin;
+    }
+    LeaveCriticalSection( &atomicBucketContainers_lock );
 
     return rwobj;
 }
@@ -133,21 +164,25 @@ void __cdecl RpAtomicD3D9DestructBucketSort( RpAtomic *rwobj, size_t pluginOffse
 {
     atomicBucketSortPlugin *info = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( rwobj, pluginOffset );
 
-    // If we have render buckets, dereference them.
-    for ( unsigned int n = 0; n < info->lastBestBucketPass.GetSizeCount(); n++ )
+    EnterCriticalSection( &atomicBucketContainers_lock );
     {
-        RenderBucket::RwRenderBucket *theBucket = info->lastBestBucketPass.GetFast( n );
-
-        if ( theBucket )
+        // If we have render buckets, dereference them.
+        for ( unsigned int n = 0; n < info->lastBestBucketPass.GetSizeCount(); n++ )
         {
-            theBucket->Dereference();
+            RenderBucket::RwRenderBucket *theBucket = info->lastBestBucketPass.GetFast( n );
 
-            info->lastBestBucketPass.SetFast( NULL, n );
+            if ( theBucket )
+            {
+                theBucket->Dereference();
+
+                info->lastBestBucketPass.SetFast( NULL, n );
+            }
         }
-    }
 
-    // Destruct the info.
-    info->~atomicBucketSortPlugin();
+        // Destruct the info.
+        info->~atomicBucketSortPlugin();
+    }
+    LeaveCriticalSection( &atomicBucketContainers_lock );
 }
 
 RpAtomic* __cdecl RpAtomicD3D9CopyConstructBucketSort( RpAtomic *dstObject, const RpAtomic *srcObject, size_t pluginOffset, unsigned int pluginId )
@@ -155,33 +190,122 @@ RpAtomic* __cdecl RpAtomicD3D9CopyConstructBucketSort( RpAtomic *dstObject, cons
     atomicBucketSortPlugin *dstInfo = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( dstObject, pluginOffset );
     const atomicBucketSortPlugin *srcInfo = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( srcObject, pluginOffset );
 
-    // Construct the struct at dstInfo.
-    new (dstInfo) atomicBucketSortPlugin();
-
-    // Take over all the buckets from the source info.
-    for ( unsigned int n = 0; n < srcInfo->lastBestBucketPass.GetSizeCount(); n++ )
+    EnterCriticalSection( &atomicBucketContainers_lock );
     {
-        RenderBucket::RwRenderBucket *theBucket = srcInfo->lastBestBucketPass.GetFast( n );
+        // Clear plugin information from the destination, as the struct was constructed already.
+        dstInfo->lastBestBucketPass.SetSizeCount( 0 );
 
-        if ( theBucket )
+        // Take over all the buckets from the source info.
+        for ( unsigned int n = 0; n < srcInfo->lastBestBucketPass.GetSizeCount(); n++ )
         {
-            // Reference the bucket.
-            theBucket->Reference();
+            RenderBucket::RwRenderBucket *theBucket = srcInfo->lastBestBucketPass.GetFast( n );
 
-            // Add it to the dstInfo container.
-            dstInfo->lastBestBucketPass.SetItem( theBucket, n );
+            if ( theBucket )
+            {
+                // Reference the bucket.
+                theBucket->Reference();
+
+                // Add it to the dstInfo container.
+                dstInfo->lastBestBucketPass.SetItem( theBucket, n );
+            }
         }
     }
+    LeaveCriticalSection( &atomicBucketContainers_lock );
 
     return dstObject;
 }
 
 static CExecThreadSA *uniquenessThread = NULL;
 
+// Try to find a bucket that matches this bucket...
+static RenderBucket::RwRenderBucket* FindSameBucket(
+    RenderBucket::renderBuckets_t& bucketCache, 
+    const RenderBucket::RwRenderBucket *comparator )
+{
+    using namespace RenderBucket;
+
+    for ( unsigned int n = 0; n < bucketCache.GetCount(); n++ )
+    {
+        RwRenderBucket *item = bucketCache.Get( n );
+
+        if ( item != comparator && item->renderState.CompareWith( comparator->renderState ) )
+        {
+            return item;
+        }
+    }
+
+    return NULL;
+}
+
 // Thread that is supposed to increase bucket unique-ness over time.
 static void __stdcall BucketUniquenessQuantifierThread( CExecThreadSA *thread, void *userdata )
 {
-    // todo: do something.
+    using namespace RenderBucket;
+
+    RenderBucket::renderBuckets_t bucketCache;
+
+    while ( true )
+    {
+        // Initialize the bucket cache and get currently active render buckets.
+        bucketCache.Clear();
+
+        RenderBucket::GetActiveRenderBuckets( bucketCache );
+
+        // For all atomic bucket sort plugins...
+        EnterCriticalSection( &atomicBucketContainers_lock );
+        {
+            LIST_FOREACH_BEGIN( atomicBucketSortPlugin, atomicBucketContainers.root, managerNode )
+                atomicBucketSortPlugin *bucketContainer = item;
+
+                // For all active buckets...
+                EnterCriticalSection( &bucketContainer->bucketPassLock );
+
+                renderBucketList_t& bucketPass = bucketContainer->lastBestBucketPass;
+
+                for ( unsigned int n = 0; n < bucketPass.GetSizeCount(); n++ )
+                {
+                    RwRenderBucket *bucket = bucketPass.Get( n );
+
+                    if ( bucket )
+                    {
+                        // ... try to find a bucket that matches it.
+                        RwRenderBucket *sameBucket = FindSameBucket( bucketCache, bucket );
+
+                        // If we found a same bucket...
+                        if ( sameBucket )
+                        {
+                            // delete the old one and place the new one.
+                            bucket->Dereference();
+
+                            bucketPass.SetItem( sameBucket, n );
+
+                            // Reference the new bucket.
+                            sameBucket->Reference();
+                        }
+                    }
+
+                    // Allow other runtimes to get precedence.
+                    LeaveCriticalSection( &bucketContainer->bucketPassLock );
+                    EnterCriticalSection( &bucketContainer->bucketPassLock );
+                }
+
+                LeaveCriticalSection( &bucketContainer->bucketPassLock );
+            LIST_FOREACH_END
+        }
+        LeaveCriticalSection( &atomicBucketContainers_lock );
+
+        // Release our buckets again.
+        for ( unsigned int n = 0; n < bucketCache.GetCount(); n++ )
+        {
+            RwRenderBucket *bucket = bucketCache.Get( n );
+
+            bucket->Dereference();
+        }
+
+        // Sleep for some time.
+        Sleep( 1000 );
+    }
+
     return;
 }
 
@@ -193,13 +317,22 @@ void RpAtomicD3D9_RegisterPlugins( void )
         RpAtomicD3D9CopyConstructBucketSort
     );
 
-    // Start our thread that should merge buckets which are same by device states.
-    uniquenessThread = pGame->GetExecutiveManager()->CreateThread( BucketUniquenessQuantifierThread, NULL, 0 );
-
-    if ( CExecThreadSA *thread = uniquenessThread )
+    // If the plugin got successfully created...
+    if ( _atomicBucketSortPluginOffset != -1 )
     {
-        // Start our thread if we successfully created it.
-        thread->Resume();
+        // Initialize the list of atomic bucket containers
+        LIST_CLEAR( atomicBucketContainers.root );
+
+#ifdef RENDERWARE_STATEMAN_THREADING_SUPPORT
+        // Start our thread that should merge buckets which are same by device states.
+        uniquenessThread = pGame->GetExecutiveManager()->CreateThread( BucketUniquenessQuantifierThread, NULL, 0 );
+
+        if ( CExecThreadSA *thread = uniquenessThread )
+        {
+            // Start our thread if we successfully created it.
+            thread->Resume();
+        }
+#endif
     }
 }
 
@@ -256,13 +389,13 @@ bool __cdecl RpAtomicSetContextualRenderBucket( RpAtomic *theAtomic, RenderBucke
         // Only perform if we have a new render bucket.
         RenderBucket::RwRenderBucket *currentBucket = NULL;
 
-        {
-            renderBucketList_t& currentPass = thePlugin->lastBestBucketPass;
+        EnterCriticalSection( &thePlugin->bucketPassLock );
 
-            if ( contextualPassIndex < currentPass.GetSizeCount() )
-            {
-                currentBucket = currentPass.Get( contextualPassIndex );
-            }
+        renderBucketList_t& currentPass = thePlugin->lastBestBucketPass;
+
+        if ( contextualPassIndex < currentPass.GetSizeCount() )
+        {
+            currentBucket = currentPass.Get( contextualPassIndex );
         }
 
         if ( currentBucket != theBucket )
@@ -277,7 +410,7 @@ bool __cdecl RpAtomicSetContextualRenderBucket( RpAtomic *theAtomic, RenderBucke
             }
 
             // Assign us the new bucket.
-            thePlugin->lastBestBucketPass.SetItem( theBucket, contextualPassIndex );
+            currentPass.SetItem( theBucket, contextualPassIndex );
 
             if ( theBucket )
             {
@@ -287,6 +420,8 @@ bool __cdecl RpAtomicSetContextualRenderBucket( RpAtomic *theAtomic, RenderBucke
                 theBucket->Reference();
             }
         }
+
+        LeaveCriticalSection( &thePlugin->bucketPassLock );
     }
 
     return success;
@@ -311,10 +446,14 @@ RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket( RpAtomi
     {
         renderBucketList_t& currentPass = thePlugin->lastBestBucketPass;
 
+        EnterCriticalSection( &thePlugin->bucketPassLock );
+
         if ( contextualPassIndex < currentPass.GetSizeCount() )
         {
             theBucket = currentPass.Get( contextualPassIndex );
         }
+
+        LeaveCriticalSection( &thePlugin->bucketPassLock );
     }
 
     return theBucket;
@@ -324,12 +463,18 @@ RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket( RpAtomi
 void RpAtomicD3D9_Init( void )
 {
     uniquenessThread = NULL;
+
+    InitializeCriticalSection( &atomicBucketContainers_lock );
 }
 
 void RpAtomicD3D9_Shutdown( void )
 {
+    DeleteCriticalSection( &atomicBucketContainers_lock );
+
     if ( uniquenessThread )
     {
+        // todo: cleanly shut down the bucketizer thread.
+
         pGame->GetExecutiveManager()->CloseThread( uniquenessThread );
 
         uniquenessThread = NULL;

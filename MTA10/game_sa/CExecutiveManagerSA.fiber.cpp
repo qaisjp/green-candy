@@ -235,12 +235,15 @@ void __declspec(naked) ExecutiveFiber::qswitch( Fiber *from, Fiber *to )
 }
 
 // For use with one-sided context switching.
+// Do not use this routine in complicated C++ prototypes, as the CRT may break!
 void __declspec(naked) ExecutiveFiber::leave( Fiber *to )
 {
+    // To call this function, jump to it using ASM.
+    // Put the first argument into EAX.
     __asm
     {
         // Apply registers
-        mov eax,[esp+4]         // grab the "to" context 
+        //mov eax,[esp]           // grab the "to" context 
         mov ebx,[eax]Fiber.ebx
         mov edi,[eax]Fiber.edi
         mov esi,[eax]Fiber.esi

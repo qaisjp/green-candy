@@ -220,9 +220,9 @@ namespace RenderBucket
         AINLINE bool CompareStates( const stateType *left, const stateType *right ) const
         {
             return 
-                ( left != NULL ) != ( right != NULL ) ||
-                  left &&
-                  left->CompareWith( right );
+                ( left != NULL ) == ( right != NULL ) &&
+                ( !left || left &&
+                  left->CompareWith( right ) );
         }
 
         bool CompareWith( const renderSystemState& compareWith ) const
@@ -297,7 +297,7 @@ namespace RenderBucket
         renderItems_t renderItems;
 
         // Management methods.
-        unsigned int refCount;      // reference count to prevent destruction at critical areas.
+        volatile LONG refCount;     // reference count to prevent destruction at critical areas.
         RwListEntry <RwRenderBucket> activeListNode;
 
         unsigned int usageCount;    // how many atomics are using this bucket.
@@ -325,6 +325,10 @@ namespace RenderBucket
             return _isOnList;
         }
     };
+   
+    typedef iterativeGrowableArray <RwRenderBucket*, 16, 0, unsigned int> renderBuckets_t;
+
+    void GetActiveRenderBuckets( renderBuckets_t& list );
 };
 
 #endif //_RENDERWARE_BUCKET_RENDER_INTERNAL_
