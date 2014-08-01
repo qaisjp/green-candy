@@ -14,7 +14,7 @@
 #define _RENDERWARE_STATE_MANAGER_
 
 // Define this to enable thread-safety for captured states of RwStateManager.
-//#define RENDERWARE_STATEMAN_THREADING_SUPPORT
+#define RENDERWARE_STATEMAN_THREADING_SUPPORT
 
 #include "RenderWare/RwInternals.h"
 #include "RenderWare/RwRenderTools.hxx"
@@ -32,72 +32,6 @@ struct objectOrrientedLock
     {
         LeaveCriticalSection( &this->section );
     }
-};
-
-template <typename dataType>
-struct CachedConstructedClassAllocator
-{
-    struct dataEntry : dataType
-    {
-        AINLINE dataEntry( CachedConstructedClassAllocator *storage )
-        {
-            LIST_INSERT( storage->m_freeList.root, this->node );
-        }
-
-        RwListEntry <dataEntry> node;
-    };
-
-    AINLINE CachedConstructedClassAllocator( unsigned int startCount )
-    {
-        LIST_CLEAR( m_usedList.root );
-        LIST_CLEAR( m_freeList.root );
-
-        void *mem = (void*)new char[ sizeof( dataEntry ) * startCount ];
-
-        for ( unsigned int n = 0; n < startCount; n++ )
-        {
-            new ( (dataEntry*)mem + n ) dataEntry( this );
-        }
-    }
-
-    AINLINE dataEntry* AllocateNew( void )
-    {
-        return new dataEntry( this );
-    }
-
-    AINLINE dataType* Allocate( void )
-    {
-        dataEntry *entry = NULL;
-
-        if ( !LIST_EMPTY( m_freeList.root ) )
-        {
-            entry = LIST_GETITEM( dataEntry, m_freeList.root.next, node );
-        }
-
-        if ( !entry )
-        {
-            entry = AllocateNew();
-        }
-
-        if ( entry )
-        {
-            LIST_REMOVE( entry->node );
-            LIST_INSERT( m_usedList.root, entry->node );
-        }
-
-        return entry;
-    }
-
-    AINLINE void Free( dataType *data )
-    {
-        dataEntry *entry = (dataEntry*)data;
-
-        LIST_REMOVE( entry->node );
-        LIST_INSERT( m_freeList.root, entry->node );
-    }
-
-    RwList <dataEntry> m_usedList;
-    RwList <dataEntry> m_freeList;
 };
 
 template <typename dataType>
