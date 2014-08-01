@@ -94,37 +94,117 @@ struct renderBucketListManager
 };
 typedef growableArray <RenderBucket::RwRenderBucket*, 4, 0, renderBucketListManager, unsigned int> renderBucketList_t;
 
-struct atomicBucketSortPlugin
+struct atomicBucketSortPluginData
 {
-    atomicBucketSortPlugin( void );
-    ~atomicBucketSortPlugin( void );
+    typedef acquisitionProtect <atomicBucketSortPluginData>::acquiredData safePointer;
+    typedef updatableCachedDataList <atomicBucketSortPluginDataPtr> dataList;
 
+    static dataList bucketSortThreadedList;
+
+    atomicBucketSortPluginData( void )
+    {
+        refCount = 1;
+
+        InitializeCriticalSection( &bucketPassLock );
+    }
+
+    ~atomicBucketSortPluginData( void )
+    {
+        EnterCriticalSection( &bucketPassLock );
+        {
+            // If we have render buckets, dereference them.
+            for ( unsigned int n = 0; n < lastBestBucketPass.GetSizeCount(); n++ )
+            {
+                RenderBucket::RwRenderBucket *theBucket = lastBestBucketPass.GetFast( n );
+
+                if ( theBucket )
+                {
+                    theBucket->Dereference();
+
+                    lastBestBucketPass.SetFast( NULL, n );
+                }
+            }
+        }
+        LeaveCriticalSection( &bucketPassLock );
+
+        DeleteCriticalSection( &bucketPassLock );
+    }
+
+    void Reference( void )
+    {
+        InterlockedExchangeAdd( &this->refCount, (LONG)1 );
+    }
+
+    void Dereference( void )
+    {
+        LONG prevRefCount = InterlockedExchangeAdd( &this->refCount, (LONG)-1 );
+
+        if ( prevRefCount == 1 )
+        {
+            delete this;
+        }
+    }
+
+    volatile LONG refCount;
+
+    // Data.
     renderBucketList_t lastBestBucketPass;
 
     CRITICAL_SECTION bucketPassLock;
 
-    RwListEntry <atomicBucketSortPlugin> managerNode;
+    RwListEntry <atomicBucketSortPluginData> managerNode;
 };
 
-static RwList <atomicBucketSortPlugin> atomicBucketContainers;
-
-static CRITICAL_SECTION atomicBucketContainers_lock;
-
-atomicBucketSortPlugin::atomicBucketSortPlugin( void )
+struct atomicBucketSortPlugin
 {
-    // Add ourselves to the atomic bucket container list.
-    LIST_INSERT( atomicBucketContainers.root, managerNode );
+    atomicBucketSortPlugin( void )
+    {
+        return;
+    }
 
-    InitializeCriticalSection( &bucketPassLock );
-}
+    ~atomicBucketSortPlugin( void )
+    {
+        if ( IsInitialized() )
+        {
+            Shutdown();
+        }
+    }
 
-atomicBucketSortPlugin::~atomicBucketSortPlugin( void )
-{
-    DeleteCriticalSection( &bucketPassLock );
+    bool IsInitialized( void )
+    {
+        return ( dataHold.HasData() );
+    }
 
-    // Remove ourselves from the bucket container list.
-    LIST_REMOVE( managerNode );
-}
+    void Initialize( void )
+    {
+        atomicBucketSortPluginData *data = new atomicBucketSortPluginData;
+
+
+
+        dataHold.SetData( data );
+    }
+
+    void Shutdown( void )
+    {
+        dataHold.SetData( NULL );
+    }
+
+    inline void Wake( void )
+    {
+        if ( !IsInitialized() )
+        {
+            Initialize();
+        }
+    }
+
+    inline atomicBucketSortPluginDataPtr AcquireData( void ) const
+    {
+        return dataHold.AcquireData();
+    }
+
+private:
+    acquisitionProtect <atomicBucketSortPluginData> dataHold;
+};
 
 inline atomicBucketSortPlugin* GetBucketSortInfo( RpAtomic *atomic )
 {
@@ -149,13 +229,9 @@ inline const atomicBucketSortPlugin* GetBucketSortInfoConst( const RpAtomic *ato
 RpAtomic* __cdecl RpAtomicD3D9ConstructBucketSort( RpAtomic *rwobj, size_t pluginOffset )
 {
     atomicBucketSortPlugin *info = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( rwobj, pluginOffset );
-    
-    EnterCriticalSection( &atomicBucketContainers_lock );
-    {
-        // Construct the struct.
-        new (info) atomicBucketSortPlugin;
-    }
-    LeaveCriticalSection( &atomicBucketContainers_lock );
+
+    // Construct the struct.
+    new (info) atomicBucketSortPlugin;
 
     return rwobj;
 }
@@ -164,25 +240,8 @@ void __cdecl RpAtomicD3D9DestructBucketSort( RpAtomic *rwobj, size_t pluginOffse
 {
     atomicBucketSortPlugin *info = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( rwobj, pluginOffset );
 
-    EnterCriticalSection( &atomicBucketContainers_lock );
-    {
-        // If we have render buckets, dereference them.
-        for ( unsigned int n = 0; n < info->lastBestBucketPass.GetSizeCount(); n++ )
-        {
-            RenderBucket::RwRenderBucket *theBucket = info->lastBestBucketPass.GetFast( n );
-
-            if ( theBucket )
-            {
-                theBucket->Dereference();
-
-                info->lastBestBucketPass.SetFast( NULL, n );
-            }
-        }
-
-        // Destruct the info.
-        info->~atomicBucketSortPlugin();
-    }
-    LeaveCriticalSection( &atomicBucketContainers_lock );
+    // Destruct the info.
+    info->~atomicBucketSortPlugin();
 }
 
 RpAtomic* __cdecl RpAtomicD3D9CopyConstructBucketSort( RpAtomic *dstObject, const RpAtomic *srcObject, size_t pluginOffset, unsigned int pluginId )
@@ -190,27 +249,38 @@ RpAtomic* __cdecl RpAtomicD3D9CopyConstructBucketSort( RpAtomic *dstObject, cons
     atomicBucketSortPlugin *dstInfo = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( dstObject, pluginOffset );
     const atomicBucketSortPlugin *srcInfo = RW_PLUGINSTRUCT <atomicBucketSortPlugin> ( srcObject, pluginOffset );
 
-    EnterCriticalSection( &atomicBucketContainers_lock );
+    if ( atomicBucketSortPluginData::safePointer srcData = srcInfo->AcquireData() )
     {
-        // Clear plugin information from the destination, as the struct was constructed already.
-        dstInfo->lastBestBucketPass.SetSizeCount( 0 );
+        // Make sure we allocate data, too.
+        dstInfo->Wake();
 
-        // Take over all the buckets from the source info.
-        for ( unsigned int n = 0; n < srcInfo->lastBestBucketPass.GetSizeCount(); n++ )
+        if ( atomicBucketSortPluginData::safePointer dstData = dstInfo->AcquireData() )
         {
-            RenderBucket::RwRenderBucket *theBucket = srcInfo->lastBestBucketPass.GetFast( n );
+            // Clear plugin information from the destination, as the struct was constructed already.
+            assert( dstData->lastBestBucketPass.GetSizeCount() == 0 );
 
-            if ( theBucket )
+            // Take over all the buckets from the source info.
+            EnterCriticalSection( &dstData->bucketPassLock );
+            EnterCriticalSection( &srcData->bucketPassLock );
             {
-                // Reference the bucket.
-                theBucket->Reference();
+                for ( unsigned int n = 0; n < srcData->lastBestBucketPass.GetSizeCount(); n++ )
+                {
+                    RenderBucket::RwRenderBucket *theBucket = srcData->lastBestBucketPass.GetFast( n );
 
-                // Add it to the dstInfo container.
-                dstInfo->lastBestBucketPass.SetItem( theBucket, n );
+                    if ( theBucket )
+                    {
+                        // Reference the bucket.
+                        theBucket->Reference();
+
+                        // Add it to the dstInfo container.
+                        dstData->lastBestBucketPass.SetItem( theBucket, n );
+                    }
+                }
             }
+            LeaveCriticalSection( &srcData->bucketPassLock );
+            LeaveCriticalSection( &dstData->bucketPassLock );
         }
     }
-    LeaveCriticalSection( &atomicBucketContainers_lock );
 
     return dstObject;
 }
@@ -243,13 +313,25 @@ static void __stdcall BucketUniquenessQuantifierThread( CExecThreadSA *thread, v
     using namespace RenderBucket;
 
     RenderBucket::renderBuckets_t bucketCache;
+    bucketPluginDataList_t acquiredData;
 
     while ( true )
     {
         // Initialize the bucket cache and get currently active render buckets.
         bucketCache.Clear();
+        acquiredData.Clear();
 
         RenderBucket::GetActiveRenderBuckets( bucketCache );
+
+        // Get list of all bucket sort plugin data.
+        EnterCriticalSection( &atomicBucketContainers_lock );
+        {
+            LIST_FOREACH_BEGIN( atomicBucketSortPlugin, atomicBucketContainers.root, managerNode )
+                acquiredData.AddItem(
+                    it
+            LIST_FOREACH_END
+        }
+        LeaveCriticalSection( &atomicBucketContainers_lock );
 
         // For all atomic bucket sort plugins...
         EnterCriticalSection( &atomicBucketContainers_lock );
@@ -389,39 +471,45 @@ bool __cdecl RpAtomicSetContextualRenderBucket( RpAtomic *theAtomic, RenderBucke
         // Only perform if we have a new render bucket.
         RenderBucket::RwRenderBucket *currentBucket = NULL;
 
-        EnterCriticalSection( &thePlugin->bucketPassLock );
+        // Wake our plugin (allocate data to it).
+        thePlugin->Wake();
 
-        renderBucketList_t& currentPass = thePlugin->lastBestBucketPass;
-
-        if ( contextualPassIndex < currentPass.GetSizeCount() )
+        if ( atomicBucketSortPluginData::safePointer pluginData = thePlugin->AcquireData() )
         {
-            currentBucket = currentPass.Get( contextualPassIndex );
-        }
+            EnterCriticalSection( &pluginData->bucketPassLock );
 
-        if ( currentBucket != theBucket )
-        {
-            // If we had a bucket already, dereference it.
-            if ( currentBucket )
+            renderBucketList_t& currentPass = pluginData->lastBestBucketPass;
+
+            if ( contextualPassIndex < currentPass.GetSizeCount() )
             {
-                currentBucket->Dereference();
-
-                // Decrement the usage count.
-                currentBucket->usageCount--;
+                currentBucket = currentPass.Get( contextualPassIndex );
             }
 
-            // Assign us the new bucket.
-            currentPass.SetItem( theBucket, contextualPassIndex );
-
-            if ( theBucket )
+            if ( currentBucket != theBucket )
             {
-                // Increment the usage count.
-                theBucket->usageCount++;
-                
-                theBucket->Reference();
-            }
-        }
+                // If we had a bucket already, dereference it.
+                if ( currentBucket )
+                {
+                    currentBucket->Dereference();
 
-        LeaveCriticalSection( &thePlugin->bucketPassLock );
+                    // Decrement the usage count.
+                    currentBucket->usageCount--;
+                }
+
+                // Assign us the new bucket.
+                currentPass.SetItem( theBucket, contextualPassIndex );
+
+                if ( theBucket )
+                {
+                    // Increment the usage count.
+                    theBucket->usageCount++;
+                    
+                    theBucket->Reference();
+                }
+            }
+
+            LeaveCriticalSection( &pluginData->bucketPassLock );
+        }
     }
 
     return success;
@@ -444,16 +532,21 @@ RenderBucket::RwRenderBucket* __cdecl RpAtomicGetContextualRenderBucket( RpAtomi
 
     if ( atomicBucketSortPlugin *thePlugin = GetBucketSortInfo( theAtomic ) )
     {
-        renderBucketList_t& currentPass = thePlugin->lastBestBucketPass;
+        // Only attempt to get something if the plugin data is allocated (so no Wake'ing here)
 
-        EnterCriticalSection( &thePlugin->bucketPassLock );
-
-        if ( contextualPassIndex < currentPass.GetSizeCount() )
+        if ( atomicBucketSortPluginData::safePointer pluginData = thePlugin->AcquireData() )
         {
-            theBucket = currentPass.Get( contextualPassIndex );
-        }
+            renderBucketList_t& currentPass = pluginData->lastBestBucketPass;
 
-        LeaveCriticalSection( &thePlugin->bucketPassLock );
+            EnterCriticalSection( &pluginData->bucketPassLock );
+
+            if ( contextualPassIndex < currentPass.GetSizeCount() )
+            {
+                theBucket = currentPass.Get( contextualPassIndex );
+            }
+
+            LeaveCriticalSection( &pluginData->bucketPassLock );
+        }
     }
 
     return theBucket;

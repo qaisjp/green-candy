@@ -302,6 +302,13 @@ struct growableArray
         return false;
     }
 
+    AINLINE bool Find( const dataType& inst ) const
+    {
+        countType trashIndex;
+
+        return Find( inst, trashIndex );
+    }
+
     AINLINE unsigned int Count( const dataType& inst ) const
     {
         unsigned int count = 0;
@@ -624,6 +631,240 @@ public:
             obj->pluginMemory.Free( regInfo.allocMem );
         }
     }
+};
+
+// Very fast class allocator.
+template <typename dataType>
+struct CachedConstructedClassAllocator
+{
+    struct dataEntry : dataType
+    {
+        AINLINE dataEntry( CachedConstructedClassAllocator *storage )
+        {
+            LIST_INSERT( storage->m_freeList.root, this->node );
+        }
+
+        RwListEntry <dataEntry> node;
+    };
+
+    AINLINE CachedConstructedClassAllocator( unsigned int startCount )
+    {
+        LIST_CLEAR( m_usedList.root );
+        LIST_CLEAR( m_freeList.root );
+
+        void *mem = (void*)new char[ sizeof( dataEntry ) * startCount ];
+
+        for ( unsigned int n = 0; n < startCount; n++ )
+        {
+            new ( (dataEntry*)mem + n ) dataEntry( this );
+        }
+    }
+
+    AINLINE dataEntry* AllocateNew( void )
+    {
+        return new dataEntry( this );
+    }
+
+    AINLINE dataType* Allocate( void )
+    {
+        dataEntry *entry = NULL;
+
+        if ( !LIST_EMPTY( m_freeList.root ) )
+        {
+            entry = LIST_GETITEM( dataEntry, m_freeList.root.next, node );
+        }
+
+        if ( !entry )
+        {
+            entry = AllocateNew();
+        }
+
+        if ( entry )
+        {
+            LIST_REMOVE( entry->node );
+            LIST_INSERT( m_usedList.root, entry->node );
+        }
+
+        return entry;
+    }
+
+    AINLINE void Free( dataType *data )
+    {
+        dataEntry *entry = (dataEntry*)data;
+
+        LIST_REMOVE( entry->node );
+        LIST_INSERT( m_freeList.root, entry->node );
+    }
+
+protected:
+    RwList <dataEntry> m_usedList;
+    RwList <dataEntry> m_freeList;
+};
+
+template <typename dataType>
+struct updatableCachedDataList
+{
+    struct node
+    {
+        dataType data;
+        RwListEntry <node> listNode;
+    };
+
+    AINLINE updatableCachedDataList( void )
+    {
+        LIST_CLEAR( activeNodes.root );
+
+        InitializeCriticalSection( &update_lock );
+    }
+
+    AINLINE ~updatableCachedDataList( void )
+    {
+        DeleteCriticalSection( &update_lock );
+    }
+
+    AINLINE void Clear( void )
+    {
+        EnterCriticalSection( &update_lock );
+
+        LIST_FOREACH_BEGIN( node, activeNodes.root, listNode )
+            nodeAlloc.Free( item );
+        LIST_FOREACH_END
+
+        LIST_CLEAR( activeNodes.root );
+
+        toBeAdded.Clear();
+        toBeRemoved.Clear();
+
+        LeaveCriticalSection( &update_lock );
+    }
+
+    AINLINE void AddItem( dataType data )
+    {
+        EnterCriticalSection( &update_lock );
+
+        if ( toBeAdded.Find( data ) == false )
+        {
+            toBeAdded.AddItem( data );
+        }
+
+        LeaveCriticalSection( &update_lock );
+    }
+
+    AINLINE void RemoveItem( dataType data )
+    {
+        EnterCriticalSection( &update_lock );
+
+        if ( toBeRemoved.Find( data ) == false )
+        {
+            toBeRemoved.AddItem( data );
+        }
+
+        LeaveCriticalSection( &update_lock );
+    }
+
+    AINLINE void Update( void )
+    {
+        EnterCriticalSection( &update_lock );
+        
+        for ( unsigned int n = 0; n < toBeAdded.GetCount(); n++ )
+        {
+            const dataType& value = toBeAdded.GetFast( n );
+
+            _AddItemInternal( value );
+        }
+        toBeAdded.Clear();
+
+        for ( unsigned int n = 0; n < toBeRemoved.GetCount(); n++ )
+        {
+            const dataType& value = toBeRemoved.GetFast( n );
+
+            _RemoveItemInternal( value );
+        }
+        toBeRemoved.Clear();
+
+        LeaveCriticalSection( &update_lock );
+    }
+
+    AINLINE bool NeedsUpdating( void ) const
+    {
+        return ( toBeAdded.GetCount() != (unsigned int)0 || toBeRemoved.GetCount() != (unsigned int)0 );
+    }
+
+    struct iterator
+    {
+        AINLINE iterator( updatableCachedDataList& manager ) : manager( manager )
+        {
+            curIter = manager.activeNodes.root.next;
+        }
+
+        AINLINE bool IsEnd( void ) const
+        {
+            return ( curIter == &manager->activeNodes.root );
+        }
+
+        AINLINE dataType& Resolve( void )
+        {
+            return LIST_GETITEM( node, curIter, listNode )->data;
+        }
+
+        AINLINE void Increment( void )
+        {
+            curIter = curIter->next;
+        }
+
+        RwListEntry <node> *curIter;
+        updatableCachedDataList& manager;
+    };
+
+protected:
+    AINLINE node* AllocateNode( void )
+    {
+        node *theNode = nodeAlloc.Allocate();
+
+        if ( theNode )
+        {
+            LIST_INSERT( activeNodes.root, theNode->listNode );
+        }
+
+        return theNode;
+    }
+
+    AINLINE void FreeNode( node *ptr )
+    {
+        LIST_REMOVE( ptr->listNode );
+
+        nodeAlloc.Free( ptr );
+    }
+
+    AINLINE void _AddItemInternal( dataType data )
+    {
+        node *holderNode = AllocateNode();
+
+        holderNode->data = data;
+    }
+
+    AINLINE void _RemoveItemInternal( dataType data )
+    {
+        LIST_FOREACH_BEGIN( node, activeNodes.root, listNode )
+            if ( item->data == data )
+            {
+                item->data = dataType();
+
+                FreeNode( item );
+                return;
+            }
+        LIST_FOREACH_END
+    }
+
+    RwList <node> activeNodes;
+    CachedConstructedClassAllocator <node> nodeAlloc;
+
+    typedef iterativeGrowableArray <dataType, 8, 0, unsigned int> dataList_t;
+
+    dataList_t toBeAdded;
+    dataList_t toBeRemoved;
+
+    mutable CRITICAL_SECTION update_lock;
 };
 
 #endif //_MEMORY_ABSTRACTION_UTILITIES_
