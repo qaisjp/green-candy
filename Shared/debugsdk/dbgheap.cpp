@@ -98,6 +98,16 @@ inline static void* _win32_allocMemPage( size_t memSize )
     return handle->GetTargetPointer();
 }
 
+inline static bool _win32_reallocMemPage( void *ptr, size_t newRegionSize )
+{
+    DebugFullPageHeapAllocator::pageHandle *handle = _nativeAlloc->FindHandleByAddress( ptr );
+
+    if ( !handle )
+        return false;
+
+    return _nativeAlloc->SetHandleSize( handle, newRegionSize );
+}
+
 inline static void _win32_freeMemPage( void *ptr )
 {
     bool releaseSuccess = _nativeAlloc->FreeByAddress( ptr );
@@ -135,9 +145,16 @@ inline static void _win32_initHeap( void )
     LIST_CLEAR( g_privateMemory.root );
 }
 
+inline static size_t _win32_getRealPageSize( size_t objSize )
+{
+    return ( MEM_PAGE_MOD( objSize + sizeof( _memIntro ) + sizeof( _memOutro ) ) * g_systemInfo.dwPageSize );
+}
+
 inline static void* _win32_allocMem( size_t memSize )
 {
-    _memIntro *mem = (_memIntro*)_win32_allocMemPage( memSize + sizeof(_memIntro) + sizeof(_memOutro) );
+    const size_t pageRegionRequestSize = _win32_getRealPageSize( memSize );
+
+    _memIntro *mem = (_memIntro*)_win32_allocMemPage( pageRegionRequestSize );
     _memOutro *outro = (_memOutro*)( (unsigned char*)( mem + 1 ) + memSize );
 
 #ifdef PAGE_HEAP_ERROR_ON_LOWMEM
@@ -148,7 +165,7 @@ inline static void* _win32_allocMem( size_t memSize )
 #endif //PAGE_HEAP_ERROR_ON_LOWMEM
 
     // Fill memory with debug pattern
-    memset( mem, PAGE_MEM_DEBUG_PATTERN, MEM_PAGE_MOD( memSize ) * g_systemInfo.dwPageSize );
+    memset( mem, PAGE_MEM_DEBUG_PATTERN, pageRegionRequestSize );
 
     mem->checksum = 0xCAFEBABE;
     mem->objSize = memSize;
@@ -166,7 +183,7 @@ inline static void _win32_checkBlockIntegrity( void *ptr )
 
     MEM_INTERRUPT( intro->checksum == 0xCAFEBABE && outro->checksum == 0xBABECAFE );
 
-    size_t allocSize = MEM_PAGE_MOD( intro->objSize ) * g_systemInfo.dwPageSize;
+    size_t allocSize = _win32_getRealPageSize( intro->objSize );
     unsigned char *endptr = (unsigned char*)intro + allocSize;
     unsigned char *seek = (unsigned char*)outro + sizeof(*outro);
 
@@ -180,33 +197,6 @@ inline static void _win32_checkBlockIntegrity( void *ptr )
     }
 
     LIST_VALIDATE( intro->memList );
-}
-
-inline static void* _win32_reallocMem( void *ptr, size_t newSize )
-{
-    if ( !ptr || !newSize )
-        return NULL;
-
-    void *valid_ptr = (void*)( (_memIntro*)PAGE_MEM_ADJUST( ptr ) + 1 );
-    MEM_INTERRUPT( valid_ptr == ptr );
-
-    _win32_checkBlockIntegrity( valid_ptr );
-
-    _memIntro *intro = (_memIntro*)ptr - 1;
-    _memOutro *outro = (_memOutro*)( (unsigned char*)ptr + newSize );
-
-    // Make sure we do not overshoot page size
-    const size_t constructNewSize = ( newSize + sizeof( _memIntro ) + sizeof( _memOutro ) );
-
-    MEM_INTERRUPT( constructNewSize <= MEM_PAGE_MOD( intro->objSize ) * g_systemInfo.dwPageSize );
-
-    // Rewrite block integrity
-    intro->objSize = newSize;
-    outro->checksum = 0xBABECAFE;
-
-    // Fill other memory with debug pattern (without killing user data)
-    memset( outro + 1, PAGE_MEM_DEBUG_PATTERN, MEM_PAGE_MOD( newSize ) * g_systemInfo.dwPageSize - (sizeof(_memIntro) + sizeof(_memOutro) + newSize) );
-    return ptr;
 }
 
 inline static void _win32_freeMem( void *ptr )
@@ -223,6 +213,76 @@ inline static void _win32_freeMem( void *ptr )
     LIST_REMOVE( intro->memList );
 
     _win32_freeMemPage( intro );
+}
+
+inline static void* _win32_reallocMem( void *ptr, size_t newSize )
+{
+    if ( !ptr || !newSize )
+        return NULL;
+
+    void *out_ptr = NULL;
+    {
+        void *page_ptr = PAGE_MEM_ADJUST( ptr );
+
+        void *valid_ptr = (void*)( (_memIntro*)page_ptr + 1 );
+        MEM_INTERRUPT( valid_ptr == ptr );
+
+        // Verify block contents.
+        _win32_checkBlockIntegrity( valid_ptr );
+
+        // Reallocate to actually required page memory.
+        const size_t constructNewSize = _win32_getRealPageSize( newSize ); 
+        
+        bool reallocSuccess = _win32_reallocMemPage( page_ptr, constructNewSize );
+
+        // The reallocation may fail if the page nesting is too complicated.
+        // For this we must move to a completely new block of memory that is size'd appropriately.
+        if ( !reallocSuccess )
+        {
+            // Allocate a new page region of memory.
+            void *newMem = _win32_allocMem( constructNewSize );
+
+            // Only process this request if the NT kernel could fetch a new page for us.
+            if ( newMem != NULL )
+            {
+                // Get the meta-data of the old data.
+                _memIntro *old_intro = (_memIntro*)page_ptr;
+
+                size_t oldDataSize = old_intro->objSize;
+
+                // Copy the data contents to the new memory region.
+                void *new_data = newMem;
+
+                out_ptr = new_data;
+
+                size_t validDataSize = std::min( newSize, oldDataSize );
+
+                memcpy( new_data, valid_ptr, validDataSize );
+            }
+
+            // Deallocate the old memory.
+            _win32_freeMem( valid_ptr );
+        }
+        else
+        {
+            out_ptr = valid_ptr;
+
+            // Get new pointers to meta-data.
+            _memIntro *intro = (_memIntro*)valid_ptr - 1;
+            _memOutro *outro = (_memOutro*)( (unsigned char*)valid_ptr + newSize );
+
+            // Rewrite block integrity
+            intro->objSize = newSize;
+            outro->checksum = 0xBABECAFE;
+
+            // Fill other memory with debug pattern (without killing user data)
+            memset( outro + 1,
+                PAGE_MEM_DEBUG_PATTERN,
+                constructNewSize - (sizeof(_memIntro) + sizeof(_memOutro) + newSize)
+            );
+        }
+    }
+    return out_ptr;
 }
 
 inline static void _win32_validateMemory( void )

@@ -74,7 +74,11 @@ struct LuaDefaultAllocator
 
     inline void* Allocate( size_t memSize )
     {
-        return luaM_realloc__( this->globalState, NULL, 0, memSize );
+        void *mem = luaM_realloc__( this->globalState, NULL, 0, memSize );
+       
+        lua_assert( mem != NULL );
+
+        return mem;
     }
 
     inline void Free( void *ptr, size_t memSize )

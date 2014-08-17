@@ -150,7 +150,7 @@ public:
 
     inline numberType GetSliceSize( void ) const
     {
-        return ( this->endOffset - this->startOffset );
+        return ( this->endOffset - this->startOffset ) + 1;
     }
 
     inline void SetSlicePosition( numberType val )
@@ -164,6 +164,11 @@ public:
     inline void SetSliceStartPoint( numberType val )
     {
         this->startOffset = val;
+    }
+
+    inline void SetSliceEndPoint( numberType val )
+    {
+        this->endOffset = val;
     }
 
     inline numberType GetSliceStartPoint( void ) const

@@ -740,11 +740,13 @@ struct growableArrayEx
     AINLINE void SetFast( const dataType& dataField, countType index )
     {
         // God mercy the coder knows why and how he is using this.
+        // We might introduce a hyper-paranoid assertion that even checks this...
         data[index] = dataField;
     }
 
     AINLINE dataType& GetFast( countType index ) const
     {
+        // and that.
         return data[index];
     }
 
@@ -789,6 +791,32 @@ struct growableArrayEx
         assert( index < sizeCount );
 
         return data[index];
+    }
+
+    AINLINE bool Front( dataType& outVal ) const
+    {
+        bool success = ( GetCount() != 0 );
+
+        if ( success )
+        {
+            outVal = data[ 0 ];
+        }
+
+        return success;
+    }
+
+    AINLINE bool Tail( dataType& outVal ) const
+    {
+        countType count = GetCount();
+
+        bool success = ( count != 0 );
+
+        if ( success )
+        {
+            outVal = data[ count - 1 ];
+        }
+
+        return success;
     }
 
     AINLINE bool Pop( dataType& item )
