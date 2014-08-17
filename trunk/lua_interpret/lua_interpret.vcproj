@@ -71,6 +71,7 @@
 				IgnoreDefaultLibraryNames="LIBCMTD.lib"
 				GenerateDebugInformation="true"
 				AssemblyDebug="1"
+				LargeAddressAware="2"
 				EntryPointSymbol="_MainInit"
 				DataExecutionPrevention="1"
 				TargetMachine="1"
@@ -163,6 +164,7 @@
 				GenerateMapFile="false"
 				MapFileName=""
 				MapExports="false"
+				LargeAddressAware="2"
 				EntryPointSymbol="_MainInit"
 				TargetMachine="1"
 			/>

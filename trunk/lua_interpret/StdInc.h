@@ -18,9 +18,9 @@
 #pragma warning(disable: 4996)
 
 #define MEM_INTERRUPT( x )  { if ( !( x ) ) __asm int 3 }
-#define USE_HEAP_DEBUGGING
-#define USE_FULL_PAGE_HEAP
-#define PAGE_HEAP_INTEGRITY_CHECK
+//#define USE_HEAP_DEBUGGING
+//#define USE_FULL_PAGE_HEAP
+//#define PAGE_HEAP_INTEGRITY_CHECK
 #include <debugsdk/DbgHeap.h>
 #include <debugsdk/DbgTrace.h>
 

@@ -306,7 +306,7 @@ void luaF_close (lua_State *L, StkId level)
 
         if (isdead(g, o))
         {
-            lua_delete( g, o ); /* free upvalue */
+            luaF_freeupval( L, uv ); /* free upvalue */
         }
         else
         {

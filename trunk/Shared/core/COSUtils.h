@@ -274,6 +274,19 @@ struct NativePageAllocator
                     VirtualFree( pageAddress, actualAllocationSize, MEM_RELEASE );
                 }
             }
+            else
+            {
+                // We have encountered an error while allocating the page.
+                DWORD errorCode = GetLastError();
+
+                __asm nop
+                
+                if ( pDesiredAddress == NULL )
+                {
+                    // Out of memory error!!!!!!!
+                    __asm nop
+                }
+            }
         }
         return success;
     }
@@ -779,31 +792,39 @@ struct NativePageAllocator
             // We potentially have to remove pages from the residency list.
             struct ContextRemovalSelector
             {
+                NativePageAllocator& manager;
                 pageHandle *contextHandle;
                 unsigned int removePagesFromEndCount;
+                bool validOperation;
 
-                inline ContextRemovalSelector( pageHandle *theHandle )
+                inline ContextRemovalSelector( NativePageAllocator& manager, pageHandle *theHandle ) : manager( manager )
                 {
                     this->contextHandle = theHandle;
 
                     this->removePagesFromEndCount = 0;
+                    this->validOperation = true;
                 }
 
                 inline ~ContextRemovalSelector( void )
                 {
-                    // If we need to remove any pages from the end...
-                    if ( unsigned int removeFromEndCount = this->removePagesFromEndCount )
+                    if ( this->validOperation )
                     {
-                        // Set a new size to the handle residing memory pages array.
-                        while ( removeFromEndCount-- )
+                        // If we need to remove any pages from the end...
+                        if ( unsigned int removeFromEndCount = this->removePagesFromEndCount )
                         {
-                            pageAllocation *pageToBeDereferenced = NULL;
+                            // Set a new size to the handle residing memory pages array.
+                            while ( removeFromEndCount-- )
+                            {
+                                pageAllocation *pageToBeDereferenced = NULL;
 
-                            bool hasThePage = this->contextHandle->residingMemBlocks.Tail( pageToBeDereferenced );
+                                bool hasThePage = this->contextHandle->residingMemBlocks.Tail( pageToBeDereferenced );
 
-                            assert( hasThePage == true );
+                                assert( hasThePage == true );
 
-                            pageToBeDereferenced->UnregisterPageHandle( this->contextHandle );
+                                pageToBeDereferenced->UnregisterPageHandle( this->contextHandle );
+
+                                manager.MemBlockGarbageCollection( pageToBeDereferenced );
+                            }
                         }
                     }
                 }
@@ -815,8 +836,16 @@ struct NativePageAllocator
                 {
                     // Check whether we should remove the handle from the context of the current page.
                     bool removeCurrentPage = false;
-                        
-                    if ( intResult == memBlockSlice_t::INTERSECT_BORDER_START )
+                    
+                    if ( intResult == memBlockSlice_t::INTERSECT_INSIDE )
+                    {
+                        // We cannot handle the request if we are found inside of a page.
+                        // Terminate with an error.
+                        this->validOperation = false;
+
+                        return false;
+                    }
+                    else if ( intResult == memBlockSlice_t::INTERSECT_BORDER_START )
                     {
                         // The removal range ends in the current page.
                         // This means that the current page is the last page that should be removed.
@@ -858,6 +887,11 @@ struct NativePageAllocator
                 {
                     return;
                 }
+
+                inline bool IsValid( void )
+                {
+                    return this->validOperation;
+                }
             };
 
             memBlockSlice_t requiredRegion( (SIZE_T)theHandle->GetTargetPointer() + (SIZE_T)newReserveSize, (SIZE_T)memSizeDifference );
@@ -870,11 +904,11 @@ struct NativePageAllocator
                 privateSortedMemoryRanges.AddItem( item );
             LIST_FOREACH_END
 
-            ContextRemovalSelector selector( theHandle );
+            ContextRemovalSelector selector( *this, theHandle );
 
             ProcessSortedPages( requiredRegion, privateSortedMemoryRanges, selector );
             
-            success = true;
+            success = selector.IsValid();
         }
 
         if ( success )
