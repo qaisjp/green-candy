@@ -49,6 +49,10 @@ function createFontRenderer(gl)
             local allocatedChars = {};
             local maxWidth = 0;
             
+            local glyphOriginOffsetY = 0;
+            local fontMax_yMin = 0;
+            local fontMax_yMax = 0;
+            
             for n=1,255 do
                 face.loadGlyph(face.getCharIndex(n), 2);
                 
@@ -71,19 +75,46 @@ function createFontRenderer(gl)
                     texInfo.advX, texInfo.advY = face.getGlyphAdvance();
                     
                     -- Convert it to pixel coords.
-                    texInfo.advX = texInfo.advX / 64;
-                    texInfo.advY = texInfo.advY / 64;
+                    texInfo.advX = math.ceil(texInfo.advX / 64);
+                    texInfo.advY = math.ceil(texInfo.advY / 64);
                     
                     -- Cache rendering offset of glyph
-                    texInfo.offX, texInfo.offY = face.getGlyphMetricsHoriBearing();
+                    local horiBearingX, horiBearingY = face.getGlyphMetricsHoriBearing();
                     
-                    texInfo.offX = texInfo.offX / 64;
-                    texInfo.offY = texInfo.offY / 64;
+                    local pixelHoriBearingX = math.floor(horiBearingX / 64);
+                    local pixelHoriBearingY = math.floor(horiBearingY / 64);
+                    
+                    if ( glyphOriginOffsetY < pixelHoriBearingY ) then
+                        glyphOriginOffsetY = pixelHoriBearingY;
+                    end
+                    
+                    texInfo.offX = pixelHoriBearingX;
+                    texInfo.offY = pixelHoriBearingY;
+                    
+                    local glyphWidth, glyphHeight = face.getGlyphMetricsSize();
+                    
+                    local yMin = math.ceil( ( glyphHeight - horiBearingY ) / 64 );
+                    
+                    if ( fontMax_yMin < yMin ) then
+                        fontMax_yMin = yMin;
+                    end
+                    
+                    local yMax = pixelHoriBearingY;
+                    
+                    if ( fontMax_yMax < yMax ) then
+                        fontMax_yMax = yMax;
+                    end
+                    
+                    texInfo.glyphWidth = math.ceil( glyphWidth / 64 );
+                    texInfo.glyphHeight = math.ceil( glyphHeight / 64 );
                     
                     charMap[n] = texInfo;
                     table.insert(allocatedChars, texInfo);
                 end
             end
+            
+            heightData.fontMax_yMin = fontMax_yMin;
+            heightData.fontMax_yMax = fontMax_yMax;
             
             local numAllocated = #allocatedChars;
             local glyphMap = false;
@@ -147,21 +178,30 @@ function createFontRenderer(gl)
                     
                     -- Cache rendering offset of glyph
                     local offX = item.offX;
-                    local offY = item.offY - charHeight;
+                    local offY = glyphOriginOffsetY - item.offY;
                     
-                    local width, height = glyphBmp.getWidth(), glyphBmp.getHeight();
+                    local bitmapWidth, bitmapHeight = glyphBmp.getWidth(), glyphBmp.getHeight();
                     
                     -- Get texCoords of the glyph on the map.
                     local x, y = item.glyphX, item.glyphY;
                     local scaledGlyphTexPosX = x / texWidth;
                     local scaledGlyphTexPosY = y / texHeight;
-                    local scaledGlyphTexPosXend = scaledGlyphTexPosX + width / texWidth;
-                    local scaledGlyphTexPosYend = scaledGlyphTexPosY + height / texHeight;
+                    local scaledGlyphTexPosXend = scaledGlyphTexPosX + bitmapWidth / texWidth;
+                    local scaledGlyphTexPosYend = scaledGlyphTexPosY + bitmapHeight / texHeight;
+                    
+                    -- Get the font width and height.
+                    local width = item.glyphWidth;
+                    local height = item.glyphHeight;
+                    
+                    if ( true ) then
+                        width = bitmapWidth;
+                        height = bitmapHeight;
+                    end
                     
                     item.batch = gl.makeBatch(
                         function(cmdType, x, y)
                             x = x + offX;
-                            y = y - offY;
+                            y = y + offY;
                             
                             color4d(1, 1, 1, 1);
                         
@@ -249,6 +289,14 @@ function createFontRenderer(gl)
             end
             
             return width;
+        end
+        
+        function font.getHeight(height)
+            local heightData = allocateHeight( height );
+            
+            if not (heightData) then return 0; end;
+            
+            return heightData.fontMax_yMax + heightData.fontMax_yMin;
         end
         
         -- Debug function

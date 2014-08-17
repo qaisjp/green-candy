@@ -20,6 +20,8 @@
 #include <sys/stat.h>
 
 #include <SharedUtil.h>
+#include <MemoryUtils.h>
+#include "COSUtils.h"
 #include "interface.h"
 #include "CFileSystem.h"
 #include "CDynamicLibrary.h"

@@ -228,7 +228,7 @@ static LUA_DECLARE( setPosition )
     lua_pushnumber( L, x );
     lua_pushnumber( L, y );
     lua_call( L, 3, 1 );
-    bool success = lua_toboolean( L, -1 );
+    bool success = ( lua_toboolean( L, -1 ) != 0 );
 
     if ( !success )
         return 1;
@@ -328,7 +328,7 @@ static LUA_DECLARE( setSize )
     lua_pushnumber( L, w );
     lua_pushnumber( L, h );
     lua_call( L, 3, 1 );
-    bool success = lua_toboolean( L, -1 );
+    bool success = ( lua_toboolean( L, -1 ) != 0 );
 
     if ( !success )
         return 1;
@@ -452,7 +452,7 @@ static LUA_DECLARE( test )
     lua_pushnumber( L, y );
     lua_call( L, 2, 1 );
 
-    bool inLocalArea = lua_toboolean( L, -1 );
+    bool inLocalArea = ( lua_toboolean( L, -1 ) != 0 );
     lua_pop( L, 1 );
 
     LIST_FOREACH_BEGIN( dxElement, element->children.root, childNode )
@@ -474,7 +474,7 @@ static LUA_DECLARE( test )
                 lua_pushnumber( L, dy );
                 lua_call( L, 2, 1 );
                 
-                bool successful = lua_toboolean( L, -1 );
+                bool successful = ( lua_toboolean( L, -1 ) != 0 );
                 lua_pop( L, 1 );
 
                 if ( successful )
@@ -837,7 +837,7 @@ static inline dxElement* element_testDrawOrder( lua_State *L, RwList <dxElement>
         item->PushMethod( L, "isVisible" );
         lua_call( L, 0, 1 );
 
-        bool visible = lua_toboolean( L, -1 );
+        bool visible = ( lua_toboolean( L, -1 ) != 0 );
         lua_pop( L, 1 );
 
         if ( visible )
@@ -856,7 +856,7 @@ static inline dxElement* element_testDrawOrder( lua_State *L, RwList <dxElement>
             lua_pushnumber( L, offY - ey );
             lua_call( L, 2, 1 );
 
-            bool success = lua_toboolean( L, -1 );
+            bool success = ( lua_toboolean( L, -1 ) != 0 );
             lua_pop( L, 1 );
 
             if ( success )
@@ -965,7 +965,7 @@ static LUA_DECLARE( handleMouseClick )
         lua_pushnumber( L, offY - y );
         lua_call( L, 2, 1 );
 
-        bool success = lua_toboolean( L, -1 );
+        bool success = ( lua_toboolean( L, -1 ) != 0 );
 
         if ( success )
             return 1;
@@ -995,7 +995,7 @@ static LUA_DECLARE( handleMouseClick )
         lua_pushvalue( L, -5 );
         lua_call( L, 4, 1 );
 
-        bool success = lua_toboolean( L, -1 );
+        bool success = ( lua_toboolean( L, -1 ) != 0 );
         
         if ( success )
         {
@@ -1020,7 +1020,7 @@ static LUA_DECLARE( handleMouseClick )
     lua_pushnumber( L, offY );
     lua_call( L, 5, 1 );
 
-    bool success = lua_toboolean( L, -1 );
+    bool success = ( lua_toboolean( L, -1 ) != 0 );
 
     if ( success )
     {
@@ -1077,7 +1077,7 @@ static LUA_DECLARE( handleMouseMove )
             lua_pushcstring( L, "onMouseEnter" );
             lua_call( L, 0, 1 );
 
-            bool success = lua_toboolean( L, -1 );
+            bool success = ( lua_toboolean( L, -1 ) != 0 );
             
             if ( !success )
                 return 1;
@@ -1092,7 +1092,7 @@ static LUA_DECLARE( handleMouseMove )
         lua_pushnumber( L, offY );
         lua_call( L, 3, 1 );
 
-        bool success = lua_toboolean( L, -1 );
+        bool success = ( lua_toboolean( L, -1 ) != 0 );
         
         if ( success )
         {
@@ -1197,7 +1197,7 @@ static LUA_DECLARE( ready )
     element->PushMethod( L, "isVisible" );
     lua_call( L, 0, 1 );
 
-    bool visible = lua_toboolean( L, -1 );
+    bool visible = ( lua_toboolean( L, -1 ) != 0 );
 
     if ( !visible )
         return 1;

@@ -153,12 +153,17 @@ public:
         return ( this->endOffset - this->startOffset );
     }
 
-    inline void SetSliceStartPoint( numberType val )
+    inline void SetSlicePosition( numberType val )
     {
         const numberType sliceSize = GetSliceSize();
 
         this->startOffset = val;
         this->endOffset = val + sliceSize;
+    }
+
+    inline void SetSliceStartPoint( numberType val )
+    {
+        this->startOffset = val;
     }
 
     inline numberType GetSliceStartPoint( void ) const

@@ -5,12 +5,7 @@
 */
 
 
-#include <string.h>
-
-#define ltm_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lobject.h"
 #include "lstate.h"
@@ -96,4 +91,15 @@ const TValue *luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )
     }
     Table *mt = luaT_getmetabyobj( L, o );
     return (mt ? luaH_getstr( mt, G(L)->tmname[event] ) : luaO_nilobject);
+}
+
+// Module initialization.
+void luaT_moduleinit( void )
+{
+    return;
+}
+
+void luaT_moduleshutdown( void )
+{
+    return;
 }

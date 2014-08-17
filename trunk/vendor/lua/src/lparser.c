@@ -5,12 +5,7 @@
 */
 
 
-#include <string.h>
-
-#define lparser_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lcode.h"
 #include "ldebug.h"

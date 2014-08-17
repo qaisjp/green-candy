@@ -45,12 +45,17 @@
 
     You can define the macro MEM_INTERRUPT( bool_expr ) yourself. The most basic content is a redirect
     to assert( bool_expr ). If bool_expr is false, a memory error occured. MEM_INTERRUPT can be invoked
-    during runtime and termination of your module.
+    during initialization, runtime and termination of your module.
 
     FEATURE SET:
         finds memory leaks,
         finds invalid (page heap) object free requests,
         detects memory corruption
+
+    DEPENDENCIES:
+        COSUtils.h
+
+    version 1.2
 */
 
 #ifdef USE_HEAP_DEBUGGING
@@ -63,7 +68,18 @@
 #define MEM_INTERRUPT( expr )   assert( expr )
 #endif //MEM_INTERRUPT
 
+struct NativePageNoIntersectAllocator
+{
+    AINLINE bool OnPageCollision( const NativePageAllocation::pageHandleInfo& handleInfo, const NativePageAllocation::pageInfo& pageInfo )
+    {
+        return false;
+    }
+};
+
+typedef NativePageAllocator <NativePageNoIntersectAllocator> DebugFullPageHeapAllocator;
+
 SYSTEM_INFO g_systemInfo;
+DebugFullPageHeapAllocator *_nativeAlloc = NULL;
 pfnMemoryAllocWatch _memAllocWatchCallback = NULL;
 
 #ifdef USE_FULL_PAGE_HEAP
@@ -74,22 +90,22 @@ pfnMemoryAllocWatch _memAllocWatchCallback = NULL;
 
 inline static void* _win32_allocMemPage( size_t memSize )
 {
-    return VirtualAlloc( NULL, memSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE );
+    DebugFullPageHeapAllocator::pageHandle *handle = _nativeAlloc->Allocate( NULL, memSize );
+
+    if ( !handle )
+        return NULL;
+
+    return handle->GetTargetPointer();
 }
 
 inline static void _win32_freeMemPage( void *ptr )
 {
-    MEMORY_BASIC_INFORMATION info;
+    bool releaseSuccess = _nativeAlloc->FreeByAddress( ptr );
 
-    // Do some obvious checks.
-    MEM_INTERRUPT( VirtualQuery( ptr, &info, sizeof(info) ) != 0 );     // valid memory page
-    MEM_INTERRUPT( info.State != MEM_FREE );                            // memory has not been free'd before
-    MEM_INTERRUPT( VirtualFree( ptr, 0, MEM_RELEASE ) == TRUE );        // page release succeeded
+    MEM_INTERRUPT( releaseSuccess );    // pointer to page is invalid
 
-    // WARNING: we do not check that this page memory indeed belongs to
-    // the DebugHeap manager. Freeing memory from different heaps will
-    // result in heap corruption. To avoid this problem, make sure you
-    // deallocate memory that you know you allocated.
+    // This method assures that the pointer given to it is a real
+    // pointer that has been previously returned by _win32_allocMemPage.
 }
 
 #ifdef PAGE_HEAP_INTEGRITY_CHECK
@@ -180,7 +196,9 @@ inline static void* _win32_reallocMem( void *ptr, size_t newSize )
     _memOutro *outro = (_memOutro*)( (unsigned char*)ptr + newSize );
 
     // Make sure we do not overshoot page size
-    MEM_INTERRUPT( newSize <= MEM_PAGE_MOD( intro->objSize ) * g_systemInfo.dwPageSize );
+    const size_t constructNewSize = ( newSize + sizeof( _memIntro ) + sizeof( _memOutro ) );
+
+    MEM_INTERRUPT( constructNewSize <= MEM_PAGE_MOD( intro->objSize ) * g_systemInfo.dwPageSize );
 
     // Rewrite block integrity
     intro->objSize = newSize;
@@ -454,6 +472,8 @@ void DbgHeap_Init( void )
 
     // Initialize watch callbacks.
     _memAllocWatchCallback = NULL;
+
+    _nativeAlloc = new (malloc(sizeof(DebugFullPageHeapAllocator))) DebugFullPageHeapAllocator();
 
     _win32_initHeap();
 #endif

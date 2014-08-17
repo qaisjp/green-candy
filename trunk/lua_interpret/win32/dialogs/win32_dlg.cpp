@@ -779,7 +779,7 @@ LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM
             lua_pushcstring( L, "onClose" );
             lua_call( L, 1, 1 );
 
-            bool success = lua_toboolean( L, -1 );
+            bool success = ( lua_toboolean( L, -1 ) != 0 );
             lua_pop( L, 1 );
 
             if ( success )

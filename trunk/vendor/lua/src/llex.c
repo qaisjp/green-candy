@@ -5,14 +5,7 @@
 */
 
 
-#include <ctype.h>
-#include <locale.h>
-#include <string.h>
-
-#define llex_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "ldo.h"
 #include "llex.h"

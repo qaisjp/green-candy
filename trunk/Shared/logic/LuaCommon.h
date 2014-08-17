@@ -207,7 +207,7 @@ static inline bool Lua_ReadExportType( lua_State *L, int idx, LuaTypeExport*& ex
     switch( lua_type( L, idx ) )
     {
     case LUA_TBOOLEAN:
-        exp = new LuaTypeBoolean( lua_toboolean( L, idx ) );
+        exp = new LuaTypeBoolean( lua_toboolean( L, idx ) != 0 );
         return true;
     case LUA_TNUMBER:
         exp = new LuaTypeNumber( lua_tonumber( L, idx ) );

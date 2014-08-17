@@ -13,6 +13,8 @@
 #include "llimits.h"
 #include "lua.h"
 
+struct global_State;
+
 #define MEMERRMSG	"not enough memory"
 
 
@@ -39,12 +41,47 @@
    ((v)=cast(t *, luaM_reallocv(L, v, oldn, n, sizeof(t))))
 
 
-LUAI_FUNC void *luaM_realloc_ (lua_State *L, void *block, size_t oldsize,
-                                                          size_t size);
-LUAI_FUNC void *luaM_toobig (lua_State *L);
+LUAI_FUNC void *luaM_realloc__(global_State *g, void *block, size_t oldSize, size_t size);
+LUAI_FUNC void *luaM_realloc_ (lua_State *L, void *block, size_t oldsize, size_t size);
+LUAI_FUNC void *luaM_toobig   (lua_State *L);
 LUAI_FUNC void *luaM_growaux_ (lua_State *L, void *block, int *size,
                                size_t size_elem, int limit,
                                const char *errormsg);
+
+// Module initialization.
+LUAI_FUNC void luaM_init( void );
+LUAI_FUNC void luaM_shutdown( void );
+
+// Default class factory memory allocator.
+struct LuaDefaultAllocator
+{
+    global_State *globalState;
+
+    inline LuaDefaultAllocator( void )
+    {
+        this->globalState = NULL;
+    }
+
+    inline ~LuaDefaultAllocator( void )
+    {
+        return;
+    }
+
+    inline void SetState( global_State *theState )
+    {
+        this->globalState = theState;
+    }
+
+    inline void* Allocate( size_t memSize )
+    {
+        return luaM_realloc__( this->globalState, NULL, 0, memSize );
+    }
+
+    inline void Free( void *ptr, size_t memSize )
+    {
+        luaM_realloc__( this->globalState, ptr, memSize, 0 );
+    }
+};
 
 #endif
 

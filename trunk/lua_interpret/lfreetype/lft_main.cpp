@@ -350,6 +350,16 @@ skip:
         return 1;
     }
 
+    static LUA_DECLARE( getGlyphMetricsSize )
+    {
+        LFreeTypeFace *face = (LFreeTypeFace*)lua_getmethodtrans( L );
+        const FT_Glyph_Metrics& glyphMetrics = face->handle->glyph->metrics;
+
+        lua_pushinteger( L, glyphMetrics.width );
+        lua_pushinteger( L, glyphMetrics.height );
+        return 2;
+    }
+
     static const luaL_Reg face_interface[] =
     {
         LUA_METHOD( __index ),
@@ -364,6 +374,7 @@ skip:
         LUA_METHOD( getGlyphMetricsHoriBearing ),
         LUA_METHOD( getGlyphBoundingBox ),
         LUA_METHOD( getSizeMetrics ),
+        LUA_METHOD( getGlyphMetricsSize ),
         { NULL, NULL }
     };
 

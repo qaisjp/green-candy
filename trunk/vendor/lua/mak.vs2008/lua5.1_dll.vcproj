@@ -44,7 +44,7 @@
 				Optimization="0"
 				OmitFramePointers="false"
 				EnableFiberSafeOptimizations="false"
-				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk"
+				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared"
 				PreprocessorDefinitions="LUA_USE_APICHECK"
 				StringPooling="true"
 				MinimalRebuild="true"
@@ -54,7 +54,9 @@
 				EnableFunctionLevelLinking="true"
 				TreatWChar_tAsBuiltInType="false"
 				RuntimeTypeInfo="true"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough="luacore.h"
+				PrecompiledHeaderFile="$(IntDir)\luacore_precompiled.pch"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 				CompileAs="2"
@@ -80,7 +82,7 @@
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)/lua5.1.pdb"
 				SubSystem="2"
-				ResourceOnlyDLL="true"
+				ResourceOnlyDLL="false"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary="../lib/lua5.1d.lib"
@@ -142,14 +144,16 @@
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="false"
 				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk"
+				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				TreatWChar_tAsBuiltInType="false"
 				RuntimeTypeInfo="true"
-				UsePrecompiledHeader="0"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough="luacore.h"
+				PrecompiledHeaderFile="$(IntDir)\luacore_precompiled.pch"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -181,7 +185,7 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ResourceOnlyDLL="true"
+				ResourceOnlyDLL="false"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary="../lib/lua5.1.lib"
@@ -238,13 +242,16 @@
 				Optimization="2"
 				OmitFramePointers="true"
 				EnableFiberSafeOptimizations="false"
-				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk"
+				AdditionalIncludeDirectories="../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared"
 				StringPooling="true"
 				RuntimeLibrary="2"
 				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				TreatWChar_tAsBuiltInType="false"
 				RuntimeTypeInfo="true"
+				UsePrecompiledHeader="2"
+				PrecompiledHeaderThrough="luacore.h"
+				PrecompiledHeaderFile="$(IntDir)\luacore_precompiled.pch"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 				CompileAs="2"
@@ -276,7 +283,7 @@
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
-				ResourceOnlyDLL="true"
+				ResourceOnlyDLL="false"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
 				ImportLibrary="../lib/lua5.1.lib"
@@ -313,7 +320,39 @@
 			Name="src"
 			>
 			<File
+				RelativePath="..\src\lapi.access.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lapi.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.exec.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.gc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.get.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.misc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.push.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.set.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.stack.c"
 				>
 			</File>
 			<File
@@ -371,6 +410,33 @@
 			<File
 				RelativePath="..\src\linit.c"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"
+						PrecompiledHeaderThrough="luacore.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"
+						PrecompiledHeaderThrough="luacore.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Nightly|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="1"
+						PrecompiledHeaderThrough="luacore.h"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\liolib.c"
@@ -399,10 +465,61 @@
 			<File
 				RelativePath="..\src\lopcodes.c"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Nightly|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\loslib.c"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Nightly|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						UsePrecompiledHeader="0"
+						PrecompiledHeaderThrough=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\src\lparser.c"
@@ -462,6 +579,10 @@
 			>
 			<File
 				RelativePath="..\src\lapi.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lapi.hxx"
 				>
 			</File>
 			<File
@@ -554,6 +675,10 @@
 			</File>
 			<File
 				RelativePath="..\src\luaconf.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\luacore.h"
 				>
 			</File>
 			<File

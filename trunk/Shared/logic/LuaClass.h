@@ -105,7 +105,8 @@ public:
         parent->PushStack( m_lua );
         lua_call( m_lua, 1, 1 );
 
-        bool success = lua_toboolean( m_lua, -1 );
+        bool success = ( lua_toboolean( m_lua, -1 ) != 0 );
+
         lua_pop( m_lua, 1 );
         return success;
     }

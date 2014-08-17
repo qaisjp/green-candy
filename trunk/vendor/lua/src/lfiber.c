@@ -10,7 +10,8 @@
 *
 *****************************************************************************/
 
-#include "lua.h"
+#include "luacore.h"
+
 #include "lfiber.h"
 #include "lstate.h"
 #include "lmem.h"

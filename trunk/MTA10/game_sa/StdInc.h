@@ -31,6 +31,7 @@
 // SDK includes
 #define MTA_CLIENT
 #include "SharedUtil.h"
+#include "MemoryUtils.h"
 #include <multiplayer/CMultiplayer.h>
 #include <core/CCoreInterface.h>
 #include <net/CNet.h>

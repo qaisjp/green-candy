@@ -16,144 +16,23 @@
 
 #include "lobject.h"
 #include "ltm.h"
-#include "lzio.h"
 #include "lfiber.h"
 
 
-/* table of globals */
-#define gt(L)	(&L->l_gt)
-
-/* registry */
-#define registry(L)	(&G(L)->l_registry)
-
-
-/* extra stack space to handle TM calls and some other extras */
-#define EXTRA_STACK   5
-
-
-#define BASIC_CI_SIZE           8
-
-#define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
-
-
-
-typedef struct stringtable {
-  GCObject **hash;
-  lu_int32 nuse;  /* number of elements */
-  int size;
-} stringtable;
-
-
-/*
-** informations about a call
-*/
-typedef struct CallInfo {
-  StkId base;  /* base for this function */
-  StkId func;  /* function index in the stack */
-  StkId	top;  /* top for this function */
-  const Instruction *savedpc;
-  int nresults;  /* expected number of results from this function */
-  int tailcalls;  /* number of tail calls lost under this entry */
-} CallInfo;
-
-
-#define curr_func(L)	(clvalue(L->ci->func))
-#define ci_func(ci)	(clvalue((ci)->func))
-#define f_isLua(ci)	(!ci_func(ci)->isC)
-#define isLua(ci)	(ttisfunction((ci)->func) && f_isLua(ci))
-
 // Internal functions
-TValue *index2adr (lua_State *L, int idx);
-const TValue *index2constadr( lua_State *L, int idx );
+LUAI_FUNC TValue *index2adr (lua_State *L, int idx);
+LUAI_FUNC const TValue *index2constadr( lua_State *L, int idx );
 
-class lua_Thread;
+// Since we use advanced memory allocation techniques, we depend on custom
+// memory management templates.
+#include <MemoryUtils.h>
 
-/*
-** `global state', shared by all threads of this state
-*/
-typedef struct global_State
-{
-  stringtable strt;  /* hash table for strings */
-  lua_Alloc frealloc;  /* function to reallocate memory */
-  void *ud;         /* auxiliary data to `frealloc' */
-  lu_byte currentwhite;
-  lu_byte gcstate;  /* state of garbage collector */
-  int sweepstrgc;  /* position of sweep in `strt' */
-  GCObject *rootgc;  /* list of all collectable objects */
-  GCObject **sweepgc;  /* position of sweep in `rootgc' */
-  GrayObject *gray;  /* list of gray objects */
-  GrayObject *grayagain;  /* list of objects to be traversed atomically */
-  GrayObject *weak;  /* list of weak tables (to be cleared) */
-  GCObject *tmudata;  /* last element of list of userdata to be GC */
-  Mbuffer buff;  /* temporary buffer for string concatentation */
-  lua_Thread *GCthread; /* garbage collector runtime */
-  lu_mem GCthreshold;
-  lu_mem GCcollect; /* amount of memory to be collected until stop */
-  lu_mem totalbytes;  /* number of bytes currently allocated */
-  lu_mem estimate;  /* an estimate of number of bytes actually in use */
-  lu_mem gcdept;  /* how much GC is `behind schedule' */
-  int gcpause;  /* size of pause between successive GCs */
-  int gcstepmul;  /* GC `granularity' */
+typedef StaticPluginClassFactory <global_State> globalStateFactory_t;
 
-  TValue l_registry;
-  lua_State *mainthread;
-  UpVal uvhead;  /* head of double-linked list of all open upvalues */
-  TString *tmname[TM_N];  /* array with tag-method names */
-  TString *superCached; /* 'super' */
-  Closure *events[LUA_NUM_EVENTS];
+typedef globalStateFactory_t::pluginOffset_t globalStatePluginOffset_t;
 
-  RwList <lua_Thread> threads; /* all existing thread in this machine */
-} global_State;
+extern globalStateFactory_t globalStateFactory;
 
-#define tostate(l)      (cast(lua_State *, cast(lu_byte *, l) + LUAI_EXTRASPACE))
-#define state_size(x)	(sizeof(x) + LUAI_EXTRASPACE)
-#define fromstate(l)	(cast(lu_byte *, (l)) - LUAI_EXTRASPACE)
-
-
-/*
-** `per thread' state
-*/
-class lua_State : public GrayObject, virtual public ILuaState
-{
-public:
-    ~lua_State();
-
-    // lua_State is always the main thread
-    virtual void    SetMainThread( bool enabled )       {}
-    virtual bool    IsThread()                          { return false; }
-
-    virtual void    SetYieldDisabled( bool disable )    {}
-    virtual bool    IsYieldDisabled()                   { return true; }
-
-    size_t Propagate( global_State *g );
-
-    void* operator new( size_t size, lua_Alloc f, void *ud );
-    void operator delete( void *ptr );
-
-    StkId top;  /* first free slot in the stack */
-    StkId base;  /* base of current function */
-    global_State *l_G;
-    CallInfo *ci;  /* call info for current function */
-    const Instruction *savedpc;  /* `savedpc' of current function */
-    StkId stack_last;  /* last free slot in the stack */
-    StkId stack;  /* stack base */
-    CallInfo *end_ci;  /* points after end of ci array*/
-    CallInfo *base_ci;  /* array of CallInfo's */
-    int stacksize;
-    int size_ci;  /* size of array `base_ci' */
-    unsigned short nCcalls;  /* number of nested C calls */
-    lu_byte hookmask;
-    bool allowhook;
-    int basehookcount;
-    int hookcount;
-    lua_Hook hook;
-    TValue l_gt;  /* table of globals */
-    TValue env;  /* temporary place for environments */
-    GCObject *openupval;  /* list of open upvalues in this stack */
-    ptrdiff_t errfunc;  /* current error handling function (stack index) */
-    TValue storage;
-    Table *mt[NUM_TAGS];  /* metatables for basic types */
-};
 
 enum eLuaThreadStatus : unsigned char
 {
@@ -168,6 +47,8 @@ public:
     lua_Thread();
     ~lua_Thread();
 
+    lu_mem  GetTypeSize( global_State *g ) const;
+
     void    SetMainThread( bool enable )        { isMain = enable; }
     bool    IsThread()                          { return !isMain; }
 
@@ -176,21 +57,6 @@ public:
 
     void    SetYieldDisabled( bool disable )    { yieldDisabled = disable; }
     bool    IsYieldDisabled()                   { return yieldDisabled; }
-
-    void* operator new( size_t size, lua_State *main )
-    {
-        return GCObject::operator new( size + LUAI_EXTRASPACE, main );
-    }
-
-    void operator delete( void *ptr, lua_State *main )
-    {
-        __asm int 3
-    }
-
-    void operator delete( void *ptr )
-    {
-        GCObject::operator delete( fromstate( (lua_Thread*)ptr ), state_size( lua_Thread ) );
-    }
     
     inline void resume()
     {

@@ -4,11 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
-#include <ctype.h>
-#include <stdio.h>
-
-#define luac_c
-#define LUA_CORE
+#include "luacore.h"
 
 #include "ldebug.h"
 #include "lobject.h"
@@ -63,7 +59,7 @@ static void PrintConstant(const Proto* f, int i)
 	printf(LUA_NUMBER_FMT,nvalue(o));
 	break;
   case LUA_TSTRING:
-	PrintString(rawtsvalue(o));
+	PrintString(tsvalue(o));
 	break;
   default:				/* cannot happen */
 	printf("? type=%d",ttype(o));

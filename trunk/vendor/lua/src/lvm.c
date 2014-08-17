@@ -5,14 +5,7 @@
 */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define lvm_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -251,7 +244,7 @@ int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
   else if (ttisnumber(l))
     return luai_numlt(nvalue(l), nvalue(r));
   else if (ttisstring(l))
-    return l_strcmp(rawtsvalue(l), rawtsvalue(r)) < 0;
+    return l_strcmp(tsvalue(l), tsvalue(r)) < 0;
   else if ((res = call_orderTM(L, l, r, TM_LT)) != -1)
     return res;
   return luaG_ordererror(L, l, r);
@@ -265,7 +258,7 @@ static int lessequal (lua_State *L, const TValue *l, const TValue *r) {
   else if (ttisnumber(l))
     return luai_numle(nvalue(l), nvalue(r));
   else if (ttisstring(l))
-    return l_strcmp(rawtsvalue(l), rawtsvalue(r)) <= 0;
+    return l_strcmp(tsvalue(l), tsvalue(r)) <= 0;
   else if ((res = call_orderTM(L, l, r, TM_LE)) != -1)  /* first try `le' */
     return res;
   else if ((res = call_orderTM(L, r, l, TM_LT)) != -1)  /* else try `lt' */
@@ -438,7 +431,7 @@ reentry:  /* entry point */
         continue;
       }
       case OP_LOADBOOL: {
-        setbvalue(ra, GETARG_B(i));
+        setbvalue(ra, ( GETARG_B(i) != 0 ));
         if (GETARG_C(i)) pc++;  /* skip next instruction (if C) */
         continue;
       }
@@ -532,7 +525,7 @@ reentry:  /* entry point */
         continue;
       }
       case OP_NOT: {
-        int res = l_isfalse(RB(i));  /* next assignment may change this value */
+        bool res = l_isfalse(RB(i));  /* next assignment may change this value */
         setbvalue(ra, res);
         continue;
       }
@@ -540,7 +533,7 @@ reentry:  /* entry point */
         const TValue *rb = RB(i);
         switch (ttype(rb)) {
           case LUA_TTABLE: {
-            setnvalue(ra, cast_num(luaH_getn(hvalue(rb))));
+            setnvalue(ra, cast_num(luaH_getn(L, hvalue(rb))));
             break;
           }
           case LUA_TSTRING: {
@@ -594,14 +587,14 @@ reentry:  /* entry point */
         continue;
       }
       case OP_TEST: {
-        if (l_isfalse(ra) != GETARG_C(i))
+        if (l_isfalse(ra) != ( GETARG_C(i) != 0 ))
           dojump(L, pc, GETARG_sBx(*pc));
         pc++;
         continue;
       }
       case OP_TESTSET: {
         TValue *rb = RB(i);
-        if (l_isfalse(rb) != GETARG_C(i)) {
+        if (l_isfalse(rb) != ( GETARG_C(i) != 0 )) {
           setobjs2s(L, ra, rb);
           dojump(L, pc, GETARG_sBx(*pc));
         }
@@ -612,6 +605,9 @@ reentry:  /* entry point */
         int b = GETARG_B(i);
         int nresults = GETARG_C(i) - 1;
         if (b != 0) L->top = ra+b;  /* else previous instruction set top */
+
+        assert( L->top != NULL );
+
         L->savedpc = pc;
         switch (luaD_precall(L, ra, nresults)) {
           case PCRLUA: {
@@ -621,6 +617,9 @@ reentry:  /* entry point */
           case PCRC: {
             /* it was a C function (`precall' called it); adjust results */
             if (nresults >= 0) L->top = L->ci->top;
+
+            assert( L->top != NULL );
+
             base = L->base;
             continue;
           }
@@ -632,6 +631,9 @@ reentry:  /* entry point */
       case OP_TAILCALL: {
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b;  /* else previous instruction set top */
+
+        assert( L->top != NULL );
+
         L->savedpc = pc;
         lua_assert(GETARG_C(i) - 1 == LUA_MULTRET);
         switch (luaD_precall(L, ra, LUA_MULTRET)) {
@@ -646,9 +648,15 @@ reentry:  /* entry point */
             for (aux = 0; pfunc+aux < L->top; aux++)  /* move frame down */
               setobjs2s(L, func+aux, pfunc+aux);
             ci->top = L->top = func+aux;  /* correct top */
+
+            assert( L->top != NULL );
+
             lua_assert(L->top == L->base + clvalue(func)->GetLClosure()->p->maxstacksize);
             ci->savedpc = L->savedpc;
             ci->tailcalls++;  /* one more call lost */
+
+            assert( L->ci != L->base_ci );
+
             L->ci--;  /* remove new frame */
             goto reentry;
           }
@@ -664,6 +672,9 @@ reentry:  /* entry point */
       case OP_RETURN: {
         int b = GETARG_B(i);
         if (b != 0) L->top = ra+b-1;
+
+        assert( L->top != NULL );
+
         if (L->openupval) luaF_close(L, base);
         L->savedpc = pc;
         b = luaD_poscall(L, ra);
@@ -671,6 +682,9 @@ reentry:  /* entry point */
           return;  /* no: return */
         else {  /* yes: continue its execution */
           if (b) L->top = L->ci->top;
+
+          assert( L->top != NULL );
+
           lua_assert(isLua(L->ci));
           lua_assert(GET_OPCODE(*((L->ci)->savedpc - 1)) == OP_CALL);
           goto reentry;
@@ -709,8 +723,14 @@ reentry:  /* entry point */
         setobjs2s(L, cb+1, ra+1);
         setobjs2s(L, cb, ra);
         L->top = cb+3;  /* func. + 2 args (state and index) */
+
+        assert( L->top != NULL );
+
         Protect(luaD_call(L, cb, GETARG_C(i)));
         L->top = L->ci->top;
+
+        assert( L->top != NULL );
+
         cb = RA(i) + 3;  /* previous call may change the stack */
         if (!ttisnil(cb)) {  /* continue loop? */
           setobjs2s(L, cb-1, cb);  /* save control variable */
@@ -727,6 +747,9 @@ reentry:  /* entry point */
         if (n == 0) {
           n = cast_int(L->top - ra) - 1;
           L->top = L->ci->top;
+
+          assert( L->top != NULL );
+
         }
         if (c == 0) c = cast_int(*pc++);
         runtime_check(L, ttistable(ra));
@@ -776,6 +799,9 @@ reentry:  /* entry point */
           ra = RA(i);  /* previous call may change the stack */
           b = n;
           L->top = ra + n;
+
+          assert( L->top != NULL );
+
         }
         for (j = 0; j < b; j++) {
           if (j < n) {
@@ -789,4 +815,15 @@ reentry:  /* entry point */
       }
     }
   }
+}
+
+// Module initialization.
+void luaV_init( void )
+{
+    return;
+}
+
+void luaV_shutdown( void )
+{
+    return;
 }

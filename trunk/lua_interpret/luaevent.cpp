@@ -111,7 +111,7 @@ inline bool ExecuteEventHandlers( lua_State *L, LuaEventSys *sys, LuaManager *ma
         if ( type == LUA_TNIL )
             success = true;
         else
-            success = lua_toboolean( L, -1 );
+            success = ( lua_toboolean( L, -1 ) != 0 );
 
         lua_settop( L, top );
 

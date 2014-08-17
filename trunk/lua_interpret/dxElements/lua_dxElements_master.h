@@ -137,7 +137,7 @@ struct dxElements : public LuaClass
             lua_pushcstring( L, "onMouseLeave" );
             lua_call( L, 0, 1 );
 
-            bool success = lua_toboolean( L, -1 );
+            bool success = ( lua_toboolean( L, -1 ) != 0 );
             lua_pop( L, 1 );
 
             if ( success )

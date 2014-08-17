@@ -21,59 +21,6 @@
 #define GCSfinalize	4
 
 
-/*
-** some userful bit tricks
-*/
-#define resetbits(x,m)	((x) &= cast(lu_byte, ~(m)))
-#define setbits(x,m)	((x) |= (m))
-#define testbits(x,m)	((x) & (m))
-#define bitmask(b)	(1<<(b))
-#define bit2mask(b1,b2)	(bitmask(b1) | bitmask(b2))
-#define l_setbit(x,b)	setbits(x, bitmask(b))
-#define resetbit(x,b)	resetbits(x, bitmask(b))
-#define testbit(x,b)	testbits(x, bitmask(b))
-#define set2bits(x,b1,b2)	setbits(x, (bit2mask(b1, b2)))
-#define reset2bits(x,b1,b2)	resetbits(x, (bit2mask(b1, b2)))
-#define test2bits(x,b1,b2)	testbits(x, (bit2mask(b1, b2)))
-
-
-
-/*
-** Layout for bit use in `marked' field:
-** bit 0 - object is white (type 0)
-** bit 1 - object is white (type 1)
-** bit 2 - object is black
-** bit 3 - for userdata: has been finalized
-** bit 3 - for tables: has weak keys
-** bit 4 - for tables: has weak values
-** bit 5 - object is fixed (should not be collected)
-** bit 6 - object is "super" fixed (only the main thread)
-*/
-
-
-#define WHITE0BIT	0
-#define WHITE1BIT	1
-#define BLACKBIT	2
-#define FINALIZEDBIT	3
-#define KEYWEAKBIT	3
-#define VALUEWEAKBIT	4
-#define FIXEDBIT	5
-#define SFIXEDBIT	6
-#define WHITEBITS	bit2mask(WHITE0BIT, WHITE1BIT)
-
-
-#define iswhite(x)      test2bits((x)->marked, WHITE0BIT, WHITE1BIT)
-#define isblack(x)      testbit((x)->marked, BLACKBIT)
-#define isgray(x)	(!isblack(x) && !iswhite(x))
-
-#define otherwhite(g)	(g->currentwhite ^ WHITEBITS)
-#define isdead(g,v)	((v)->marked & otherwhite(g) & WHITEBITS)
-
-#define changewhite(x)	((x)->marked ^= WHITEBITS)
-#define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
-
-#define valiswhite(x)	(iscollectable(x) && iswhite(gcvalue(x)))
-
 #define luaC_white(g)	cast(lu_byte, (g)->currentwhite & WHITEBITS)
 
 
@@ -117,5 +64,8 @@ LUAI_FUNC void luaC_init( global_State *g );
 LUAI_FUNC void luaC_initthread( global_State *g );
 LUAI_FUNC void luaC_shutdown( global_State *g );
 
+// Module initialization.
+LUAI_FUNC void luaC_moduleinit( void );
+LUAI_FUNC void luaC_moduleshutdown( void );
 
 #endif

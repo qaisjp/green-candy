@@ -5,14 +5,7 @@
 */
 
 
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define liolib_c
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lauxlib.h"
 #include "lualib.h"

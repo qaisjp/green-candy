@@ -10,6 +10,9 @@
 *
 *****************************************************************************/
 
+#ifndef _RENDERWARE_LIST_DEFINITIONS_
+#define _RENDERWARE_LIST_DEFINITIONS_
+
 // Macros used by RW, optimized for usage by the engine (inspired by S2 Games' macros)
 #ifdef USE_MACRO_LIST
 
@@ -57,3 +60,5 @@ struct RwList
 {
     RwListEntry <type> root;
 };
+
+#endif //_RENDERWARE_LIST_DEFINITIONS_

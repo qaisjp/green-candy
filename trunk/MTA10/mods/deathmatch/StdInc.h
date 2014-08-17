@@ -28,6 +28,7 @@
 // SDK includes
 #define MTA_CLIENT
 #include "SharedUtil.h"
+#include "MemoryUtils.h"
 #include <core/CCoreInterface.h>
 #include <core/CExceptionInformation.h>
 #include <xml/CXML.h>

@@ -33,4 +33,8 @@ LUAI_FUNC void luaV_settable (lua_State *L, const TValue *t, const TValue *key, 
 LUAI_FUNC void luaV_execute (lua_State *L, int nexeccalls);
 LUAI_FUNC void luaV_concat (lua_State *L, int total, int last);
 
+// Module initialization.
+LUAI_FUNC void luaV_init( void );
+LUAI_FUNC void luaV_shutdown( void );
+
 #endif

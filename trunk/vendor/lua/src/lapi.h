@@ -23,4 +23,8 @@
 
 LUAI_FUNC void luaA_pushobject (lua_State *L, const TValue *o);
 
+// Module initialization.
+LUAI_FUNC void luaapi_init( void );
+LUAI_FUNC void luaapi_shutdown( void );
+
 #endif

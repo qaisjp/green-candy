@@ -4,16 +4,15 @@
 ** See Copyright Notice in lua.h
 */
 
+#define loslib_c
+
+#include "luacore.h"
 
 #include <errno.h>
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
-#define loslib_c
-
-#include "lua.h"
 
 #include "lauxlib.h"
 #include "lualib.h"

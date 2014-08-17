@@ -10,7 +10,7 @@
 *
 *****************************************************************************/
 
-#include "lua.h"
+#include "luacore.h"
 #include <algorithm>
 
 #include "lapi.h"
@@ -24,6 +24,26 @@
 #include "lfunc.h"
 #include "lvm.h"
 #include "ldebug.h"
+
+// Class maintenance plugin inside of the global_State.
+static globalStatePluginOffset_t _classGlobalStatePlugin = 0;
+
+typedef StaticPluginClassFactory <Class> classObjFactory_t;
+
+struct globalStateClassEnvPlugin
+{
+    classObjFactory_t factory;
+};
+
+globalStateClassEnvPlugin* GetGlobalClassEnv( global_State *g )
+{
+    return globalStateFactory_t::RESOLVE_STRUCT <globalStateClassEnvPlugin> ( g, _classGlobalStatePlugin );
+}
+
+lu_mem Class::GetTypeSize( global_State *g ) const
+{
+    return (lu_mem)GetGlobalClassEnv( g )->factory.GetClassSize();
+}
 
 class ClassMethodRegister : public VirtualClassEntry
 {
@@ -524,7 +544,7 @@ void Class::SetTransmit( int type, void *entity )
 	unsigned int idx = transCount++;
 
 	// Grow the array
-	trans = (trans_t*)luaM_realloc_( _lua, trans, idx * sizeof(trans_t), transCount * sizeof(trans_t) );
+	trans = (trans_t*)luaM_realloc_( this->hostState, trans, idx * sizeof(trans_t), transCount * sizeof(trans_t) );
 
 	// Append the item
     trans_t& item = trans[idx];
@@ -1923,6 +1943,13 @@ private:
 
 Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 {
+    // Attempt to get the global class environment.
+    globalStateClassEnvPlugin *globalClassEnv = GetGlobalClassEnv( G(L) );
+
+    // If we cannot, there is no point in constructing classes.
+    if ( !globalClassEnv )
+        return NULL;
+
     Closure *constructor = clvalue( L->top - 1 );
 
     // We cannot construct using closure which are, say, class methods already.
@@ -1932,11 +1959,14 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     // Lock the environment
     constructor->isEnvLocked = true;
 
-    Class *c = new (L) Class;
+    // Allocate the class plugin object.
+    Class *c = globalClassEnv->factory.Construct( G(L)->defaultAlloc );
 
     // Link it into the GC system
     c->next = G(L)->mainthread->next;
     G(L)->mainthread->next = c;
+
+    c->hostState = G(L)->mainthread;
 
     c->tt = LUA_TCLASS;
     c->marked = luaC_white( G(L) ); // do not collect
@@ -2045,11 +2075,29 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     return c;
 }
 
+void luaJ_free( lua_State *L, Class *j )
+{
+    assert( j != NULL );
+
+    // Free runtime data.
+    {
+        lua_assert( j->inMethod == 0 );
+
+        luaM_realloc_( j->hostState, j->trans, j->transCount * sizeof(Class::trans_t), 0 );
+    }
+
+    // Get the global class environment.
+    globalStateClassEnvPlugin *globalClassEnv = GetGlobalClassEnv( G(L) );
+
+    if ( globalClassEnv )
+    {
+        // Destroy the class plugin object.
+        globalClassEnv->factory.Destroy( G(L)->defaultAlloc, j );
+    }
+}
+
 Class::~Class()
 {
-    lua_assert( inMethod == 0 );
-
-	luaM_realloc_( _lua, trans, transCount * sizeof(trans_t), 0 );
 }
 
 void luaJ_construct( lua_State *L, int nargs )
@@ -2115,4 +2163,16 @@ static int extend_handler( lua_State *L )
 void luaJ_basicextend( lua_State *L )
 {
     lua_refclass( L, LUA_ENVIRONINDEX )->RegisterMethod( L, "extend", extend_handler, 0, true );
+}
+
+// Module initialization.
+void luaJ_init( void )
+{
+    _classGlobalStatePlugin =
+        globalStateFactory.RegisterStructPlugin <globalStateClassEnvPlugin> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
+}
+
+void luaJ_shutdown( void )
+{
+    return;
 }
