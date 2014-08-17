@@ -350,7 +350,14 @@ namespace DbgTrace
 
     IEnvSnapshot* CreateEnvironmentSnapshotFromContext( const CONTEXT *const runtimeContext )
     {
-        return new Win32EnvSnapshot( *runtimeContext );
+        try
+        {
+            return new Win32EnvSnapshot( *runtimeContext );
+        }
+        catch( ... )
+        {
+            return NULL;
+        }
     }
 
     // Thanks to NirSoft!

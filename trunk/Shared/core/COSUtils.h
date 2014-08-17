@@ -52,7 +52,11 @@ namespace NativePageAllocation
 template <typename colliderType>
 struct NativePageAllocator
 {
+    // WARNING: this class is NOT thread-safe!
+
     // Collision detection type.
+    // Used to define rules of allocation between handles and pages, effectively defining intersections
+    // (exclusive pages, read/write barriers, etc).
     colliderType collDetect;
 
     // Private memory heap to prevent unwanted recursion.
@@ -125,7 +129,7 @@ struct NativePageAllocator
 
         memBlockSlice_t requestedMemory;    // slice that represents memory that can be accessed by the application
 
-        residingMemBlocks_t residingMemBlocks;  // the memory blocks we are part
+        residingMemBlocks_t residingMemBlocks;  // the memory blocks we are part of, have to be sorted by address!
 
         RwListEntry <pageHandle> managerNode;   // entry in the active page handle list
     };
@@ -205,14 +209,15 @@ struct NativePageAllocator
             // Get the address of the list item as number.
             SIZE_T memBlockAddress = (SIZE_T)item->pageAddress;
 
-            if ( memBlockAddress < insertMemBlockAddress )
+            if ( memBlockAddress > insertMemBlockAddress )
             {
-                insertAfter = iter;
                 break;
             }
+
+            insertAfter = iter;
         LIST_FOREACH_END
 
-        LIST_INSERT( *insertAfter, memBlock->sortedNode );
+        LIST_APPEND( *insertAfter, memBlock->sortedNode );
     }
 
     inline pageAllocation* CreatePageAllocation( LPVOID pageAddress, SIZE_T allocSize )
@@ -302,64 +307,28 @@ struct NativePageAllocator
         return newPageSuccess;
     }
 
-    inline bool ReserveMemoryOnRegion(
+    template <typename callbackType>
+    inline void ProcessSortedPages(
         memBlockSlice_t& requestedMemRange,
-        residingMemBlocks_t& allocatedPages, bool& allocatedNewPage,
-        residingMemBlocks_t& hostPages, bool& hasHostPages )
+        const residingMemBlocks_t& privateSortedMemoryRanges,
+        callbackType& cb )
     {
-        // Copy important intersection parameters.
-        void *desiredAddress = (void*)requestedMemRange.GetSliceStartPoint();
-        size_t spanSize = (size_t)requestedMemRange.GetSliceSize();
-
-        bool validAllocation = true;
-
-        // Create a private copy of the sorted memory ranges list.
-        // We assume that we are the only thread that modifies this list.
-        residingMemBlocks_t privateSortedMemoryRanges;
-
-        LIST_FOREACH_BEGIN( pageAllocation, sortedMemoryRanges.root, managerNode )
-            privateSortedMemoryRanges.AddItem( item );
-        LIST_FOREACH_END
-
         bool operationComplete = false;
+        bool requiresConsecutivePage = false;
 
         for ( unsigned int n = 0; n < privateSortedMemoryRanges.GetCount(); n++ )
         {
             pageAllocation *item = privateSortedMemoryRanges.GetFast( n );
 
-            // Default operation switches.
-            bool allocateMissingBeforePages = false;
-            bool requireCurrentPage = false;
-            bool requiresConsecutivePage = false;
-
             // Collide both slices.
             memBlockSlice_t::eIntersectionResult intResult = requestedMemRange.intersectWith( item->pageSpan );
 
-            // If there was a collision, check if it is allowed.
-            // If not, then we have to abort with an invalid allocation request.
-            if ( !memBlockSlice_t::isFloatingIntersect( intResult ) && intResult != memBlockSlice_t::INTERSECT_UNKNOWN )
+            // Notify the callback.
             {
-                // By default, we can intersect.
-                bool allowIntersect = true;
-                {
-                    // Ask the collider if we can intersect.
-                    NativePageAllocation::pageHandleInfo handleInfo;
-                    handleInfo.pAddress = desiredAddress;
-                    handleInfo.memSize = spanSize;
+                bool canContinue = cb.OnPageIntersection( requestedMemRange, item, intResult );
 
-                    NativePageAllocation::pageInfo pageInfo;
-                    pageInfo.pAddress = (void*)item->pageAddress;
-                    pageInfo.regionSize = (size_t)item->allocSize;
-                    // todo: add page information.
-
-                    allowIntersect = collDetect.OnPageCollision( handleInfo, pageInfo );
-                }
-                if ( !allowIntersect )
-                {
-                    // We have encountered an invalid request and must terminate.
-                    validAllocation = false;
+                if ( !canContinue )
                     break;
-                }
             }
 
             if ( intResult == memBlockSlice_t::INTERSECT_INSIDE ||
@@ -367,18 +336,12 @@ struct NativePageAllocator
             {
                 // Since we either are inside the host page or are exactly the same region,
                 // we can include it and leave.
-                requireCurrentPage = true;
                 operationComplete = true;
             }
             else if ( intResult == memBlockSlice_t::INTERSECT_BORDER_END )
             {
-                // There are pages before any currently allocated page that require validation before
-                // we can proceed.
-                allocateMissingBeforePages = true;
-
                 // Since the allocation ends in the current page (which is already allocated),
                 // we can include it and terminate.
-                requireCurrentPage = true;
                 operationComplete = true;
             }
             else if ( intResult == memBlockSlice_t::INTERSECT_BORDER_START )
@@ -387,22 +350,10 @@ struct NativePageAllocator
                 // proceeds into unknown territory from here on.
                 // Add the current page into the host pages list and make sure that each page
                 // on the way to the end is allocated.
-                requireCurrentPage = true;
                 requiresConsecutivePage = true;
             }
             else if ( intResult == memBlockSlice_t::INTERSECT_ENCLOSING )
             {
-                // The allocation request region encloses the current resident page. We must
-                // (conditionally) handle region before and after the allocated blocks (if
-                // these ranges are not 0).
-                if ( requestedMemRange.GetSliceStartPoint() != item->pageSpan.GetSliceStartPoint() )
-                {
-                    // We have memory before the resident page.
-                    allocateMissingBeforePages = true;
-                }
-                
-                requireCurrentPage = true;
-
                 if ( requestedMemRange.GetSliceEndPoint() != item->pageSpan.GetSliceEndPoint() )
                 {
                     // We need to be looking out for additional pages after us.
@@ -423,42 +374,13 @@ struct NativePageAllocator
             {
                 // We could not find a page that can host us.
                 // The memory region has to be allocated entirely new.
-                operationComplete = true;
+                break;
             }
             else
             {
                 // It is unknown how to handle this event.
                 // It should never happen.
                 assert( 0 );
-            }
-
-            if ( allocateMissingBeforePages )
-            {
-                SIZE_T invalidRegionStart = requestedMemRange.GetSliceStartPoint();
-                SIZE_T invalidRegionEnd = item->pageSpan.GetSliceStartPoint();
-
-                size_t invalidRegionSpan = (size_t)( invalidRegionEnd - invalidRegionStart );
-                void *invalidRegionPtr = (void*)invalidRegionStart;
-
-                bool validationSuccess = PageAcquireHelper(
-                    invalidRegionPtr, invalidRegionSpan,
-                    allocatedPages, allocatedNewPage,
-                    hostPages, hasHostPages
-                );
-
-                if ( !validationSuccess )
-                {
-                    validAllocation = false;
-                    break;
-                }
-            }
-
-            // Include the current page into the host pages list.
-            if ( requireCurrentPage )
-            {
-                hostPages.AddItem( item );
-
-                hasHostPages = true;
             }
 
             // We have finished our operation..?
@@ -479,14 +401,149 @@ struct NativePageAllocator
         // Check whether we have completed our operation.
         if ( !operationComplete )
         {
-            // We (still) need to allocate the region that is defined by requestedMemRange!
-            SIZE_T invalidRegionStart = requestedMemRange.GetSliceStartPoint();
-            SIZE_T invalidRegionEnd = requestedMemRange.GetSliceEndPoint();
+            cb.OnIncompleteOperation( requestedMemRange );
+        }
+    }
 
+    struct ReserveMemorySelector
+    {
+        void *desiredAddress;
+        size_t spanSize;
+
+        NativePageAllocator& manager;
+        bool validAllocation;
+        residingMemBlocks_t allocatedPages; bool allocatedNewPage;
+        residingMemBlocks_t& hostPages; bool& hasHostPages;
+
+        inline ReserveMemorySelector(
+            void *desiredAddress, size_t spanSize,
+            residingMemBlocks_t& hostPages, bool& hasHostPages,
+            NativePageAllocator& manager ) : hostPages( hostPages ), hasHostPages( hasHostPages ), manager( manager )
+        {
+            this->desiredAddress = desiredAddress;
+            this->spanSize = spanSize;
+
+            this->validAllocation = true;
+        }
+
+        inline ~ReserveMemorySelector( void )
+        {
+            if ( !IsValidAllocation() )
+            {
+                if ( allocatedNewPage )
+                {
+                    for ( unsigned int n = 0; n < allocatedPages.GetCount(); n++ )
+                    {
+                        pageAllocation *thePage = allocatedPages.GetFast( n );
+
+                        manager.DeletePageAllocation( thePage );
+                    }
+                }
+            }
+        }
+
+        inline bool IsValidAllocation( void ) const
+        {
+            return this->validAllocation;
+        }
+
+        inline bool OnPageIntersection(
+            const memBlockSlice_t& concurrentRequest, pageAllocation *thePage,
+            memBlockSlice_t::eIntersectionResult intResult
+        )
+        {
+            // If there was a collision, check if it is allowed.
+            // If not, then we have to abort with an invalid allocation request.
+            if ( !memBlockSlice_t::isFloatingIntersect( intResult ) && intResult != memBlockSlice_t::INTERSECT_UNKNOWN )
+            {
+                // By default, we can intersect.
+                bool allowIntersect = true;
+                {
+                    // Ask the collider if we can intersect.
+                    NativePageAllocation::pageHandleInfo handleInfo;
+                    handleInfo.pAddress = this->desiredAddress;
+                    handleInfo.memSize = this->spanSize;
+
+                    NativePageAllocation::pageInfo pageInfo;
+                    pageInfo.pAddress = (void*)thePage->pageAddress;
+                    pageInfo.regionSize = (size_t)thePage->allocSize;
+                    // todo: add page information.
+
+                    allowIntersect = manager.collDetect.OnPageCollision( handleInfo, pageInfo );
+                }
+                if ( !allowIntersect )
+                {
+                    // We have encountered an invalid request and must terminate.
+                    this->validAllocation = false;
+                    return false;
+                }
+            }
+
+            // Default operation switches.
+            bool requireCurrentPage = false;
+
+            // Dispatch the request with local parameters.
+            bool allocateMissingBeforePages = false;
+
+            if ( intResult == memBlockSlice_t::INTERSECT_INSIDE ||
+                 intResult == memBlockSlice_t::INTERSECT_EQUAL )
+            {
+                requireCurrentPage = true;
+            }
+            else if ( intResult == memBlockSlice_t::INTERSECT_BORDER_END )
+            {
+                // There are pages before any currently allocated page that require validation before
+                // we can proceed.
+                allocateMissingBeforePages = true;
+
+                requireCurrentPage = true;
+            }
+            else if ( intResult == memBlockSlice_t::INTERSECT_BORDER_START )
+            {
+                requireCurrentPage = true;
+            }
+            else if ( intResult == memBlockSlice_t::INTERSECT_ENCLOSING ) 
+            {
+                // The allocation request region encloses the current resident page. We must
+                // (conditionally) handle region before and after the allocated blocks (if
+                // these ranges are not 0).
+                if ( concurrentRequest.GetSliceStartPoint() != thePage->pageSpan.GetSliceStartPoint() )
+                {
+                    // We have memory before the resident page.
+                    allocateMissingBeforePages = true;
+                }
+
+                requireCurrentPage = true;
+            }
+
+            if ( allocateMissingBeforePages )
+            {
+                SIZE_T invalidRegionStart = concurrentRequest.GetSliceStartPoint();
+                SIZE_T invalidRegionEnd = thePage->pageSpan.GetSliceStartPoint();
+
+                bool validateSuccess = ValidateRegion( invalidRegionStart, invalidRegionEnd );
+
+                if ( !validateSuccess )
+                    return false;
+            }
+
+            // Include the current page into the host pages list.
+            if ( requireCurrentPage )
+            {
+                this->hostPages.AddItem( thePage );
+
+                this->hasHostPages = true;
+            }
+
+            return true;
+        }
+
+        inline bool ValidateRegion( SIZE_T invalidRegionStart, SIZE_T invalidRegionEnd )
+        {
             size_t invalidRegionSpan = (size_t)( invalidRegionEnd - invalidRegionStart );
             void *invalidRegionPtr = (void*)invalidRegionStart;
 
-            bool validationSuccess = PageAcquireHelper(
+            bool validationSuccess = manager.PageAcquireHelper(
                 invalidRegionPtr, invalidRegionSpan,
                 allocatedPages, allocatedNewPage,
                 hostPages, hasHostPages
@@ -494,12 +551,49 @@ struct NativePageAllocator
 
             if ( !validationSuccess )
             {
-                // Fail.
-                validAllocation = false;
+                this->validAllocation = false;
             }
+            return validationSuccess;
         }
 
-        return validAllocation;
+        inline void OnIncompleteOperation( const memBlockSlice_t& finishingMemRange )
+        {
+            // Only complete the request if we are valid.
+            if ( IsValidAllocation() )
+            {
+                // We (still) need to allocate the region that is defined by requestedMemRange!
+                SIZE_T invalidRegionStart = finishingMemRange.GetSliceStartPoint();
+                SIZE_T invalidRegionEnd = finishingMemRange.GetSliceEndPoint() + 1;
+
+                ValidateRegion( invalidRegionStart, invalidRegionEnd );
+            }
+        }
+    };
+
+    inline bool ReserveMemoryOnRegion(
+        memBlockSlice_t& requestedMemRange,
+        residingMemBlocks_t& hostPages, bool& hasHostPages )
+    {
+        // WARNING: the hostPages array has to be address sorted!
+
+        // Copy important intersection parameters.
+        void *desiredAddress = (void*)requestedMemRange.GetSliceStartPoint();
+        size_t spanSize = (size_t)requestedMemRange.GetSliceSize();
+
+        // Create a private copy of the sorted memory ranges list.
+        // We assume that we are the only thread that modifies this list.
+        residingMemBlocks_t privateSortedMemoryRanges;
+
+        LIST_FOREACH_BEGIN( pageAllocation, sortedMemoryRanges.root, sortedNode )
+            privateSortedMemoryRanges.AddItem( item );
+        LIST_FOREACH_END
+
+        // Handle the request.
+        ReserveMemorySelector selector( desiredAddress, spanSize, hostPages, hasHostPages, *this );
+
+        ProcessSortedPages( requestedMemRange, privateSortedMemoryRanges, selector );
+
+        return selector.IsValidAllocation();
     }
 
     inline pageHandle* Allocate( void *desiredAddress, size_t spanSize )
@@ -523,7 +617,6 @@ struct NativePageAllocator
 
                     validAllocation = ReserveMemoryOnRegion(
                         requestedMemRange,
-                        allocatedPages, allocatedNewPage,
                         hostPages, hasHostPages
                     );
                 }
@@ -602,11 +695,195 @@ struct NativePageAllocator
         return NULL;
     }
 
+    // Helper function to get a signed difference between two unsigned numbers.
+    template <typename numberType>
+    static inline numberType GetSignedDifference( const numberType& left, const numberType& right, bool& isSigned )
+    {
+        bool _isSigned = ( left < right );
+
+        numberType result;
+
+        if ( _isSigned )
+        {
+            result = ( right - left );
+        }
+        else
+        {
+            result = ( left - right );
+        }
+
+        isSigned = _isSigned;
+
+        return result;
+    }
+
     // Attempts to update the handle size so that either more or less memory
     // can be used.
     inline bool SetHandleSize( pageHandle *theHandle, size_t newReserveSize )
     {
-        return false;
+        // Do nothing if the handle size has not changed.
+        size_t oldSize = theHandle->GetTargetSize();
+
+        if ( newReserveSize == oldSize )
+            return true;
+
+        bool isSigned;
+        size_t memSizeDifference = GetSignedDifference( newReserveSize, oldSize, isSigned );
+
+        bool success = true;
+
+        if ( !isSigned )
+        {
+            // If the new memory size is greater than the old.
+            // Allocate additional memory pages if they are required.
+            residingMemBlocks_t hostPages; bool hasHostPages;
+
+            memBlockSlice_t requiredRegion( (SIZE_T)theHandle->GetTargetPointer() + (SIZE_T)oldSize, (SIZE_T)memSizeDifference );
+
+            success = ReserveMemoryOnRegion( requiredRegion, hostPages, hasHostPages );
+
+            // Have we succeeded in reserving the requested memory pages?
+            if ( success )
+            {
+                // Perform an optimized append of the sorted hosted-pages.
+                // Prevent page duplication of page allocations inside the resident pages of theHandle!
+                for ( unsigned int n = 0; n < hostPages.GetCount(); n++ )
+                {
+                    pageAllocation *newPage = hostPages.GetFast( n );
+
+                    // If its the first page, compare it with the last of the resident pages.
+                    // If the same, then do not add.
+                    bool alreadyExists = false;
+
+                    if ( n == 0 )
+                    {
+                        pageAllocation *lastConcurrentBlock = NULL;
+
+                        bool hasLast = theHandle->residingMemBlocks.Tail( lastConcurrentBlock );
+
+                        alreadyExists = ( hasLast ) && ( newPage == lastConcurrentBlock );
+                    }
+
+                    // If the page does not already exist, add it.
+                    if ( !alreadyExists )
+                    {
+                        // WARNING: this is a sorted append!
+                        newPage->RegisterPageHandle( theHandle );
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Otherwise the new memory size is smaller than the old.
+            // We potentially have to remove pages from the residency list.
+            struct ContextRemovalSelector
+            {
+                pageHandle *contextHandle;
+                unsigned int removePagesFromEndCount;
+
+                inline ContextRemovalSelector( pageHandle *theHandle )
+                {
+                    this->contextHandle = theHandle;
+
+                    this->removePagesFromEndCount = 0;
+                }
+
+                inline ~ContextRemovalSelector( void )
+                {
+                    // If we need to remove any pages from the end...
+                    if ( unsigned int removeFromEndCount = this->removePagesFromEndCount )
+                    {
+                        // Set a new size to the handle residing memory pages array.
+                        while ( removeFromEndCount-- )
+                        {
+                            pageAllocation *pageToBeDereferenced = NULL;
+
+                            bool hasThePage = this->contextHandle->residingMemBlocks.Tail( pageToBeDereferenced );
+
+                            assert( hasThePage == true );
+
+                            pageToBeDereferenced->UnregisterPageHandle( this->contextHandle );
+                        }
+                    }
+                }
+
+                inline bool OnPageIntersection(
+                    const memBlockSlice_t& concurrentRequest, const pageAllocation *thePage,
+                    memBlockSlice_t::eIntersectionResult intResult
+                )
+                {
+                    // Check whether we should remove the handle from the context of the current page.
+                    bool removeCurrentPage = false;
+                        
+                    if ( intResult == memBlockSlice_t::INTERSECT_BORDER_START )
+                    {
+                        // The removal range ends in the current page.
+                        // This means that the current page is the last page that should be removed.
+                        removeCurrentPage = true;
+                    }
+                    else if ( intResult == memBlockSlice_t::INTERSECT_ENCLOSING )
+                    {
+                        // Current page is enclosed by the removal range.
+                        // This is a safe remove.
+                        removeCurrentPage = true;
+                    }
+                    else if ( intResult == memBlockSlice_t::INTERSECT_BORDER_END )
+                    {
+                        // The removal range starts in the current page.
+                        // Remove this page if the removal range starts at the beginning of the page
+                        // (a.k.a. is covering the entire page).
+                        if ( concurrentRequest.GetSliceStartPoint() == thePage->pageSpan.GetSliceStartPoint() )
+                        {
+                            removeCurrentPage = true;
+                        }
+                    }
+                    else if ( intResult == memBlockSlice_t::INTERSECT_EQUAL )
+                    {
+                        // If the removal request is equal to the page, just remove it.
+                        removeCurrentPage = true;
+                    }
+
+                    // Remove the current page if necessary.
+                    if ( removeCurrentPage )
+                    {
+                        // Actually do an optimized removal!
+                        removePagesFromEndCount++;
+                    }
+
+                    return true;
+                }
+
+                inline void OnIncompleteOperation( const memBlockSlice_t& finishingMemRange )
+                {
+                    return;
+                }
+            };
+
+            memBlockSlice_t requiredRegion( (SIZE_T)theHandle->GetTargetPointer() + (SIZE_T)newReserveSize, (SIZE_T)memSizeDifference );
+
+            // Create a private copy of the sorted memory ranges list.
+            // We assume that we are the only thread that modifies this list.
+            residingMemBlocks_t privateSortedMemoryRanges;
+
+            LIST_FOREACH_BEGIN( pageAllocation, sortedMemoryRanges.root, sortedNode )
+                privateSortedMemoryRanges.AddItem( item );
+            LIST_FOREACH_END
+
+            ContextRemovalSelector selector( theHandle );
+
+            ProcessSortedPages( requiredRegion, privateSortedMemoryRanges, selector );
+            
+            success = true;
+        }
+
+        if ( success )
+        {
+            // Set the new handle region.
+            theHandle->requestedMemory.SetSliceEndPoint( (SIZE_T)theHandle->GetTargetPointer() + (SIZE_T)newReserveSize - (SIZE_T)1 );
+        }
+
+        return success;
     }
 
     inline void MemBlockGarbageCollection( pageAllocation *memBlock )
