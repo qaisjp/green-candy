@@ -1910,6 +1910,10 @@
 						>
 					</File>
 					<File
+						RelativePath="..\..\Shared\core\COSUtils.h"
+						>
+					</File>
+					<File
 						RelativePath="..\..\Shared\core\interface.h"
 						>
 					</File>

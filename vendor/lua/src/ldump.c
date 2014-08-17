@@ -4,12 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
-#include <stddef.h>
-
-#define ldump_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lobject.h"
 #include "lstate.h"
@@ -96,7 +91,7 @@ static void DumpConstants(const Proto* f, DumpState* D)
 	DumpNumber(nvalue(o),D);
 	break;
    case LUA_TSTRING:
-	DumpString(rawtsvalue(o),D);
+	DumpString(tsvalue(o),D);
 	break;
    default:
 	lua_assert(0);			/* cannot happen */

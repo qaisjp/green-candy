@@ -16,8 +16,13 @@
 #include "lobject.h"
 
 LUAI_FUNC Class* luaJ_new( lua_State *L, int nargs, unsigned int flags );
+LUAI_FUNC void luaJ_free( lua_State *L, Class *j );
 LUAI_FUNC void luaJ_construct( lua_State *L, int nargs );
 LUAI_FUNC void luaJ_basicprotect( lua_State *L );
 LUAI_FUNC void luaJ_basicextend( lua_State *L );
+
+// Module initialization.
+LUAI_FUNC void luaJ_init( void );
+LUAI_FUNC void luaJ_shutdown( void );
 
 #endif //_LUA_CLASS_

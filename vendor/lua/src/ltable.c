@@ -18,13 +18,7 @@
 ** Hence even when the load factor reaches 100%, performance remains good.
 */
 
-#include <math.h>
-#include <string.h>
-
-#define ltable_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -69,14 +63,57 @@
 */
 #define numints		cast_int(sizeof(lua_Number)/sizeof(int))
 
+typedef StaticPluginClassFactory <Table> tableObjFactory_t;
 
+// Plugin that holds table meta-data.
+static globalStatePluginOffset_t _tableGlobalStatePlugin = 0;
 
-#define dummynode		(&dummynode_)
-
-static const Node dummynode_ = {
-  {{NULL}, LUA_TNIL},  /* value */
-  {{{NULL}, LUA_TNIL, NULL}}  /* key */
+struct globalStateTableEnvPlugin
+{
+    inline globalStateTableEnvPlugin( void )
+    {
+        // Set up the dummy node.
+        setnilvalue( &dummynode.i_key.nk );
+        dummynode.i_key.nk.next = NULL;
+        setnilvalue( &dummynode.i_val );
+    }
+        
+    Node dummynode;
+    
+    tableObjFactory_t factory;
 };
+
+inline globalStateTableEnvPlugin* GetGlobalTableEnv( global_State *g )
+{
+    return globalStateFactory_t::RESOLVE_STRUCT <globalStateTableEnvPlugin> ( g, _tableGlobalStatePlugin );
+}
+
+lu_mem Table::GetTypeSize( global_State *g ) const
+{
+    return (lu_mem)GetGlobalTableEnv( g )->factory.GetClassSize();
+}
+
+inline Node* GetDummyNode( global_State *g )
+{
+    globalStateTableEnvPlugin *globalEnv = GetGlobalTableEnv( g );
+
+    assert( globalEnv != NULL );
+
+    return &globalEnv->dummynode;
+}
+
+// Lua table environment initializator.
+void luaH_init( void )
+{
+    // Register our plugins.
+    _tableGlobalStatePlugin =
+        globalStateFactory.RegisterStructPlugin <globalStateTableEnvPlugin> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
+}
+
+void luaH_shutdown( void )
+{
+    return;
+}
 
 
 /*
@@ -106,7 +143,7 @@ static Node *mainposition (const Table *t, const TValue *key)
     case LUA_TNUMBER:
         return hashnum(t, nvalue(key));
     case LUA_TSTRING:
-        return hashstr(t, rawtsvalue(key));
+        return hashstr(t, tsvalue(key));
     case LUA_TBOOLEAN:
         b = bvalue(key);
         return hashboolean(t, b);
@@ -283,7 +320,7 @@ static void setarrayvector (lua_State *L, Table *t, int size) {
 static void setnodevector (lua_State *L, Table *t, int size) {
   int lsize;
   if (size == 0) {  /* no elements to hash part? */
-    t->node = cast(Node *, dummynode);  /* use common `dummynode' */
+    t->node = GetDummyNode( G(L) );  /* use common `dummynode' */
     lsize = 0;
   }
   else {
@@ -330,13 +367,13 @@ static void resize (lua_State *L, Table *t, int nasize, int nhsize) {
     if (!ttisnil(gval(old)))
       setobjt2t(L, luaH_set(L, t, key2tval(old)), gval(old));
   }
-  if (nold != dummynode)
+  if (nold != GetDummyNode( G(L) ))
     luaM_freearray(L, nold, twoto(oldhsize), Node);  /* free old array */
 }
 
 
 void luaH_resizearray (lua_State *L, Table *t, int nasize) {
-  int nsize = (t->node == dummynode) ? 0 : sizenode(t);
+  int nsize = (t->node == GetDummyNode( G(L) )) ? 0 : sizenode(t);
   resize(L, t, nasize, nsize);
 }
 
@@ -365,27 +402,59 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 ** }=============================================================
 */
 
-Table *luaH_new (lua_State *L, int narray, int nhash) {
-  Table *t = new (L) Table;
-  luaC_link(L, t, LUA_TTABLE);
-  t->metatable = NULL;
-  t->flags = cast_byte(~0);
-  /* temporary values (kept only if some malloc fails) */
-  t->array = NULL;
-  t->sizearray = 0;
-  t->lsizenode = 0;
-  t->node = cast(Node *, dummynode);
-  setarrayvector(L, t, narray);
-  setnodevector(L, t, nhash);
-  return t;
+Table *luaH_new (lua_State *L, int narray, int nhash)
+{
+    // Get the global table environment.
+    globalStateTableEnvPlugin *globalEnv = GetGlobalTableEnv( G(L) );
+
+    // No point in creating table if we cannot get our environment.
+    if ( !globalEnv )
+        return NULL;
+
+    // Construct the table using its factory.
+    Table *t = globalEnv->factory.Construct( G(L)->defaultAlloc );
+
+    if ( t )
+    {
+        // Initialize the table.
+        luaC_link(L, t, LUA_TTABLE);
+        t->metatable = NULL;
+        t->flags = cast_byte(~0);
+        /* temporary values (kept only if some malloc fails) */
+        t->array = NULL;
+        t->sizearray = 0;
+        t->lsizenode = 0;
+        t->node = GetDummyNode( G(L) );
+        setarrayvector(L, t, narray);
+        setnodevector(L, t, nhash);
+    }
+    return t;
+}
+
+void luaH_free (lua_State *L, Table *t)
+{
+    // Clean up runtime data of the table.
+    {
+        if ( t->node != GetDummyNode( G(L) ) )
+        {
+            luaM_freearray( L, t->node, sizenode( t ), Node );
+        }
+
+        luaM_freearray( L, t->array, t->sizearray, TValue );
+    }
+
+    // Get our environment.
+    globalStateTableEnvPlugin *globalEnv = GetGlobalTableEnv( G(L) );
+
+    if ( globalEnv )
+    {
+        // Destroy the table.
+        globalEnv->factory.Destroy( G(L)->defaultAlloc, t );
+    }
 }
 
 Table::~Table()
 {
-    if ( node != dummynode )
-        luaM_freearray( _lua, node, sizenode( this ), Node );
-
-    luaM_freearray( _lua, array, sizearray, TValue );
 }
 
 static Node *getfreepos (Table *t) {
@@ -405,36 +474,52 @@ static Node *getfreepos (Table *t) {
 ** put new key in its main position; otherwise (colliding node is in its main 
 ** position), new key goes to an empty position. 
 */
-static TValue *newkey (lua_State *L, Table *t, const TValue *key) {
-  Node *mp = mainposition(t, key);
-  if (!ttisnil(gval(mp)) || mp == dummynode) {
-    Node *othern;
-    Node *n = getfreepos(t);  /* get a free place */
-    if (n == NULL) {  /* cannot find a free place? */
-      rehash(L, t, key);  /* grow table */
-      return luaH_set(L, t, key);  /* re-insert key into grown table */
+static TValue *newkey (lua_State *L, Table *t, const TValue *key)
+{
+    // Get the dummy node.
+    const Node *dummynode = GetDummyNode( G(L) );
+
+    Node *mp = mainposition(t, key);
+
+    if (!ttisnil(gval(mp)) || mp == dummynode)
+    {
+        Node *othern;
+        Node *n = getfreepos(t);  /* get a free place */
+
+        if (n == NULL)
+        {  /* cannot find a free place? */
+            rehash(L, t, key);  /* grow table */
+            return luaH_set(L, t, key);  /* re-insert key into grown table */
+        }
+
+        lua_assert(n != dummynode);
+
+        othern = mainposition(t, key2tval(mp));
+
+        if (othern != mp)
+        {  /* is colliding node out of its main position? */
+            /* yes; move colliding node into free position */
+            while (gnext(othern) != mp) othern = gnext(othern);  /* find previous */
+
+            gnext(othern) = n;  /* redo the chain with `n' in place of `mp' */
+            *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
+            gnext(mp) = NULL;  /* now `mp' is free */
+
+            setnilvalue(gval(mp));
+        }
+        else
+        {  /* colliding node is in its own main position */
+            /* new node will go into free position */
+            gnext(n) = gnext(mp);  /* chain new position */
+            gnext(mp) = n;
+            mp = n;
+        }
     }
-    lua_assert(n != dummynode);
-    othern = mainposition(t, key2tval(mp));
-    if (othern != mp) {  /* is colliding node out of its main position? */
-      /* yes; move colliding node into free position */
-      while (gnext(othern) != mp) othern = gnext(othern);  /* find previous */
-      gnext(othern) = n;  /* redo the chain with `n' in place of `mp' */
-      *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
-      gnext(mp) = NULL;  /* now `mp' is free */
-      setnilvalue(gval(mp));
-    }
-    else {  /* colliding node is in its own main position */
-      /* new node will go into free position */
-      gnext(n) = gnext(mp);  /* chain new position */
-      gnext(mp) = n;
-      mp = n;
-    }
-  }
-  gkey(mp)->value = key->value; gkey(mp)->tt = key->tt;
-  luaC_barriert(L, t, key);
-  lua_assert(ttisnil(gval(mp)));
-  return gval(mp);
+    gkey(mp)->value = key->value; gkey(mp)->tt = key->tt;
+    luaC_barriert(L, t, key);
+
+    lua_assert(ttisnil(gval(mp)));
+    return gval(mp);
 }
 
 
@@ -464,7 +549,7 @@ const TValue *luaH_getnum (Table *t, int key) {
 const TValue *luaH_getstr (Table *t, const TString *key) {
   Node *n = hashstr(t, key);
   do {  /* check whether `key' is somewhere in the chain */
-    if (ttisstring(gkey(n)) && rawtsvalue(gkey(n)) == key)
+    if (ttisstring(gkey(n)) && tsvalue(gkey(n)) == key)
       return gval(n);  /* that's it */
     else n = gnext(n);
   } while (n);
@@ -478,7 +563,7 @@ const TValue *luaH_getstr (Table *t, const TString *key) {
 const TValue *luaH_get (Table *t, const TValue *key) {
   switch (ttype(key)) {
     case LUA_TNIL: return luaO_nilobject;
-    case LUA_TSTRING: return luaH_getstr(t, rawtsvalue(key));
+    case LUA_TSTRING: return luaH_getstr(t, tsvalue(key));
     case LUA_TNUMBER: {
       int k;
       lua_Number n = nvalue(key);
@@ -566,7 +651,7 @@ static int unbound_search (Table *t, unsigned int j) {
 ** Try to find a boundary in table `t'. A `boundary' is an integer index
 ** such that t[i] is non-nil and t[i+1] is nil (and 0 if t[1] is nil).
 */
-int luaH_getn (Table *t) {
+int luaH_getn (lua_State *L, Table *t) {
   unsigned int j = t->sizearray;
   if (j > 0 && ttisnil(&t->array[j - 1])) {
     /* there is a boundary in the array part: (binary) search for it */
@@ -579,7 +664,7 @@ int luaH_getn (Table *t) {
     return i;
   }
   /* else must find a boundary in hash part */
-  else if (t->node == dummynode)  /* hash part is empty? */
+  else if (t->node == GetDummyNode( G(L) ))  /* hash part is empty? */
     return j;  /* that is easy... */
   else return unbound_search(t, j);
 }
@@ -603,8 +688,6 @@ Table& luaH_copy( lua_State *L, const Table& t )
 Node *luaH_mainposition (const Table *t, const TValue *key) {
   return mainposition(t, key);
 }
-
-int luaH_isdummy (Node *n) { return n == dummynode; }
 
 #endif
 

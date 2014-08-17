@@ -5,15 +5,7 @@
 */
 
 
-#include <ctype.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define lstrlib_c
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lauxlib.h"
 #include "lualib.h"

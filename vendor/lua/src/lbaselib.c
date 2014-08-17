@@ -5,15 +5,7 @@
 */
 
 
-
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define lbaselib_c
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lauxlib.h"
 #include "lualib.h"
@@ -181,7 +173,7 @@ static int luaB_lockfenv (lua_State *L)
     if ( cl->isC )
         luaL_error(L, LUA_QL("lockfenv") " cannot set lock for the environment of given object");
 
-    bool lock = lua_toboolean( L, 2 );
+    bool lock = ( lua_toboolean( L, 2 ) == 0 );
     cl->SetEnvLocked( lock );
     return 0;
 }

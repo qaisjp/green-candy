@@ -1964,6 +1964,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\CThreadingUtilsSA.h"
+				>
+			</File>
+			<File
 				RelativePath=".\CTrainSA.h"
 				>
 			</File>

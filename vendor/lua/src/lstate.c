@@ -5,12 +5,7 @@
 */
 
 
-#include <stddef.h>
-
-#define lstate_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -22,16 +17,10 @@
 #include "lstring.h"
 #include "ltable.h"
 #include "ltm.h"
+#include "lclass.h"
+#include "lvm.h"
+#include "lapi.h"
 
-
-/*
-** Main thread combines a thread state and the global state
-*/
-typedef struct LG {
-  lua_State l;
-  global_State g;
-} LG;
-  
 
 
 static void stack_init (lua_State *L1, lua_State *L) {
@@ -77,7 +66,7 @@ static void f_luaopen (lua_State *L, void *ud)
 
 static inline void preinit_state (lua_State *L, global_State *g)
 {
-    G(L) = g;
+    L->l_G = g;
     L->stack = NULL;
     L->stacksize = 0;
     L->hook = NULL;
@@ -93,31 +82,6 @@ static inline void preinit_state (lua_State *L, global_State *g)
     L->errfunc = 0;
     sethvalue( L, &L->storage, luaH_new( L, 0, 0 ) );
     setnilvalue(gt(L));
-}
-
-void* lua_State::operator new( size_t size, lua_Alloc f, void *ud )
-{
-    return (*f)(ud, NULL, 0, state_size(LG));
-}
-
-void lua_State::operator delete( void *ptr )
-{
-    global_State *g = G(((lua_State*)ptr));
-    g->frealloc( g->ud, fromstate(ptr), state_size(LG), 0 );
-}
-
-static void close_state (lua_State *L)
-{
-    global_State *g = G(L);
-    luaF_close(L, L->stack);  /* close all upvalues for this thread */
-    luaC_freeall(L);  /* collect all objects */
-    lua_assert(g->rootgc == L);
-    lua_assert(g->strt.nuse == 0);
-    luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size, TString *);
-    luaZ_freebuffer(L, &g->buff);
-    freestack(L, L);
-    lua_assert(g->totalbytes == sizeof(LG));
-    delete L;
 }
 
 static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
@@ -195,9 +159,10 @@ lua_Thread::lua_Thread()
 	status = THREAD_SUSPENDED;
 }
 
+// Factory for thread creation and destruction.
 lua_Thread* luaE_newthread( lua_State *L )
 {
-    lua_Thread *L1 = new (L) lua_Thread;
+    lua_Thread *L1 = lua_new <lua_Thread> ( G(L) );
     luaC_link(L, L1, LUA_TTHREAD);
     LIST_INSERT( G(L)->threads.root, L1->threadNode );  /* we need to be aware of all threads */
     preinit_state(L1, G(L));
@@ -210,12 +175,24 @@ lua_Thread* luaE_newthread( lua_State *L )
 
     // Inherit the metatables
     for ( unsigned int n = 0; n < NUM_TAGS; n++ )
+    {
         L1->mt[n] = L->mt[n];
+    }
 
     // Allocate the OS resources only if necessary!
 
     lua_assert(iswhite(L1));
     return L1;
+}
+
+lu_mem lua_Thread::GetTypeSize( global_State *g ) const
+{
+    return sizeof( *this );
+}
+
+void luaE_freethread( lua_State *L, lua_State *L1 )
+{
+    lua_delete( G(L), L1 );
 }
 
 static void luaE_term()
@@ -297,82 +274,325 @@ LUAI_FUNC void luaE_newenvironment( lua_State *L )
     luaC_objbarriert( L, g, L );
 
     for ( unsigned int n = 0; n < NUM_TAGS; n++ )
+    {
         L->mt[n] = NULL;
+    }
 }
+
+// THIS is the entry point to the Lua library!
+// Hence we must manage this using library logic, too.
+static unsigned int _libraryReferenceCount = 0;
+
+#define GLOBAL_STATE_PLUGIN_ALLOC_HOLD          0x00000000
+#define GLOBAL_STATE_PLUGIN_MAIN_STATE          0x00000001
+
+struct GeneralMemoryAllocator
+{
+    lua_Alloc allocCallback;
+    void *userdata;
+
+    inline GeneralMemoryAllocator( void *userdata, lua_Alloc allocCallback )
+    {
+        this->allocCallback = allocCallback;
+        this->userdata = userdata;
+    }
+
+    inline ~GeneralMemoryAllocator( void )
+    {
+        return;
+    }
+
+    inline void* Allocate( size_t memSize )
+    {
+        return allocCallback( this->userdata, NULL, 0, memSize );
+    }
+
+    inline void Free( void *ptr, size_t memSize )
+    {
+        allocCallback( this->userdata, ptr, memSize, 0 );
+    }
+};
+
+// Program-wide global state plugin registry.
+globalStateFactory_t globalStateFactory;
+
+struct GlobalStateAllocPluginData
+{
+    inline GlobalStateAllocPluginData( lua_Alloc allocCallback, void *userdata ) : _memAlloc( userdata, allocCallback )
+    {
+        this->constructor = globalStateFactory.CreateConstructor( _memAlloc );
+    }
+
+    inline ~GlobalStateAllocPluginData( void )
+    {
+        if ( this->constructor )
+        {
+            globalStateFactory.DeleteConstructor( this->constructor );
+        }
+    }
+
+    // Structure that is used for bootstrapping with anonymous destruction support.
+    GeneralMemoryAllocator _memAlloc;
+    globalStateFactory_t::DeferredConstructor <GeneralMemoryAllocator> *constructor;
+};
+
+static void close_state (lua_State *L)
+{
+    global_State *g = G(L);
+    luaF_close(L, L->stack);  /* close all upvalues for this thread */
+    luaC_freeall(L);  /* collect all objects */
+    lua_assert(g->rootgc == L);
+    lua_assert(g->strt.nuse == 0);
+    luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size, TString *);
+    luaZ_freebuffer(L, &g->buff);
+    freestack(L, L);
+}
+
+static void dealloc_state( global_State *globalState )
+{
+    // Delete the plugin object and destroy the allocator info.
+    GlobalStateAllocPluginData *allocData = (GlobalStateAllocPluginData*)globalState->allocData;
+
+    // If this assert fails, then GC is flawed because it did not clean up everything.
+    // A flawed GC can have many reasons, even can be caused by the application!
+    lua_assert(globalState->totalbytes == globalStateFactory.GetClassSize());
+
+    allocData->constructor->Destroy( globalState );
+
+    // Get allocator information to destroy the last bit of data.
+    GeneralMemoryAllocator memAlloc( allocData->_memAlloc );
+
+    // Destroy allocation data.
+    allocData->~GlobalStateAllocPluginData();
+
+    void *allocDataMem = allocData;
+
+    memAlloc.Free( allocDataMem, sizeof( GlobalStateAllocPluginData ) );
+}
+
+struct mainThreadLuaStatePluginInterface : public globalStateFactory_t::pluginInterface
+{
+    bool OnPluginConstruct( global_State *g, globalStatePluginOffset_t pluginOffset, unsigned int pluginId )
+    {
+        // Attempt to get the main thread.
+        void *mainThreadMemory = globalStateFactory_t::RESOLVE_STRUCT <void> ( g, pluginOffset );
+
+        if ( mainThreadMemory == NULL )
+            return false;
+
+        // Construct the lua_State.
+        lua_State *L = new (mainThreadMemory) lua_State;
+
+        if ( L == NULL )
+            return false;
+
+        // Initialize the main thread.
+        L->next = NULL;
+        L->tt = LUA_TTHREAD;
+        g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
+        L->marked = luaC_white(g);
+        set2bits(L->marked, FIXEDBIT, SFIXEDBIT);
+
+        for ( unsigned int i = 0; i < NUM_TAGS; i++ )
+        {
+            L->mt[i] = NULL;
+        }
+
+        return true;
+    }
+
+    bool OnPluginAssign( global_State *dstG, const global_State *srcG, globalStatePluginOffset_t pluginOffset, unsigned int pluginId )
+    {
+        // We cannot clone a main thread.
+        return false;
+    }
+
+    void OnPluginDestruct( global_State *g, globalStatePluginOffset_t pluginOffset, unsigned int pluginId )
+    {
+        lua_State *L = globalStateFactory_t::RESOLVE_STRUCT <lua_State> ( g, pluginOffset );
+
+        L->~lua_State();
+    }
+};
+
+static mainThreadLuaStatePluginInterface *_mainThreadPluginInterface = NULL;
+static globalStatePluginOffset_t _mainThreadPluginOffset = 0;
 
 LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
 {
-    unsigned int i;
-    lua_State *L;
-    global_State *g;
-    lua_State *l = new (f, ud) lua_State;
+    // Attempt to allocate a block of memory for bootstrapping.
+    GeneralMemoryAllocator memAlloc( ud, f );
 
-    if ( l == NULL )
+    const size_t allocDataMemSize = sizeof( GlobalStateAllocPluginData );
+
+    void *allocDataMem = memAlloc.Allocate( allocDataMemSize );
+
+    if ( !allocDataMem )
         return NULL;
 
-    L = tostate(l);
-    g = &((LG *)L)->g;
-    L->next = NULL;
-    L->tt = LUA_TTHREAD;
-    g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
-    L->marked = luaC_white(g);
-    set2bits(L->marked, FIXEDBIT, SFIXEDBIT);
-    g->frealloc = f;
-    g->ud = ud;
-    g->mainthread = L;
-    g->uvhead.u.l.prev = &g->uvhead;
-    g->uvhead.u.l.next = &g->uvhead;
-    g->strt.size = 0;
-    g->strt.nuse = 0;
-    g->strt.hash = NULL;
-    g->weak = NULL;
-    g->tmudata = NULL;
-    g->totalbytes = sizeof(LG);
-    // Initialize the garbage collector
-    luaC_init( g );
-    preinit_state( L, g );
-    luaE_newenvironment( L );   // create the first environment; threads will inherit it
-    sethvalue(L, &g->l_registry, luaH_new(L, 0, 2));  /* registry */
-    luaZ_initbuffer(L, &g->buff);
+    // Create the allocator meta-data.
+    // Create the memory allocator for bootstrapping.
+    // Create the factory that can produce and destroy global states.
+    GlobalStateAllocPluginData *allocData = new (allocDataMem) GlobalStateAllocPluginData( f, ud );
 
-    for ( i=0; i<LUA_NUM_EVENTS; i++ )
-        g->events[i] = NULL;
+    if ( !allocData )
+        return NULL;
 
-    for ( i=0; i<NUM_TAGS; i++ )
-        L->mt[i] = NULL;
-
-    std::string errMsg;
-
-    // Initialize GCthread
-    luaC_initthread( g );
-
-    if ( luaD_rawrunprotected( L, f_luaopen, NULL, errMsg, NULL ) != 0 )
+    // Initialize our library if it has not been initialized already.
+    if ( _libraryReferenceCount++ == 0 )
     {
-        /* memory allocation error: free partial state */
-        close_state(L);
-        return NULL;
+        // register global modules here!
+        luaM_init();
+        luaC_moduleinit();
+        luaO_init();
+        luaS_init();
+        luaQ_init();
+        luaH_init();
+        luaF_init();
+        luaT_moduleinit();
+        luaJ_init();
+        luaV_init();
+        luaapi_init();
+
+        // todo: add more
+
+        // Initialize the plugin to hold the main lua thread state inside the global_State
+        // as well as meta data.
+        {
+            mainThreadLuaStatePluginInterface *pluginInterface = new mainThreadLuaStatePluginInterface;
+
+            if ( pluginInterface )
+            {
+                _mainThreadPluginOffset = globalStateFactory.RegisterPlugin(
+                    sizeof( lua_State ), GLOBAL_STATE_PLUGIN_MAIN_STATE,
+                    pluginInterface
+                );
+            }
+
+            _mainThreadPluginInterface = pluginInterface;
+        }
     }
 
-    // Init runtime globals
-    g->superCached = luaS_newlstr( L, "super", 5 );
+    // Attempt to construct our global state.
+    global_State *g = allocData->constructor->Construct();
 
-    luai_userstateopen(L);
-    return L;
+    if ( g )
+    {
+        // Store allocation data into the struct.
+        // This is done so we can destroy all plugins and deallocate ourselves.
+        g->allocData = allocData;
+
+        // Attempt to get the main thread from the global state.
+        lua_State *L = globalStateFactory_t::RESOLVE_STRUCT <lua_State> ( g, _mainThreadPluginOffset );
+
+        if ( L )
+        {
+            // Properly initialize the main state global object.
+            g->frealloc = f;
+            g->ud = ud;
+            g->mainthread = L;
+            g->uvhead.u.l.prev = &g->uvhead;
+            g->uvhead.u.l.next = &g->uvhead;
+            g->strt.size = 0;
+            g->strt.nuse = 0;
+            g->strt.hash = NULL;
+            g->weak = NULL;
+            g->tmudata = NULL;
+            g->totalbytes = (lu_mem)globalStateFactory.GetClassSize();
+            // Initialize the garbage collector
+            luaC_init( g );
+            preinit_state( L, g );
+            luaE_newenvironment( L );   // create the first environment; threads will inherit it
+            sethvalue(L, &g->l_registry, luaH_new(L, 0, 2));  /* registry */
+            luaZ_initbuffer(L, &g->buff);
+
+            for ( unsigned int i = 0; i < LUA_NUM_EVENTS; i++ )
+            {
+                g->events[i] = NULL;
+            }
+
+            std::string errMsg;
+
+            // Initialize GCthread
+            luaC_initthread( g );
+
+            bool luaInternalInitSuccess = ( luaD_rawrunprotected( L, f_luaopen, NULL, errMsg, NULL ) == 0 );
+
+            if ( luaInternalInitSuccess )
+            {
+                // Init runtime globals
+                g->superCached = luaS_newlstr( L, "super", 5 );
+
+                luai_userstateopen(L);
+                return L;
+            }
+
+            /* memory allocation error: free partial state */
+            close_state( L );
+        }
+
+        dealloc_state( g );
+    }
+
+    // No success creating a Lua state.
+    return NULL;
+}
+
+lu_mem lua_State::GetTypeSize( global_State *g ) const
+{
+    return sizeof( *this );
 }
 
 LUA_API void lua_close (lua_State *L)
 {
-    L = G(L)->mainthread;  /* only the main thread can be closed */
+    // The pointer passed to us must be a valid main state pointer.
+    global_State *globalState = G(L);
 
-    lua_lock(L);
-    luaF_close(L, L->stack);  /* close all upvalues for this thread */
+    {
+        L = G(L)->mainthread;  /* only the main thread can be closed */
 
-    // Collect all pending memory
-    luaC_shutdown( G(L) );
+        lua_lock(L);
+        luaF_close(L, L->stack);  /* close all upvalues for this thread */
 
-    lua_assert(G(L)->tmudata == NULL);
-    luai_userstateclose(L);
-    close_state(L);
+        // Collect all pending memory
+        luaC_shutdown( G(L) );
+
+        lua_assert(G(L)->tmudata == NULL);
+        luai_userstateclose(L);
+
+        close_state(L);
+    }
+
+    dealloc_state( globalState );
+
+    // Clear global modules if necessary.
+    if ( --_libraryReferenceCount == 0 )
+    {
+        // Shutdown our local plugins.
+        if ( mainThreadLuaStatePluginInterface *pluginInterface = _mainThreadPluginInterface )
+        {
+            delete pluginInterface;
+
+            _mainThreadPluginInterface = NULL;
+        }
+
+        // Shutdown global modules.
+        luaapi_shutdown();
+        luaV_shutdown();
+        luaJ_shutdown();
+        luaT_moduleshutdown();
+        luaF_shutdown();
+        luaH_shutdown();
+        luaQ_shutdown();
+        luaS_shutdown();
+        luaO_shutdown();
+        luaC_moduleshutdown();
+        luaM_shutdown();
+
+        // todo: add more.
+    }
+
+    // Finito!
 }
 
 // MTA specific

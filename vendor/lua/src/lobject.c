@@ -4,16 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define lobject_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "ldo.h"
 #include "lmem.h"
@@ -214,18 +205,6 @@ void luaO_chunkid (char *out, const char *source, size_t bufflen) {
   }
 }
 
-void* GCObject::operator new( size_t size, lua_State *main )
-{
-    GCObject *obj = (GCObject*)luaM_realloc_( main, NULL, 0, size );
-    obj->_lua = G(main)->mainthread;
-    return obj;
-}
-
-void GCObject::operator delete( void *ptr, lua_State *main )
-{
-    __asm int 3
-}
-
 void GCObject::Index( lua_State *L, const TValue *key, StkId val )
 {
     TValue objval;
@@ -240,4 +219,15 @@ void GCObject::NewIndex( lua_State *L, const TValue *key, StkId val )
     setgcvalue( L, &objval, this );
 
     luaV_handle_newindex( L, &objval, luaT_gettmbyobj( L, &objval, TM_NEWINDEX ), key, val );
+}
+
+// Module initialization.
+void luaO_init( void )
+{
+    return;
+}
+
+void luaO_shutdown( void )
+{
+    return;
 }

@@ -10,7 +10,7 @@
 *
 *****************************************************************************/
 
-#include "lua.h"
+#include "luacore.h"
 
 #include "lclass.h"
 #include "lauxlib.h"

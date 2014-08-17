@@ -5,9 +5,7 @@
 */
 
 
-#define linit_c
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lualib.h"
 #include "lauxlib.h"

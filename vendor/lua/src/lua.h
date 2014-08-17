@@ -24,7 +24,7 @@
 #define LUA_VERSION	"Lua 5.1"
 #define LUA_RELEASE	"Lua 5.1.4 MTA"
 #define LUA_VERSION_NUM	501
-#define LUA_COPYRIGHT	"Copyright (C) 1994-2008 Lua.org, PUC-Rio (C) 2013 Martin Turski"
+#define LUA_COPYRIGHT	"Copyright (C) 1994-2008 Lua.org, PUC-Rio (C) 2013-2014 Martin Turski"
 #define LUA_AUTHORS 	"R. Ierusalimschy, L. H. de Figueiredo & W. Celes"
 
 
@@ -201,7 +201,7 @@ LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2);
 LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointeger) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointegerW) (lua_State *L, int idx);   // MTA Specific
-LUA_API bool            (lua_toboolean) (lua_State *L, int idx);
+LUA_API int             (lua_toboolean) (lua_State *L, int idx);
 LUA_API lua_String      (lua_tolstring) (lua_State *L, int idx, size_t *len);
 LUA_API size_t          (lua_objlen) (lua_State *L, int idx);
 LUA_API lua_CFunction   (lua_tocfunction) (lua_State *L, int idx);

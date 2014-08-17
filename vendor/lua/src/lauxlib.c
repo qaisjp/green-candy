@@ -5,21 +5,11 @@
 */
 
 
-#include <ctype.h>
-#include <errno.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-
 /* This file uses only the official API of Lua.
 ** Any function declared here could be written as an application function.
 */
 
-#define lauxlib_c
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lauxlib.h"
 

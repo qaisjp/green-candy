@@ -5,13 +5,8 @@
 */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "luacore.h"
 
-#define ldblib_c
-
-#include "lua.h"
 #include "lstate.h"
 
 #include "lauxlib.h"

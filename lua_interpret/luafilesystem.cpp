@@ -203,7 +203,7 @@ static int filesystem_scanDir( lua_State *lua )
         wildcard = lua_tostring( lua, 2 );
 
         if ( top > 2 )
-            recursive = lua_toboolean( lua, 3 );
+            recursive = ( lua_toboolean( lua, 3 ) != 0 );
         else
             recursive = false;
     }
@@ -234,7 +234,7 @@ static int filesystem_getFiles( lua_State *lua )
         wildcard = lua_tostring( lua, 2 );
 
         if ( top > 2 )
-            recursive = lua_toboolean( lua, 3 );
+            recursive = ( lua_toboolean( lua, 3 ) != 0 );
         else
             recursive = false;
     }
@@ -258,7 +258,7 @@ static int filesystem_getDirs( lua_State *lua )
     bool recursive;
 
     if ( lua_gettop( lua ) > 1 )
-        recursive = lua_toboolean( lua, 2 );
+        recursive = ( lua_toboolean( lua, 2 ) != 0 );
     else
         recursive = false;
 
@@ -292,7 +292,7 @@ static int filesystem_scanDirEx( lua_State *lua )
     ((CFileTranslator*)lua_getmethodtrans( lua ))->ScanDirectory(
         lua_tostring( lua, 1 ),
         lua_tostring( lua, 2 ),
-        lua_toboolean( lua, 5 ),
+        ( lua_toboolean( lua, 5 ) != 0 ),
         lua_type( lua, 3 ) == LUA_TFUNCTION ? filesystem_exdircb : NULL,
         lua_type( lua, 4 ) == LUA_TFUNCTION ? filesystem_exfilecb : NULL, lua );
 
@@ -532,7 +532,7 @@ static int luafsys_pathToFilename( lua_State *L )
     luaL_checktype( L, 2, LUA_TBOOLEAN );
 
     const char *path = lua_tostring( L, 1 );
-    bool includeExtension = lua_toboolean( L, 2 );
+    bool includeExtension = ( lua_toboolean( L, 2 ) != 0 );
 
     std::string directoryOut;
 

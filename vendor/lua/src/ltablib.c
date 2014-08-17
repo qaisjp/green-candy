@@ -5,11 +5,7 @@
 */
 
 
-#include <stddef.h>
-
-#define ltablib_c
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lauxlib.h"
 #include "lualib.h"

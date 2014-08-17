@@ -17,6 +17,7 @@
 #include "llimits.h"
 #include "lua.h"
 #include "lmem.h"
+#include "lzio.h"
 
 
 /* tags for values visible from Lua */
@@ -55,155 +56,9 @@ typedef union {
 
 #define TValuefields	Value value; int tt
 
-typedef struct lua_TValue
+struct TValue
 {
     TValuefields;
-} TValue;
-
-/* inline BitArray class for memory saving purposes */
-class BitArray
-{
-	template <class numType>
-	unsigned char get_sig_bits( numType num )
-	{
-		unsigned char bits = 1;
-
-		// There always has to be 1 bit
-		num = num >> 1;
-
-		for ( unsigned char n = 1; n < sizeof( numType ) * 8; n++, num = num >> 1 )
-		{
-			if ( num & 1 )
-				bits = n + 1;
-		}
-
-		return bits;
-	}
-
-	size_t get_block_size() const
-	{
-		return m_entryCount * ( ( m_numBits + 7 ) / 8 );
-	}
-
-	template <class numType>
-	inline numType get_clear_mask( unsigned char off, unsigned char bits ) const
-	{
-		return ( ( 1 << off ) - 1 ) | !( ( 1 << (off + bits) ) - 1 );
-	}
-
-	template <class numType>
-	inline void write( numType val, unsigned char bits )
-	{
-		const size_t curSize = get_block_size();
-		const unsigned char curOff = m_seek % bits;
-		const unsigned char bytes = m_seek / 8;
-		const unsigned char byteOff = bytes % sizeof(val);
-
-		if ( curSize - bytes < sizeof(val) )
-			throw std::exception( "cannot write to ByteArray (out of bounds)" );
-
-		if ( byteOff == 0 )
-		{
-			// Write directly
-			
-		}
-	}
-
-	inline void write_char( unsigned char val, unsigned char bits )
-	{
-		
-	}
-
-	inline void write_short( unsigned short val, unsigned char bits )
-	{
-
-	}
-
-	inline void write_int( unsigned int val, unsigned char bits )
-	{
-
-	}
-
-public:
-	inline BitArray( lua_State *main )
-	{
-		m_data = NULL;
-		m_entryCount = 0;
-		m_seek = 0;
-		m_numBits = 0;
-		m_L = main;
-	}
-
-	~BitArray()
-	{
-		if ( m_data )
-			luaM_realloc_( m_L, m_data, get_block_size(), 0 );
-	}
-
-	inline void set_bit_span( unsigned char bits )
-	{
-		size_t oldSize = get_block_size();
-
-		m_numBits = bits;
-
-		// reallocate to a diff size
-		m_data = (unsigned int*)luaM_realloc_( m_L, m_data, oldSize, get_block_size() );
-	}
-
-	inline void push_back( unsigned int num )
-	{
-		// Get the number of significant bits
-		unsigned char bits = get_sig_bits( num );
-
-		// Increase the count
-		m_entryCount++;
-
-		if ( bits > m_numBits )
-			set_bit_span( bits );
-
-		// Write the item
-		if ( bits > sizeof(unsigned short) * 8 )
-		{
-			write( num, bits );
-			// unsigned int
-		}
-		else if ( bits > sizeof(unsigned char) * 8 )
-		{
-			write( (unsigned short)num, bits );
-			// unsigned short
-		}
-		else
-		{
-			write( (unsigned char)num, bits );
-			// unsigned char
-		}
-	}
-
-	unsigned int operator []( unsigned int idx ) const
-	{
-		return 0;
-	}
-
-	void* operator new( size_t size, lua_State *L )
-	{
-		BitArray *arr = (BitArray*)luaM_malloc( L, sizeof(BitArray) );
-		arr->m_L = L;
-		return arr;
-	}
-
-	void operator delete( void *ptr )
-	{
-		BitArray *arr = (BitArray*)ptr;
-
-		luaM_free( arr->m_L, arr );
-	}
-
-protected:
-	unsigned int*	m_data;
-	unsigned int	m_entryCount;
-	size_t			m_seek;
-	lua_State*		m_L;
-	unsigned char	m_numBits;
 };
 
 class TString;
@@ -218,179 +73,18 @@ class Dispatch;
 class lua_State;
 
 
-/* Macros to test type */
-#define ttisnil(o)	(ttype(o) == LUA_TNIL)
-#define ttisnumber(o)	(ttype(o) == LUA_TNUMBER)
-#define ttisstring(o)	(ttype(o) == LUA_TSTRING)
-#define ttistable(o)	(ttype(o) == LUA_TTABLE)
-#define ttisfunction(o)	(ttype(o) == LUA_TFUNCTION)
-#define ttisboolean(o)	(ttype(o) == LUA_TBOOLEAN)
-#define ttisuserdata(o)	(ttype(o) == LUA_TUSERDATA)
-#define ttisclass(o)    (ttype(o) == LUA_TCLASS)
-#define ttisdispatch(o) (ttype(o) == LUA_TDISPATCH)
-#define ttisthread(o)	(ttype(o) == LUA_TTHREAD)
-#define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
-
-#if defined(_DEBUG) && defined(LUA_OBJECT_VERIFICATION)
-// Safety casts
-#define gcobj(o)    (dynamic_cast <GCObject*> (o))
-#define sobj(o)     (dynamic_cast <TString*> (o))
-#define uobj(o)     (dynamic_cast <Udata*> (o))
-#define clobj(o)    (dynamic_cast <Closure*> (o))
-#define hobj(o)     (dynamic_cast <Table*> (o))
-#define thobj(o)    (dynamic_cast <lua_State*> (o))
-#define qobj(o)     (dynamic_cast <Dispatch*> (o))
-#define jobj(o)     (dynamic_cast <Class*> (o))
-#define ptobj(o)    (dynamic_cast <Proto*> (o))
-#else
-// Standard runtime casts
-#define gcobj(o)    ((GCObject*)(o))
-#define sobj(o)     ((TString*)(o))
-#define uobj(o)     ((Udata*)(o))
-#define clobj(o)    ((Closure*)(o))
-#define hobj(o)     ((Table*)(o))
-#define thobj(o)    ((lua_State*)(o))
-#define qobj(o)     ((Dispatch*)(o))
-#define jobj(o)     ((Class*)(o))
-#define ptobj(o)    ((Proto*)(o))
-#endif
-
-/* Macros to access values */
-#define ttype(o)	((o)->tt)
-#define gcvalue(o)	check_exp(iscollectable(o), gcobj((o)->value.gc))
-#define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
-#define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
-#define rawtsvalue(o)	check_exp(ttisstring(o), sobj((o)->value.gc))
-#define tsvalue(o)	(rawtsvalue(o))
-#define rawuvalue(o)	check_exp(ttisuserdata(o), uobj((o)->value.gc))
-#define uvalue(o)	(rawuvalue(o))
-#define clvalue(o)	check_exp(ttisfunction(o), clobj((o)->value.gc))
-#define hvalue(o)	check_exp(ttistable(o), hobj((o)->value.gc))
-#define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
-#define thvalue(o)	check_exp(ttisthread(o), thobj((o)->value.gc))
-#define qvalue(o)   check_exp(ttisdispatch(o), qobj((o)->value.gc))
-#define jvalue(o)   check_exp(ttisclass(o), jobj((o)->value.gc))
-
-#define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
-
-/*
-** for internal debug only
-*/
-#define checkconsistency(obj) \
-  lua_assert(!iscollectable(obj) || (ttype(obj) == (obj)->value.gc->tt))
-
-#define checkliveness(g,obj) \
-  lua_assert(!iscollectable(obj) || \
-  ((ttype(obj) == (obj)->value.gc->tt) && !isdead(g, (obj)->value.gc)))
-
-
-/* Macros to set values */
-#define setnilvalue(obj) ((obj)->tt=LUA_TNIL)
-
-#define setnvalue(obj,x) \
-  { TValue *i_o=(obj); i_o->value.n=(x); i_o->tt=LUA_TNUMBER; }
-
-#define setpvalue(obj,x) \
-  { TValue *i_o=(obj); i_o->value.p=(x); i_o->tt=LUA_TLIGHTUSERDATA; }
-
-#define setbvalue(obj,x) \
-  { TValue *i_o=(obj); i_o->value.b=(x) & 1; i_o->tt=LUA_TBOOLEAN; }
-
-#define setgcvalue(L,obj,x) \
-  { GCObject *inst = gcobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=inst->tt; \
-    checkliveness(G(L),i_o); }
-
-#define setsvalue(L,obj,x) \
-  { TString *inst = sobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TSTRING; \
-    checkliveness(G(L),i_o); }
-
-#define setuvalue(L,obj,x) \
-  { Udata *inst = uobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TUSERDATA; \
-    checkliveness(G(L),i_o); }
-
-#define setthvalue(L,obj,x) \
-  { lua_State *inst = thobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TTHREAD; \
-    checkliveness(G(L),i_o); }
-
-#define setclvalue(L,obj,x) \
-  { Closure *inst = clobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TFUNCTION; \
-    checkliveness(G(L),i_o); }
-
-#define sethvalue(L,obj,x) \
-  { Table *inst = hobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TTABLE; \
-    checkliveness(G(L),i_o); }
-
-#define setptvalue(L,obj,x) \
-  { Proto *inst = ptobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TPROTO; \
-    checkliveness(G(L),i_o); }
-
-#define setqvalue(L,obj,x) \
-  { Dispatch *inst = qobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TDISPATCH; \
-    checkliveness(G(L),i_o); }
-
-#define setjvalue(L,obj,x) \
-  { Class *inst = jobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TCLASS; \
-    checkliveness(G(L),i_o); }
-
-
-
-#define setobj(L,obj1,obj2) \
-  { const TValue *o2=(obj2); TValue *o1=(obj1); \
-    o1->value = o2->value; o1->tt=o2->tt; \
-    checkliveness(G(L),o1); }
-
-
-/*
-** different types of sets, according to destination
-*/
-
-/* from stack to (same) stack */
-#define setobjs2s	setobj
-/* to stack (not from same stack) */
-#define setobj2s	setobj
-#define setsvalue2s	setsvalue
-#define sethvalue2s	sethvalue
-#define setptvalue2s	setptvalue
-/* from table to same table */
-#define setobjt2t	setobj
-/* to table */
-#define setobj2t	setobj
-/* to new object */
-#define setobj2n	setobj
-#define setsvalue2n	setsvalue
-
-#define setttype(obj, tt) (ttype(obj) = (tt))
-
-#define iscollectable(o)	(ttype(o) >= LUA_TSTRING)
-
-#define G(L)	(L->l_G)
+#define FASTAPI inline
 
 typedef TValue *StkId;  /* index to stack elements */
 typedef const TValue *StkId_const;
 struct global_State;
 
-class GCObject
+// Type that holds garbage collectible Lua types.
+class GCObject abstract
 {
 public:
-    virtual             ~GCObject()         { }
+    // Every type must give a runtime sizeof operator.
+    virtual lu_mem      GetTypeSize( global_State *g ) const = 0;
 
     virtual TString*    GetTString()        { return NULL; }
     virtual Udata*      GetUserData()       { return NULL; }
@@ -409,26 +103,12 @@ public:
     virtual void        Index( lua_State *L, const TValue *key, StkId val );
     virtual void        NewIndex( lua_State *L, const TValue *key, StkId val );
 
-    void* operator new( size_t size, lua_State *main );
-    void operator delete( void *ptr, lua_State *main );
-
-    void operator delete( void *ptr )
-    {
-        luaM_freemem( ((GCObject*)ptr)->_lua, ptr, 0 );
-    }
-
-    void operator delete( void *ptr, size_t size )
-    {
-        luaM_freemem( ((GCObject*)ptr)->_lua, ptr, size );
-    }
-
     GCObject *next;
     lu_byte tt;
     lu_byte marked;
-    lua_State *_lua;
 };
 
-class GrayObject : public GCObject
+class GrayObject abstract : public GCObject
 {
 public:
     ~GrayObject() {}
@@ -450,15 +130,7 @@ LUA_MAXALIGN class TString : public GCObject
 public:
     ~TString();
 
-    void* operator new( size_t size, lua_State *main, size_t len ) throw()
-    {
-        return GCObject::operator new( (len+1)*sizeof(char) + size, main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizestring( ((TString*)ptr) ) );
-    }
+    lu_mem GetTypeSize( global_State *g ) const             { return sizestring( this ); }
 
     lu_byte reserved;
     unsigned int hash;
@@ -474,17 +146,9 @@ LUA_MAXALIGN class Udata : public GCObject
 public:
     ~Udata();
 
+    lu_mem GetTypeSize( global_State *g ) const             { return sizeudata( this ); }
+
     void MarkGC( global_State *g );
-
-    void* operator new( size_t size, lua_State *main, size_t sData ) throw()
-    {
-        return GCObject::operator new( sData + size, main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeudata( (Udata*)ptr ) );
-    }
 
     Table *metatable;
     GCObject *env;
@@ -499,13 +163,10 @@ class Proto : public GrayObject
 public:
     ~Proto();
 
+    lu_mem GetTypeSize( global_State *g ) const             { return sizeof(*this); }
+
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(Proto) );
-    }
 
     TValue *k;  /* constants used by the function */
     Instruction *code;
@@ -553,12 +214,9 @@ class UpVal : public GCObject
 public:
     ~UpVal();
 
-    void MarkGC( global_State *g );
+    lu_mem GetTypeSize( global_State *g ) const             { return sizeof(*this); }
 
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(UpVal) );
-    }
+    void MarkGC( global_State *g );
 
     TValue *v;  /* points to stack or to its own value */
     union
@@ -593,7 +251,7 @@ public:
 class Closure abstract : public GrayObject
 {
 public:
-                            ~Closure        ( void );
+    virtual                 ~Closure        ( void );
 
     int                     TraverseGC      ( global_State *g );
 
@@ -638,19 +296,11 @@ class CClosureMethodRedirect : public CClosure
 public:
     ~CClosureMethodRedirect();
 
+    lu_mem GetTypeSize( global_State *g ) const         { return sizeof(*this); }
+
     size_t Propagate( global_State *g );
 
     TValue* ReadUpValue( unsigned char index );
-
-    void* operator new( size_t size, lua_State *main )
-    {
-        return GCObject::operator new( size, main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(CClosureMethodRedirect) );
-    }
 
     Closure* redirect;
     Class* m_class;
@@ -661,19 +311,11 @@ class CClosureMethodRedirectSuper : public CClosureMethodRedirect
 public:
     ~CClosureMethodRedirectSuper();
 
+    lu_mem GetTypeSize( global_State *g ) const         { return sizeof(*this); }
+
     size_t Propagate( global_State *g );
 
     TValue* ReadUpValue( unsigned char index );
-
-    void* operator new( size_t size, lua_State *main )
-    {
-        return GCObject::operator new( size, main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(CClosureMethodRedirectSuper) );
-    }
 
     Closure *super;
 };
@@ -683,19 +325,11 @@ class CClosureBasic : public CClosure
 public:
     ~CClosureBasic();
 
+    lu_mem GetTypeSize( global_State *g ) const;
+
     size_t Propagate( global_State *g );
 
     TValue* ReadUpValue( unsigned char index );
-
-    void* operator new( size_t size, lua_State *main, unsigned int nup )
-    {
-        return GCObject::operator new( sizeCclosure( nup ), main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeCclosure( ((Closure*)ptr)->nupvalues ) );
-    }
 
     TValue upvalues[1];
 };
@@ -717,19 +351,11 @@ class CClosureMethod : public CClosureMethodBase
 public:
     ~CClosureMethod();
 
+    lu_mem GetTypeSize( global_State *g ) const;
+
     size_t Propagate( global_State *g );
 
     TValue* ReadUpValue( unsigned char index );
-
-    void* operator new( size_t size, lua_State *main, unsigned int nup )
-    {
-        return GCObject::operator new( sizeCmethod( nup ), main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeCmethod( ((Closure*)ptr)->nupvalues ) );
-    }
 
     TValue  upvalues[1];
 };
@@ -739,19 +365,11 @@ class CClosureMethodTrans : public CClosureMethodBase
 public:
     ~CClosureMethodTrans();
 
+    lu_mem GetTypeSize( global_State *g ) const;
+
     size_t Propagate( global_State *g );
 
     TValue* ReadUpValue( unsigned char index );
-
-    void* operator new( size_t size, lua_State *main, unsigned int nup )
-    {
-        return GCObject::operator new( sizeCmethodt( nup ), main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeCmethodt( ((Closure*)ptr)->nupvalues ) );
-    }
 
     unsigned char trans;
     void *data;
@@ -763,6 +381,8 @@ class LClosure : public Closure
 public:
     ~LClosure();
 
+    lu_mem GetTypeSize( global_State *g ) const;
+
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
 
@@ -770,22 +390,9 @@ public:
 
     LClosure* GetLClosure()     { return this; }
 
-    void* operator new( size_t size, lua_State *main, unsigned int nup )
-    {
-        return GCObject::operator new( sizeLclosure( nup ), main );
-    }
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeLclosure( ((Closure*)ptr)->nupvalues ) );
-    }
-
     Proto *p;
     UpVal *upvals[1];
 };
-
-#define iscfunction(o)	(ttype(o) == LUA_TFUNCTION && clvalue(o)->isC)
-#define isLfunction(o)	(ttype(o) == LUA_TFUNCTION && !clvalue(o)->isC)
 
 
 /*
@@ -793,11 +400,11 @@ public:
 */
 
 typedef union TKey {
-  struct {
-    TValuefields;
-    struct Node *next;  /* for chaining */
-  } nk;
-  TValue tvk;
+    struct : TValue
+    {
+        struct Node *next;  /* for chaining */
+    } nk;
+    TValue tvk;
 } TKey;
 
 
@@ -811,6 +418,8 @@ class Table : public GrayObject
 public:
     ~Table();
 
+    lu_mem  GetTypeSize( global_State *g ) const;
+
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
 
@@ -818,11 +427,6 @@ public:
 
     void    Index( lua_State *L, const TValue *key, StkId val );
     void    NewIndex( lua_State *L, const TValue *key, StkId val );
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(Table) );
-    }
 
     lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
     lu_byte lsizenode;  /* log2 of size of `node' array */
@@ -839,7 +443,7 @@ public:
 class Dispatch abstract : public GrayObject
 {
 public:
-    ~Dispatch();
+    virtual ~Dispatch()                     {}
 
     size_t  Propagate( global_State *g );
 
@@ -859,39 +463,30 @@ public:
 class ClassEnvDispatch : public ClassDispatch
 {
 public:
+    lu_mem                  GetTypeSize( global_State *g ) const    { return sizeof( ClassEnvDispatch ); }
+
     void                    Index( lua_State *L, const TValue *key, StkId val );
     void                    NewIndex( lua_State *L, const TValue *key, StkId val );
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(ClassEnvDispatch) );
-    }
 };
 
 class ClassOutEnvDispatch : public ClassDispatch
 {
 public:
+    lu_mem                  GetTypeSize( global_State *g ) const    { return sizeof( ClassOutEnvDispatch ); }
+
     void                    Index( lua_State *L, const TValue *key, StkId val );
     void                    NewIndex( lua_State *L, const TValue *key, StkId val );
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(ClassOutEnvDispatch) );
-    }
 };
 
 class ClassMethodDispatch : public ClassDispatch
 {
 public:
+    lu_mem                  GetTypeSize( global_State *g ) const    { return sizeof( ClassMethodDispatch ); }
+
     size_t                  Propagate( global_State *g );
 
     void                    Index( lua_State *L, const TValue *key, StkId val );
     void                    NewIndex( lua_State *L, const TValue *key, StkId val );
-
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(ClassMethodDispatch) );
-    }
 
     GCObject*               m_prevEnv;
 };
@@ -920,6 +515,8 @@ class Class : public GCObject, public virtual ILuaClass
 {
 public:
     ~Class();
+
+    lu_mem  GetTypeSize( global_State *g ) const;
 
     void    Propagate( lua_State *L );
 
@@ -995,10 +592,7 @@ public:
     TValue* SetSuperMethod( lua_State *L );
     const TValue*   GetSuperMethod( lua_State *L );
 
-    void operator delete( void *ptr ) throw()
-    {
-        GCObject::operator delete( ptr, sizeof(Class) );
-    }
+    lua_State *hostState;
 
     Dispatch *env;
     Dispatch *outenv;
@@ -1048,6 +642,625 @@ public:
     Closure *destructor;
 };
 
+/*
+** `per thread' state
+*/
+/* table of globals */
+#define gt(L)	(&L->l_gt)
+
+/* registry */
+#define registry(L)	(&G(L)->l_registry)
+
+
+/* extra stack space to handle TM calls and some other extras */
+#define EXTRA_STACK   5
+
+
+#define BASIC_CI_SIZE           8
+
+#define BASIC_STACK_SIZE        (2*LUA_MINSTACK)
+
+
+
+/*
+** informations about a call
+*/
+typedef struct CallInfo {
+  StkId base;  /* base for this function */
+  StkId func;  /* function index in the stack */
+  StkId	top;  /* top for this function */
+  const Instruction *savedpc;
+  int nresults;  /* expected number of results from this function */
+  int tailcalls;  /* number of tail calls lost under this entry */
+} CallInfo;
+
+class lua_State : public GrayObject, virtual public ILuaState
+{
+public:
+    virtual ~lua_State();
+
+    lu_mem GetTypeSize( global_State *g ) const;
+
+    // lua_State is always the main thread
+    virtual void    SetMainThread( bool enabled )       {}
+    virtual bool    IsThread()                          { return false; }
+
+    virtual void    SetYieldDisabled( bool disable )    {}
+    virtual bool    IsYieldDisabled()                   { return true; }
+
+    size_t Propagate( global_State *g );
+
+    StkId top;  /* first free slot in the stack */
+    StkId base;  /* base of current function */
+    global_State *l_G;
+    CallInfo *ci;  /* call info for current function */
+    const Instruction *savedpc;  /* `savedpc' of current function */
+    StkId stack_last;  /* last free slot in the stack */
+    StkId stack;  /* stack base */
+    CallInfo *end_ci;  /* points after end of ci array*/
+    CallInfo *base_ci;  /* array of CallInfo's */
+    int stacksize;
+    int size_ci;  /* size of array `base_ci' */
+    unsigned short nCcalls;  /* number of nested C calls */
+    lu_byte hookmask;
+    bool allowhook;
+    int basehookcount;
+    int hookcount;
+    lua_Hook hook;
+    TValue l_gt;  /* table of globals */
+    TValue env;  /* temporary place for environments */
+    GCObject *openupval;  /* list of open upvalues in this stack */
+    ptrdiff_t errfunc;  /* current error handling function (stack index) */
+    TValue storage;
+    Table *mt[NUM_TAGS];  /* metatables for basic types */
+};
+
+// General stuff.
+typedef struct stringtable {
+  GCObject **hash;
+  lu_int32 nuse;  /* number of elements */
+  int size;
+} stringtable;
+
+class lua_Thread;
+class GrayObject;
+class TString;
+class Closure;
+
+/*
+** `global state', shared by all threads of this state
+*/
+struct global_State
+{
+    inline global_State( void )
+    {
+        // Set up the class memory allocator.
+        defaultAlloc.SetState( this );
+    }
+
+    stringtable strt;  /* hash table for strings */
+    lua_Alloc frealloc;  /* function to reallocate memory */
+    void *ud;         /* auxiliary data to `frealloc' */
+    lu_byte currentwhite;
+    lu_byte gcstate;  /* state of garbage collector */
+    int sweepstrgc;  /* position of sweep in `strt' */
+    GCObject *rootgc;  /* list of all collectable objects */
+    GCObject **sweepgc;  /* position of sweep in `rootgc' */
+    GrayObject *gray;  /* list of gray objects */
+    GrayObject *grayagain;  /* list of objects to be traversed atomically */
+    GrayObject *weak;  /* list of weak tables (to be cleared) */
+    GCObject *tmudata;  /* last element of list of userdata to be GC */
+    Mbuffer buff;  /* temporary buffer for string concatentation */
+    lua_Thread *GCthread; /* garbage collector runtime */
+    lu_mem GCthreshold;
+    lu_mem GCcollect; /* amount of memory to be collected until stop */
+    lu_mem totalbytes;  /* number of bytes currently allocated */
+    lu_mem estimate;  /* an estimate of number of bytes actually in use */
+    lu_mem gcdept;  /* how much GC is `behind schedule' */
+    int gcpause;  /* size of pause between successive GCs */
+    int gcstepmul;  /* GC `granularity' */
+
+    TValue l_registry;
+    lua_State *mainthread;
+    UpVal uvhead;  /* head of double-linked list of all open upvalues */
+    TString *tmname[TM_N];  /* array with tag-method names */
+    TString *superCached; /* 'super' */
+    Closure *events[LUA_NUM_EVENTS];
+
+    RwList <lua_Thread> threads; /* all existing thread in this machine */
+
+    // NEW OPTIMIZED MEMBERS.
+    void *allocData;
+    LuaDefaultAllocator defaultAlloc;
+
+#if 0
+    // Define class factories for all Lua GCObject types.
+    typedef StaticPluginClassFactory <TString, LuaDefaultAllocator> stringFactory_t;
+    typedef StaticPluginClassFactory <Table, LuaDefaultAllocator> tableFactory_t;
+    typedef StaticPluginClassFactory <LClosure, LuaDefaultAllocator> lclosureFactory_t;
+    typedef StaticPluginClassFactory <CClosure, LuaDefaultAllocator> cclosureFactory_t;
+    // userdata has no factory
+    // dispatch has no factory
+    typedef StaticPluginClassFactory <lua_Thread, LuaDefaultAllocator> threadFactory_t;
+#endif
+};
+
+// Macros to create and destroy Lua types accordingly.
+template <typename classType>
+FASTAPI classType* lua_new( global_State *g, lu_mem memSize = sizeof( classType ) )
+{
+    // Allocate the memory.
+    void *objMem = g->defaultAlloc.Allocate( memSize );
+
+    if ( objMem )
+    {
+        // Try to construct the object and return it.
+        return new (objMem) classType;
+    }
+
+    return NULL;
+}
+
+template <typename classType>
+FASTAPI void lua_delete( global_State *g, classType *obj )
+{
+    // Obtain the type size.
+    lu_mem memSize = obj->GetTypeSize( g );
+
+    // Deconstruct the type.
+    obj->~classType();
+
+    // Release the memory.
+    void *objMem = obj;
+
+    g->defaultAlloc.Free( objMem, memSize );
+}
+
+// Helper macros for using lua_State and global_State.
+#ifdef LUA_USE_C_MACROS
+
+#define G(L)	(L->l_G)
+
+#else
+
+FASTAPI global_State* G( lua_State *L )         { return L->l_G; }
+
+#endif
+
+/* Macros to test type */
+#ifdef LUA_USE_C_MACROS
+
+#define ttype(o)	((o)->tt)
+#define setttype(obj, tt) (ttype(obj) = (tt))
+#define iscollectable(o)	(ttype(o) >= LUA_TSTRING)
+
+#define ttisnil(o)	(ttype(o) == LUA_TNIL)
+#define ttisnumber(o)	(ttype(o) == LUA_TNUMBER)
+#define ttisstring(o)	(ttype(o) == LUA_TSTRING)
+#define ttistable(o)	(ttype(o) == LUA_TTABLE)
+#define ttisfunction(o)	(ttype(o) == LUA_TFUNCTION)
+#define ttisboolean(o)	(ttype(o) == LUA_TBOOLEAN)
+#define ttisuserdata(o)	(ttype(o) == LUA_TUSERDATA)
+#define ttisclass(o)    (ttype(o) == LUA_TCLASS)
+#define ttisdispatch(o) (ttype(o) == LUA_TDISPATCH)
+#define ttisthread(o)	(ttype(o) == LUA_TTHREAD)
+#define ttislightuserdata(o)	(ttype(o) == LUA_TLIGHTUSERDATA)
+
+#else
+
+FASTAPI int& ttype( TValue *o )                 { return o->tt; }
+FASTAPI int ttype( const TValue *o )            { return o->tt; }
+FASTAPI void setttype(TValue *obj, int tt)      { ttype(obj) = tt; }
+FASTAPI bool iscollectable(const TValue *o)     { return ttype(o) >= LUA_TSTRING; }
+
+FASTAPI bool ttisnil( const TValue *o )             { return ttype( o ) == LUA_TNIL; }
+FASTAPI bool ttisnumber( const TValue *o )          { return ttype( o ) == LUA_TNUMBER; }
+FASTAPI bool ttisstring( const TValue *o )          { return ttype( o ) == LUA_TSTRING; }
+FASTAPI bool ttistable( const TValue *o )           { return ttype( o ) == LUA_TTABLE; }
+FASTAPI bool ttisfunction( const TValue *o )        { return ttype( o ) == LUA_TFUNCTION; }
+FASTAPI bool ttisboolean( const TValue *o )         { return ttype( o ) == LUA_TBOOLEAN; }
+FASTAPI bool ttisuserdata( const TValue *o )        { return ttype( o ) == LUA_TUSERDATA; }
+FASTAPI bool ttisclass( const TValue *o )           { return ttype( o ) == LUA_TCLASS; }
+FASTAPI bool ttisdispatch( const TValue *o )        { return ttype( o ) == LUA_TDISPATCH; }
+FASTAPI bool ttisthread( const TValue *o )          { return ttype( o ) == LUA_TTHREAD; }
+FASTAPI bool ttislightuserdata( const TValue *o )   { return ttype( o ) == LUA_TLIGHTUSERDATA; }
+
+#endif //LUA_USE_C_MACROS
+
+// A special cast operator that supports safe casting and C-style casting depending on
+// compilation settings.
+template <typename resultType>
+FASTAPI resultType* gcobj_cast( GCObject *obj )
+{
+    return
+#if defined(_DEBUG) && defined(LUA_OBJECT_VERIFICATION)
+        dynamic_cast <resultType*>
+#else
+        (resultType*)
+#endif
+            ( obj );
+}
+
+template <typename resultType>
+FASTAPI const resultType* gcobj_cast( const GCObject *obj )
+{
+    return
+#if defined(_DEBUG) && defined(LUA_OBJECT_VERIFICATION)
+        dynamic_cast <const resultType*>
+#else
+        (const resultType*)
+#endif
+            ( obj );
+}
+
+#ifdef LUA_USE_C_MACROS
+#define gcobj(o)    (gcobj_cast <GCObject> (o))
+#define sobj(o)     (gcobj_cast <TString> (o))
+#define uobj(o)     (gcobj_cast <Udata> (o))
+#define clobj(o)    (gcobj_cast <Closure> (o))
+#define hobj(o)     (gcobj_cast <Table> (o))
+#define thobj(o)    (gcobj_cast <lua_State> (o))
+#define qobj(o)     (gcobj_cast <Dispatch> (o))
+#define jobj(o)     (gcobj_cast <Class> (o))
+#define ptobj(o)    (gcobj_cast <Proto> (o))
+#else
+FASTAPI GCObject*   gcobj(GCObject *o)      { return gcobj_cast <GCObject> ( o ); }
+FASTAPI TString*    sobj(GCObject *o)       { return gcobj_cast <TString> ( o ); }
+FASTAPI Udata*      uobj(GCObject *o)       { return gcobj_cast <Udata> ( o ); }
+FASTAPI Closure*    clobj(GCObject *o)      { return gcobj_cast <Closure> ( o ); }
+FASTAPI Table*      hobj(GCObject *o)       { return gcobj_cast <Table> ( o ); }
+FASTAPI lua_State*  thobj(GCObject *o)      { return gcobj_cast <lua_State> ( o ); }
+FASTAPI Dispatch*   qobj(GCObject *o)       { return gcobj_cast <Dispatch> ( o ); }
+FASTAPI Class*      jobj(GCObject *o)       { return gcobj_cast <Class> ( o ); }
+FASTAPI Proto*      ptobj(GCObject *o)      { return gcobj_cast <Proto> ( o ); }
+
+FASTAPI const GCObject*     gcobj(const GCObject *o)    { return gcobj_cast <const GCObject> ( o ); }
+FASTAPI const TString*      sobj(const GCObject *o)     { return gcobj_cast <const TString> ( o ); }
+FASTAPI const Udata*        uobj(const GCObject *o)     { return gcobj_cast <const Udata> ( o ); }
+FASTAPI const Closure*      clobj(const GCObject *o)    { return gcobj_cast <const Closure> ( o ); }
+FASTAPI const Table*        hobj(const GCObject *o)     { return gcobj_cast <const Table> ( o ); }
+FASTAPI const lua_State*    thobj(const GCObject *o)    { return gcobj_cast <const lua_State> ( o ); }
+FASTAPI const Dispatch*     qobj(const GCObject *o)     { return gcobj_cast <const Dispatch> ( o ); }
+FASTAPI const Class*        jobj(const GCObject *o)     { return gcobj_cast <const Class> ( o ); }
+FASTAPI const Proto*        ptobj(const GCObject *o)    { return gcobj_cast <const Proto> ( o ); }
+#endif //LUA_USE_C_MACROS
+
+/* Macros to access values */
+#ifdef LUA_USE_C_MACROS
+#define gcvalue(o)	check_exp(iscollectable(o), gcobj((o)->value.gc))
+#define pvalue(o)	check_exp(ttislightuserdata(o), (o)->value.p)
+#define nvalue(o)	check_exp(ttisnumber(o), (o)->value.n)
+#define rawtsvalue(o)	check_exp(ttisstring(o), sobj((o)->value.gc))
+#define tsvalue(o)	(rawtsvalue(o))
+#define rawuvalue(o)	check_exp(ttisuserdata(o), uobj((o)->value.gc))
+#define uvalue(o)	(rawuvalue(o))
+#define clvalue(o)	check_exp(ttisfunction(o), clobj((o)->value.gc))
+#define hvalue(o)	check_exp(ttistable(o), hobj((o)->value.gc))
+#define bvalue(o)	check_exp(ttisboolean(o), (o)->value.b)
+#define thvalue(o)	check_exp(ttisthread(o), thobj((o)->value.gc))
+#define qvalue(o)   check_exp(ttisdispatch(o), qobj((o)->value.gc))
+#define jvalue(o)   check_exp(ttisclass(o), jobj((o)->value.gc))
+
+#define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
+#else
+FASTAPI lua_Number  nvalue(const TValue *o)         { return check_exp(ttisnumber(o), (o)->value.n); }
+FASTAPI TString*    rawtsvalue(const TValue *o)     { return check_exp(ttisstring(o), sobj((o)->value.gc)); }
+FASTAPI bool        bvalue(const TValue *o)         { return check_exp(ttisboolean(o), (o)->value.b); }
+
+FASTAPI GCObject*     gcvalue(const TValue *o)        { return check_exp(iscollectable(o), gcobj((o)->value.gc)); }
+FASTAPI void*         pvalue(const TValue *o)         { return check_exp(ttislightuserdata(o), (o)->value.p); }
+FASTAPI TString*      tsvalue(const TValue *o)        { return check_exp(ttisstring(o), sobj((o)->value.gc)); }
+FASTAPI char*         rawuvalue(const TValue *o)      { return (char*)check_exp(ttisuserdata(o), uobj((o)->value.gc)); }
+FASTAPI Udata*        uvalue(const TValue *o)         { return check_exp(ttisuserdata(o), uobj((o)->value.gc)); }
+FASTAPI Closure*      clvalue(const TValue *o)        { return check_exp(ttisfunction(o), clobj((o)->value.gc)); }
+FASTAPI Table*        hvalue(const TValue *o)         { return check_exp(ttistable(o), hobj((o)->value.gc)); }
+FASTAPI lua_State*    thvalue(const TValue *o)        { return check_exp(ttisthread(o), thobj((o)->value.gc)); }
+FASTAPI Dispatch*     qvalue(const TValue *o)         { return check_exp(ttisdispatch(o), qobj((o)->value.gc)); }
+FASTAPI Class*        jvalue(const TValue *o)         { return check_exp(ttisclass(o), jobj((o)->value.gc)); }
+
+FASTAPI bool        l_isfalse(const TValue *o)    { return (ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0)); }
+#endif //LUA_USE_C_MACROS
+
+/*
+** some userful bit tricks
+*/
+#ifdef LUA_USE_C_MACROS
+
+#define resetbits(x,m)	((x) &= cast(lu_byte, ~(m)))
+#define setbits(x,m)	((x) |= (m))
+#define testbits(x,m)	((x) & (m))
+#define bitmask(b)	(1<<(b))
+#define bit2mask(b1,b2)	(bitmask(b1) | bitmask(b2))
+#define l_setbit(x,b)	setbits(x, bitmask(b))
+#define resetbit(x,b)	resetbits(x, bitmask(b))
+#define testbit(x,b)	testbits(x, bitmask(b))
+#define set2bits(x,b1,b2)	setbits(x, (bit2mask(b1, b2)))
+#define reset2bits(x,b1,b2)	resetbits(x, (bit2mask(b1, b2)))
+#define test2bits(x,b1,b2)	testbits(x, (bit2mask(b1, b2)))
+
+#else
+
+template <typename bitMask> FASTAPI void resetbits(bitMask& x, bitMask m)                   { ((x) &= cast(lu_byte, ~(m))); }
+template <typename bitMask> FASTAPI void setbits(bitMask& x, bitMask m)                     { ((x) |= (m)); }
+template <typename bitMask> FASTAPI bool testbits(bitMask x, bitMask m)                     { return ( ((x) & (m)) != 0 ); }
+
+template <typename bitMaskType> FASTAPI bitMaskType bitmask(bitMaskType b)                  { return (1<<(b)); }
+
+template <typename bitMask> FASTAPI bitMask bit2mask(bitMask b1, bitMask b2)                { return (bitmask(b1) | bitmask(b2)); }
+
+template <typename bitMask> FASTAPI void l_setbit(bitMask& x, bitMask b)                    { setbits(x, bitmask(b)); }
+template <typename bitMask> FASTAPI void resetbit(bitMask& x, bitMask b)                    { resetbits(x, bitmask(b)); }
+template <typename bitMask> FASTAPI bool testbit(bitMask x, bitMask b)                      { return testbits(x, bitmask(b)); }
+template <typename bitMask> FASTAPI void set2bits(bitMask& x, bitMask b1, bitMask b2)       { setbits(x, (bit2mask(b1, b2))); }
+template <typename bitMask> FASTAPI void reset2bits(bitMask& x, bitMask b1, bitMask b2)     { resetbits(x, (bit2mask(b1, b2))); }
+template <typename bitMask> FASTAPI bool test2bits(bitMask x, bitMask b1, bitMask b2)       { return testbits(x, (bit2mask(b1, b2))); }
+
+#endif //LUA_USE_C_MACROS
+
+
+/*
+** Layout for bit use in `marked' field:
+** bit 0 - object is white (type 0)
+** bit 1 - object is white (type 1)
+** bit 2 - object is black
+** bit 3 - for userdata: has been finalized
+** bit 3 - for tables: has weak keys
+** bit 4 - for tables: has weak values
+** bit 5 - object is fixed (should not be collected)
+** bit 6 - object is "super" fixed (only the main thread)
+*/
+
+/*
+** garbage collection internals.
+*/
+#define WHITE0BIT	    ((lu_byte)0)
+#define WHITE1BIT	    ((lu_byte)1)
+#define BLACKBIT	    ((lu_byte)2)
+#define FINALIZEDBIT	((lu_byte)3)
+#define KEYWEAKBIT	    ((lu_byte)3)
+#define VALUEWEAKBIT	((lu_byte)4)
+#define FIXEDBIT	    ((lu_byte)5)
+#define SFIXEDBIT	    ((lu_byte)6)
+#define WHITEBITS	    ((lu_byte)bit2mask(WHITE0BIT, WHITE1BIT))
+
+#ifdef LUA_USE_C_MACROS
+
+#define iswhite(x)      test2bits((x)->marked, WHITE0BIT, WHITE1BIT)
+#define isblack(x)      testbit((x)->marked, BLACKBIT)
+#define isgray(x)	(!isblack(x) && !iswhite(x))
+
+#define otherwhite(g)	(g->currentwhite ^ WHITEBITS)
+#define isdead(g,v)	((v)->marked & otherwhite(g) & WHITEBITS)
+
+#define changewhite(x)	((x)->marked ^= WHITEBITS)
+#define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
+
+#define valiswhite(x)	(iscollectable(x) && iswhite(gcvalue(x)))
+
+#define checkconsistency(obj) \
+  lua_assert(!iscollectable(obj) || (ttype(obj) == (obj)->value.gc->tt))
+
+#define checkliveness(g,obj) \
+  lua_assert(!iscollectable(obj) || \
+  ((ttype(obj) == (obj)->value.gc->tt) && !isdead(g, (obj)->value.gc)))
+
+#else
+
+FASTAPI bool iswhite(const GCObject *x)         { return test2bits((lu_byte)(x)->marked, WHITE0BIT, WHITE1BIT); }
+FASTAPI bool isblack(const GCObject *x)         { return testbit((lu_byte)(x)->marked, BLACKBIT); }
+FASTAPI bool isgray(const GCObject *x)          { return (!isblack(x) && !iswhite(x)); }
+
+FASTAPI lu_byte otherwhite(global_State *g)     { return g->currentwhite ^ WHITEBITS; }
+
+FASTAPI bool isdead(global_State *g, const GCObject *v)     { return ( ((v)->marked & otherwhite(g) & WHITEBITS) != 0 ); }
+
+FASTAPI void changewhite(GCObject *x)   { ((x)->marked ^= WHITEBITS); }
+FASTAPI void gray2black(GCObject *x)    { l_setbit((x)->marked, BLACKBIT); }
+
+FASTAPI bool valiswhite(const TValue *x)    { return (iscollectable(x) && iswhite(gcvalue(x))); }
+
+FASTAPI void checkconsistency(TValue *obj)
+{ lua_assert(!iscollectable(obj) || (ttype(obj) == (obj)->value.gc->tt)); }
+
+FASTAPI void checkliveness(global_State *g, TValue *obj)
+{ lua_assert(!iscollectable(obj) || ((ttype(obj) == (obj)->value.gc->tt) && !isdead(g, (obj)->value.gc))); }
+
+#endif //LUA_USE_C_MACROS
+
+
+/* Macros to set values */
+#ifdef LUA_USE_C_MACROS
+
+#define setnilvalue(obj) ((obj)->tt=LUA_TNIL)
+
+#define setnvalue(obj,x) \
+  { TValue *i_o=(obj); i_o->value.n=(x); i_o->tt=LUA_TNUMBER; }
+
+#define setpvalue(obj,x) \
+  { TValue *i_o=(obj); i_o->value.p=(x); i_o->tt=LUA_TLIGHTUSERDATA; }
+
+#define setbvalue(obj,x) \
+  { TValue *i_o=(obj); i_o->value.b=(x) & 1; i_o->tt=LUA_TBOOLEAN; }
+
+#define setgcvalue(L,obj,x) \
+  { GCObject *inst = gcobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=inst->tt; \
+    checkliveness(G(L),i_o); }
+
+#define setsvalue(L,obj,x) \
+  { TString *inst = sobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TSTRING; \
+    checkliveness(G(L),i_o); }
+
+#define setuvalue(L,obj,x) \
+  { Udata *inst = uobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TUSERDATA; \
+    checkliveness(G(L),i_o); }
+
+#define setthvalue(L,obj,x) \
+  { lua_State *inst = thobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TTHREAD; \
+    checkliveness(G(L),i_o); }
+
+#define setclvalue(L,obj,x) \
+  { Closure *inst = clobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TFUNCTION; \
+    checkliveness(G(L),i_o); }
+
+#define sethvalue(L,obj,x) \
+  { Table *inst = hobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TTABLE; \
+    checkliveness(G(L),i_o); }
+
+#define setptvalue(L,obj,x) \
+  { Proto *inst = ptobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TPROTO; \
+    checkliveness(G(L),i_o); }
+
+#define setqvalue(L,obj,x) \
+  { Dispatch *inst = qobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TDISPATCH; \
+    checkliveness(G(L),i_o); }
+
+#define setjvalue(L,obj,x) \
+  { Class *inst = jobj(x); \
+    TValue *i_o=(obj); \
+    i_o->value.gc=inst; i_o->tt=LUA_TCLASS; \
+    checkliveness(G(L),i_o); }
+
+
+
+#define setobj(L,obj1,obj2) \
+  { const TValue *o2=(obj2); TValue *o1=(obj1); \
+    o1->value = o2->value; o1->tt=o2->tt; \
+    checkliveness(G(L),o1); }
+
+#else
+
+FASTAPI void setnilvalue(TValue *obj)       { obj->tt = LUA_TNIL; }
+FASTAPI void setnvalue(TValue *obj, lua_Number num )
+{
+    obj->value.n = num;
+    obj->tt = LUA_TNUMBER;
+}
+FASTAPI void setpvalue(TValue *obj, void *ptr )
+{
+    obj->value.p = ptr;
+    obj->tt = LUA_TLIGHTUSERDATA;
+}
+FASTAPI void setbvalue(TValue *obj, bool bval )
+{
+    obj->value.b = bval;
+    obj->tt = LUA_TBOOLEAN;
+}
+FASTAPI void setgcvalue(lua_State *L, TValue *val, GCObject *obj)
+{
+    val->value.gc = obj;
+    val->tt = obj->tt;
+    checkliveness(G(L),val);
+}
+template <int typeDesc, typename objType>
+FASTAPI void setvalue(lua_State *L, TValue *val, objType *obj)
+{
+    val->value.gc = obj;
+    val->tt = typeDesc;
+    checkliveness(G(L),val);
+}
+FASTAPI void setsvalue(lua_State *L, TValue *val, TString *obj)         { setvalue <LUA_TSTRING> ( L, val, obj ); }
+FASTAPI void setuvalue(lua_State *L, TValue *val, Udata *obj)           { setvalue <LUA_TUSERDATA> ( L, val, obj ); }
+FASTAPI void setthvalue(lua_State *L, TValue *val, lua_State *obj)      { setvalue <LUA_TTHREAD> ( L, val, obj ); }
+FASTAPI void setclvalue(lua_State *L, TValue *val, Closure *obj)        { setvalue <LUA_TFUNCTION> ( L, val, obj ); }
+FASTAPI void sethvalue(lua_State *L, TValue *val, Table *obj)           { setvalue <LUA_TTABLE> ( L, val, obj ); }
+FASTAPI void setptvalue(lua_State *L, TValue *val, Proto *obj)          { setvalue <LUA_TPROTO> ( L, val, obj ); }
+FASTAPI void setqvalue(lua_State *L, TValue *val, Dispatch *obj)        { setvalue <LUA_TDISPATCH> ( L, val, obj ); }
+FASTAPI void setjvalue(lua_State *L, TValue *val, Class *obj)           { setvalue <LUA_TCLASS> ( L, val, obj ); }
+FASTAPI void setobj(lua_State *L, TValue *dstVal, const TValue *srcVal)
+{
+    dstVal->value = srcVal->value;
+    dstVal->tt = srcVal->tt;
+    checkliveness(G(L),dstVal);
+}
+
+#endif //LUA_USE_C_MACROS
+
+
+/*
+** different types of sets, according to destination
+*/
+#ifdef LUA_USE_C_MACROS
+
+/* from stack to (same) stack */
+#define setobjs2s	setobj
+/* to stack (not from same stack) */
+#define setobj2s	setobj
+#define setsvalue2s	setsvalue
+#define sethvalue2s	sethvalue
+#define setptvalue2s	setptvalue
+/* from table to same table */
+#define setobjt2t	setobj
+/* to table */
+#define setobj2t	setobj
+/* to new object */
+#define setobj2n	setobj
+#define setsvalue2n	setsvalue
+
+#else
+
+/* from stack to (same) stack */
+FASTAPI void setobjs2s(lua_State *L, TValue *dstVal, const TValue *srcVal)      { setobj(L, dstVal, srcVal); }
+/* to stack (not from same stack) */
+FASTAPI void setobj2s(lua_State *L, TValue *dstVal, const TValue *srcVal)       { setobj(L, dstVal, srcVal); }
+FASTAPI void setsvalue2s(lua_State *L, TValue *val, TString *obj)               { setsvalue(L, val, obj); }
+FASTAPI void sethvalue2s(lua_State *L, TValue *val, Table *obj)                 { sethvalue(L, val, obj); }
+FASTAPI void setptvalue2s(lua_State *L, TValue *val, Proto *obj)                { setptvalue(L, val, obj); }
+/* from table to same table */
+FASTAPI void setobjt2t(lua_State *L, TValue *dstVal, const TValue *srcVal)      { setobj(L, dstVal, srcVal); }
+/* to table */
+FASTAPI void setobj2t(lua_State *L, TValue *dstVal, const TValue *srcVal)       { setobj(L, dstVal, srcVal); }
+/* to new object */
+FASTAPI void setobj2n(lua_State *L, TValue *dstVal, const TValue *srcVal)       { setobj(L, dstVal, srcVal); }
+FASTAPI void setsvalue2n(lua_State *L, TValue *val, TString *obj)               { setsvalue(L, val, obj); }
+
+#endif //LUA_USE_C_MACROS
+
+// Macros to access lua_State stuff.
+#ifdef LUA_USE_C_MACROS
+
+#define curr_func(L)	(clvalue(L->ci->func))
+#define ci_func(ci)	(clvalue((ci)->func))
+#define f_isLua(ci)	(!ci_func(ci)->isC)
+#define isLua(ci)	(ttisfunction((ci)->func) && f_isLua(ci))
+
+#else
+
+FASTAPI Closure*    curr_func(lua_State *L)     { return (clvalue(L->ci->func)); }
+FASTAPI Closure*    ci_func(CallInfo *ci)       { return (clvalue((ci)->func)); }
+FASTAPI bool        f_isLua(CallInfo *ci)       { return (!ci_func(ci)->isC); }
+FASTAPI bool        isLua(CallInfo *ci)         { return (ttisfunction((ci)->func) && f_isLua(ci)); }
+
+#endif
+
+// Macros for closures.
+#ifdef LUA_USE_C_MACROS
+
+#define iscfunction(o)	(ttype(o) == LUA_TFUNCTION && clvalue(o)->isC)
+#define isLfunction(o)	(ttype(o) == LUA_TFUNCTION && !clvalue(o)->isC)
+
+#else
+
+FASTAPI bool iscfunction(const TValue *o)       { return (ttype(o) == LUA_TFUNCTION && clvalue(o)->isC); }
+FASTAPI bool isLfunction(const TValue *o)       { return (ttype(o) == LUA_TFUNCTION && !clvalue(o)->isC); }
+
+#endif //LUA_USE_C_MACROS
+
 
 /*
 ** `module' operation for hashing (size is always a power of 2)
@@ -1075,6 +1288,10 @@ LUAI_FUNC const char *luaO_pushvfstring (lua_State *L, const char *fmt,
                                                        va_list argp);
 LUAI_FUNC const char *luaO_pushfstring (lua_State *L, const char *fmt, ...);
 LUAI_FUNC void luaO_chunkid (char *out, const char *source, size_t len);
+
+// Module initialization.
+LUAI_FUNC void luaO_init( void );
+LUAI_FUNC void luaO_shutdown( void );
 
 
 #endif

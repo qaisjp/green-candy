@@ -207,7 +207,11 @@ namespace DbgTrace
             STACKFRAME outputFrame;
             memset( &outputFrame, 0, sizeof( outputFrame ) );
 
+            DWORD machineType;
+
 #ifdef _M_IX86
+            machineType = IMAGE_FILE_MACHINE_I386;
+
             outputFrame.AddrPC.Offset =     runtimeContext.Eip;
             outputFrame.AddrPC.Mode =       AddrModeFlat;
             outputFrame.AddrFrame.Offset =  runtimeContext.Ebp;
@@ -217,7 +221,7 @@ namespace DbgTrace
 #endif
 
             while (
-                StackWalk( IMAGE_FILE_MACHINE_I386, NULL, NULL, &outputFrame, &walkContext,
+                StackWalk( machineType, NULL, NULL, &outputFrame, &walkContext,
                     MemoryReadFunction,
                     FunctionTableAccess,
                     GetModuleBaseFunction,

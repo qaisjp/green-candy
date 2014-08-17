@@ -51,6 +51,7 @@
 // Core-level includes
 #define MTA_CLIENT
 #include "SharedUtil.h"
+#include "MemoryUtils.h"
 #include "CrashHandler.h"
 #include "CCore.h"
 #include "CDebugView.h"

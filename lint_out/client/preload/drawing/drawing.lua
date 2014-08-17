@@ -470,6 +470,7 @@ function dxDrawText(text, left, top, right, bottom, color, scale, font,
     end
     
     local fontRenderHeight = fontHandle.size * scale;
+    local pixelFontRenderHeight = fontHandle.getHeight( fontRenderHeight );
     
     local textLeft, textTop = false, false;
     
@@ -491,9 +492,9 @@ function dxDrawText(text, left, top, right, bottom, color, scale, font,
         textTop = top;
     elseif (alignY == "center") then
         local height = bottom - top;
-        textTop = top + (height - fontRenderHeight) / 2;
+        textTop = top + (height - pixelFontRenderHeight) / 2;
     elseif (alignY == "bottom") then
-        textTop = bottom - fontRenderHeight;
+        textTop = bottom - pixelFontRenderHeight;
     else
         return false;
     end
@@ -577,7 +578,7 @@ function dxGetFontHeight(scale, font)
     
     if not (info) then return false; end;
     
-    return info.size * scale;
+    return info.getHeight( info.size ) * scale;
 end
 registerDebugProxy("dxGetFontHeight", { "opt", "number" }, { "opt", tofont });
 

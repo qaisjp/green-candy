@@ -4,12 +4,7 @@
 ** See Copyright Notice in lua.h
 */
 
-#include <string.h>
-
-#define lgc_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "ldebug.h"
 #include "ldo.h"
@@ -616,7 +611,7 @@ static size_t propagateall (global_State *g) {
 inline static int iscleared (const TValue *o, int iskey) {
   if (!iscollectable(o)) return 0;
   if (ttisstring(o)) {
-    stringmark(rawtsvalue(o));  /* strings are `values', so are never weak */
+    stringmark(tsvalue(o));  /* strings are `values', so are never weak */
     return 0;
   }
   return iswhite(gcvalue(o)) ||
@@ -653,29 +648,109 @@ static void cleartable (GCObject *l) {
   }
 }
 
+// Dispatch destruction of any GCObject.
+static void delete_gcobject( lua_State *L, GCObject *obj )
+{
+    int type = obj->tt;
+
+    if ( type == LUA_TSTRING )
+    {
+        TString *theString = (TString*)obj;
+
+        luaS_free( L, theString );
+    }
+    else if ( type == LUA_TTABLE )
+    {
+        Table *theTable = (Table*)obj;
+
+        luaH_free( L, theTable );
+    }
+    else if ( type == LUA_TFUNCTION )
+    {
+        Closure *theClosure = (Closure*)obj;
+
+        luaF_freeclosure( L, theClosure );
+    }
+    else if ( type == LUA_TUSERDATA )
+    {
+        Udata *data = (Udata*)obj;
+
+        luaS_freeudata( L, data );
+    }
+    else if ( type == LUA_TCLASS )
+    {
+        Class *theClass = (Class*)obj;
+
+        luaJ_free( L, theClass );
+    }
+    else if ( type == LUA_TDISPATCH )
+    {
+        Dispatch *theDispatch = (Dispatch*)obj;
+
+        luaQ_free( L, theDispatch );
+    }
+    else if ( type == LUA_TTHREAD )
+    {
+        lua_Thread *theThread = (lua_Thread*)obj;
+
+        luaE_freethread( L, theThread );
+    }
+    else if ( type == LUA_TPROTO )
+    {
+        Proto *theProto = (Proto*)obj;
+
+        luaF_freeproto( L, theProto );
+    }
+    else if ( type == LUA_TUPVAL )
+    {
+        UpVal *theUpValue = (UpVal*)obj;
+
+        luaF_freeupval( L, theUpValue );
+    }
+    else
+    {
+        // Unknown type detected; cannot delete.
+        assert( 0 );
+    }
+}
+
 #define sweepwholelist(L,p)	sweeplist(L,p,MAX_LUMEM)
 
-static GCObject** sweeplist (lua_State *L, GCObject **p, lu_mem count) {
-  GCObject *curr;
-  global_State *g = G(L);
-  int deadmask = otherwhite(g);
-  while ((curr = *p) != NULL && count-- > 0) {
-    if (curr->tt == LUA_TTHREAD)  /* sweep open upvalues of each thread */
-      sweepwholelist(L, &gco2th(curr)->openupval);
-    if ((curr->marked ^ WHITEBITS) & deadmask) {  /* not dead? */
-      lua_assert(!isdead(g, curr) || testbit(curr->marked, FIXEDBIT));
-      makewhite(g, curr);  /* make it white (for next cycle) */
-      p = &curr->next;
+static GCObject** sweeplist( lua_State *L, GCObject **p, lu_mem count )
+{
+    GCObject *curr;
+    global_State *g = G(L);
+    int deadmask = otherwhite(g);
+
+    while ( (curr = *p) != NULL && count-- > 0 )
+    {
+        if ( curr->tt == LUA_TTHREAD )  /* sweep open upvalues of each thread */
+        {
+            sweepwholelist( L, &gco2th(curr)->openupval );
+        }
+
+        if ( (curr->marked ^ WHITEBITS) & deadmask )
+        {  /* not dead? */
+            lua_assert( !isdead(g, curr) || testbit(curr->marked, FIXEDBIT) );
+
+            makewhite( g, curr );  /* make it white (for next cycle) */
+
+            p = &curr->next;
+        }
+        else
+        {  /* must erase `curr' */
+            lua_assert( isdead(g, curr) || deadmask == bitmask(SFIXEDBIT) );
+
+            *p = curr->next;
+
+            if ( curr == g->rootgc )  /* is the first element of the list? */
+            {
+                g->rootgc = curr->next;  /* adjust first */
+            }
+            delete_gcobject( L, curr );
+        }
     }
-    else {  /* must erase `curr' */
-      lua_assert(isdead(g, curr) || deadmask == bitmask(SFIXEDBIT));
-      *p = curr->next;
-      if (curr == g->rootgc)  /* is the first element of the list? */
-        g->rootgc = curr->next;  /* adjust first */
-      delete curr;
-    }
-  }
-  return p;
+    return p;
 }
 
 static void checkSizes (lua_State *L) {
@@ -827,7 +902,7 @@ void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v)
     global_State *g = G(L);
     lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
     //lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
-    lua_assert(ttype(o) != LUA_TTABLE);
+    lua_assert(o->tt != LUA_TTABLE);
 
     /* must keep invariant? */
     if (g->gcstate == GCSpropagate)
@@ -1167,3 +1242,13 @@ void luaC_shutdown( global_State *g )
     } while (luaD_rawrunprotected(L, callallgcTM, NULL, errMsg, NULL) != 0);
 }
 
+// Module initialization.
+void luaC_moduleinit( void )
+{
+    return;
+}
+
+void luaC_moduleshutdown( void )
+{
+    return;
+}

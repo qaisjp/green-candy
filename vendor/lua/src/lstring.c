@@ -5,12 +5,7 @@
 */
 
 
-#include <string.h>
-
-#define lstring_c
-#define LUA_CORE
-
-#include "lua.h"
+#include "luacore.h"
 
 #include "lmem.h"
 #include "lobject.h"
@@ -48,31 +43,43 @@ void luaS_resize (lua_State *L, int newsize) {
 
 TString::~TString()
 {
-    G(_lua)->strt.nuse--;
 }
 
-static TString *newlstr (lua_State *L, const char *str, size_t l,
-                                       unsigned int h) {
-  TString *ts;
-  stringtable *tb;
-  if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
-    luaM_toobig(L);
-  ts = new (L, l) TString;
-  ts->len = l;
-  ts->hash = h;
-  ts->marked = luaC_white(G(L));
-  ts->tt = LUA_TSTRING;
-  ts->reserved = 0;
-  memcpy(ts+1, str, l*sizeof(char));
-  ((char *)(ts+1))[l] = '\0';  /* ending 0 */
-  tb = &G(L)->strt;
-  h = lmod(h, tb->size);
-  ts->next = tb->hash[h];  /* chain new entry */
-  tb->hash[h] = ts;
-  tb->nuse++;
-  if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
-    luaS_resize(L, tb->size*2);  /* too crowded */
-  return ts;
+static TString *newlstr (lua_State *L, const char *str, size_t l, unsigned int h)
+{
+    TString *ts;
+    stringtable *tb;
+
+    if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
+    {
+        luaM_toobig(L);
+    }
+
+    ts = lua_new <TString> ( G(L), sizeof(TString) + ( l + 1 ) );
+
+    if ( ts )
+    {
+        ts->len = l;
+        ts->hash = h;
+        ts->marked = luaC_white(G(L));
+        ts->tt = LUA_TSTRING;
+        ts->reserved = 0;
+
+        memcpy(ts+1, str, l*sizeof(char));
+        ((char *)(ts+1))[l] = '\0';  /* ending 0 */
+
+        tb = &G(L)->strt;
+        h = lmod(h, tb->size);
+        ts->next = tb->hash[h];  /* chain new entry */
+        tb->hash[h] = ts;
+        tb->nuse++;
+
+        if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
+        {
+            luaS_resize(L, tb->size*2);  /* too crowded */
+        }
+    }
+    return ts;
 }
 
 
@@ -96,22 +103,54 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   return newlstr(L, str, l, h);  /* not found */
 }
 
+void luaS_free (lua_State *L, TString *s)
+{
+    G(L)->strt.nuse--;
+
+    lua_delete( G(L), s );
+}
+
 Udata::~Udata()
 {
 }
 
-Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e) {
-  Udata *u;
-  if (s > MAX_SIZET - sizeof(Udata))
-    luaM_toobig(L);
-  u = new (L, s) Udata;
-  u->marked = luaC_white(G(L));  /* is not finalized */
-  u->tt = LUA_TUSERDATA;
-  u->len = s;
-  u->metatable = NULL;
-  u->env = e;
-  /* chain it on udata list (after main thread) */
-  u->next = G(L)->mainthread->next;
-  G(L)->mainthread->next = u;
-  return u;
+Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
+{
+    Udata *u;
+
+    if (s > MAX_SIZET - sizeof(Udata))
+    {
+        luaM_toobig(L);
+    }
+
+    u = lua_new <Udata> ( G(L), sizeof(Udata) + s );
+
+    if ( u )
+    {
+        u->marked = luaC_white(G(L));  /* is not finalized */
+        u->tt = LUA_TUSERDATA;
+        u->len = s;
+        u->metatable = NULL;
+        u->env = e;
+        /* chain it on udata list (after main thread) */
+        u->next = G(L)->mainthread->next;
+        G(L)->mainthread->next = u;
+    }
+    return u;
+}
+
+void luaS_freeudata (lua_State *L, Udata *u)
+{
+    lua_delete( G(L), u );
+}
+
+// Module initialization.
+void luaS_init( void )
+{
+    return;
+}
+
+void luaS_shutdown( void )
+{
+    return;
 }

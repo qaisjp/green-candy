@@ -256,7 +256,11 @@ static int luafile_writeDouble( lua_State *L )
 static int luafile_writeBoolean( lua_State *L )
 {
     luaL_checktype( L, 1, LUA_TBOOLEAN );
-    lua_pushnumber( L, ((CFile*)lua_getmethodtrans( L ))->WriteBool( (bool)lua_toboolean( L, 1 ) ) );
+    lua_pushnumber( L,
+        ((CFile*)lua_getmethodtrans( L ))->WriteBool(
+            ( lua_toboolean( L, 1 ) != 0 )
+        )
+    );
     return 1;
 }
 
