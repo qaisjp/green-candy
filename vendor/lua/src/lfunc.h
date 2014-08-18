@@ -22,6 +22,7 @@ LUAI_FUNC TValue* luaF_getcurraccessor( lua_State *L );
 LUAI_FUNC UpVal *luaF_newupval (lua_State *L);
 LUAI_FUNC void luaF_freeupval (lua_State *L, UpVal *u);
 LUAI_FUNC UpVal *luaF_findupval (lua_State *L, StkId level);
+LUAI_FUNC void luaF_gcruntime( lua_State *L );
 LUAI_FUNC void luaF_close (lua_State *L, StkId level);
 LUAI_FUNC void luaF_freeproto (lua_State *L, Proto *f);
 LUAI_FUNC void luaF_freeclosure (lua_State *L, Closure *c);

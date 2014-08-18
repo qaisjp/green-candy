@@ -18,49 +18,36 @@
 #include "lclass.h"
 #include "ltm.h"
 
+#include "lgc.internal.hxx"
+#include "lgc.interface.hxx"
+
 
 #define GCSTEPSIZE	1024u
 #define GCSWEEPMAX	40
 #define GCSWEEPCOST	10
 #define GCFINALIZECOST	100
 
+// GC Environment global variables.
+globalStatePluginOffset_t _gcEnvPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
 
-#define maskmarks	cast_byte(~(bitmask(BLACKBIT)|WHITEBITS))
-
-#define makewhite(g,x)	((x)->marked = cast_byte(((x)->marked & maskmarks) | luaC_white(g)))
-
-#define white2gray(x)	reset2bits((x)->marked, WHITE0BIT, WHITE1BIT)
-#define black2gray(x)	resetbit((x)->marked, BLACKBIT)
-
-#define stringmark(s)	reset2bits((s)->marked, WHITE0BIT, WHITE1BIT)
-
-
-#define isfinalized(u)		testbit((u)->marked, FINALIZEDBIT)
-#define markfinalized(u)	l_setbit((u)->marked, FINALIZEDBIT)
-
+FASTAPI void setthreshold( globalStateGCEnv *g )
+{
+    g->GCthreshold = ( (g->estimate/100) * g->gcpause );
+}
 
 #define KEYWEAK         bitmask(KEYWEAKBIT)
 #define VALUEWEAK       bitmask(VALUEWEAKBIT)
 
 
+static void removeentry (Node *n)
+{
+    lua_assert(ttisnil(gval(n)));
 
-#define markvalue(g,o) { checkconsistency(o); \
-  if (iscollectable(o) && iswhite(gcvalue(o))) reallymarkobject(g,gcvalue(o)); }
-
-#define markobject(g,t) { if (iswhite(t)) \
-		reallymarkobject(g, t); }
-
-
-#define setthreshold(g)  (g->GCthreshold = (g->estimate/100) * g->gcpause)
-
-
-static void removeentry (Node *n) {
-  lua_assert(ttisnil(gval(n)));
-  if (iscollectable(gkey(n)))
-    setttype(gkey(n), LUA_TDEADKEY);  /* dead key; remove it */
+    if (iscollectable(gkey(n)))
+    {
+        setttype(gkey(n), LUA_TDEADKEY);  /* dead key; remove it */
+    }
 }
-
-static void reallymarkobject( global_State *g, GCObject *o );
 
 template <class typeinfo>
 void DynamicStringTable <typeinfo>::TraverseGC( global_State *g )
@@ -90,25 +77,32 @@ int Class::TraverseGC( global_State *g )
         markobject( g, childAPI );
     }
 
-    lua_State *L = g->GCthread;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    LIST_FOREACH_BEGIN( Class, children.root, child_iter )
-        // Be able to garbage collect children if they set themselves weak.
-        const TValue *weakMeth = item->GetEnvValueString( L, "isWeakChildLink" );
-        bool markChild = true;
+    if ( gcEnv )
+    {
+        lua_State *L = gcEnv->GCthread;
 
-        if ( ttype( weakMeth ) == LUA_TFUNCTION )
-        {
-            setobj( L, L->top++, weakMeth );
-            bool success = lua_pcall( L, 0, 1, 0 ) == 0;
+        LIST_FOREACH_BEGIN( Class, children.root, child_iter )
+            // Be able to garbage collect children if they set themselves weak.
+            const TValue *weakMeth = item->GetEnvValueString( L, "isWeakChildLink" );
+            bool markChild = true;
 
-            markChild = ( success && ( lua_toboolean( L, -1 ) == false ) );
-            L->top--;   // we can pop the error message or the boolean with this.
-        }
+            if ( ttype( weakMeth ) == LUA_TFUNCTION )
+            {
+                setobj( L, L->top++, weakMeth );
+                bool success = lua_pcall( L, 0, 1, 0 ) == 0;
 
-        if ( markChild )
-            markobject( g, item );
-    LIST_FOREACH_END
+                markChild = ( success && ( lua_toboolean( L, -1 ) == false ) );
+                L->top--;   // we can pop the error message or the boolean with this.
+            }
+
+            if ( markChild )
+            {
+                markobject( g, item );
+            }
+        LIST_FOREACH_END
+    }
 
     forceSuper->TraverseGC( g );
 
@@ -148,16 +142,23 @@ void UpVal::MarkGC( global_State *g )
     markvalue( g, v );
 
     if ( v == &u.value )  /* closed? */
+    {
         gray2black( this );  /* open upvalues are never black */
+    }
 }
 
 void GrayObject::MarkGC( global_State *g )
 {
-    gclist = g->gray;
-    g->gray = this;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        gclist = gcEnv->gray;
+        gcEnv->gray = this;
+    }
 }
 
-inline static void reallymarkobject (global_State *g, GCObject *o)
+void reallymarkobject (global_State *g, GCObject *o)
 {
     lua_assert( iswhite( o ) && !isdead( g, o ) );
     white2gray( o );
@@ -165,9 +166,9 @@ inline static void reallymarkobject (global_State *g, GCObject *o)
     o->MarkGC( g );
 }
 
-inline static void marktmu( global_State *g )
+inline static void marktmu( global_State *g, globalStateGCEnv *gcEnv )
 {
-    GCObject *u = g->tmudata;
+    GCObject *u = gcEnv->tmudata;
 
     if ( !u )
         return;
@@ -178,7 +179,66 @@ inline static void marktmu( global_State *g )
         makewhite(g, u);  /* may be marked, if left from previous GC */
         reallymarkobject(g, u);
     }
-    while ( u != g->tmudata );
+    while ( u != gcEnv->tmudata );
+}
+
+void luaC_checkGC( lua_State *L )
+{
+    global_State *g = G(L);
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+    
+    if ( gcEnv )
+    {
+        condhardstacktests( luaD_reallocstack(L, L->stacksize - EXTRA_STACK - 1) );
+
+        if ( g->totalbytes >= gcEnv->GCthreshold )
+        {
+            luaC_step(L);
+        }
+    }
+}
+
+int luaC_getstate( lua_State *L )
+{
+    global_State *g = G(L);
+
+    int gcstate = GCSpause;
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        gcstate = gcEnv->gcstate;
+    }
+
+    return gcstate;
+}
+
+void luaC_setthreshold( lua_State *L, lu_mem threshold )
+{
+    global_State *g = G(L);
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        gcEnv->GCthreshold = threshold;
+    }
+}
+
+lu_byte luaC_white( global_State *g )
+{
+    lu_byte whiteBits = 0;
+    {
+        globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+        if ( gcEnv )
+        {
+            whiteBits = ( (g)->currentwhite & WHITEBITS );
+        }
+    }
+    return whiteBits;
 }
 
 void luaC_markobject( global_State *g, GCObject *o )
@@ -190,6 +250,12 @@ void luaC_markobject( global_State *g, GCObject *o )
 size_t luaC_separatefinalization( lua_State *L, bool all )
 {
     global_State *g = G(L);
+
+    // Get the GC environment.
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( !gcEnv )
+        return 0;
 
     size_t deadmem = 0;
 
@@ -225,13 +291,13 @@ size_t luaC_separatefinalization( lua_State *L, bool all )
                     collected = true;
 
                     /* link `curr' at the end of `tmudata' list */
-                    if (g->tmudata == NULL)  /* list is empty? */
-                        g->tmudata = curr->next = curr;  /* creates a circular list */
+                    if (gcEnv->tmudata == NULL)  /* list is empty? */
+                        gcEnv->tmudata = curr->next = curr;  /* creates a circular list */
                     else
                     {
-                        curr->next = g->tmudata->next;
-                        g->tmudata->next = curr;
-                        g->tmudata = curr;
+                        curr->next = gcEnv->tmudata->next;
+                        gcEnv->tmudata->next = curr;
+                        gcEnv->tmudata = curr;
                     }
                 }
                 break;
@@ -294,12 +360,11 @@ int Table::TraverseGC( global_State *g )
     int i;
     bool weakkey;
     bool weakvalue;
-    const TValue *mode;
 
     if ( metatable )
         markobject( g, metatable );
 
-    mode = gfasttm( g, metatable, TM_MODE );
+    const TValue *mode = gfasttm( g, metatable, TM_MODE );
 
     if ( mode && ttisstring(mode) )
     {  /* is there a weak mode? */
@@ -308,10 +373,16 @@ int Table::TraverseGC( global_State *g )
 
         if ( weakkey || weakvalue )
         {  /* is really weak? */
-            marked &= ~(KEYWEAK | VALUEWEAK);  /* clear bits */
-            marked |= cast_byte((weakkey << KEYWEAKBIT) | (weakvalue << VALUEWEAKBIT));
-            gclist = g->weak;  /* must be cleared after GC, ... */
-            g->weak = this;  /* ... so put in the appropriate list */
+            this->marked &= ~(KEYWEAK | VALUEWEAK);  /* clear bits */
+            this->marked |= cast_byte((weakkey << KEYWEAKBIT) | (weakvalue << VALUEWEAKBIT));
+
+            globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+            if ( gcEnv )
+            {
+                this->gclist = gcEnv->weak;  /* must be cleared after GC, ... */
+                gcEnv->weak = this;  /* ... so put in the appropriate list */
+            }
         }
 
         if ( weakkey && weakvalue )
@@ -555,8 +626,13 @@ size_t ClassMethodDispatch::Propagate( global_State *g )
 
 size_t lua_State::Propagate( global_State *g )
 {
-    gclist = g->grayagain;
-    g->grayagain = this;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        gclist = gcEnv->grayagain;
+        gcEnv->grayagain = this;
+    }
 
     black2gray( this );
 
@@ -585,19 +661,41 @@ size_t Proto::Propagate( global_State *g )
 */
 static l_mem propagatemark (global_State *g)
 {
-    GrayObject *o = g->gray;
-    lua_assert(isgray(o));
-    gray2black(o);
+    l_mem propagateCount = 0;
+    {
+        globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    g->gray = o->gclist;
-    return o->Propagate( g );
+        if ( gcEnv )
+        {
+            GrayObject *o = gcEnv->gray;
+            lua_assert(isgray(o));
+
+            gray2black(o);
+
+            gcEnv->gray = o->gclist;
+
+            propagateCount = o->Propagate( g );
+        }
+    }
+    return propagateCount;
 }
 
 
-static size_t propagateall (global_State *g) {
-  size_t m = 0;
-  while (g->gray) m += propagatemark(g);
-  return m;
+static size_t propagateall (global_State *g)
+{
+    size_t m = 0;
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+   
+    if ( gcEnv )
+    {
+        while ( gcEnv->gray )
+        {
+            m += propagatemark(g);
+        }
+    }
+
+    return m;
 }
 
 
@@ -722,80 +820,92 @@ static GCObject** sweeplist( lua_State *L, GCObject **p, lu_mem count )
     global_State *g = G(L);
     int deadmask = otherwhite(g);
 
-    while ( (curr = *p) != NULL && count-- > 0 )
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
     {
-        if ( curr->tt == LUA_TTHREAD )  /* sweep open upvalues of each thread */
+        while ( (curr = *p) != NULL && count-- > 0 )
         {
-            sweepwholelist( L, &gco2th(curr)->openupval );
-        }
-
-        if ( (curr->marked ^ WHITEBITS) & deadmask )
-        {  /* not dead? */
-            lua_assert( !isdead(g, curr) || testbit(curr->marked, FIXEDBIT) );
-
-            makewhite( g, curr );  /* make it white (for next cycle) */
-
-            p = &curr->next;
-        }
-        else
-        {  /* must erase `curr' */
-            lua_assert( isdead(g, curr) || deadmask == bitmask(SFIXEDBIT) );
-
-            *p = curr->next;
-
-            if ( curr == g->rootgc )  /* is the first element of the list? */
+            if ( curr->tt == LUA_TTHREAD )  /* sweep open upvalues of each thread */
             {
-                g->rootgc = curr->next;  /* adjust first */
+                sweepwholelist( L, &gco2th(curr)->openupval );
             }
-            delete_gcobject( L, curr );
+
+            if ( (curr->marked ^ WHITEBITS) & deadmask )
+            {  /* not dead? */
+                lua_assert( !isdead(g, curr) || testbit(curr->marked, FIXEDBIT) );
+
+                makewhite( g, curr );  /* make it white (for next cycle) */
+
+                p = &curr->next;
+            }
+            else
+            {  /* must erase `curr' */
+                lua_assert( isdead(g, curr) || deadmask == bitmask(SFIXEDBIT) );
+
+                *p = curr->next;
+
+                if ( curr == gcEnv->rootgc )  /* is the first element of the list? */
+                {
+                    gcEnv->rootgc = curr->next;  /* adjust first */
+                }
+
+                delete_gcobject( L, curr );
+            }
         }
     }
     return p;
 }
 
-static void checkSizes (lua_State *L) {
-  global_State *g = G(L);
-  /* check size of string hash */
-  if (g->strt.nuse < cast(lu_int32, g->strt.size/4) &&
-      g->strt.size > MINSTRTABSIZE*2)
-    luaS_resize(L, g->strt.size/2);  /* table is too big */
-  /* check size of buffer */
-  if (luaZ_sizebuffer(&g->buff) > LUA_MINBUFFER*2) {  /* buffer too big? */
-    size_t newsize = luaZ_sizebuffer(&g->buff) / 2;
-    luaZ_resizebuffer(L, &g->buff, newsize);
-  }
+static void checkSizes (lua_State *L)
+{
+    global_State *g = G(L);
+
+    /* check size of string hash */
+    if (g->strt.nuse < cast(lu_int32, g->strt.size/4) && g->strt.size > MINSTRTABSIZE*2)
+    {
+        luaS_resize(L, g->strt.size/2);  /* table is too big */
+    }
+
+    luaS_globalgc( L );
 }
 
 
 inline static void GCTM (lua_State *L)
 {
     global_State *g = G(L);
-    GCObject *o = g->tmudata->next;  /* get first element */
-    const TValue *tm;
-    Udata *udata = rawgco2u( o );
 
-    makewhite( g, o );
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    /* remove udata from `tmudata' */
-    if (o == g->tmudata)  /* last element? */
-        g->tmudata = NULL;
-    else
-        g->tmudata->next = udata->next;
-
-    udata->next = g->mainthread->next;  /* return it to `root' list */
-    g->mainthread->next = o;
-
-    if ( !(tm = fasttm(L, udata->metatable, TM_GC)) )
-        return;
-
+    if ( gcEnv )
     {
-        debughook_shield shield( *L );
+        GCObject *o = gcEnv->tmudata->next;  /* get first element */
+        const TValue *tm;
+        Udata *udata = rawgco2u( o );
 
-        setobj2s( L, L->top, tm );
-        setuvalue( L, L->top+1, udata );
-        L->top += 2;
+        makewhite( g, o );
 
-        luaD_call(L, L->top - 2, 0);
+        /* remove udata from `tmudata' */
+        if (o == gcEnv->tmudata)  /* last element? */
+            gcEnv->tmudata = NULL;
+        else
+            gcEnv->tmudata->next = udata->next;
+
+        udata->next = g->mainthread->next;  /* return it to `root' list */
+        g->mainthread->next = o;
+
+        if ( !(tm = fasttm(L, udata->metatable, TM_GC)) )
+            return;
+
+        {
+            debughook_shield shield( *L );
+
+            setobj2s( L, L->top, tm );
+            setuvalue( L, L->top+1, udata );
+            L->top += 2;
+
+            luaD_call(L, L->top - 2, 0);
+        }
     }
 }
 
@@ -805,64 +915,81 @@ inline static void GCTM (lua_State *L)
 */
 void luaC_callGCTM (lua_State *L)
 {
-    while( G(L)->tmudata )
-        GCTM(L);
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( G(L) );
+
+    if ( gcEnv )
+    {
+        while( gcEnv->tmudata )
+        {
+            GCTM(L);
+        }
+    }
 }
 
 
-void luaC_freeall (lua_State *L) {
-  global_State *g = G(L);
-  int i;
-  g->currentwhite = WHITEBITS | bitmask(SFIXEDBIT);  /* mask to collect all elements */
-  sweepwholelist(L, &g->rootgc);
-  for (i = 0; i < g->strt.size; i++)  /* free all string lists */
-    sweepwholelist(L, &g->strt.hash[i]);
-}
+void luaC_freeall (lua_State *L)
+{
+    global_State *g = G(L);
 
-static void remarkupvals (global_State *g) {
-  UpVal *uv;
-  for (uv = g->uvhead.u.l.next; uv != &g->uvhead; uv = uv->u.l.next) {
-    lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
-    if (isgray(uv))
-      markvalue(g, uv->v);
-  }
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        int i;
+
+        g->currentwhite = WHITEBITS | bitmask(SFIXEDBIT);  /* mask to collect all elements */
+        
+        sweepwholelist(L, &gcEnv->rootgc);
+
+        for (i = 0; i < g->strt.size; i++)  /* free all string lists */
+        {
+            sweepwholelist(L, &g->strt.hash[i]);
+        }
+
+        lua_assert(gcEnv->rootgc == L);
+    }
 }
 
 void luaC_step (lua_State *L)
 {
     global_State *g = G(L);
 
-    // We cannot if GCthread is running
-    if ( L == g->GCthread || g->GCthread->status != THREAD_SUSPENDED )
-        return;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    lu_mem lim = (GCSTEPSIZE/100) * g->gcstepmul;
-
-    if ( lim == 0 )
-        lim = (MAX_LUMEM-1)/2;  /* no limit */
-
-    g->GCcollect = lim;
-    g->gcdept += g->totalbytes - g->GCthreshold;
-
-    // Execute GCthread stealthy
-    g->GCthread->resume();
-
-    switch( g->gcstate )
+    if ( gcEnv )
     {
-    case GCSpause:
-        if ( g->totalbytes < g->estimate )
-            g->estimate = g->totalbytes;
+        // We cannot if GCthread is running
+        if ( L == gcEnv->GCthread || gcEnv->GCthread->status != THREAD_SUSPENDED )
+            return;
 
-        setthreshold( g );
-        return;
-    }
+        lu_mem lim = (GCSTEPSIZE/100) * gcEnv->gcstepmul;
 
-    if ( g->gcdept < GCSTEPSIZE )
-        g->GCthreshold = g->totalbytes + GCSTEPSIZE;  /* - lim/g->gcstepmul;*/
-    else
-    {
-        g->gcdept -= GCSTEPSIZE;
-        g->GCthreshold = g->totalbytes;
+        if ( lim == 0 )
+            lim = (MAX_LUMEM-1)/2;  /* no limit */
+
+        gcEnv->GCcollect = lim;
+        gcEnv->gcdept += g->totalbytes - gcEnv->GCthreshold;
+
+        // Execute GCthread stealthy
+        gcEnv->GCthread->resume();
+
+        switch( gcEnv->gcstate )
+        {
+        case GCSpause:
+            if ( g->totalbytes < gcEnv->estimate )
+                gcEnv->estimate = g->totalbytes;
+
+            setthreshold( gcEnv );
+            return;
+        }
+
+        if ( gcEnv->gcdept < GCSTEPSIZE )
+            gcEnv->GCthreshold = g->totalbytes + GCSTEPSIZE;  /* - lim/g->gcstepmul;*/
+        else
+        {
+            gcEnv->gcdept -= GCSTEPSIZE;
+            gcEnv->GCthreshold = g->totalbytes;
+        }
     }
 }
 
@@ -871,8 +998,15 @@ void luaC_finish( lua_State *L )
 {
     global_State *g = G(L);
 
-    while (g->gcstate != GCSpause)
-        g->GCthread->resume();
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        while (gcEnv->gcstate != GCSpause)
+        {
+            gcEnv->GCthread->resume();
+        }
+    }
 }
 
 
@@ -880,36 +1014,69 @@ void luaC_fullgc (lua_State *L)
 {
     global_State *g = G(L);
 
-    // Collect infinite memory
-    g->GCcollect = 0xFFFFFFFF;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    /* finish any pending sweep phase */
-    luaC_finish( L );
+    if ( gcEnv )
+    {
+        // Collect infinite memory
+        gcEnv->GCcollect = 0xFFFFFFFF;
 
-    g->GCthread->resume();
-    
-    while ( g->gcstate != GCSpause )
-        g->GCthread->resume();
+        /* finish any pending sweep phase */
+        luaC_finish( L );
 
-    g->GCcollect = 0;
+        gcEnv->GCthread->resume();
+        
+        while ( gcEnv->gcstate != GCSpause )
+        {
+            gcEnv->GCthread->resume();
+        }
 
-    setthreshold(g);
+        gcEnv->GCcollect = 0;
+
+        setthreshold(gcEnv);
+    }
 }
 
 
 void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v)
 {
     global_State *g = G(L);
-    lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
-    //lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
-    lua_assert(o->tt != LUA_TTABLE);
 
-    /* must keep invariant? */
-    if (g->gcstate == GCSpropagate)
-        return reallymarkobject(g, v);  /* restore invariant */
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    /* don't mind */
-    makewhite(g, o);  /* mark as white just to avoid other barriers */
+    if ( gcEnv )
+    {
+        lua_assert(isblack(o) && iswhite(v) && !isdead(g, v) && !isdead(g, o));
+        //lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
+        lua_assert(o->tt != LUA_TTABLE);
+
+        /* must keep invariant? */
+        if (gcEnv->gcstate == GCSpropagate)
+        {
+            reallymarkobject(g, v);  /* restore invariant */
+        }
+        else
+        {
+            /* don't mind */
+            makewhite(g, o);  /* mark as white just to avoid other barriers */
+        }
+    }
+}
+
+void luaC_barrier( lua_State *L, GCObject *p, const TValue *v )
+{
+    if ( valiswhite(v) && isblack(p) )
+    {
+        luaC_barrierf( L, p, gcvalue(v) );
+    }
+}
+
+void luaC_objbarrier( lua_State *L, GCObject *p, GCObject *o )
+{
+    if ( iswhite(o) && isblack(p) )
+    {
+		luaC_barrierf( L, p, o );
+    }
 }
 
 
@@ -924,33 +1091,73 @@ void luaC_forceupdatef( lua_State *L, GCObject *o )
 {
     global_State *g = G(L);
 
-    /* must keep invariant? */
-    if (g->gcstate == GCSpropagate)
-        return reallymarkobject(g, o);  /* restore invariant */
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    /* don't mind */
-    makewhite(g, o);  /* mark as white just to avoid other barriers */
+    if ( gcEnv )
+    {
+        /* must keep invariant? */
+        if (gcEnv->gcstate == GCSpropagate)
+        {
+            reallymarkobject(g, o);  /* restore invariant */
+        }
+        else
+        {
+            /* don't mind */
+            makewhite(g, o);  /* mark as white just to avoid other barriers */
+        }
+    }
 }
 
 
 void luaC_barrierback (lua_State *L, Table *t)
 {
     global_State *g = G(L);
-    lua_assert(isblack(t) && !isdead(g, t));
-    lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
-    black2gray(t);  /* make table gray (again) */
-    t->gclist = g->grayagain;
-    g->grayagain = t;
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        lua_assert(isblack(t) && !isdead(g, t));
+        lua_assert(gcEnv->gcstate != GCSfinalize && gcEnv->gcstate != GCSpause);
+
+        black2gray(t);  /* make table gray (again) */
+
+        t->gclist = gcEnv->grayagain;
+        gcEnv->grayagain = t;
+    }
+}
+
+void luaC_barriert( lua_State *L, Table *t, const TValue *v )
+{
+    if ( valiswhite(v) && isblack(t) )
+    {
+	    luaC_barrierback(L,t);
+    }
+}
+
+void luaC_objbarriert( lua_State *L, Table *t, GCObject *o )
+{
+    if ( iswhite(o) && isblack(t) )
+    {
+        luaC_barrierback(L,t);
+    }
 }
 
 
 void luaC_link (lua_State *L, GCObject *o, lu_byte tt)
 {
     global_State *g = G(L);
-    o->next = g->rootgc;
-    g->rootgc = o;
-    o->marked = luaC_white(g);
-    o->tt = tt;
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        o->next = gcEnv->rootgc;
+        gcEnv->rootgc = o;
+
+        o->marked = luaC_white(g);
+        o->tt = tt;
+    }
 }
 
 
@@ -958,189 +1165,224 @@ void luaC_linkupval (lua_State *L, UpVal *uv)
 {
     global_State *g = G(L);
 
-    uv->next = g->rootgc;  /* link upvalue into `rootgc' list */
-    g->rootgc = uv;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    if (isgray(uv))
-    { 
-        if (g->gcstate == GCSpropagate)
-        {
-            gray2black(uv);  /* closed upvalues need barrier */
-            luaC_barrier(L, uv, uv->v);
-        }
-        else
-        {  /* sweep phase: sweep it (turning it into white) */
-            makewhite(g, uv);
-            lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
+    if ( gcEnv )
+    {
+        uv->next = gcEnv->rootgc;  /* link upvalue into `rootgc' list */
+        gcEnv->rootgc = uv;
+
+        if (isgray(uv))
+        { 
+            if (gcEnv->gcstate == GCSpropagate)
+            {
+                gray2black(uv);  /* closed upvalues need barrier */
+                luaC_barrier(L, uv, uv->v);
+            }
+            else
+            {  /* sweep phase: sweep it (turning it into white) */
+                makewhite(g, uv);
+
+                lua_assert(gcEnv->gcstate != GCSfinalize && gcEnv->gcstate != GCSpause);
+            }
         }
     }
 }
 
-inline void luaC_paycost( global_State *g, lua_Thread *L, lu_mem collected )
+inline void _luaC_paycost( globalStateGCEnv *gcEnv, lua_Thread *L, lu_mem collected )
 {
     // Check whether we collected enough memory
-    if ( g->GCcollect <= collected )
+    if ( gcEnv->GCcollect <= collected )
     {
-        g->GCcollect = 0;
+        gcEnv->GCcollect = 0;
         L->yield();
-        return;
     }
-    
-    // We rerun
-    g->GCcollect -= collected;
+    else
+    {
+        // We continue running
+        gcEnv->GCcollect -= collected;
+    }
 }
 
-static inline void luaC_processestimate( global_State *g, size_t mem )
+void luaC_paycost( global_State *g, lua_Thread *L, lu_mem collected )
 {
-    if ( g->estimate > mem )
-        g->estimate -= mem;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        _luaC_paycost( gcEnv, L, collected );
+    }
+}
+
+static inline void luaC_processestimate( globalStateGCEnv *gcEnv, size_t mem )
+{
+    if ( gcEnv->estimate > mem )
+        gcEnv->estimate -= mem;
     else
-        g->estimate = 0;
+        gcEnv->estimate = 0;
 }
 
 static int luaC_runtime( lua_State *L )
 {
     global_State *g = G(L);
 
-    for (;;)
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
     {
-        // Set up the runtime for another collection
-        g->gray = NULL;
-        g->grayagain = NULL;
-        g->weak = NULL;
-
-        {
-            // Do the root marking
-            lua_State *main = g->mainthread;
-            markobject( g, main );
-            markobject( g, L ); // ourselves!
-            /* make global table be traversed before main stack */
-            markvalue(g, gt(main));
-            markvalue(g, registry(main));
-            markmt( main );
-
-            // Mark all event functions
-            for ( unsigned int n = 0; n < LUA_NUM_EVENTS; n++ )
-            {
-                if ( Closure *evtCall = g->events[n] )
-                    markobject( g, evtCall );
-            }
-        }
-
-        // Check for active objects
-        g->gcstate = GCSpropagate;
-
-        // Notify the user; he may yield the runtime at his own will (or use lua_gcpaycost for the official API)
-        if ( Closure *evtCall = G(L)->events[LUA_EVENT_GC_PROPAGATE] )
-        {
-            setclvalue( L, L->top++, evtCall );
-            lua_call( L, 0, 0 );
-        }
-
-        while ( g->gray )
-            luaC_paycost( g, (lua_Thread*)L, propagatemark(g) );
-
-        /* no more `gray' objects */
-        size_t udsize;  /* total size of userdata to be finalized */
-        /* mark specific globals */
-        stringmark( g->superCached );   // 'super' used by classes
-        /* remark occasional upvalues of (maybe) dead threads */
-        remarkupvals(g);
-        /* traverse objects cautch by write barrier and by 'remarkupvals' */
-        propagateall(g);
-        /* remark weak tables */
-        g->gray = g->weak;
-        g->weak = NULL;
-        lua_assert(!iswhite(g->mainthread));
-        markmt( L );  /* mark basic metatables (again) */
-        propagateall(g);
-        /* remark gray again */
-        g->gray = g->grayagain;
-        g->grayagain = NULL;
-        propagateall(g);
-        udsize = luaC_separatefinalization(L, false);  /* separate userdata to be finalized */
-        marktmu(g);  /* mark `preserved' userdata */
-        udsize += propagateall(g);  /* remark, to propagate `preserveness' */
-        cleartable(g->weak);  /* remove collected objects from weak tables */
-        /* flip current white */
-        g->currentwhite = cast_byte(otherwhite(g));
-        g->sweepstrgc = 0;
-        g->sweepgc = &g->rootgc;
-        g->gcstate = GCSsweepstring;
-        g->estimate = g->totalbytes;
-        luaC_processestimate( g, udsize );  /* first estimate */
-
-        do
-        {
-            lu_mem old = g->totalbytes;
-            sweepwholelist( L, &g->strt.hash[g->sweepstrgc++] );
-
-            lua_assert(old >= g->totalbytes);
-            luaC_processestimate( g, old - g->totalbytes );
-
-            luaC_paycost( g, (lua_Thread*)L, GCSWEEPCOST );
-        }
-        while ( g->sweepstrgc < g->strt.size ); // end phase once we swept all strings
-        
-        // Sweep (free) unused objects
-        g->gcstate = GCSsweep;
-
         for (;;)
         {
-            lu_mem old = g->totalbytes;
-            g->sweepgc = sweeplist(L, g->sweepgc, GCSWEEPMAX);
+            // Set up the runtime for another collection
+            gcEnv->gray = NULL;
+            gcEnv->grayagain = NULL;
+            gcEnv->weak = NULL;
 
-            lua_assert( old >= g->totalbytes );
-            luaC_processestimate( g, old - g->totalbytes );
+            {
+                // Do the root marking
+                lua_State *main = g->mainthread;
+                markobject( g, main );
+                markobject( g, L ); // ourselves!
+                /* make global table be traversed before main stack */
+                markvalue(g, gt(main));
+                markvalue(g, registry(main));
+                markmt( main );
 
-            if ( *g->sweepgc == NULL )
-            {  /* nothing more to sweep? */
-                lu_mem old2 = g->totalbytes;
-
-                checkSizes(L);
-
-                lua_assert( old2 >= g->totalbytes );
-                luaC_processestimate( g, old2 - g->totalbytes );
-                break;
+                // Mark all event functions
+                for ( unsigned int n = 0; n < LUA_NUM_EVENTS; n++ )
+                {
+                    if ( Closure *evtCall = g->events[n] )
+                    {
+                        markobject( g, evtCall );
+                    }
+                }
             }
 
-            luaC_paycost( g, (lua_Thread*)L, GCSWEEPMAX*GCSWEEPCOST );
+            // Check for active objects
+            gcEnv->gcstate = GCSpropagate;
+
+            // Notify the user; he may yield the runtime at his own will (or use lua_gcpaycost for the official API)
+            if ( Closure *evtCall = G(L)->events[LUA_EVENT_GC_PROPAGATE] )
+            {
+                setclvalue( L, L->top++, evtCall );
+                lua_call( L, 0, 0 );
+            }
+
+            while ( gcEnv->gray )
+            {
+                _luaC_paycost( gcEnv, (lua_Thread*)L, propagatemark(g) );
+            }
+
+            /* no more `gray' objects */
+            size_t udsize;  /* total size of userdata to be finalized */
+            /* give control to sub-modules to mark their global values */
+            {
+                luaJ_gcruntime( L );
+                luaF_gcruntime( L );
+            }
+            /* traverse objects cautch by write barrier and by 'remarkupvals' */
+            propagateall(g);
+            /* remark weak tables */
+            gcEnv->gray = gcEnv->weak;
+            gcEnv->weak = NULL;
+            lua_assert(!iswhite(g->mainthread));
+            markmt( L );  /* mark basic metatables (again) */
+            propagateall(g);
+            /* remark gray again */
+            gcEnv->gray = gcEnv->grayagain;
+            gcEnv->grayagain = NULL;
+            propagateall(g);
+            udsize = luaC_separatefinalization(L, false);  /* separate userdata to be finalized */
+            marktmu(g, gcEnv);  /* mark `preserved' userdata */
+            udsize += propagateall(g);  /* remark, to propagate `preserveness' */
+            cleartable(gcEnv->weak);  /* remove collected objects from weak tables */
+            /* flip current white */
+            g->currentwhite = cast_byte(otherwhite(g));
+            gcEnv->sweepstrgc = 0;
+            gcEnv->sweepgc = &gcEnv->rootgc;
+            gcEnv->gcstate = GCSsweepstring;
+            gcEnv->estimate = g->totalbytes;
+            luaC_processestimate( gcEnv, udsize );  /* first estimate */
+
+            do
+            {
+                lu_mem old = g->totalbytes;
+                sweepwholelist( L, &g->strt.hash[gcEnv->sweepstrgc++] );
+
+                lua_assert(old >= g->totalbytes);
+                luaC_processestimate( gcEnv, old - g->totalbytes );
+
+                _luaC_paycost( gcEnv, (lua_Thread*)L, GCSWEEPCOST );
+            }
+            while ( gcEnv->sweepstrgc < g->strt.size ); // end phase once we swept all strings
+            
+            // Sweep (free) unused objects
+            gcEnv->gcstate = GCSsweep;
+
+            for (;;)
+            {
+                lu_mem old = g->totalbytes;
+                gcEnv->sweepgc = sweeplist(L, gcEnv->sweepgc, GCSWEEPMAX);
+
+                lua_assert( old >= g->totalbytes );
+                luaC_processestimate( gcEnv, old - g->totalbytes );
+
+                if ( *gcEnv->sweepgc == NULL )
+                {  /* nothing more to sweep? */
+                    lu_mem old2 = g->totalbytes;
+
+                    checkSizes(L);
+
+                    lua_assert( old2 >= g->totalbytes );
+                    luaC_processestimate( gcEnv, old2 - g->totalbytes );
+                    break;
+                }
+
+                _luaC_paycost( gcEnv, (lua_Thread*)L, GCSWEEPMAX*GCSWEEPCOST );
+            }
+
+            // Finalize all executive objects
+            gcEnv->gcstate = GCSfinalize;
+            
+            while ( gcEnv->tmudata )
+            {
+                GCTM(L);
+
+                luaC_processestimate( gcEnv, GCFINALIZECOST );
+
+                _luaC_paycost( gcEnv, (lua_Thread*)L, GCFINALIZECOST );
+            }
+
+            gcEnv->gcstate = GCSpause;  /* end collection */
+            gcEnv->gcdept = 0;
+
+            // Yield for every run
+            ((lua_Thread*)L)->yield();
         }
-
-        // Finalize all executive objects
-        g->gcstate = GCSfinalize;
-        
-        while ( g->tmudata )
-        {
-            GCTM(L);
-
-            luaC_processestimate( g, GCFINALIZECOST );
-
-            luaC_paycost( g, (lua_Thread*)L, GCFINALIZECOST );
-        }
-
-        g->gcstate = GCSpause;  /* end collection */
-        g->gcdept = 0;
-
-        // Yield for every run
-        ((lua_Thread*)L)->yield();
     }
+    return 0;
 }
 
 void luaC_init( global_State *g )
 {
-    // Init global variables
-    g->GCthreshold = 0;  /* mark it as unfinished state */
-    g->gcstate = GCSpause;
-    g->rootgc = g->mainthread;
-    g->sweepstrgc = 0;
-    g->sweepgc = &g->rootgc;
-    g->gray = NULL;
-    g->grayagain = NULL;
-    g->gcpause = LUAI_GCPAUSE;
-    g->gcstepmul = LUAI_GCMUL;
-    g->gcdept = 0;
-    g->GCcollect = 0;
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        // Init global variables
+        gcEnv->weak = NULL;
+        gcEnv->tmudata = NULL;
+        gcEnv->GCthreshold = 0;  /* mark it as unfinished state */
+        gcEnv->gcstate = GCSpause;
+        gcEnv->rootgc = g->mainthread;
+        gcEnv->sweepstrgc = 0;
+        gcEnv->sweepgc = &gcEnv->rootgc;
+        gcEnv->gray = NULL;
+        gcEnv->grayagain = NULL;
+        gcEnv->gcpause = LUAI_GCPAUSE;
+        gcEnv->gcstepmul = LUAI_GCMUL;
+        gcEnv->gcdept = 0;
+        gcEnv->GCcollect = 0;
+    }
 }
 
 void luaC_initthread( global_State *g )
@@ -1148,17 +1390,22 @@ void luaC_initthread( global_State *g )
     // Initialize thread environment
     LIST_CLEAR( g->threads.root );
 
-    // Allocate the main garbage collector runtime and set it up
-    lua_Thread *L = g->GCthread = luaE_newthread( g->mainthread );
-    
-    if ( !L->AllocateRuntime() )
-        throw lua_exception( g->mainthread, LUA_ERRRUN, "fatal: could not allocate GCthread" );
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-    // We will stealth yield and resume; GC has to be a main thread!
-    L->SetMainThread( true );
+    if ( gcEnv )
+    {
+        // Allocate the main garbage collector runtime and set it up
+        lua_Thread *L = gcEnv->GCthread = luaE_newthread( g->mainthread );
+        
+        if ( !L->AllocateRuntime() )
+            throw lua_exception( g->mainthread, LUA_ERRRUN, "fatal: could not allocate GCthread" );
 
-    // Let it enter the runtime without arguments
-    lua_pushcclosure( L, luaC_runtime, 0 );
+        // We will stealth yield and resume; GC has to be a main thread!
+        L->SetMainThread( true );
+
+        // Let it enter the runtime without arguments
+        lua_pushcclosure( L, luaC_runtime, 0 );
+    }
 }
 
 static void callallgcTM (lua_State *L, void *ud)
@@ -1169,11 +1416,22 @@ static void callallgcTM (lua_State *L, void *ud)
 
 void luaC_shutdown( global_State *g )
 {
-    lua_Thread *L = g->GCthread;
+    lua_State *L = NULL;
 
-    // Finish a pending garbage collection cycle.
-    // We must do that to not break the integrity of the GC thread.
-    luaC_finish( L );
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        L = gcEnv->GCthread;
+
+        // Finish a pending garbage collection cycle.
+        // We must do that to not break the integrity of the GC thread.
+        luaC_finish( L );
+    }
+    else
+    {
+        L = g->mainthread;
+    }
 
     // Terminate all threads (GC should be last)
     // This disables their runtime environments.
@@ -1181,53 +1439,56 @@ void luaC_shutdown( global_State *g )
         luaE_terminate( item );
     LIST_FOREACH_END
 
-    luaC_separatefinalization( L, true );
-
-    // Make sure we eliminated all classes.
-    // If we have not, the runtime is faulty.
-    Closure *dfail = g->events[LUA_EVENT_GC_DEALLOC_FAIL];
-    
-    // Grab all objects and attempt another deallocation.
-    if ( dfail )
+    if ( gcEnv )
     {
-        bool nonFinalizedObject = false;
+        luaC_separatefinalization( L, true );
 
-        for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
+        // Make sure we eliminated all classes.
+        // If we have not, the runtime is faulty.
+        Closure *dfail = g->events[LUA_EVENT_GC_DEALLOC_FAIL];
+        
+        // Grab all objects and attempt another deallocation.
+        if ( dfail )
         {
-            if ( !isfinalized( iter ) )
+            bool nonFinalizedObject = false;
+
+            for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
             {
-                nonFinalizedObject = true;
-
-                try
+                if ( !isfinalized( iter ) )
                 {
-                    // Since we are running on the GC thread, collection is disabled by design.
-                    // Hence we are safe to loop the GC list.
-                    StkId funcPtr = L->top++;
+                    nonFinalizedObject = true;
 
-                    setclvalue( L, funcPtr, dfail );
-                    setgcvalue( L, L->top++, iter );
-                    luaD_call( L, funcPtr, 0 );
+                    try
+                    {
+                        // Since we are running on the GC thread, collection is disabled by design.
+                        // Hence we are safe to loop the GC list.
+                        StkId funcPtr = L->top++;
+
+                        setclvalue( L, funcPtr, dfail );
+                        setgcvalue( L, L->top++, iter );
+                        luaD_call( L, funcPtr, 0 );
+                    }
+                    catch( ... )
+                    {
+                        // Notify the system that we encountered an exception.
+                        lua_assert( 0 );
+                    }
                 }
-                catch( ... )
-                {
-                    // Notify the system that we encountered an exception.
-                    lua_assert( 0 );
-                }
+            }
+
+            if ( nonFinalizedObject )
+            {
+                // Attempt to finalize more objects.
+                luaC_separatefinalization( L, true );
             }
         }
 
-        if ( nonFinalizedObject )
+        // If there still are objects left, the runtime is experiencing undefined behavior.
+        // Let us assert the application.
+        for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
         {
-            // Attempt to finalize more objects.
-            luaC_separatefinalization( L, true );
+            lua_assert( isfinalized( iter ) );
         }
-    }
-
-    // If there still are objects left, the runtime is experiencing undefined behavior.
-    // Let us assert the application.
-    for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
-    {
-        lua_assert( isfinalized( iter ) );
     }
 
     L->errfunc = 0;  /* no error function during GC metamethods */
@@ -1240,12 +1501,18 @@ void luaC_shutdown( global_State *g )
         L->base = L->top = L->ci->base;
         L->nCcalls = 0;
     } while (luaD_rawrunprotected(L, callallgcTM, NULL, errMsg, NULL) != 0);
+
+    if ( gcEnv )
+    {
+        lua_assert(gcEnv->tmudata == NULL);
+    }
 }
 
 // Module initialization.
 void luaC_moduleinit( void )
 {
-    return;
+    _gcEnvPluginOffset =
+        globalStateFactory.RegisterStructPlugin <globalStateGCEnv> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
 }
 
 void luaC_moduleshutdown( void )

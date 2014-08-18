@@ -168,6 +168,8 @@ struct StaticPluginClassFactory
     // Number type used to store the plugin offset.
     typedef ptrdiff_t pluginOffset_t;
 
+    static const pluginOffset_t INVALID_PLUGIN_OFFSET = (pluginOffset_t)0;  // zero is always invalid.
+
     AINLINE static bool IsOffsetValid( pluginOffset_t offset )
     {
         return ( offset >= sizeof( classType ) );
@@ -351,7 +353,17 @@ struct StaticPluginClassFactory
 
         classType *resultObject = NULL;
         {
-            classType *intermediateClassObject = new (classMem) classType;
+            classType *intermediateClassObject = NULL;
+
+            try
+            {
+                intermediateClassObject = new (classMem) classType;
+            }
+            catch( ... )
+            {
+                // The base object failed to construct, so terminate here.
+                intermediateClassObject = NULL;
+            }
 
             if ( intermediateClassObject )
             {
@@ -360,27 +372,36 @@ struct StaticPluginClassFactory
 
                 unsigned int constrPluginIndex = 0;
 
-                while ( constrPluginIndex < this->regPlugins.size() )
+                try
                 {
-                    registered_plugin& regPluginInfo = this->regPlugins.at( constrPluginIndex );
-
-                    bool success =
-                        regPluginInfo.descriptor->OnPluginConstruct(
-                            intermediateClassObject,
-                            regPluginInfo.pluginOffset,
-                            regPluginInfo.pluginId
-                        );
-
-                    if ( !success )
+                    while ( constrPluginIndex < this->regPlugins.size() )
                     {
-                        pluginConstructionSuccessful = false;
-                        break;
+                        registered_plugin& regPluginInfo = this->regPlugins.at( constrPluginIndex );
+
+                        bool success =
+                            regPluginInfo.descriptor->OnPluginConstruct(
+                                intermediateClassObject,
+                                regPluginInfo.pluginOffset,
+                                regPluginInfo.pluginId
+                            );
+
+                        if ( !success )
+                        {
+                            pluginConstructionSuccessful = false;
+                            break;
+                        }
+                        else
+                        {
+                            // We succeeded, so continue.
+                            constrPluginIndex++;
+                        }
                     }
-                    else
-                    {
-                        // We succeeded, so continue.
-                        constrPluginIndex++;
-                    }
+                }
+                catch( ... )
+                {
+                    // There was an exception while trying to construct a plugin.
+                    // We do not let it pass and terminate here.
+                    pluginConstructionSuccessful = false;
                 }
 
                 if ( pluginConstructionSuccessful )
@@ -416,6 +437,11 @@ struct StaticPluginClassFactory
         {
             this->aliveClasses++;
         }
+        else
+        {
+            // Clean up.
+            memAllocator.Free( classMem, wholeClassSize );
+        }
 
         return resultObject;
     }
@@ -433,21 +459,30 @@ struct StaticPluginClassFactory
                 // Call all assignment operators.
                 bool cloneSuccess = true;
 
-                for ( unsigned int n = 0; n < this->regPlugins.size(); n++ )
+                try
                 {
-                    registered_plugin& regPluginInfo = this->regPlugins.at( n );
-
-                    bool assignSuccess = regPluginInfo.descriptor->OnPluginAssign(
-                        dstObject, srcObject,
-                        regPluginInfo.pluginOffset,
-                        regPluginInfo.pluginId
-                    );
-
-                    if ( !assignSuccess )
+                    for ( unsigned int n = 0; n < this->regPlugins.size(); n++ )
                     {
-                        cloneSuccess = false;
-                        break;
+                        registered_plugin& regPluginInfo = this->regPlugins.at( n );
+
+                        bool assignSuccess = regPluginInfo.descriptor->OnPluginAssign(
+                            dstObject, srcObject,
+                            regPluginInfo.pluginOffset,
+                            regPluginInfo.pluginId
+                        );
+
+                        if ( !assignSuccess )
+                        {
+                            cloneSuccess = false;
+                            break;
+                        }
                     }
+                }
+                catch( ... )
+                {
+                    // There was an exception while cloning plugin data.
+                    // We do not let it pass and terminate here.
+                    cloneSuccess = false;
                 }
 
                 if ( cloneSuccess )
@@ -475,6 +510,7 @@ struct StaticPluginClassFactory
 
         {
             // Call destructors of all registered plugins.
+            try
             {
                 unsigned int n = this->regPlugins.size();
 
@@ -491,9 +527,24 @@ struct StaticPluginClassFactory
                     );
                 }
             }
+            catch( ... )
+            {
+                // There was an exception while destroying a plugin.
+                // This should never happen, so throw a breakpoint.
+                assert( 0 );
+            }
 
-            // Destroy the base class object.
-            classObject->~classType();
+            try
+            {
+                // Destroy the base class object.
+                classObject->~classType();
+            }
+            catch( ... )
+            {
+                // There was an exception while destroying the base class.
+                // This must not happen either; we have to notify the guys!
+                assert( 0 );
+            }
 
             // Decrease the number of alive classes.
             this->aliveClasses--;

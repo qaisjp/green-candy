@@ -11,14 +11,28 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "lstring.h"
+#include "ldebug.h"
+#include "lvm.h"
 
 
+// Global string plugin.
+static globalStatePluginOffset_t _stringEnvPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
+
+struct globalStateStringEnv
+{
+    Mbuffer buff;  /* temporary buffer for string concatentation */
+};
+
+globalStateStringEnv* GetGlobalStringEnv( global_State *g )
+{
+    return globalStateFactory_t::RESOLVE_STRUCT <globalStateStringEnv> ( g, _stringEnvPluginOffset );
+}
 
 void luaS_resize (lua_State *L, int newsize) {
   GCObject **newhash;
   stringtable *tb;
   int i;
-  if (G(L)->gcstate == GCSsweepstring)
+  if (luaC_getstate( L ) == GCSsweepstring)
     return;  /* cannot resize during GC traverse */
   newhash = luaM_newvector(L, newsize, GCObject *);
   tb = &G(L)->strt;
@@ -55,7 +69,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l, unsigned int h
         luaM_toobig(L);
     }
 
-    ts = lua_new <TString> ( G(L), sizeof(TString) + ( l + 1 ) );
+    ts = lua_new <TString> ( L, sizeof(TString) + ( l + 1 ) );
 
     if ( ts )
     {
@@ -103,11 +117,70 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
   return newlstr(L, str, l, h);  /* not found */
 }
 
+int luaS_concat (lua_State *L, StkId top, int total)
+{
+    // Only concat strings if we can get the global string environment.
+    globalStateStringEnv *stringEnv = GetGlobalStringEnv( G(L) );
+
+    if ( !stringEnv )
+    {
+        luaG_runerror(L, "no global string environment");
+    }
+
+    /* at least two string values; get as many as possible */
+    size_t tl = tsvalue(top-1)->len;
+    char *buffer;
+    int i, n;
+
+    /* collect total length */
+    for (n = 1; n < total && tostring(L, top-n-1); n++)
+    {
+        size_t l = tsvalue(top-n-1)->len;
+
+        if (l >= MAX_SIZET - tl)
+        {
+            luaG_runerror(L, "string length overflow");
+        }
+
+        tl += l;
+    }
+
+    buffer = luaZ_openspace(L, &stringEnv->buff, tl);
+    tl = 0;
+
+    for (i=n; i>0; i--)
+    {  /* concat all strings */
+        size_t l = tsvalue(top-i)->len;
+
+        memcpy(buffer+tl, svalue(top-i), l);
+        tl += l;
+    }
+    setsvalue2s(L, top-n, luaS_newlstr(L, buffer, tl));
+
+    return n;
+}
+
+void luaS_globalgc (lua_State *L)
+{
+    globalStateStringEnv *stringEnv = GetGlobalStringEnv( G(L) );
+
+    // Only proceed if we have the string environment.
+    if ( stringEnv )
+    {
+        /* check size of buffer */
+        if (luaZ_sizebuffer(&stringEnv->buff) > LUA_MINBUFFER*2)
+        {  /* buffer too big? */
+            size_t newsize = luaZ_sizebuffer(&stringEnv->buff) / 2;
+            luaZ_resizebuffer(L, &stringEnv->buff, newsize);
+        }
+    }
+}
+
 void luaS_free (lua_State *L, TString *s)
 {
     G(L)->strt.nuse--;
 
-    lua_delete( G(L), s );
+    lua_delete <TString> ( L, s );
 }
 
 Udata::~Udata()
@@ -118,12 +191,13 @@ Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
 {
     Udata *u;
 
+    // Check that we do not encounter number overflow!
     if (s > MAX_SIZET - sizeof(Udata))
     {
         luaM_toobig(L);
     }
 
-    u = lua_new <Udata> ( G(L), sizeof(Udata) + s );
+    u = lua_new <Udata> ( L, sizeof(Udata) + s );
 
     if ( u )
     {
@@ -141,13 +215,35 @@ Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
 
 void luaS_freeudata (lua_State *L, Udata *u)
 {
-    lua_delete( G(L), u );
+    lua_delete <Udata> ( L, u );
+}
+
+// Global state initialization.
+void luaS_stateinit( lua_State *L )
+{
+    globalStateStringEnv *stringEnv = GetGlobalStringEnv( G(L) );
+
+    if ( stringEnv )
+    {
+        luaZ_initbuffer( L, &stringEnv->buff );
+    }
+}
+
+void luaS_stateshutdown( lua_State *L )
+{
+    globalStateStringEnv *stringEnv = GetGlobalStringEnv( G(L) );
+
+    if ( stringEnv )
+    {
+        luaZ_freebuffer( L, &stringEnv->buff );
+    }
 }
 
 // Module initialization.
 void luaS_init( void )
 {
-    return;
+    _stringEnvPluginOffset =
+        globalStateFactory.RegisterStructPlugin <globalStateStringEnv> ( GLOBAL_STATE_PLUGIN_STRING_META );
 }
 
 void luaS_shutdown( void )

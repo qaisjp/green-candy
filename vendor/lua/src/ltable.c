@@ -412,7 +412,7 @@ Table *luaH_new (lua_State *L, int narray, int nhash)
         return NULL;
 
     // Construct the table using its factory.
-    Table *t = globalEnv->factory.Construct( G(L)->defaultAlloc );
+    Table *t = globalEnv->factory.Construct( L->defaultAlloc );
 
     if ( t )
     {
@@ -449,7 +449,7 @@ void luaH_free (lua_State *L, Table *t)
     if ( globalEnv )
     {
         // Destroy the table.
-        globalEnv->factory.Destroy( G(L)->defaultAlloc, t );
+        globalEnv->factory.Destroy( L->defaultAlloc, t );
     }
 }
 

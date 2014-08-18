@@ -284,8 +284,17 @@ struct testExceptionHandler : public DbgTrace::IExceptionHandler
     {
         if ( !IsDebuggerPresent() )
         {
-            printf( "An irrecoverable exception has occured!\n%s", runtimeSnapShot->ToString().c_str() );
-            
+            if ( runtimeSnapShot == NULL )
+            {
+                printf( "Segmentation fault (failed to get context snapshot)...\n" );
+            }
+            else
+            {
+                printf( "Segmentation fault; traceback...\n%s", runtimeSnapShot->ToString().c_str() );
+            }
+
+            printf( "hit enter to continue\n" );
+
             getchar();
         }
         return false;
@@ -380,6 +389,11 @@ int _main( int argc, char *argv[] )
     processCmdEvent = CreateEvent( NULL, true, false, "Process Command" );
 
     threadHandle = CreateThread( NULL, 0, HandleConsoleInput, NULL, 0, &threadId );
+
+    if ( threadHandle == NULL )
+    {
+        printf( "warning: failed to create console input thread (out of memory?)\n" );
+    }
 
     // Reset stack offset
     int resetTop = lua_gettop( state );

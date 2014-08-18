@@ -17,7 +17,6 @@
 #include "llimits.h"
 #include "lua.h"
 #include "lmem.h"
-#include "lzio.h"
 
 
 /* tags for values visible from Lua */
@@ -677,6 +676,11 @@ typedef struct CallInfo {
 class lua_State : public GrayObject, virtual public ILuaState
 {
 public:
+    lua_State( void )
+    {
+        // Set the runtime state.
+        defaultAlloc.SetThread( this );
+    }
     virtual ~lua_State();
 
     lu_mem GetTypeSize( global_State *g ) const;
@@ -713,6 +717,39 @@ public:
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
     TValue storage;
     Table *mt[NUM_TAGS];  /* metatables for basic types */
+
+    // Memory allocator for class memory.
+    // It allocates memory with thread focus.
+    struct LuaThreadRuntimeAllocator
+    {
+        lua_State *runtimeThread;
+
+        inline LuaThreadRuntimeAllocator( void )
+        {
+            this->runtimeThread = NULL;
+        }
+
+        inline ~LuaThreadRuntimeAllocator( void )
+        {
+            return;
+        }
+
+        inline void SetThread( lua_State *theThread )
+        {
+            this->runtimeThread = theThread;
+        }
+
+        inline void* Allocate( size_t memSize )
+        {
+            return luaM_realloc_( this->runtimeThread, NULL, 0, memSize );
+        }
+
+        inline void Free( void *ptr, size_t memSize )
+        {
+            luaM_realloc_( this->runtimeThread, ptr, memSize, 0 );
+        }
+    };
+    LuaThreadRuntimeAllocator defaultAlloc;
 };
 
 // General stuff.
@@ -728,69 +765,33 @@ class TString;
 class Closure;
 
 /*
-** `global state', shared by all threads of this state
+** 'global state', shared by all threads of this state
 */
 struct global_State
 {
-    inline global_State( void )
-    {
-        // Set up the class memory allocator.
-        defaultAlloc.SetState( this );
-    }
-
     stringtable strt;  /* hash table for strings */
-    lua_Alloc frealloc;  /* function to reallocate memory */
-    void *ud;         /* auxiliary data to `frealloc' */
+    lua_Alloc frealloc;  /* function to (re-)allocate memory */
+    void *ud;         /* auxiliary data to 'frealloc' */
     lu_byte currentwhite;
-    lu_byte gcstate;  /* state of garbage collector */
-    int sweepstrgc;  /* position of sweep in `strt' */
-    GCObject *rootgc;  /* list of all collectable objects */
-    GCObject **sweepgc;  /* position of sweep in `rootgc' */
-    GrayObject *gray;  /* list of gray objects */
-    GrayObject *grayagain;  /* list of objects to be traversed atomically */
-    GrayObject *weak;  /* list of weak tables (to be cleared) */
-    GCObject *tmudata;  /* last element of list of userdata to be GC */
-    Mbuffer buff;  /* temporary buffer for string concatentation */
-    lua_Thread *GCthread; /* garbage collector runtime */
-    lu_mem GCthreshold;
-    lu_mem GCcollect; /* amount of memory to be collected until stop */
+
     lu_mem totalbytes;  /* number of bytes currently allocated */
-    lu_mem estimate;  /* an estimate of number of bytes actually in use */
-    lu_mem gcdept;  /* how much GC is `behind schedule' */
-    int gcpause;  /* size of pause between successive GCs */
-    int gcstepmul;  /* GC `granularity' */
 
     TValue l_registry;
     lua_State *mainthread;
-    UpVal uvhead;  /* head of double-linked list of all open upvalues */
     TString *tmname[TM_N];  /* array with tag-method names */
-    TString *superCached; /* 'super' */
     Closure *events[LUA_NUM_EVENTS];
 
-    RwList <lua_Thread> threads; /* all existing thread in this machine */
+    RwList <lua_Thread> threads; /* all existing threads in this machine */
 
-    // NEW OPTIMIZED MEMBERS.
-    void *allocData;
-    LuaDefaultAllocator defaultAlloc;
-
-#if 0
-    // Define class factories for all Lua GCObject types.
-    typedef StaticPluginClassFactory <TString, LuaDefaultAllocator> stringFactory_t;
-    typedef StaticPluginClassFactory <Table, LuaDefaultAllocator> tableFactory_t;
-    typedef StaticPluginClassFactory <LClosure, LuaDefaultAllocator> lclosureFactory_t;
-    typedef StaticPluginClassFactory <CClosure, LuaDefaultAllocator> cclosureFactory_t;
-    // userdata has no factory
-    // dispatch has no factory
-    typedef StaticPluginClassFactory <lua_Thread, LuaDefaultAllocator> threadFactory_t;
-#endif
+    void *allocData; /* private allocation data used for memory requests */
 };
 
 // Macros to create and destroy Lua types accordingly.
 template <typename classType>
-FASTAPI classType* lua_new( global_State *g, lu_mem memSize = sizeof( classType ) )
+FASTAPI classType* lua_new( lua_State *L, lu_mem memSize = sizeof( classType ) )
 {
     // Allocate the memory.
-    void *objMem = g->defaultAlloc.Allocate( memSize );
+    void *objMem = L->defaultAlloc.Allocate( memSize );
 
     if ( objMem )
     {
@@ -802,10 +803,10 @@ FASTAPI classType* lua_new( global_State *g, lu_mem memSize = sizeof( classType 
 }
 
 template <typename classType>
-FASTAPI void lua_delete( global_State *g, classType *obj )
+FASTAPI void lua_delete( lua_State *L, classType *obj )
 {
     // Obtain the type size.
-    lu_mem memSize = obj->GetTypeSize( g );
+    lu_mem memSize = obj->GetTypeSize( G(L) );
 
     // Deconstruct the type.
     obj->~classType();
@@ -813,7 +814,7 @@ FASTAPI void lua_delete( global_State *g, classType *obj )
     // Release the memory.
     void *objMem = obj;
 
-    g->defaultAlloc.Free( objMem, memSize );
+    L->defaultAlloc.Free( objMem, memSize );
 }
 
 // Helper macros for using lua_State and global_State.
@@ -984,7 +985,7 @@ template <typename bitMask> FASTAPI void resetbits(bitMask& x, bitMask m)       
 template <typename bitMask> FASTAPI void setbits(bitMask& x, bitMask m)                     { ((x) |= (m)); }
 template <typename bitMask> FASTAPI bool testbits(bitMask x, bitMask m)                     { return ( ((x) & (m)) != 0 ); }
 
-template <typename bitMaskType> FASTAPI bitMaskType bitmask(bitMaskType b)                  { return (1<<(b)); }
+template <typename bitMaskType> FASTAPI bitMaskType bitmask(bitMaskType b)                  { return ((bitMaskType)1<<(b)); }
 
 template <typename bitMask> FASTAPI bitMask bit2mask(bitMask b1, bitMask b2)                { return (bitmask(b1) | bitmask(b2)); }
 

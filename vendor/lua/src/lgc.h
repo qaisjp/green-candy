@@ -20,32 +20,11 @@
 #define GCSsweep	3
 #define GCSfinalize	4
 
+LUAI_FUNC void luaC_checkGC( lua_State *L );
 
-#define luaC_white(g)	cast(lu_byte, (g)->currentwhite & WHITEBITS)
-
-
-#define luaC_checkGC(L) { \
-  condhardstacktests(luaD_reallocstack(L, L->stacksize - EXTRA_STACK - 1)); \
-  if (G(L)->totalbytes >= G(L)->GCthreshold) \
-	luaC_step(L); }
-
-
-#define luaC_barrier(L,p,v) { if (valiswhite(v) && isblack(p))  \
-	luaC_barrierf(L,p,gcvalue(v)); }
-
-#define luaC_barrierj(L,j,v) { if (valiswhite(v) && isblack(t))  \
-    luaC_barrierbackj(L,j); }
-
-#define luaC_barriert(L,t,v) { if (valiswhite(v) && isblack(t))  \
-	luaC_barrierback(L,t); }
-
-#define luaC_objbarrier(L,p,o)  \
-	{ if (iswhite(o) && isblack(p)) \
-		luaC_barrierf(L,p,o); }
-
-#define luaC_objbarriert(L,t,o)  \
-   { if (iswhite(o) && isblack(t)) luaC_barrierback(L,t); }
-
+LUAI_FUNC int luaC_getstate( lua_State *L );
+LUAI_FUNC void luaC_setthreshold( lua_State *L, lu_mem threshold );
+LUAI_FUNC lu_byte luaC_white( global_State *g );
 LUAI_FUNC void luaC_markobject( global_State *g, GCObject *o );
 LUAI_FUNC size_t luaC_separatefinalization( lua_State *L, bool all );
 LUAI_FUNC void luaC_callGCTM (lua_State *L);
@@ -57,9 +36,13 @@ LUAI_FUNC void luaC_link (lua_State *L, GCObject *o, lu_byte tt);
 LUAI_FUNC void luaC_linkupval (lua_State *L, UpVal *uv);
 LUAI_FUNC void luaC_paycost( global_State *g, class lua_Thread *L, lu_mem cost );
 LUAI_FUNC void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v);
+LUAI_FUNC void luaC_barrier( lua_State *L, GCObject *o, const TValue *v );
+LUAI_FUNC void luaC_objbarrier( lua_State *L, GCObject *p, GCObject *o );
 LUAI_FUNC void luaC_stringmark( lua_State *L, TString *string );
 LUAI_FUNC void luaC_forceupdatef( lua_State *L, GCObject *o );
 LUAI_FUNC void luaC_barrierback (lua_State *L, Table *t);
+LUAI_FUNC void luaC_barriert( lua_State *L, Table *t, const TValue *v );
+LUAI_FUNC void luaC_objbarriert( lua_State *L, Table *t, GCObject *o );
 LUAI_FUNC void luaC_init( global_State *g );
 LUAI_FUNC void luaC_initthread( global_State *g );
 LUAI_FUNC void luaC_shutdown( global_State *g );

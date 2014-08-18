@@ -12,6 +12,8 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+// Include garbage collector internals.
+#include "lgc.internal.hxx"
 
 
 static int db_getregistry (lua_State *L) {
@@ -312,7 +314,16 @@ static int db_debug (lua_State *L) {
 
 static int db_getgcthread( lua_State *L )
 {
-    lua_pushthreadex( L, G(L)->GCthread );
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( G(L) );
+
+    if ( gcEnv )
+    {
+        lua_pushthreadex( L, gcEnv->GCthread );
+    }
+    else
+    {
+        lua_pushnil( L );
+    }
     return 1;
 }
 

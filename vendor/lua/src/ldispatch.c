@@ -17,7 +17,7 @@
 
 ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
 {
-    ClassEnvDispatch *q = lua_new <ClassEnvDispatch> ( G(L) );
+    ClassEnvDispatch *q = lua_new <ClassEnvDispatch> ( L );
 
     if ( q )
     {
@@ -29,7 +29,7 @@ ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
 
 ClassOutEnvDispatch* luaQ_newclassoutenv( lua_State *L, Class *j )
 {
-    ClassOutEnvDispatch *q = lua_new <ClassOutEnvDispatch> ( G(L) );
+    ClassOutEnvDispatch *q = lua_new <ClassOutEnvDispatch> ( L );
 
     if ( q )
     {
@@ -41,7 +41,7 @@ ClassOutEnvDispatch* luaQ_newclassoutenv( lua_State *L, Class *j )
 
 ClassMethodDispatch* luaQ_newclassmethodenv( lua_State *L, Class *j, GCObject *prevEnv )
 {
-    ClassMethodDispatch *q = lua_new <ClassMethodDispatch> ( G(L) );
+    ClassMethodDispatch *q = lua_new <ClassMethodDispatch> ( L );
 
     if ( q )
     {
@@ -57,7 +57,7 @@ ClassMethodDispatch* luaQ_newclassmethodenv( lua_State *L, Class *j, GCObject *p
 void luaQ_free( lua_State *L, Dispatch *q )
 {
     // Free using default operator.
-    lua_delete( G(L), q );
+    lua_delete <Dispatch> ( L, q );
 }
 
 // Module initialization.
