@@ -128,6 +128,8 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
     }
 }
 
+#ifdef _WIN32
+
 static int guard_code;
 static _EXCEPTION_POINTERS *guard_exception;
 
@@ -150,6 +152,8 @@ static void __stdcall luaE_guardedThreadEntryPoint( lua_Thread *L )
         SetThreadContext( GetCurrentThread(), guard_exception->ContextRecord );
     }
 }
+
+#endif //_WIN32
 
 
 lua_Thread::lua_Thread()
@@ -246,15 +250,25 @@ bool lua_Thread::AllocateRuntime()
     if ( fiber )
         return true;
 
-    fiber = luaX_newfiber( this, 0, luaE_guardedThreadEntryPoint );
-    
-    if ( fiber != NULL )
-    {
-        // initiate it
-        resume();
-        return true;
-    }
+    FiberProcedure fiberProc = NULL;
 
+#ifdef _WIN32
+    fiberProc = luaE_guardedThreadEntryPoint;
+#else
+    fiberProc = (FiberProcedure)luaE_threadEntryPoint;
+#endif //_WIN32
+
+    if ( fiberProc != NULL )
+    {
+        fiber = luaX_newfiber( this, 0, fiberProc );
+        
+        if ( fiber != NULL )
+        {
+            // initiate it
+            resume();
+            return true;
+        }
+    }
     return false;
 }
 
