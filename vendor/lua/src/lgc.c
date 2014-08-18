@@ -22,6 +22,9 @@
 #include "lgc.interface.hxx"
 
 
+// Lua Garbage collector configurations.
+// Change these to affect GC performance.
+// Note that changing these may trigger hidden bugs!
 #define GCSTEPSIZE	1024u
 #define GCSWEEPMAX	40
 #define GCSWEEPCOST	10
@@ -29,6 +32,7 @@
 
 // GC Environment global variables.
 globalStatePluginOffset_t _gcEnvPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
+
 
 FASTAPI void setthreshold( globalStateGCEnv *g )
 {
@@ -49,72 +53,6 @@ static void removeentry (Node *n)
     }
 }
 
-template <class typeinfo>
-void DynamicStringTable <typeinfo>::TraverseGC( global_State *g )
-{
-    LIST_FOREACH_BEGIN( STableItemHeader, m_list.root, node )
-        stringmark( item->key );
-        typeinfo::MarkValue( g, GetNodeValue( item ) );
-    LIST_FOREACH_END
-}
-
-int Class::TraverseGC( global_State *g )
-{
-    if ( destroyed )
-        return 0;
-
-    if ( destructor )
-        markobject( g, destructor );
-
-    markobject( g, env );
-    markobject( g, outenv );
-    markobject( g, storage );
-    markobject( g, internStorage );
-
-    if ( parent )
-    {
-        markobject( g, parent );
-        markobject( g, childAPI );
-    }
-
-    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
-
-    if ( gcEnv )
-    {
-        lua_State *L = gcEnv->GCthread;
-
-        LIST_FOREACH_BEGIN( Class, children.root, child_iter )
-            // Be able to garbage collect children if they set themselves weak.
-            const TValue *weakMeth = item->GetEnvValueString( L, "isWeakChildLink" );
-            bool markChild = true;
-
-            if ( ttype( weakMeth ) == LUA_TFUNCTION )
-            {
-                setobj( L, L->top++, weakMeth );
-                bool success = lua_pcall( L, 0, 1, 0 ) == 0;
-
-                markChild = ( success && ( lua_toboolean( L, -1 ) == false ) );
-                L->top--;   // we can pop the error message or the boolean with this.
-            }
-
-            if ( markChild )
-            {
-                markobject( g, item );
-            }
-        LIST_FOREACH_END
-    }
-
-    forceSuper->TraverseGC( g );
-
-    if ( methodCache )
-        methodCache->TraverseGC( g );
-
-    for ( envList_t::const_iterator iter = envInherit.begin(); iter != envInherit.end(); iter++ )
-        markobject( g, *iter );
-
-    return 0;
-}
-
 void Udata::MarkGC( global_State *g )
 {
     gray2black( this );  /* udata are never gray */
@@ -125,26 +63,10 @@ void Udata::MarkGC( global_State *g )
     markobject( g, env );
 }
 
-// User-mode function
-void Class::Propagate( lua_State *L )
-{
-    markobject( G(L), this );
-}
-
 void Class::MarkGC( global_State *g )
 {
     gray2black( this );
     TraverseGC( g );
-}
-
-void UpVal::MarkGC( global_State *g )
-{
-    markvalue( g, v );
-
-    if ( v == &u.value )  /* closed? */
-    {
-        gray2black( this );  /* open upvalues are never black */
-    }
 }
 
 void GrayObject::MarkGC( global_State *g )
@@ -423,123 +345,6 @@ int Table::TraverseGC( global_State *g )
     return weakkey || weakvalue;
 }
 
-
-/*
-** All marks are conditional because a GC may happen while the
-** prototype is still being created
-*/
-int Proto::TraverseGC( global_State *g )
-{
-    int i;
-
-    if ( source )
-        stringmark( source );
-
-    for ( i=0; i<sizek; i++ )  /* mark literals */
-        markvalue(g, &k[i]);
-
-    for ( i=0; i<sizeupvalues; i++ )
-    {  /* mark upvalue names */
-        if ( upvalues[i] )
-            stringmark( upvalues[i] );
-    }
-
-    for ( i=0; i<sizep; i++ )
-    {  /* mark nested protos */
-        if ( p[i] )
-            markobject( g, p[i] );
-    }
-
-    for (i=0; i<sizelocvars; i++)
-    {  /* mark local-variable names */
-        if ( locvars[i].varname )
-            stringmark( locvars[i].varname );
-    }
-
-    return 0;
-}
-
-int Closure::TraverseGC( global_State *g )
-{
-    markobject( g, env );
-    return 0;
-}
-
-int LClosure::TraverseGC( global_State *g )
-{
-    unsigned int i;
-    lua_assert( nupvalues == p->nups );
-
-    markobject( g, p );
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
-        markobject( g, upvals[i] );
-
-    return Closure::TraverseGC( g );
-}
-
-int CClosure::TraverseGC( global_State *g )
-{
-    markobject( g, accessor );
-
-    return Closure::TraverseGC( g );
-}
-
-size_t CClosureMethodRedirect::Propagate( global_State *g )
-{
-    markobject( g, redirect );
-    markobject( g, m_class );
-
-    return CClosure::Propagate( g ) + sizeof(*this);
-}
-
-size_t CClosureMethodRedirectSuper::Propagate( global_State *g )
-{
-    markobject( g, super );
-
-    return CClosureMethodRedirect::Propagate( g ) + sizeof(void*);
-}
-
-size_t CClosureBasic::Propagate( global_State *g )
-{
-    unsigned int i;
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
-        markvalue( g, &upvalues[i] );
-
-    return CClosure::Propagate( g ) + sizeCclosure( nupvalues );
-}
-
-size_t CClosureMethodBase::Propagate( global_State *g )
-{
-    markobject( g, m_class );
-
-    if ( super )
-        markobject( g, super );
-
-    return CClosure::Propagate( g );
-}
-
-size_t CClosureMethod::Propagate( global_State *g )
-{
-    unsigned int i;
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
-        markvalue( g, &upvalues[i] );
-
-    return CClosureMethodBase::Propagate( g ) + sizeCmethod( nupvalues );
-}
-
-size_t CClosureMethodTrans::Propagate( global_State *g )
-{
-    unsigned int i;
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
-        markvalue( g, &upvalues[i] );
-
-    return CClosureMethodBase::Propagate( g ) + sizeCmethodt( nupvalues );
-}
-
 static void checkstacksizes (lua_State *L, StkId max) {
   int ci_used = cast_int(L->ci - L->base_ci);  /* number of `ci' in use */
   int s_used = cast_int(max - L->stack);  /* part of stack in use */
@@ -579,18 +384,6 @@ size_t Table::Propagate( global_State *g )
 
     return sizeof(Table) + sizeof(TValue) * sizearray +
         sizeof(Node) * sizenode( this );
-}
-
-size_t LClosure::Propagate( global_State *g )
-{
-    TraverseGC( g );
-    return sizeLclosure( nupvalues );
-}
-
-size_t CClosure::Propagate( global_State *g )
-{
-    TraverseGC( g );
-    return 0;
 }
 
 static void markmt( lua_State *L )
@@ -640,18 +433,6 @@ size_t lua_State::Propagate( global_State *g )
 
     traversestack( g, this );
     return sizeof(lua_State) + sizeof(TValue) * stacksize + sizeof(CallInfo) * size_ci;
-}
-
-size_t Proto::Propagate( global_State *g )
-{
-    TraverseGC( g );
-
-    return sizeof(Proto) + sizeof(Instruction) * sizecode +
-        sizeof(Proto *) * sizep +
-        sizeof(TValue) * sizek + 
-        sizeof(int) * sizelineinfo +
-        sizeof(LocVar) * sizelocvars +
-        sizeof(TString *) * sizeupvalues;
 }
 
 
