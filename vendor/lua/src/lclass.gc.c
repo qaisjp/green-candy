@@ -14,6 +14,7 @@ void luaJ_gcruntime( lua_State *L )
 
     if ( classEnv )
     {
+        // Mark special global values that are used by the class runtime.
         stringmark( classEnv->superCached );   // 'super' used by classes
     }
 }

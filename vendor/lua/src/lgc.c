@@ -935,10 +935,11 @@ void luaC_link (lua_State *L, GCObject *o, lu_byte tt)
     {
         o->next = gcEnv->rootgc;
         gcEnv->rootgc = o;
-
-        o->marked = luaC_white(g);
-        o->tt = tt;
     }
+
+    // Put general stuff.
+    o->marked = luaC_white(g);
+    o->tt = tt;
 }
 
 
@@ -1292,8 +1293,12 @@ void luaC_shutdown( global_State *g )
 // Module initialization.
 void luaC_moduleinit( void )
 {
+    // NOTE: Lua5.1ex can actually run without GC support and not crash.
+#ifndef LUA_EXCLUDE_GARBAGE_COLLECTOR
+    // Register the Lua garbage collector runtime.
     _gcEnvPluginOffset =
         globalStateFactory.RegisterStructPlugin <globalStateGCEnv> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
+#endif
 }
 
 void luaC_moduleshutdown( void )
