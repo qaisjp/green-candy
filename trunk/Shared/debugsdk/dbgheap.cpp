@@ -47,6 +47,11 @@
     to assert( bool_expr ). If bool_expr is false, a memory error occured. MEM_INTERRUPT can be invoked
     during initialization, runtime and termination of your module.
 
+    Note that debugging application memory usage in general spawns additional meta-data depending on the
+    configuration. Using USE_FULL_PAGE_HEAP, the application will quickly go out of allocatable memory since
+    huge chunks are allocated. Your main appplication may not get to properly initialize itself; test in
+    a controlled environment instead!
+
     FEATURE SET:
         finds memory leaks,
         finds invalid (page heap) object free requests,

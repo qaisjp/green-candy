@@ -54,13 +54,15 @@ static void freestack (lua_State *L, lua_State *L1) {
 static void f_luaopen (lua_State *L, void *ud)
 {
     global_State *g = G(L);
+
     UNUSED(ud);
+
     stack_init(L, L);  /* init stack */
     luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
     luaT_init(L);
     luaX_init(L);
     luaS_fix(luaS_newliteral(L, MEMERRMSG));
-    g->GCthreshold = 4*g->totalbytes;
+    luaC_setthreshold( L, 4*g->totalbytes );
 }
 
 
@@ -162,26 +164,30 @@ lua_Thread::lua_Thread()
 // Factory for thread creation and destruction.
 lua_Thread* luaE_newthread( lua_State *L )
 {
-    lua_Thread *L1 = lua_new <lua_Thread> ( G(L) );
-    luaC_link(L, L1, LUA_TTHREAD);
-    LIST_INSERT( G(L)->threads.root, L1->threadNode );  /* we need to be aware of all threads */
-    preinit_state(L1, G(L));
-    stack_init(L1, L);  /* init stack */
-    setobj2n(L, gt(L1), gt(L));  /* share table of globals */
-    L1->hookmask = L->hookmask;
-    L1->basehookcount = L->basehookcount;
-    L1->hook = L->hook;
-    resethookcount(L1);
+    lua_Thread *L1 = lua_new <lua_Thread> ( L );
 
-    // Inherit the metatables
-    for ( unsigned int n = 0; n < NUM_TAGS; n++ )
+    if ( L1 )
     {
-        L1->mt[n] = L->mt[n];
+        luaC_link(L, L1, LUA_TTHREAD);
+        LIST_INSERT( G(L)->threads.root, L1->threadNode );  /* we need to be aware of all threads */
+        preinit_state(L1, G(L));
+        stack_init(L1, L);  /* init stack */
+        setobj2n(L, gt(L1), gt(L));  /* share table of globals */
+        L1->hookmask = L->hookmask;
+        L1->basehookcount = L->basehookcount;
+        L1->hook = L->hook;
+        resethookcount(L1);
+
+        // Inherit the metatables
+        for ( unsigned int n = 0; n < NUM_TAGS; n++ )
+        {
+            L1->mt[n] = L->mt[n];
+        }
+
+        // Allocate the OS resources only if necessary!
+
+        lua_assert(iswhite(L1));
     }
-
-    // Allocate the OS resources only if necessary!
-
-    lua_assert(iswhite(L1));
     return L1;
 }
 
@@ -192,7 +198,7 @@ lu_mem lua_Thread::GetTypeSize( global_State *g ) const
 
 void luaE_freethread( lua_State *L, lua_State *L1 )
 {
-    lua_delete( G(L), L1 );
+    lua_delete <lua_Thread> ( L, (lua_Thread*)L1 );
 }
 
 static void luaE_term()
@@ -283,9 +289,6 @@ LUAI_FUNC void luaE_newenvironment( lua_State *L )
 // Hence we must manage this using library logic, too.
 static unsigned int _libraryReferenceCount = 0;
 
-#define GLOBAL_STATE_PLUGIN_ALLOC_HOLD          0x00000000
-#define GLOBAL_STATE_PLUGIN_MAIN_STATE          0x00000001
-
 struct GeneralMemoryAllocator
 {
     lua_Alloc allocCallback;
@@ -339,12 +342,15 @@ struct GlobalStateAllocPluginData
 static void close_state (lua_State *L)
 {
     global_State *g = G(L);
+
     luaF_close(L, L->stack);  /* close all upvalues for this thread */
     luaC_freeall(L);  /* collect all objects */
-    lua_assert(g->rootgc == L);
     lua_assert(g->strt.nuse == 0);
     luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size, TString *);
-    luaZ_freebuffer(L, &g->buff);
+
+    // Call post-state destructors.
+    luaS_stateshutdown( L );
+
     freestack(L, L);
 }
 
@@ -398,6 +404,8 @@ struct mainThreadLuaStatePluginInterface : public globalStateFactory_t::pluginIn
             L->mt[i] = NULL;
         }
 
+        g->mainthread = L;
+
         return true;
     }
 
@@ -412,6 +420,8 @@ struct mainThreadLuaStatePluginInterface : public globalStateFactory_t::pluginIn
         lua_State *L = globalStateFactory_t::RESOLVE_STRUCT <lua_State> ( g, pluginOffset );
 
         L->~lua_State();
+
+        g->mainthread = NULL;
     }
 };
 
@@ -490,21 +500,18 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
             // Properly initialize the main state global object.
             g->frealloc = f;
             g->ud = ud;
-            g->mainthread = L;
-            g->uvhead.u.l.prev = &g->uvhead;
-            g->uvhead.u.l.next = &g->uvhead;
             g->strt.size = 0;
             g->strt.nuse = 0;
             g->strt.hash = NULL;
-            g->weak = NULL;
-            g->tmudata = NULL;
             g->totalbytes = (lu_mem)globalStateFactory.GetClassSize();
             // Initialize the garbage collector
             luaC_init( g );
             preinit_state( L, g );
             luaE_newenvironment( L );   // create the first environment; threads will inherit it
             sethvalue(L, &g->l_registry, luaH_new(L, 0, 2));  /* registry */
-            luaZ_initbuffer(L, &g->buff);
+
+            // To properly initialize the main state, we must call post-state initializators.
+            luaS_stateinit( L );
 
             for ( unsigned int i = 0; i < LUA_NUM_EVENTS; i++ )
             {
@@ -520,9 +527,6 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
 
             if ( luaInternalInitSuccess )
             {
-                // Init runtime globals
-                g->superCached = luaS_newlstr( L, "super", 5 );
-
                 luai_userstateopen(L);
                 return L;
             }
@@ -557,7 +561,6 @@ LUA_API void lua_close (lua_State *L)
         // Collect all pending memory
         luaC_shutdown( G(L) );
 
-        lua_assert(G(L)->tmudata == NULL);
         luai_userstateclose(L);
 
         close_state(L);

@@ -7,11 +7,10 @@
 
 #include "luacore.h"
 
-#include "lfunc.h"
-#include "lgc.h"
-#include "lmem.h"
-#include "lobject.h"
-#include "lstate.h"
+#include "lfunc.hxx"
+
+// Global state plugin definitions.
+globalStatePluginOffset_t _closureEnvPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
 
 
 TValue* luaF_getcurraccessor( lua_State *L )
@@ -30,7 +29,7 @@ TValue* luaF_getcurraccessor( lua_State *L )
 
 CClosureMethodRedirect* luaF_newCmethodredirect( lua_State *L, GCObject *e, Closure *redirect, Class *j )
 {
-    CClosureMethodRedirect *c = lua_new <CClosureMethodRedirect> ( G(L) );
+    CClosureMethodRedirect *c = lua_new <CClosureMethodRedirect> ( L );
 
     if ( c )
     {
@@ -56,7 +55,7 @@ TValue* CClosureMethodRedirect::ReadUpValue( unsigned char index )
 
 CClosureMethodRedirectSuper* luaF_newCmethodredirectsuper( lua_State *L, GCObject *e, Closure *redirect, Class *j, Closure *super )
 {
-    CClosureMethodRedirectSuper *c = lua_new <CClosureMethodRedirectSuper> ( G(L) );
+    CClosureMethodRedirectSuper *c = lua_new <CClosureMethodRedirectSuper> ( L );
 
     if ( c )
     {
@@ -82,7 +81,7 @@ TValue* CClosureMethodRedirectSuper::ReadUpValue( unsigned char index )
 
 CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
 {
-    CClosureBasic *c = lua_new <CClosureBasic> ( G(L), sizeCclosure( nelems ) );
+    CClosureBasic *c = lua_new <CClosureBasic> ( L, sizeCclosure( nelems ) );
 
     if ( c )
     {
@@ -113,7 +112,7 @@ TValue* CClosureBasic::ReadUpValue( unsigned char index )
 
 CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j )
 {
-    CClosureMethod *c = lua_new <CClosureMethod> ( G(L), sizeCmethod( nelems ) );
+    CClosureMethod *c = lua_new <CClosureMethod> ( L, sizeCmethod( nelems ) );
     
     if ( c )
     {
@@ -145,7 +144,7 @@ TValue* CClosureMethod::ReadUpValue( unsigned char index )
 
 CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e, Class *j, int trans )
 {
-    CClosureMethodTrans *c = lua_new <CClosureMethodTrans> ( G(L), sizeCmethodt( nelems ) );
+    CClosureMethodTrans *c = lua_new <CClosureMethodTrans> ( L, sizeCmethodt( nelems ) );
 
     if ( c )
     {
@@ -178,7 +177,7 @@ TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
 
 LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)
 {
-    LClosure *c = lua_new <LClosure> ( G(L), sizeLclosure(nelems) );
+    LClosure *c = lua_new <LClosure> ( L, sizeLclosure(nelems) );
 
     if ( c )
     {
@@ -203,7 +202,7 @@ lu_mem LClosure::GetTypeSize( global_State *g ) const
 
 void luaF_freeclosure (lua_State *L, Closure *c)
 {
-    lua_delete( G(L), c );
+    lua_delete <Closure> ( L, c );
 }
 
 TValue* LClosure::ReadUpValue( unsigned char index )
@@ -216,7 +215,7 @@ TValue* LClosure::ReadUpValue( unsigned char index )
 
 UpVal *luaF_newupval (lua_State *L)
 {
-    UpVal *uv = lua_new <UpVal> ( G(L) );
+    UpVal *uv = lua_new <UpVal> ( L );
 
     if ( uv )
     {
@@ -229,7 +228,7 @@ UpVal *luaF_newupval (lua_State *L)
 
 void luaF_freeupval (lua_State *L, UpVal *u)
 {
-    lua_delete( G(L), u );
+    lua_delete <UpVal> ( L, u );
 }
 
 UpVal *luaF_findupval (lua_State *L, StkId level)
@@ -255,7 +254,7 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
         pp = &p->next;
     }
 
-    uv = lua_new <UpVal> ( g );  /* not found: create a new one */
+    uv = lua_new <UpVal> ( L );  /* not found: create a new one */
     
     if ( uv )
     {
@@ -266,12 +265,24 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
         uv->next = *pp;  /* chain it in the proper position */
         *pp = uv;
 
-        uv->u.l.prev = &g->uvhead;  /* double link it in `uvhead' list */
-        uv->u.l.next = g->uvhead.u.l.next;
-        uv->u.l.next->u.l.prev = uv;
-        g->uvhead.u.l.next = uv;
+        {
+            globalStateClosureEnvPlugin *closureEnv = GetGlobalClosureEnv( g );
 
-        lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
+            if ( closureEnv )
+            {
+                uv->u.l.prev = &closureEnv->uvhead;  /* double link it in `uvhead' list */
+                uv->u.l.next = closureEnv->uvhead.u.l.next;
+                uv->u.l.next->u.l.prev = uv;
+                closureEnv->uvhead.u.l.next = uv;
+
+                lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
+            }
+            else
+            {
+                uv->u.l.next = uv;
+                uv->u.l.prev = uv;
+            }
+        }
     }
     return uv;
 }
@@ -322,7 +333,7 @@ void luaF_close (lua_State *L, StkId level)
 
 Proto *luaF_newproto (lua_State *L)
 {
-    Proto *f = lua_new <Proto> ( G(L) );
+    Proto *f = lua_new <Proto> ( L );
 
     if ( f )
     {
@@ -359,7 +370,7 @@ void luaF_freeproto (lua_State *L, Proto *p)
     luaM_freearray(L, p->locvars, p->sizelocvars, LocVar);
     luaM_freearray(L, p->upvalues, p->sizeupvalues, TString *);
 
-    lua_delete( G(L), p );
+    lua_delete <Proto> ( L, p );
 }
 
 Proto::~Proto()
@@ -421,7 +432,8 @@ const char *luaF_getlocalname (const Proto *f, int local_number, int pc) {
 // Module initialization.
 void luaF_init( void )
 {
-    return;
+    _closureEnvPluginOffset =
+        globalStateFactory.RegisterStructPlugin <globalStateClosureEnvPlugin> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
 }
 
 void luaF_shutdown( void )

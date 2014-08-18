@@ -609,9 +609,31 @@ struct NativePageAllocator
         return selector.IsValidAllocation();
     }
 
+    static inline bool IsValidAllocation( void *desiredAddress, size_t spanSize )
+    {
+        bool isValid = true;
+
+        if ( desiredAddress != NULL )
+        {
+            // Check that there is no number overflow.
+            SIZE_T memDesiredAddress = (SIZE_T)desiredAddress;
+            SIZE_T memSpanSize = (SIZE_T)spanSize;
+
+            SIZE_T memAddressBorder = ( memDesiredAddress + memSpanSize );
+
+            // The condition I check here is that if I add those two numbers,
+            // the result must be bigger than the source operand I added to.
+            isValid = ( memAddressBorder > memDesiredAddress );
+        }
+        return isValid;
+    }
+
     inline pageHandle* Allocate( void *desiredAddress, size_t spanSize )
     {
         pageHandle *theHandle = NULL;
+
+        // Only proceed if the requested allocation is valid.
+        if ( IsValidAllocation( desiredAddress, spanSize ) )
         {
             // Determine the pages that should host the requested memory region.
             residingMemBlocks_t allocatedPages;
@@ -747,41 +769,46 @@ struct NativePageAllocator
 
         if ( !isSigned )
         {
-            // If the new memory size is greater than the old.
-            // Allocate additional memory pages if they are required.
-            residingMemBlocks_t hostPages; bool hasHostPages;
-
-            memBlockSlice_t requiredRegion( (SIZE_T)theHandle->GetTargetPointer() + (SIZE_T)oldSize, (SIZE_T)memSizeDifference );
-
-            success = ReserveMemoryOnRegion( requiredRegion, hostPages, hasHostPages );
-
-            // Have we succeeded in reserving the requested memory pages?
-            if ( success )
+            // Make sure that this allocation is valid.
+            // It can only turn invalid if the memory size is greater than before.
+            if ( IsValidAllocation( theHandle->GetTargetPointer(), newReserveSize ) )
             {
-                // Perform an optimized append of the sorted hosted-pages.
-                // Prevent page duplication of page allocations inside the resident pages of theHandle!
-                for ( unsigned int n = 0; n < hostPages.GetCount(); n++ )
+                // If the new memory size is greater than the old.
+                // Allocate additional memory pages if they are required.
+                residingMemBlocks_t hostPages; bool hasHostPages;
+
+                memBlockSlice_t requiredRegion( (SIZE_T)theHandle->GetTargetPointer() + (SIZE_T)oldSize, (SIZE_T)memSizeDifference );
+
+                success = ReserveMemoryOnRegion( requiredRegion, hostPages, hasHostPages );
+
+                // Have we succeeded in reserving the requested memory pages?
+                if ( success )
                 {
-                    pageAllocation *newPage = hostPages.GetFast( n );
-
-                    // If its the first page, compare it with the last of the resident pages.
-                    // If the same, then do not add.
-                    bool alreadyExists = false;
-
-                    if ( n == 0 )
+                    // Perform an optimized append of the sorted hosted-pages.
+                    // Prevent page duplication of page allocations inside the resident pages of theHandle!
+                    for ( unsigned int n = 0; n < hostPages.GetCount(); n++ )
                     {
-                        pageAllocation *lastConcurrentBlock = NULL;
+                        pageAllocation *newPage = hostPages.GetFast( n );
 
-                        bool hasLast = theHandle->residingMemBlocks.Tail( lastConcurrentBlock );
+                        // If its the first page, compare it with the last of the resident pages.
+                        // If the same, then do not add.
+                        bool alreadyExists = false;
 
-                        alreadyExists = ( hasLast ) && ( newPage == lastConcurrentBlock );
-                    }
+                        if ( n == 0 )
+                        {
+                            pageAllocation *lastConcurrentBlock = NULL;
 
-                    // If the page does not already exist, add it.
-                    if ( !alreadyExists )
-                    {
-                        // WARNING: this is a sorted append!
-                        newPage->RegisterPageHandle( theHandle );
+                            bool hasLast = theHandle->residingMemBlocks.Tail( lastConcurrentBlock );
+
+                            alreadyExists = ( hasLast ) && ( newPage == lastConcurrentBlock );
+                        }
+
+                        // If the page does not already exist, add it.
+                        if ( !alreadyExists )
+                        {
+                            // WARNING: this is a sorted append!
+                            newPage->RegisterPageHandle( theHandle );
+                        }
                     }
                 }
             }

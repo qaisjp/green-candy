@@ -33,6 +33,10 @@ typedef globalStateFactory_t::pluginOffset_t globalStatePluginOffset_t;
 
 extern globalStateFactory_t globalStateFactory;
 
+// Put plugin ids here!
+#define GLOBAL_STATE_PLUGIN_ALLOC_HOLD          0x00000000
+#define GLOBAL_STATE_PLUGIN_MAIN_STATE          0x00000001
+#define GLOBAL_STATE_PLUGIN_STRING_META         0x00000002
 
 enum eLuaThreadStatus : unsigned char
 {

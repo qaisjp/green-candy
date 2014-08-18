@@ -13,32 +13,10 @@
 #include "luacore.h"
 #include <algorithm>
 
-#include "lapi.h"
-#include "lgc.h"
-#include "lmem.h"
-#include "lstate.h"
-#include "ltable.h"
-#include "lclass.h"
-#include "lauxlib.h"
-#include "lstring.h"
-#include "lfunc.h"
-#include "lvm.h"
-#include "ldebug.h"
+#include "lclass.hxx"
 
 // Class maintenance plugin inside of the global_State.
-static globalStatePluginOffset_t _classGlobalStatePlugin = 0;
-
-typedef StaticPluginClassFactory <Class> classObjFactory_t;
-
-struct globalStateClassEnvPlugin
-{
-    classObjFactory_t factory;
-};
-
-globalStateClassEnvPlugin* GetGlobalClassEnv( global_State *g )
-{
-    return globalStateFactory_t::RESOLVE_STRUCT <globalStateClassEnvPlugin> ( g, _classGlobalStatePlugin );
-}
+globalStatePluginOffset_t _classGlobalStatePlugin = 0;
 
 lu_mem Class::GetTypeSize( global_State *g ) const
 {
@@ -706,12 +684,12 @@ void Class::RequestDestruction()
 
 TValue* Class::SetSuperMethod( lua_State *L )
 {
-    return luaH_setstr( L, internStorage, G(L)->superCached );
+    return luaH_setstr( L, internStorage, GetSuperString( L ) );
 }
 
 const TValue* Class::GetSuperMethod( lua_State *L )
 {
-    return luaH_getstr( internStorage, G(L)->superCached );
+    return luaH_getstr( internStorage, GetSuperString( L ) );
 }
 
 __forceinline void class_checkDestroyedMethodCall( lua_State *L, Class *j )
@@ -1960,7 +1938,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     constructor->isEnvLocked = true;
 
     // Allocate the class plugin object.
-    Class *c = globalClassEnv->factory.Construct( G(L)->defaultAlloc );
+    Class *c = globalClassEnv->factory.Construct( L->defaultAlloc );
 
     // Link it into the GC system
     c->next = G(L)->mainthread->next;
@@ -2092,7 +2070,7 @@ void luaJ_free( lua_State *L, Class *j )
     if ( globalClassEnv )
     {
         // Destroy the class plugin object.
-        globalClassEnv->factory.Destroy( G(L)->defaultAlloc, j );
+        globalClassEnv->factory.Destroy( L->defaultAlloc, j );
     }
 }
 

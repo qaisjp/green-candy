@@ -368,6 +368,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lclass.gc.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lclasslib.c"
 				>
 			</File>
@@ -401,6 +405,10 @@
 			</File>
 			<File
 				RelativePath="..\src\lfunc.c"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lfunc.gc.c"
 				>
 			</File>
 			<File
@@ -594,6 +602,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lclass.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lclasslib.h"
 				>
 			</File>
@@ -622,7 +634,19 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lfunc.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lgc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lgc.interface.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lgc.internal.hxx"
 				>
 			</File>
 			<File

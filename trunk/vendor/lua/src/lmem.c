@@ -12,6 +12,9 @@
 #include "lmem.h"
 #include "lobject.h"
 
+// Include garbage collector internals.
+#include "lgc.internal.hxx"
+
 
 
 /*
@@ -76,6 +79,7 @@ void *luaM_realloc__(global_State *g, void *block, size_t osize, size_t nsize)
         return NULL;
 
     lua_assert((nsize == 0) == (block == NULL));
+
     g->totalbytes = (g->totalbytes - osize) + nsize;
     return block;
 }
