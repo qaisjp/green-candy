@@ -189,8 +189,10 @@ LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)
         c->env = e;
         c->nupvalues = cast_byte(nelems);
 
-        while (nelems--)
+        while ( nelems-- )
+        {
             c->upvals[nelems] = NULL;
+        }
     }
     return c;
 }
