@@ -15,6 +15,8 @@ LUAI_FUNC const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
 LUAI_FUNC Table* luaT_getmetabyobj( lua_State *L, const TValue *o );
 LUAI_FUNC const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event);
 LUAI_FUNC void luaT_init (lua_State *L);
+LUAI_FUNC unsigned int luaT_getnumtypes (lua_State *L);
+LUAI_FUNC int luaT_gettype (lua_State *L, unsigned int index);
 
 #ifdef LUA_USE_C_MACROS
 

@@ -25,12 +25,12 @@
 
 static void stack_init (lua_State *L1, lua_State *L) {
   /* initialize CallInfo array */
-  L1->base_ci = luaM_newvector(L, BASIC_CI_SIZE, CallInfo);
+  L1->base_ci = luaM_newvector <CallInfo> (L, BASIC_CI_SIZE);
   L1->ci = L1->base_ci;
   L1->size_ci = BASIC_CI_SIZE;
   L1->end_ci = L1->base_ci + L1->size_ci - 1;
   /* initialize stack array */
-  L1->stack = luaM_newvector(L, BASIC_STACK_SIZE + EXTRA_STACK, TValue);
+  L1->stack = luaM_newvector <TValue> (L, BASIC_STACK_SIZE + EXTRA_STACK);
   L1->stacksize = BASIC_STACK_SIZE + EXTRA_STACK;
   L1->top = L1->stack;
   L1->stack_last = L1->stack+(L1->stacksize - EXTRA_STACK)-1;
@@ -43,8 +43,8 @@ static void stack_init (lua_State *L1, lua_State *L) {
 
 
 static void freestack (lua_State *L, lua_State *L1) {
-  luaM_freearray(L, L1->base_ci, L1->size_ci, CallInfo);
-  luaM_freearray(L, L1->stack, L1->stacksize, TValue);
+  luaM_freearray(L, L1->base_ci, L1->size_ci);
+  luaM_freearray(L, L1->stack, L1->stacksize);
 }
 
 
@@ -76,7 +76,7 @@ static inline void preinit_state (lua_State *L, global_State *g)
     L->basehookcount = 0;
     L->allowhook = true;
     resethookcount(L);
-    L->openupval = NULL;
+    L->openupval.Clear();
     L->size_ci = 0;
     L->nCcalls = 0;
     L->base_ci = L->ci = NULL;
@@ -236,7 +236,7 @@ void luaE_terminate( lua_Thread *L )
 	else
 	{
         luaF_close(L, L->stack);  /* close all upvalues for this thread */
-        lua_assert(L->openupval == NULL);
+        lua_assert(L->openupval.IsEmpty() == true);
 
 		// Threads clean their environments after themselves
 		luaX_closefiber( L, env );
@@ -360,7 +360,7 @@ static void close_state (lua_State *L)
     luaF_close(L, L->stack);  /* close all upvalues for this thread */
     luaC_freeall(L);  /* collect all objects */
     lua_assert(g->strt.nuse == 0);
-    luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size, TString *);
+    luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
 
     // Call post-state destructors.
     luaS_stateshutdown( L );
@@ -407,10 +407,12 @@ struct mainThreadLuaStatePluginInterface : public globalStateFactory_t::pluginIn
             return false;
 
         // Initialize the main thread.
-        L->next = NULL;
-        L->tt = LUA_TTHREAD;
-        g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
-        L->marked = luaC_white(g);
+        L->l_G = g;
+
+        g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);    // set a special GC flag so we do not collect the main thread
+
+        luaC_register( L, L, LUA_TTHREAD );
+
         set2bits(L->marked, FIXEDBIT, SFIXEDBIT);
 
         for ( unsigned int i = 0; i < NUM_TAGS; i++ )
@@ -478,7 +480,7 @@ LUAI_FUNC lua_State *lua_newstate (lua_Alloc f, void *ud)
         luaV_init();
         luaapi_init();
 
-        // todo: add more
+        // todo: add more.
 
         // Initialize the plugin to hold the main lua thread state inside the global_State
         // as well as meta data.

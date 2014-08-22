@@ -23,7 +23,7 @@ LUA_API int lua_type (lua_State *L, int idx)
 LUA_API const char *lua_typename (lua_State *L, int t)
 {
     UNUSED(L);
-    return (t == LUA_TNONE) ? "no value" : luaT_typenames[t];
+    return (t == LUA_TNONE || t < 0 || t >= (int)luaT_getnumtypes( L )) ? "no value" : luaT_typenames[t];
 }
 
 LUA_API int lua_iscfunction (lua_State *L, int idx)

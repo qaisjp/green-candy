@@ -17,6 +17,7 @@
 #include "llimits.h"
 #include "lua.h"
 #include "lmem.h"
+#include "lutils.h"
 
 
 /* tags for values visible from Lua */
@@ -72,14 +73,15 @@ class Dispatch;
 class lua_State;
 
 
-#define FASTAPI inline
-
-typedef TValue *StkId;  /* index to stack elements */
-typedef const TValue *StkId_const;
+typedef TValue* StkId;  /* index to stack elements */
+typedef const TValue* StkId_const;
 struct global_State;
 
+// List of garbage collectible items.
+typedef SingleLinkedList <class GCObject> gcObjList_t;
+
 // Type that holds garbage collectible Lua types.
-class GCObject abstract
+class GCObject abstract : public gcObjList_t::node
 {
 public:
     // Every type must give a runtime sizeof operator.
@@ -102,7 +104,6 @@ public:
     virtual void        Index( lua_State *L, const TValue *key, StkId val );
     virtual void        NewIndex( lua_State *L, const TValue *key, StkId val );
 
-    GCObject *next;
     lu_byte tt;
     lu_byte marked;
 };
@@ -115,37 +116,44 @@ public:
     void                MarkGC( global_State *g );
     virtual size_t      Propagate( global_State *g ) = 0;
 
+    virtual bool        GCRequiresBackBarrier( void ) const = 0;
+
     GrayObject *gclist;
 };
 
 /*
 ** String headers for string table
 */
-#define sizestring(s)	(sizeof(TString)+((s)->len+1)*sizeof(char))
-#define sizeudata(u)	(sizeof(Udata)+(u)->len)
+#ifdef LUA_USE_C_MACROS
+
+#define _sizestring( baseSize, n )          (baseSize + (n+1)*sizeof(char))
+#define _sizeudata( baseSize, n )           (baseSize + (n)*sizeof(char))
+
+#else
+
+FASTAPI size_t _sizestring( size_t baseSize, size_t n )     { return (baseSize + (n+1)*sizeof(char)); }
+FASTAPI size_t _sizeudata( size_t baseSize, size_t n )      { return (baseSize + (n)*sizeof(char)); }
+
+#endif //LUA_USE_C_MACROS
 
 LUA_MAXALIGN class TString : public GCObject
 {
 public:
     ~TString();
 
-    lu_mem GetTypeSize( global_State *g ) const             { return sizestring( this ); }
+    lu_mem GetTypeSize( global_State *g ) const             { return _sizestring( sizeof(*this), this->len ); }
 
     lu_byte reserved;
     unsigned int hash;
     size_t len;
 };
 
-#define getstr(ts)	cast(const char *, (ts) + 1)
-#define svalue(o)       getstr(rawtsvalue(o))
-
-
 LUA_MAXALIGN class Udata : public GCObject
 {
 public:
     ~Udata();
 
-    lu_mem GetTypeSize( global_State *g ) const             { return sizeudata( this ); }
+    lu_mem GetTypeSize( global_State *g ) const             { return _sizeudata( sizeof(*this), this->len ); }
 
     void MarkGC( global_State *g );
 
@@ -166,6 +174,8 @@ public:
 
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
+
+    bool GCRequiresBackBarrier( void ) const                { return true; }
 
     TValue *k;  /* constants used by the function */
     Instruction *code;
@@ -235,24 +245,14 @@ public:
 ** Closures
 */
 
-#define sizeCclosure(n)	(cast(int, sizeof(CClosureBasic)) + \
-                         cast(int, sizeof(TValue)*((n)-1)))
-
-#define sizeCmethod(n)  (cast(int, sizeof(CClosureMethod)) + \
-                         cast(int, sizeof(TValue)*((n)-1)))
-
-#define sizeCmethodt(n) (cast(int, sizeof(CClosureMethodTrans)) + \
-                         cast(int, sizeof(TValue)*((n)-1)))
-
-#define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
-                         cast(int, sizeof(TValue*)*((n)-1)))
-
 class Closure abstract : public GrayObject
 {
 public:
     virtual                 ~Closure        ( void );
 
     int                     TraverseGC      ( global_State *g );
+
+    bool                    GCRequiresBackBarrier( void ) const { return true; }
 
     virtual TValue*         ReadUpValue     ( unsigned char index ) = 0;
 
@@ -419,6 +419,8 @@ public:
 
     lu_mem  GetTypeSize( global_State *g ) const;
 
+    bool GCRequiresBackBarrier( void ) const    { return true; }
+
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
 
@@ -453,6 +455,8 @@ class ClassDispatch abstract : public Dispatch
 {
 public:
     size_t                  Propagate( global_State *g );
+
+    bool                    GCRequiresBackBarrier( void ) const     { return true; }
 
     Class*                  GetClass()      { return m_class; }
 
@@ -553,9 +557,9 @@ public:
     Closure*    GetMethod( lua_State *L, const TString *name, Table*& table );
     void    SetMethod( lua_State *L, TString *name, Closure *method, Table *table );
 
-    __forceinline void  RegisterMethod( lua_State *L, TString *name, bool handlers = false );
-    __forceinline void  RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers = false );
-    __forceinline void  RegisterMethodAt( lua_State *L, TString *methName, lua_CFunction proto, Table *methodTable, _methodRegisterInfo& info, bool handlers = false );
+    FASTAPI void    RegisterMethod( lua_State *L, TString *name, bool handlers = false );
+    FASTAPI void    RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers = false );
+    FASTAPI void    RegisterMethodAt( lua_State *L, TString *methName, lua_CFunction proto, Table *methodTable, _methodRegisterInfo& info, bool handlers = false );
 
     void    RegisterMethod( lua_State *L, const char *name, bool handlers = false );
     void    RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, int nupval, bool handlers = false );
@@ -644,12 +648,6 @@ public:
 /*
 ** `per thread' state
 */
-/* table of globals */
-#define gt(L)	(&L->l_gt)
-
-/* registry */
-#define registry(L)	(&G(L)->l_registry)
-
 
 /* extra stack space to handle TM calls and some other extras */
 #define EXTRA_STACK   5
@@ -692,6 +690,8 @@ public:
     virtual void    SetYieldDisabled( bool disable )    {}
     virtual bool    IsYieldDisabled()                   { return true; }
 
+    bool GCRequiresBackBarrier( void ) const    { return true; }
+
     size_t Propagate( global_State *g );
 
     StkId top;  /* first free slot in the stack */
@@ -713,7 +713,7 @@ public:
     lua_Hook hook;
     TValue l_gt;  /* table of globals */
     TValue env;  /* temporary place for environments */
-    GCObject *openupval;  /* list of open upvalues in this stack */
+    gcObjList_t openupval;  /* list of open upvalues in this stack */
     ptrdiff_t errfunc;  /* current error handling function (stack index) */
     TValue storage;
     Table *mt[NUM_TAGS];  /* metatables for basic types */
@@ -753,11 +753,12 @@ public:
 };
 
 // General stuff.
-typedef struct stringtable {
-  GCObject **hash;
-  lu_int32 nuse;  /* number of elements */
-  int size;
-} stringtable;
+struct stringtable
+{
+    gcObjList_t *hash;
+    lu_int32 nuse;  /* number of elements */
+    int size;
+};
 
 class lua_Thread;
 class GrayObject;
@@ -1216,12 +1217,12 @@ FASTAPI void setobj(lua_State *L, TValue *dstVal, const TValue *srcVal)
 #else
 
 /* from stack to (same) stack */
-FASTAPI void setobjs2s(lua_State *L, TValue *dstVal, const TValue *srcVal)      { setobj(L, dstVal, srcVal); }
+FASTAPI void setobjs2s(lua_State *L, StkId dstVal, const StkId srcVal)          { setobj(L, dstVal, srcVal); }
 /* to stack (not from same stack) */
-FASTAPI void setobj2s(lua_State *L, TValue *dstVal, const TValue *srcVal)       { setobj(L, dstVal, srcVal); }
-FASTAPI void setsvalue2s(lua_State *L, TValue *val, TString *obj)               { setsvalue(L, val, obj); }
-FASTAPI void sethvalue2s(lua_State *L, TValue *val, Table *obj)                 { sethvalue(L, val, obj); }
-FASTAPI void setptvalue2s(lua_State *L, TValue *val, Proto *obj)                { setptvalue(L, val, obj); }
+FASTAPI void setobj2s(lua_State *L, StkId dstVal, const TValue *srcVal)         { setobj(L, dstVal, srcVal); }
+FASTAPI void setsvalue2s(lua_State *L, StkId val, TString *obj)                 { setsvalue(L, val, obj); }
+FASTAPI void sethvalue2s(lua_State *L, StkId val, Table *obj)                   { sethvalue(L, val, obj); }
+FASTAPI void setptvalue2s(lua_State *L, StkId val, Proto *obj)                  { setptvalue(L, val, obj); }
 /* from table to same table */
 FASTAPI void setobjt2t(lua_State *L, TValue *dstVal, const TValue *srcVal)      { setobj(L, dstVal, srcVal); }
 /* to table */
@@ -1252,16 +1253,70 @@ FASTAPI bool        isLua(CallInfo *ci)         { return (ttisfunction((ci)->fun
 // Macros for closures.
 #ifdef LUA_USE_C_MACROS
 
+#define sizeCclosure(n)	(cast(int, sizeof(CClosureBasic)) + \
+                         cast(int, sizeof(TValue)*((n)-1)))
+
+#define sizeCmethod(n)  (cast(int, sizeof(CClosureMethod)) + \
+                         cast(int, sizeof(TValue)*((n)-1)))
+
+#define sizeCmethodt(n) (cast(int, sizeof(CClosureMethodTrans)) + \
+                         cast(int, sizeof(TValue)*((n)-1)))
+
+#define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
+                         cast(int, sizeof(TValue*)*((n)-1)))
+
 #define iscfunction(o)	(ttype(o) == LUA_TFUNCTION && clvalue(o)->isC)
 #define isLfunction(o)	(ttype(o) == LUA_TFUNCTION && !clvalue(o)->isC)
 
 #else
+
+FASTAPI size_t sizeCclosure( int n )            { return sizeof(CClosureBasic) + ( sizeof(TValue)*((n)-1) ); }
+FASTAPI size_t sizeCmethod( int n )             { return sizeof(CClosureMethod) + ( sizeof(TValue)*((n)-1) ); }
+FASTAPI size_t sizeCmethodt( int n )            { return sizeof(CClosureMethodTrans) + ( sizeof(TValue)*((n)-1) ); }
+FASTAPI size_t sizeLclosure( int n )            { return sizeof(LClosure) + ( sizeof(TValue*)*((n)-1) ); }
 
 FASTAPI bool iscfunction(const TValue *o)       { return (ttype(o) == LUA_TFUNCTION && clvalue(o)->isC); }
 FASTAPI bool isLfunction(const TValue *o)       { return (ttype(o) == LUA_TFUNCTION && !clvalue(o)->isC); }
 
 #endif //LUA_USE_C_MACROS
 
+// TString and Udata helper macros.
+#ifdef LUA_USE_C_MACROS
+
+#define sizestring(s)	(_sizestring(sizeof(TString),s->len))
+#define sizeudata(u)	(_sizeudata(sizeof(Udata),u->len))
+
+#define getstr(ts)	cast(const char *, (ts) + 1)
+#define svalue(o)       getstr(rawtsvalue(o))
+
+#else
+
+FASTAPI size_t sizestring( TString *s )         { return (_sizestring(sizeof(TString),s->len)); }
+FASTAPI size_t sizeudata( Udata *u )            { return (_sizeudata(sizeof(Udata),u->len)); }
+
+FASTAPI const char* getstr( const TString *ts )             { return cast(const char *, (ts) + 1); }
+FASTAPI const char* svalue( const TValue *o )               { return getstr( rawtsvalue( o ) ); }
+
+#endif //LUA_USE_C_MACROS
+
+// Lua state helper macros.
+#ifdef LUA_USE_C_MACROS
+
+/* table of globals */
+#define gt(L)	(&L->l_gt)
+
+/* registry */
+#define registry(L)	(&G(L)->l_registry)
+
+#else
+
+/* table of globals */
+FASTAPI TValue* gt( lua_State *L )          { return &L->l_gt; }
+
+/* registry */
+FASTAPI TValue* registry( lua_State *L )    { return &G(L)->l_registry; }
+
+#endif //LUA_USE_C_MACROS
 
 /*
 ** `module' operation for hashing (size is always a power of 2)

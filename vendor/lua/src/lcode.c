@@ -232,8 +232,7 @@ static int addk (FuncState *fs, TValue *k, TValue *v) {
   }
   else {  /* constant not found; create a new entry */
     setnvalue(idx, cast_num(fs->nk));
-    luaM_growvector(L, f->k, fs->nk, f->sizek, TValue,
-                    MAXARG_Bx, "constant table overflow");
+    luaM_growvector(L, f->k, fs->nk, f->sizek, MAXARG_Bx, "constant table overflow");
     while (oldsize < f->sizek) setnilvalue(&f->k[oldsize++]);
     setobj(L, &f->k[fs->nk], v);
     luaC_barrier(L, f, v);
@@ -799,12 +798,10 @@ static int luaK_code (FuncState *fs, Instruction i, int line) {
   Proto *f = fs->f;
   dischargejpc(fs);  /* `pc' will change */
   /* put new instruction in code array */
-  luaM_growvector(fs->L, f->code, fs->pc, f->sizecode, Instruction,
-                  MAX_INT, "code size overflow");
+  luaM_growvector(fs->L, f->code, fs->pc, f->sizecode, MAX_INT, "code size overflow");
   f->code[fs->pc] = i;
   /* save corresponding line information */
-  luaM_growvector(fs->L, f->lineinfo, fs->pc, f->sizelineinfo, int,
-                  MAX_INT, "code size overflow");
+  luaM_growvector(fs->L, f->lineinfo, fs->pc, f->sizelineinfo, MAX_INT, "code size overflow");
   f->lineinfo[fs->pc] = line;
   return fs->pc++;
 }

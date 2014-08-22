@@ -234,36 +234,38 @@ void luaF_freeupval (lua_State *L, UpVal *u)
 UpVal *luaF_findupval (lua_State *L, StkId level)
 {
     global_State *g = G(L);
-    GCObject **pp = &L->openupval;
-    UpVal *p;
+    gcObjList_t::removable_iterator iter = L->openupval.GetRemovableIterator();
     UpVal *uv;
 
-    while (*pp != NULL && (p = ngcotouv(*pp))->v >= level)
     {
-        lua_assert(p->v != &p->u.value);
+        UpVal *p;
 
-        if (p->v == level)
-        {  /* found a corresponding upvalue? */
-            if (isdead(g, p))  /* is it dead? */
-            {
-                changewhite(p);  /* ressurect it */
+        while (!iter.IsEnd() && (p = ngcotouv((GCObject*)iter.Resolve()))->v >= level)
+        {
+            lua_assert(p->v != &p->u.value);
+
+            if (p->v == level)
+            {  /* found a corresponding upvalue? */
+                if (isdead(g, p))  /* is it dead? */
+                {
+                    // TODO: this does not belong here.
+                    changewhite(p);  /* ressurect it */
+                }
+
+                return p;
             }
-
-            return p;
+            iter.Increment();
         }
-        pp = &p->next;
     }
 
     uv = lua_new <UpVal> ( L );  /* not found: create a new one */
     
     if ( uv )
     {
-        uv->tt = LUA_TUPVAL;
-        uv->marked = luaC_white(g);
+        luaC_register( L, uv, LUA_TUPVAL );
         uv->v = level;  /* current value lives in the stack */
 
-        uv->next = *pp;  /* chain it in the proper position */
-        *pp = uv;
+        iter.Insert( uv );  /* chain it in the proper position */
 
         {
             globalStateClosureEnvPlugin *closureEnv = GetGlobalClosureEnv( g );
@@ -307,13 +309,13 @@ void luaF_close (lua_State *L, StkId level)
     UpVal *uv;
     global_State *g = G(L);
 
-    while (L->openupval != NULL && (uv = ngcotouv(L->openupval))->v >= level)
+    while (L->openupval.GetFirst() != NULL && (uv = ngcotouv(L->openupval.GetFirst()))->v >= level)
     {
         GCObject *o = uv;
 
         lua_assert(!isblack(o) && uv->v != &uv->u.value);
 
-        L->openupval = uv->next;  /* remove from `open' list */
+        L->openupval.RemoveFirst();  /* remove from `open' list */
 
         if (isdead(g, o))
         {
@@ -363,12 +365,12 @@ Proto *luaF_newproto (lua_State *L)
 
 void luaF_freeproto (lua_State *L, Proto *p)
 {
-    luaM_freearray(L, p->code, p->sizecode, Instruction);
-    luaM_freearray(L, p->p, p->sizep, Proto *);
-    luaM_freearray(L, p->k, p->sizek, TValue);
-    luaM_freearray(L, p->lineinfo, p->sizelineinfo, int);
-    luaM_freearray(L, p->locvars, p->sizelocvars, LocVar);
-    luaM_freearray(L, p->upvalues, p->sizeupvalues, TString *);
+    luaM_freearray(L, p->code, p->sizecode);
+    luaM_freearray(L, p->p, p->sizep);
+    luaM_freearray(L, p->k, p->sizek);
+    luaM_freearray(L, p->lineinfo, p->sizelineinfo);
+    luaM_freearray(L, p->locvars, p->sizelocvars);
+    luaM_freearray(L, p->upvalues, p->sizeupvalues);
 
     lua_delete <Proto> ( L, p );
 }

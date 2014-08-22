@@ -88,20 +88,27 @@ void reallymarkobject (global_State *g, GCObject *o)
     o->MarkGC( g );
 }
 
+inline static void _marktmuobj( global_State *g, globalStateGCEnv *gcEnv, GCObject *u )
+{
+    makewhite(g, u);  /* may be marked, if left from previous GC */
+    reallymarkobject(g, u);
+}
+
 inline static void marktmu( global_State *g, globalStateGCEnv *gcEnv )
 {
-    GCObject *u = gcEnv->tmudata;
+    GCObject *tmuRoot = (GCObject*)gcEnv->tmudata.GetFirst();
 
-    if ( !u )
-        return;
-
-    do
+    if ( tmuRoot )
     {
-        u = u->next;
-        makewhite(g, u);  /* may be marked, if left from previous GC */
-        reallymarkobject(g, u);
+        for ( gcObjList_t::iterator iter( tmuRoot->next ); !iter.IsEnd(); iter.Increment() )
+        {
+            GCObject *u = (GCObject*)iter.Resolve();
+
+            _marktmuobj( g, gcEnv, u );
+        }
+
+        _marktmuobj( g, gcEnv, tmuRoot );
     }
-    while ( u != gcEnv->tmudata );
 }
 
 void luaC_checkGC( lua_State *L )
@@ -151,7 +158,7 @@ void luaC_setthreshold( lua_State *L, lu_mem threshold )
 
 lu_byte luaC_white( global_State *g )
 {
-    lu_byte whiteBits = 0;
+    lu_byte whiteBits = WHITEBITS;
     {
         globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
@@ -183,49 +190,48 @@ size_t luaC_separatefinalization( lua_State *L, bool all )
 
     do
     {
-        GCObject **p = &g->mainthread->next;
-        GCObject *curr;
+        gcObjList_t::removable_iterator iter = gcObjList_t::removable_iterator( &g->mainthread->next );
 
         bool collected = false;
 
-        while ( (curr = *p) != NULL )
+        while ( !iter.IsEnd() )
         {
+            GCObject *curr = (GCObject*)iter.Resolve();
+
             Class *j;
 
             switch( curr->tt )
             {
             case LUA_TUSERDATA:
                 if (!(iswhite(curr) || all) || isfinalized(gco2u(curr)))
-                    p = &curr->next;  /* don't bother with them */
-                else if (fasttm(L, gco2u(curr)->metatable, TM_GC) == NULL)
                 {
-                    markfinalized(gco2u(curr));  /* don't need finalization */
-                    p = &curr->next;
-
-                    collected = true;
+                    iter.Increment();  /* don't bother with them */
                 }
                 else
-                {  /* must call its gc method */
-                    deadmem += sizeudata(gco2u(curr));
-                    markfinalized(gco2u(curr));
-                    *p = curr->next;
+                {
+                    if (gfasttm(g, gco2u(curr)->metatable, TM_GC) == NULL)
+                    {
+                        markfinalized(gco2u(curr));  /* don't need finalization */
+                        iter.Increment();
+                    }
+                    else
+                    {  /* must call its gc method */
+                        deadmem += sizeudata(gco2u(curr));
+                        markfinalized(gco2u(curr));
+
+                        // Remove from the garbage collector list.
+                        iter.Remove();
+
+                        /* link `curr' at the end of `tmudata' list */
+                        gcEnv->tmudata.Insert( curr );
+                    }
 
                     collected = true;
-
-                    /* link `curr' at the end of `tmudata' list */
-                    if (gcEnv->tmudata == NULL)  /* list is empty? */
-                        gcEnv->tmudata = curr->next = curr;  /* creates a circular list */
-                    else
-                    {
-                        curr->next = gcEnv->tmudata->next;
-                        gcEnv->tmudata->next = curr;
-                        gcEnv->tmudata = curr;
-                    }
                 }
                 break;
             case LUA_TCLASS:
                 j = gco2j( curr );
-                p = &curr->next;
+                iter.Increment();
 
                 if ( !( iswhite(curr) || all ) ) // we cannot destroy our class yet, bound in thread
                     break;
@@ -593,11 +599,8 @@ static void delete_gcobject( lua_State *L, GCObject *obj )
     }
 }
 
-#define sweepwholelist(L,p)	sweeplist(L,p,MAX_LUMEM)
-
-static GCObject** sweeplist( lua_State *L, GCObject **p, lu_mem count )
+static void sweeplist( lua_State *L, gcObjList_t::removable_iterator& p, lu_mem count )
 {
-    GCObject *curr;
     global_State *g = G(L);
     int deadmask = otherwhite(g);
 
@@ -605,11 +608,15 @@ static GCObject** sweeplist( lua_State *L, GCObject **p, lu_mem count )
 
     if ( gcEnv )
     {
-        while ( (curr = *p) != NULL && count-- > 0 )
+        while ( !p.IsEnd() && count-- > 0 )
         {
+            GCObject *curr = (GCObject*)p.Resolve();
+
             if ( curr->tt == LUA_TTHREAD )  /* sweep open upvalues of each thread */
             {
-                sweepwholelist( L, &gco2th(curr)->openupval );
+                gcObjList_t::removable_iterator iter = gco2th(curr)->openupval.GetRemovableIterator();
+
+                sweeplist( L, iter, MAX_LUMEM );
             }
 
             if ( (curr->marked ^ WHITEBITS) & deadmask )
@@ -618,24 +625,30 @@ static GCObject** sweeplist( lua_State *L, GCObject **p, lu_mem count )
 
                 makewhite( g, curr );  /* make it white (for next cycle) */
 
-                p = &curr->next;
+                p.Increment();
             }
             else
             {  /* must erase `curr' */
                 lua_assert( isdead(g, curr) || deadmask == bitmask(SFIXEDBIT) );
 
-                *p = curr->next;
+                p.Remove();
 
-                if ( curr == gcEnv->rootgc )  /* is the first element of the list? */
+                if ( curr == gcEnv->rootgc.root )  /* is the first element of the list? */
                 {
-                    gcEnv->rootgc = curr->next;  /* adjust first */
+                    gcEnv->rootgc.root = curr->next;  /* adjust first */
                 }
 
                 delete_gcobject( L, curr );
             }
         }
     }
-    return p;
+}
+
+static inline void sweepwholelist( lua_State *L, gcObjList_t& theList )
+{
+    gcObjList_t::removable_iterator iter = theList.GetRemovableIterator();
+
+    sweeplist( L, iter, MAX_LUMEM );
 }
 
 static void checkSizes (lua_State *L)
@@ -652,41 +665,27 @@ static void checkSizes (lua_State *L)
 }
 
 
-inline static void GCTM (lua_State *L)
+inline static void GCTM (lua_State *L, global_State *g, globalStateGCEnv *gcEnv)
 {
-    global_State *g = G(L);
+    GCObject *o = (GCObject*)gcEnv->tmudata.GetFirst();
+    Udata *udata = rawgco2u( o );
 
-    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+    makewhite( g, o );
 
-    if ( gcEnv )
+    /* remove udata from `tmudata' */
+    gcEnv->tmudata.RemoveFirst();
+
+    gcObjList_t::InsertAfter( g->mainthread, o );
+
+    if ( const TValue *tm = gfasttm(g, udata->metatable, TM_GC) )
     {
-        GCObject *o = gcEnv->tmudata->next;  /* get first element */
-        const TValue *tm;
-        Udata *udata = rawgco2u( o );
+        debughook_shield shield( *L );
 
-        makewhite( g, o );
+        setobj2s( L, L->top, tm );
+        setuvalue( L, L->top+1, udata );
+        L->top += 2;
 
-        /* remove udata from `tmudata' */
-        if (o == gcEnv->tmudata)  /* last element? */
-            gcEnv->tmudata = NULL;
-        else
-            gcEnv->tmudata->next = udata->next;
-
-        udata->next = g->mainthread->next;  /* return it to `root' list */
-        g->mainthread->next = o;
-
-        if ( !(tm = fasttm(L, udata->metatable, TM_GC)) )
-            return;
-
-        {
-            debughook_shield shield( *L );
-
-            setobj2s( L, L->top, tm );
-            setuvalue( L, L->top+1, udata );
-            L->top += 2;
-
-            luaD_call(L, L->top - 2, 0);
-        }
+        luaD_call(L, L->top - 2, 0);
     }
 }
 
@@ -696,13 +695,15 @@ inline static void GCTM (lua_State *L)
 */
 void luaC_callGCTM (lua_State *L)
 {
-    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( G(L) );
+    global_State *g = G(L);
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
     if ( gcEnv )
     {
-        while( gcEnv->tmudata )
+        while ( !gcEnv->tmudata.IsEmpty() )
         {
-            GCTM(L);
+            GCTM(L, g, gcEnv);
         }
     }
 }
@@ -719,15 +720,15 @@ void luaC_freeall (lua_State *L)
         int i;
 
         g->currentwhite = WHITEBITS | bitmask(SFIXEDBIT);  /* mask to collect all elements */
-        
-        sweepwholelist(L, &gcEnv->rootgc);
+
+        sweepwholelist(L, gcEnv->rootgc);
 
         for (i = 0; i < g->strt.size; i++)  /* free all string lists */
         {
-            sweepwholelist(L, &g->strt.hash[i]);
+            sweepwholelist(L, g->strt.hash[i]);
         }
 
-        lua_assert(gcEnv->rootgc == L);
+        lua_assert(gcEnv->rootgc.GetFirst() == L);
     }
 }
 
@@ -754,22 +755,22 @@ void luaC_step (lua_State *L)
         // Execute GCthread stealthy
         gcEnv->GCthread->resume();
 
-        switch( gcEnv->gcstate )
+        if ( gcEnv->gcstate == GCSpause )
         {
-        case GCSpause:
             if ( g->totalbytes < gcEnv->estimate )
                 gcEnv->estimate = g->totalbytes;
 
             setthreshold( gcEnv );
-            return;
         }
-
-        if ( gcEnv->gcdept < GCSTEPSIZE )
-            gcEnv->GCthreshold = g->totalbytes + GCSTEPSIZE;  /* - lim/g->gcstepmul;*/
         else
         {
-            gcEnv->gcdept -= GCSTEPSIZE;
-            gcEnv->GCthreshold = g->totalbytes;
+            if ( gcEnv->gcdept < GCSTEPSIZE )
+                gcEnv->GCthreshold = g->totalbytes + GCSTEPSIZE;  /* - lim/g->gcstepmul;*/
+            else
+            {
+                gcEnv->gcdept -= GCSTEPSIZE;
+                gcEnv->GCthreshold = g->totalbytes;
+            }
         }
     }
 }
@@ -831,6 +832,18 @@ void luaC_barrierf (lua_State *L, GCObject *o, GCObject *v)
         //lua_assert(g->gcstate != GCSfinalize && g->gcstate != GCSpause);
         lua_assert(o->tt != LUA_TTABLE);
 
+        // The so-called "invariant" is the liveliness of the object. Keeping the invariant
+        // means that the runtime knows that the object is required. Under certain GC
+        // conditions the invariant can disappear, so special "barriers" are required to
+        // bring objects back into visibility.
+
+        // luaC_barrierf is a "front barrier". It is employed for objects that can easily be marked
+        // without disturbing the GC runtime. Those must not need propagation.
+
+        // luaC_barrierback is a "back barrier". It shall be used for objects that should be sheduled
+        // for marking on the GC thread. This is done solely to increase the propagation awareness
+        // of the GC algorithm.
+
         /* must keep invariant? */
         if (gcEnv->gcstate == GCSpropagate)
         {
@@ -890,7 +903,7 @@ void luaC_forceupdatef( lua_State *L, GCObject *o )
 }
 
 
-void luaC_barrierback (lua_State *L, Table *t)
+void luaC_barrierback( lua_State *L, GrayObject *o )
 {
     global_State *g = G(L);
 
@@ -898,13 +911,13 @@ void luaC_barrierback (lua_State *L, Table *t)
 
     if ( gcEnv )
     {
-        lua_assert(isblack(t) && !isdead(g, t));
+        lua_assert(isblack(o) && !isdead(g, o));
         lua_assert(gcEnv->gcstate != GCSfinalize && gcEnv->gcstate != GCSpause);
 
-        black2gray(t);  /* make table gray (again) */
+        black2gray(o);  /* make GrayObject gray (again) */
 
-        t->gclist = gcEnv->grayagain;
-        gcEnv->grayagain = t;
+        o->gclist = gcEnv->grayagain;
+        gcEnv->grayagain = o;
     }
 }
 
@@ -925,6 +938,16 @@ void luaC_objbarriert( lua_State *L, Table *t, GCObject *o )
 }
 
 
+void luaC_register( lua_State *L, GCObject *o, lu_byte tt )
+{
+    global_State *g = G(L);
+
+    // Put general stuff.
+    o->marked = luaC_white(g);
+    o->tt = tt;
+}
+
+
 void luaC_link (lua_State *L, GCObject *o, lu_byte tt)
 {
     global_State *g = G(L);
@@ -933,13 +956,21 @@ void luaC_link (lua_State *L, GCObject *o, lu_byte tt)
 
     if ( gcEnv )
     {
-        o->next = gcEnv->rootgc;
-        gcEnv->rootgc = o;
+        gcEnv->rootgc.Insert( o );
     }
 
-    // Put general stuff.
-    o->marked = luaC_white(g);
-    o->tt = tt;
+    luaC_register( L, o, tt );
+}
+
+
+void luaC_linktmu( lua_State *L, GCObject *o, lu_byte tt )
+{
+    global_State *g = G(L);
+
+    // Insert tmu items after the mainthread.
+    gcObjList_t::InsertAfter( g->mainthread, o );
+
+    luaC_register( L, o, tt );
 }
 
 
@@ -951,8 +982,7 @@ void luaC_linkupval (lua_State *L, UpVal *uv)
 
     if ( gcEnv )
     {
-        uv->next = gcEnv->rootgc;  /* link upvalue into `rootgc' list */
-        gcEnv->rootgc = uv;
+        gcEnv->rootgc.Insert( uv ); /* link upvalue into `rootgc' list */
 
         if (isgray(uv))
         { 
@@ -1061,7 +1091,7 @@ static int luaC_runtime( lua_State *L )
                 luaJ_gcruntime( L );
                 luaF_gcruntime( L );
             }
-            /* traverse objects cautch by write barrier and by 'remarkupvals' */
+            /* traverse objects caught by write barrier and by 'remarkupvals' */
             propagateall(g);
             /* remark weak tables */
             gcEnv->gray = gcEnv->weak;
@@ -1080,7 +1110,7 @@ static int luaC_runtime( lua_State *L )
             /* flip current white */
             g->currentwhite = cast_byte(otherwhite(g));
             gcEnv->sweepstrgc = 0;
-            gcEnv->sweepgc = &gcEnv->rootgc;
+            gcEnv->sweepgc = gcEnv->rootgc.GetRemovableIterator();
             gcEnv->gcstate = GCSsweepstring;
             gcEnv->estimate = g->totalbytes;
             luaC_processestimate( gcEnv, udsize );  /* first estimate */
@@ -1088,7 +1118,7 @@ static int luaC_runtime( lua_State *L )
             do
             {
                 lu_mem old = g->totalbytes;
-                sweepwholelist( L, &g->strt.hash[gcEnv->sweepstrgc++] );
+                sweepwholelist( L, g->strt.hash[gcEnv->sweepstrgc++] );
 
                 lua_assert(old >= g->totalbytes);
                 luaC_processestimate( gcEnv, old - g->totalbytes );
@@ -1103,12 +1133,12 @@ static int luaC_runtime( lua_State *L )
             for (;;)
             {
                 lu_mem old = g->totalbytes;
-                gcEnv->sweepgc = sweeplist(L, gcEnv->sweepgc, GCSWEEPMAX);
+                sweeplist(L, gcEnv->sweepgc, GCSWEEPMAX);
 
                 lua_assert( old >= g->totalbytes );
                 luaC_processestimate( gcEnv, old - g->totalbytes );
 
-                if ( *gcEnv->sweepgc == NULL )
+                if ( gcEnv->sweepgc.IsEnd() )
                 {  /* nothing more to sweep? */
                     lu_mem old2 = g->totalbytes;
 
@@ -1125,9 +1155,9 @@ static int luaC_runtime( lua_State *L )
             // Finalize all executive objects
             gcEnv->gcstate = GCSfinalize;
             
-            while ( gcEnv->tmudata )
+            while ( !gcEnv->tmudata.IsEmpty() )
             {
-                GCTM(L);
+                GCTM(L, g, gcEnv);
 
                 luaC_processestimate( gcEnv, GCFINALIZECOST );
 
@@ -1152,12 +1182,12 @@ void luaC_init( global_State *g )
     {
         // Init global variables
         gcEnv->weak = NULL;
-        gcEnv->tmudata = NULL;
+        gcEnv->tmudata.Clear();
         gcEnv->GCthreshold = 0;  /* mark it as unfinished state */
         gcEnv->gcstate = GCSpause;
-        gcEnv->rootgc = g->mainthread;
+        gcEnv->rootgc.Insert( g->mainthread );
         gcEnv->sweepstrgc = 0;
-        gcEnv->sweepgc = &gcEnv->rootgc;
+        gcEnv->sweepgc = gcEnv->rootgc.GetRemovableIterator();
         gcEnv->gray = NULL;
         gcEnv->grayagain = NULL;
         gcEnv->gcpause = LUAI_GCPAUSE;
@@ -1234,9 +1264,11 @@ void luaC_shutdown( global_State *g )
         {
             bool nonFinalizedObject = false;
 
-            for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
+            for ( gcObjList_t::iterator iter( g->mainthread->next ); !iter.IsEnd(); iter.Increment() )
             {
-                if ( !isfinalized( iter ) )
+                GCObject *o = (GCObject*)iter.Resolve();
+
+                if ( !isfinalized( o ) )
                 {
                     nonFinalizedObject = true;
 
@@ -1247,7 +1279,7 @@ void luaC_shutdown( global_State *g )
                         StkId funcPtr = L->top++;
 
                         setclvalue( L, funcPtr, dfail );
-                        setgcvalue( L, L->top++, iter );
+                        setgcvalue( L, L->top++, o );
                         luaD_call( L, funcPtr, 0 );
                     }
                     catch( ... )
@@ -1267,9 +1299,11 @@ void luaC_shutdown( global_State *g )
 
         // If there still are objects left, the runtime is experiencing undefined behavior.
         // Let us assert the application.
-        for ( GCObject *iter = g->mainthread->next; iter != NULL; iter = iter->next )
+        for ( gcObjList_t::iterator iter( g->mainthread->next ); !iter.IsEnd(); iter.Increment() )
         {
-            lua_assert( isfinalized( iter ) );
+            GCObject *o = (GCObject*)iter.Resolve();
+
+            lua_assert( isfinalized( o ) );
         }
     }
 
@@ -1286,7 +1320,7 @@ void luaC_shutdown( global_State *g )
 
     if ( gcEnv )
     {
-        lua_assert(gcEnv->tmudata == NULL);
+        lua_assert(gcEnv->tmudata.IsEmpty() == true);
     }
 }
 

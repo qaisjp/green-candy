@@ -714,6 +714,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lutils.h"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lvm.h"
 				>
 			</File>
