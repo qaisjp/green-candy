@@ -108,6 +108,8 @@ public:
     lu_byte marked;
 };
 
+typedef SingleLinkedList <class GrayObject> grayObjList_t;
+
 class GrayObject abstract : public GCObject
 {
 public:
@@ -118,7 +120,7 @@ public:
 
     virtual bool        GCRequiresBackBarrier( void ) const = 0;
 
-    GrayObject *gclist;
+    grayObjList_t::node gclist;
 };
 
 /*

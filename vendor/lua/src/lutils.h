@@ -23,6 +23,15 @@ struct SingleLinkedList
         root = NULL;
     }
 
+    inline void SwapWith( SingleLinkedList& list )
+    {
+        node *myRoot = this->root;
+        node *theirRoot = list.root;
+
+        this->root = theirRoot;
+        list.root = myRoot;
+    }
+
     static inline void InsertAfter( node *listNode, node *theNode )
     {
         theNode->next = listNode->next;

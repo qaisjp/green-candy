@@ -75,8 +75,7 @@ void GrayObject::MarkGC( global_State *g )
 
     if ( gcEnv )
     {
-        gclist = gcEnv->gray;
-        gcEnv->gray = this;
+        gcEnv->gray.Insert( &this->gclist );
     }
 }
 
@@ -290,7 +289,9 @@ int Table::TraverseGC( global_State *g )
     bool weakvalue;
 
     if ( metatable )
+    {
         markobject( g, metatable );
+    }
 
     const TValue *mode = gfasttm( g, metatable, TM_MODE );
 
@@ -308,8 +309,9 @@ int Table::TraverseGC( global_State *g )
 
             if ( gcEnv )
             {
-                this->gclist = gcEnv->weak;  /* must be cleared after GC, ... */
-                gcEnv->weak = this;  /* ... so put in the appropriate list */
+                /* must be cleared after GC, ... */
+                /* ... so put in the appropriate list */
+                gcEnv->weak.Insert( &this->gclist );
             }
         }
 
@@ -327,7 +329,9 @@ int Table::TraverseGC( global_State *g )
         i = sizearray;
 
         while ( i-- )
+        {
             markvalue( g, &array[i] );
+        }
     }
     i = sizenode( this );
 
@@ -351,42 +355,70 @@ int Table::TraverseGC( global_State *g )
     return weakkey || weakvalue;
 }
 
-static void checkstacksizes (lua_State *L, StkId max) {
-  int ci_used = cast_int(L->ci - L->base_ci);  /* number of `ci' in use */
-  int s_used = cast_int(max - L->stack);  /* part of stack in use */
-  if (L->size_ci > LUAI_MAXCALLS)  /* handling overflow? */
-    return;  /* do not touch the stacks */
-  if (4*ci_used < L->size_ci && 2*BASIC_CI_SIZE < L->size_ci)
-    luaD_reallocCI(L, L->size_ci/2);  /* still big enough... */
-  condhardstacktests(luaD_reallocCI(L, ci_used + 1));
-  if (4*s_used < L->stacksize &&
-      2*(BASIC_STACK_SIZE+EXTRA_STACK) < L->stacksize)
-    luaD_reallocstack(L, L->stacksize/2);  /* still big enough... */
-  condhardstacktests(luaD_reallocstack(L, s_used));
+static void checkstacksizes (lua_State *L, StkId max)
+{
+    int ci_used = cast_int( L->ci - L->base_ci );  /* number of `ci' in use */
+    int s_used = cast_int( max - L->stack );  /* part of stack in use */
+
+    if ( L->size_ci > LUAI_MAXCALLS )  /* handling overflow? */
+    {
+        return;  /* do not touch the stacks */
+    }
+
+    if ( 4*ci_used < L->size_ci && 2*BASIC_CI_SIZE < L->size_ci )
+    {
+        luaD_reallocCI(L, L->size_ci/2);  /* still big enough... */
+    }
+    condhardstacktests(luaD_reallocCI(L, ci_used + 1));
+
+    if ( 4*s_used < L->stacksize && 2*(BASIC_STACK_SIZE+EXTRA_STACK) < L->stacksize )
+    {
+        luaD_reallocstack(L, L->stacksize/2);  /* still big enough... */
+    }
+    condhardstacktests(luaD_reallocstack(L, s_used));
 }
 
 
-static void traversestack (global_State *g, lua_State *l) {
-  StkId o, lim;
-  CallInfo *ci;
-  markvalue(g, &l->storage);
-  markvalue(g, gt(l));
-  lim = l->top;
-  for (ci = l->base_ci; ci <= l->ci; ci++) {
-    lua_assert(ci->top <= l->stack_last);
-    if (lim < ci->top) lim = ci->top;
-  }
-  for (o = l->stack; o < l->top; o++)
-    markvalue(g, o);
-  for (; o <= lim; o++)
-    setnilvalue(o);
-  checkstacksizes(l, lim);
+static void traversestack (global_State *g, lua_State *l)
+{
+    markvalue( g, &l->storage );
+    markvalue( g, gt(l) );
+
+    StkId lim = l->top;
+
+    for ( CallInfo *ci = l->base_ci; ci <= l->ci; ci++ )
+    {
+        lua_assert(ci->top <= l->stack_last);
+
+        if ( lim < ci->top )
+        {
+            lim = ci->top;
+        }
+    }
+
+    {
+        StkId o;
+
+        for ( o = l->stack; o < l->top; o++ )
+        {
+            markvalue(g, o);
+        }
+
+        for ( ; o <= lim; o++ )
+        {
+            setnilvalue(o);
+        }
+    }
+
+    checkstacksizes(l, lim);
 }
 
 size_t Table::Propagate( global_State *g )
 {
     if ( TraverseGC( g ) )  /* table is weak? */
+    {
         black2gray( this );  /* keep it gray */
+    }
 
     return sizeof(Table) + sizeof(TValue) * sizearray +
         sizeof(Node) * sizenode( this );
@@ -429,8 +461,8 @@ size_t lua_State::Propagate( global_State *g )
 
     if ( gcEnv )
     {
-        gclist = gcEnv->grayagain;
-        gcEnv->grayagain = this;
+        // Make it gray, again.
+        gcEnv->grayagain.Insert( &this->gclist );
     }
 
     black2gray( this );
@@ -454,12 +486,12 @@ static l_mem propagatemark (global_State *g)
 
         if ( gcEnv )
         {
-            GrayObject *o = gcEnv->gray;
+            GrayObject *o = LIST_GETITEM( GrayObject, gcEnv->gray.GetFirst(), gclist );
             lua_assert(isgray(o));
 
             gray2black(o);
 
-            gcEnv->gray = o->gclist;
+            gcEnv->gray.RemoveFirst();
 
             propagateCount = o->Propagate( g );
         }
@@ -476,7 +508,7 @@ static size_t propagateall (global_State *g)
    
     if ( gcEnv )
     {
-        while ( gcEnv->gray )
+        while ( !gcEnv->gray.IsEmpty() )
         {
             m += propagatemark(g);
         }
@@ -507,30 +539,48 @@ inline static int iscleared (const TValue *o, int iskey) {
 /*
 ** clear collected entries from weaktables
 */
-static void cleartable (GCObject *l) {
-  while (l) {
-    Table *h = gco2h(l);
-    int i = h->sizearray;
-    lua_assert(testbit(h->marked, VALUEWEAKBIT) ||
-               testbit(h->marked, KEYWEAKBIT));
-    if (testbit(h->marked, VALUEWEAKBIT)) {
-      while (i--) {
-        TValue *o = &h->array[i];
-        if (iscleared(o, 0))  /* value was collected? */
-          setnilvalue(o);  /* remove value */
-      }
+static void cleartable ( grayObjList_t& theList )
+{
+    grayObjList_t::iterator iter = theList.GetIterator();
+
+    while ( !iter.IsEnd() )
+    {
+        GrayObject *grayObj = LIST_GETITEM( GrayObject, iter.Resolve(), gclist );
+
+        Table *h = gco2h(grayObj);
+        int i = h->sizearray;
+
+        lua_assert(testbit(h->marked, VALUEWEAKBIT) || testbit(h->marked, KEYWEAKBIT));
+
+        if ( testbit(h->marked, VALUEWEAKBIT) )
+        {
+            while ( i-- )
+            {
+                TValue *o = &h->array[i];
+
+                if ( iscleared(o, 0) )  /* value was collected? */
+                {
+                    setnilvalue(o);  /* remove value */
+                }
+            }
+        }
+
+        i = sizenode(h);
+
+        while ( i-- )
+        {
+            Node *n = gnode(h, i);
+
+            if ( !ttisnil(gval(n)) && /* non-empty entry? */ (iscleared(key2tval(n), 1) || iscleared(gval(n), 0)) )
+            {
+                setnilvalue(gval(n));  /* remove value ... */
+
+                removeentry(n);  /* remove entry from table */
+            }
+        }
+        
+        iter.Increment();
     }
-    i = sizenode(h);
-    while (i--) {
-      Node *n = gnode(h, i);
-      if (!ttisnil(gval(n)) &&  /* non-empty entry? */
-          (iscleared(key2tval(n), 1) || iscleared(gval(n), 0))) {
-        setnilvalue(gval(n));  /* remove value ... */
-        removeentry(n);  /* remove entry from table */
-      }
-    }
-    l = h->gclist;
-  }
 }
 
 // Dispatch destruction of any GCObject.
@@ -675,6 +725,7 @@ inline static void GCTM (lua_State *L, global_State *g, globalStateGCEnv *gcEnv)
     /* remove udata from `tmudata' */
     gcEnv->tmudata.RemoveFirst();
 
+    // Put the tmudata back, after the mainthread.
     gcObjList_t::InsertAfter( g->mainthread, o );
 
     if ( const TValue *tm = gfasttm(g, udata->metatable, TM_GC) )
@@ -916,8 +967,7 @@ void luaC_barrierback( lua_State *L, GrayObject *o )
 
         black2gray(o);  /* make GrayObject gray (again) */
 
-        o->gclist = gcEnv->grayagain;
-        gcEnv->grayagain = o;
+        gcEnv->grayagain.Insert( &o->gclist );
     }
 }
 
@@ -1045,9 +1095,10 @@ static int luaC_runtime( lua_State *L )
         for (;;)
         {
             // Set up the runtime for another collection
-            gcEnv->gray = NULL;
-            gcEnv->grayagain = NULL;
-            gcEnv->weak = NULL;
+            // First we clear lists.
+            gcEnv->gray.Clear();
+            gcEnv->grayagain.Clear();
+            gcEnv->weak.Clear();
 
             {
                 // Do the root marking
@@ -1079,7 +1130,7 @@ static int luaC_runtime( lua_State *L )
                 lua_call( L, 0, 0 );
             }
 
-            while ( gcEnv->gray )
+            while ( !gcEnv->gray.IsEmpty() )
             {
                 _luaC_paycost( gcEnv, (lua_Thread*)L, propagatemark(g) );
             }
@@ -1094,14 +1145,12 @@ static int luaC_runtime( lua_State *L )
             /* traverse objects caught by write barrier and by 'remarkupvals' */
             propagateall(g);
             /* remark weak tables */
-            gcEnv->gray = gcEnv->weak;
-            gcEnv->weak = NULL;
+            gcEnv->weak.SwapWith( gcEnv->gray );
             lua_assert(!iswhite(g->mainthread));
             markmt( L );  /* mark basic metatables (again) */
             propagateall(g);
             /* remark gray again */
-            gcEnv->gray = gcEnv->grayagain;
-            gcEnv->grayagain = NULL;
+            gcEnv->grayagain.SwapWith( gcEnv->gray );
             propagateall(g);
             udsize = luaC_separatefinalization(L, false);  /* separate userdata to be finalized */
             marktmu(g, gcEnv);  /* mark `preserved' userdata */
@@ -1181,15 +1230,15 @@ void luaC_init( global_State *g )
     if ( gcEnv )
     {
         // Init global variables
-        gcEnv->weak = NULL;
+        gcEnv->weak.Clear();
         gcEnv->tmudata.Clear();
         gcEnv->GCthreshold = 0;  /* mark it as unfinished state */
         gcEnv->gcstate = GCSpause;
         gcEnv->rootgc.Insert( g->mainthread );
         gcEnv->sweepstrgc = 0;
         gcEnv->sweepgc = gcEnv->rootgc.GetRemovableIterator();
-        gcEnv->gray = NULL;
-        gcEnv->grayagain = NULL;
+        gcEnv->gray.Clear();
+        gcEnv->grayagain.Clear();
         gcEnv->gcpause = LUAI_GCPAUSE;
         gcEnv->gcstepmul = LUAI_GCMUL;
         gcEnv->gcdept = 0;

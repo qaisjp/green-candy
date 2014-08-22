@@ -12,9 +12,9 @@ struct globalStateGCEnv
     int sweepstrgc;  /* position of sweep in `strt' */
     gcObjList_t rootgc;  /* list of all collectable objects */
     gcObjList_t::removable_iterator sweepgc;  /* position of sweep in `rootgc' */
-    GrayObject *gray;  /* list of gray objects */
-    GrayObject *grayagain;  /* list of objects to be traversed atomically */
-    GrayObject *weak;  /* list of weak tables (to be cleared) */
+    grayObjList_t gray;  /* list of gray objects */
+    grayObjList_t grayagain;  /* list of objects to be traversed atomically */
+    grayObjList_t weak;  /* list of weak tables (to be cleared) */
     gcObjList_t tmudata;  /* elements waiting to call their TM_GC methods during GC */
     lua_Thread *GCthread; /* garbage collector runtime */
     lu_mem GCthreshold;
