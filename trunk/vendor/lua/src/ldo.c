@@ -98,14 +98,15 @@ int luaD_rawrunprotected( lua_State *L, Pfunc f, void *ud, std::string& err, lua
 static void correctstack (lua_State *L, TValue *oldstack)
 {
     CallInfo *ci;
-    GCObject *up;
 
     L->top = (L->top - oldstack) + L->stack;
 
     assert( L->top != NULL );
 
-    for (up = L->openupval; up != NULL; up = up->next)
+    for ( gcObjList_t::iterator iter = L->openupval.GetIterator(); !iter.IsEnd(); iter.Increment() )
     {
+        GCObject *up = (GCObject*)iter.Resolve();
+
         gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack;
     }
 
@@ -124,7 +125,7 @@ void luaD_reallocstack (lua_State *L, int newsize) {
   TValue *oldstack = L->stack;
   int realsize = newsize + 1 + EXTRA_STACK;
   lua_assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK - 1);
-  luaM_reallocvector(L, L->stack, L->stacksize, realsize, TValue);
+  luaM_reallocvector(L, L->stack, L->stacksize, realsize);
   L->stacksize = realsize;
   L->stack_last = L->stack+newsize;
   correctstack(L, oldstack);
@@ -133,7 +134,7 @@ void luaD_reallocstack (lua_State *L, int newsize) {
 
 void luaD_reallocCI (lua_State *L, int newsize) {
   CallInfo *oldci = L->base_ci;
-  luaM_reallocvector(L, L->base_ci, L->size_ci, newsize, CallInfo);
+  luaM_reallocvector(L, L->base_ci, L->size_ci, newsize);
   L->size_ci = newsize;
   L->ci = (L->ci - oldci) + L->base_ci;
   L->end_ci = L->base_ci + L->size_ci - 1;

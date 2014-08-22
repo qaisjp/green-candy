@@ -1941,13 +1941,10 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     Class *c = globalClassEnv->factory.Construct( L->defaultAlloc );
 
     // Link it into the GC system
-    c->next = G(L)->mainthread->next;
-    G(L)->mainthread->next = c;
+    luaC_linktmu( L, c, LUA_TCLASS );
 
     c->hostState = G(L)->mainthread;
 
-    c->tt = LUA_TCLASS;
-    c->marked = luaC_white( G(L) ); // do not collect
     c->destroyed = false;
     c->destroying = false;
     c->reqDestruction = false;

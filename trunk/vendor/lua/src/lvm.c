@@ -638,7 +638,7 @@ reentry:  /* entry point */
             int aux;
             StkId func = ci->func;
             StkId pfunc = (ci+1)->func;  /* previous function index */
-            if (L->openupval) luaF_close(L, ci->base);
+            if (!L->openupval.IsEmpty()) luaF_close(L, ci->base);
             L->base = ci->base = ci->func + ((ci+1)->base - pfunc);
             for (aux = 0; pfunc+aux < L->top; aux++)  /* move frame down */
               setobjs2s(L, func+aux, pfunc+aux);
@@ -670,7 +670,7 @@ reentry:  /* entry point */
 
         assert( L->top != NULL );
 
-        if (L->openupval) luaF_close(L, base);
+        if (!L->openupval.IsEmpty()) luaF_close(L, base);
         L->savedpc = pc;
         b = luaD_poscall(L, ra);
         if (--nexeccalls == 0)  /* was previous function running `here'? */

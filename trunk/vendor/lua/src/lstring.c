@@ -28,31 +28,45 @@ globalStateStringEnv* GetGlobalStringEnv( global_State *g )
     return globalStateFactory_t::RESOLVE_STRUCT <globalStateStringEnv> ( g, _stringEnvPluginOffset );
 }
 
-void luaS_resize (lua_State *L, int newsize) {
-  GCObject **newhash;
-  stringtable *tb;
-  int i;
-  if (luaC_getstate( L ) == GCSsweepstring)
-    return;  /* cannot resize during GC traverse */
-  newhash = luaM_newvector(L, newsize, GCObject *);
-  tb = &G(L)->strt;
-  for (i=0; i<newsize; i++) newhash[i] = NULL;
-  /* rehash */
-  for (i=0; i<tb->size; i++) {
-    GCObject *p = tb->hash[i];
-    while (p) {  /* for each node in the list */
-      GCObject *next = p->next;  /* save next */
-      unsigned int h = gco2ts(p)->hash;
-      int h1 = lmod(h, newsize);  /* new position */
-      lua_assert(cast_int(h%newsize) == lmod(h, newsize));
-      p->next = newhash[h1];  /* chain it */
-      newhash[h1] = p;
-      p = next;
+void luaS_resize (lua_State *L, int newsize)
+{
+    gcObjList_t *newhash;
+    stringtable *tb;
+
+    if (luaC_getstate( L ) == GCSsweepstring)
+    {
+        return;  /* cannot resize during GC traverse */
     }
-  }
-  luaM_freearray(L, tb->hash, tb->size, TString *);
-  tb->size = newsize;
-  tb->hash = newhash;
+
+    newhash = luaM_newvector <gcObjList_t> (L, newsize);
+    tb = &G(L)->strt;
+
+    /* rehash */
+    for (int i = 0; i < tb->size; i++)
+    {
+        gcObjList_t::iterator p = tb->hash[i].GetIterator();
+
+        while ( !p.IsEnd() )
+        {  /* for each node in the list */
+            GCObject *curr = (GCObject*)p.Resolve();
+
+            p.Increment();
+
+            unsigned int h = gco2ts(curr)->hash;
+            int h1 = lmod(h, newsize);  /* new position */
+
+            lua_assert( cast_int( h % newsize ) == lmod( h, newsize ) );
+
+            newhash[h1].Insert( curr );     /* chain it */
+        }
+
+        // Make sure we clear the list before deleting it.
+        tb->hash[i].Clear();
+    }
+
+    luaM_freearray(L, tb->hash, tb->size);
+    tb->size = newsize;
+    tb->hash = newhash;
 }
 
 TString::~TString()
@@ -75,8 +89,9 @@ static TString *newlstr (lua_State *L, const char *str, size_t l, unsigned int h
     {
         ts->len = l;
         ts->hash = h;
-        ts->marked = luaC_white(G(L));
-        ts->tt = LUA_TSTRING;
+        
+        luaC_register( L, ts, LUA_TSTRING );
+
         ts->reserved = 0;
 
         memcpy(ts+1, str, l*sizeof(char));
@@ -84,8 +99,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l, unsigned int h
 
         tb = &G(L)->strt;
         h = lmod(h, tb->size);
-        ts->next = tb->hash[h];  /* chain new entry */
-        tb->hash[h] = ts;
+        tb->hash[h].Insert( ts );  /* chain new entry */
         tb->nuse++;
 
         if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
@@ -97,24 +111,38 @@ static TString *newlstr (lua_State *L, const char *str, size_t l, unsigned int h
 }
 
 
-TString *luaS_newlstr (lua_State *L, const char *str, size_t l) {
-  GCObject *o;
-  unsigned int h = cast(unsigned int, l);  /* seed */
-  size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
-  size_t l1;
-  for (l1=l; l1>=step; l1-=step)  /* compute hash */
-    h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
-  for (o = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
-       o != NULL;
-       o = o->next) {
-    TString *ts = rawgco2ts(o);
-    if (ts->len == l && (memcmp(str, getstr(ts), l) == 0)) {
-      /* string may be dead */
-      if (isdead(G(L), o)) changewhite(o);
-      return ts;
+TString *luaS_newlstr (lua_State *L, const char *str, size_t l)
+{
+    unsigned int h = cast(unsigned int, l);  /* seed */
+    size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
+    size_t l1;
+
+    for (l1=l; l1>=step; l1-=step)  /* compute hash */
+    {
+        h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
     }
-  }
-  return newlstr(L, str, l, h);  /* not found */
+
+    gcObjList_t& strHashList = G(L)->strt.hash[lmod(h, G(L)->strt.size)];
+
+    for ( gcObjList_t::iterator iter = strHashList.GetIterator(); !iter.IsEnd(); iter.Increment() )
+    {
+        GCObject *o = (GCObject*)iter.Resolve();
+
+        TString *ts = rawgco2ts(o);
+
+        if (ts->len == l && (memcmp(str, getstr(ts), l) == 0))
+        {
+            /* string may be dead */
+            if (isdead(G(L), o))
+            {
+                // TODO: this does not belong here.
+                changewhite(o);
+            }
+            return ts;
+        }
+    }
+
+    return newlstr(L, str, l, h);  /* not found */
 }
 
 int luaS_concat (lua_State *L, StkId top, int total)
@@ -201,14 +229,10 @@ Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
 
     if ( u )
     {
-        u->marked = luaC_white(G(L));  /* is not finalized */
-        u->tt = LUA_TUSERDATA;
+        luaC_linktmu( L, u, LUA_TUSERDATA );
         u->len = s;
         u->metatable = NULL;
         u->env = e;
-        /* chain it on udata list (after main thread) */
-        u->next = G(L)->mainthread->next;
-        G(L)->mainthread->next = u;
     }
     return u;
 }

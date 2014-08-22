@@ -261,6 +261,63 @@ static int luaB_rawtype( lua_State *L )
     return 1;
 }
 
+static inline int lua_typestr2type( lua_State *L, TString *typeStr )
+{
+    unsigned int num_types = luaT_getnumtypes( L );
+    const char *typeName = getstr(typeStr);
+
+    for ( unsigned int n = 0; n < num_types; n++ )
+    {
+        int typeNum = luaT_gettype( L, n );
+
+        const char *maybeTypeName = lua_typename( L, typeNum );
+
+        bool areEqual = ( strcmp( typeName, maybeTypeName ) == 0 );
+
+        if ( areEqual )
+        {
+            return typeNum;
+        }
+    }
+
+    return -1;
+}
+
+static int luaB_typesize( lua_State *L )
+{
+    luaL_checkany( L, 1 );
+
+    const TValue *typeVal = index2constadr( L, 1 );
+
+    size_t typeSize = 0;
+
+    int type = ttype( typeVal );
+
+    if ( iscollectable( typeVal ) )
+    {
+        typeSize = gcvalue( typeVal )->GetTypeSize( G(L) );
+    }
+    else if ( type == LUA_TNUMBER )
+    {
+        typeSize = sizeof( lua_Number );
+    }
+    else if ( type == LUA_TBOOLEAN )
+    {
+        typeSize = sizeof( bool );
+    }
+    else if ( type == LUA_TNIL )
+    {
+        typeSize = 0;
+    }
+    else if ( type == LUA_TLIGHTUSERDATA )
+    {
+        typeSize = sizeof( void* );
+    }
+
+    lua_pushinteger( L, typeSize );
+    return 1;
+}
+
 static int luaB_next (lua_State *L) {
   luaL_checktype(L, 1, LUA_TTABLE);
   lua_settop(L, 2);  /* create a 2nd argument if there isn't one */
@@ -514,6 +571,7 @@ static const luaL_Reg base_funcs[] = {
   {"tostring", luaB_tostring},
   {"type", luaB_type},
   {"rawtype", luaB_rawtype},
+  {"typesize", luaB_typesize},
   {"unpack", luaB_unpack},
   {"xpcall", luaB_xpcall},
   {NULL, NULL}

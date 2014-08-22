@@ -129,6 +129,10 @@ inline static void _win32_freeMemPage( void *ptr )
 #define PAGE_MEM_DEBUG_PATTERN  0x6A
 #endif //PAGE_MEM_DEBUG_PATTERN
 
+#ifndef PAGE_MEM_ACTIVE_DEBUG_PATTERN
+#define PAGE_MEM_ACTIVE_DEBUG_PATTERN 0x11
+#endif //PAGE_MEM_ACTIVE_DEBUG_PATTERN
+
 #define MEM_PAGE_MOD( bytes )   ( ( (bytes) + g_systemInfo.dwPageSize - 1 ) / g_systemInfo.dwPageSize )
 
 struct _memIntro
@@ -150,9 +154,14 @@ inline static void _win32_initHeap( void )
     LIST_CLEAR( g_privateMemory.root );
 }
 
+inline static size_t _getMetaSize( size_t objSize )
+{
+    return objSize + sizeof( _memIntro ) + sizeof( _memOutro );
+}
+
 inline static size_t _win32_getRealPageSize( size_t objSize )
 {
-    return ( MEM_PAGE_MOD( objSize + sizeof( _memIntro ) + sizeof( _memOutro ) ) * g_systemInfo.dwPageSize );
+    return ( MEM_PAGE_MOD( _getMetaSize( objSize ) ) * g_systemInfo.dwPageSize );
 }
 
 inline static void* _win32_allocMem( size_t memSize )
@@ -170,7 +179,12 @@ inline static void* _win32_allocMem( size_t memSize )
 #endif //PAGE_HEAP_ERROR_ON_LOWMEM
 
     // Fill memory with debug pattern
-    memset( mem, PAGE_MEM_DEBUG_PATTERN, pageRegionRequestSize );
+    {
+        size_t metaSize = _getMetaSize( memSize );
+
+        memset( mem, PAGE_MEM_ACTIVE_DEBUG_PATTERN, metaSize );
+        memset( outro + 1, PAGE_MEM_DEBUG_PATTERN, pageRegionRequestSize - metaSize );
+    }
 
     mem->checksum = 0xCAFEBABE;
     mem->objSize = memSize;
@@ -235,56 +249,74 @@ inline static void* _win32_reallocMem( void *ptr, size_t newSize )
         // Verify block contents.
         _win32_checkBlockIntegrity( valid_ptr );
 
-        // Reallocate to actually required page memory.
-        const size_t constructNewSize = _win32_getRealPageSize( newSize ); 
-        
-        bool reallocSuccess = _win32_reallocMemPage( page_ptr, constructNewSize );
+        // Get the meta-data of the old data.
+        _memIntro *old_intro = (_memIntro*)page_ptr;
 
-        // The reallocation may fail if the page nesting is too complicated.
-        // For this we must move to a completely new block of memory that is size'd appropriately.
-        if ( !reallocSuccess )
+        size_t oldObjSize = old_intro->objSize;
+
+        // Verify that our object size has changed at all
+        if ( newSize != oldObjSize )
         {
-            // Allocate a new page region of memory.
-            void *newMem = _win32_allocMem( constructNewSize );
+            // Reallocate to actually required page memory.
+            const size_t constructNewSize = _win32_getRealPageSize( newSize ); 
+            
+            bool reallocSuccess = _win32_reallocMemPage( page_ptr, constructNewSize );
 
-            // Only process this request if the NT kernel could fetch a new page for us.
-            if ( newMem != NULL )
+            // The reallocation may fail if the page nesting is too complicated.
+            // For this we must move to a completely new block of memory that is size'd appropriately.
+            if ( !reallocSuccess )
             {
-                // Get the meta-data of the old data.
-                _memIntro *old_intro = (_memIntro*)page_ptr;
+                // Allocate a new page region of memory.
+                void *newMem = _win32_allocMem( constructNewSize );
 
-                size_t oldDataSize = old_intro->objSize;
+                // Only process this request if the NT kernel could fetch a new page for us.
+                if ( newMem != NULL )
+                {
+                    // Copy the data contents to the new memory region.
+                    void *new_data = newMem;
 
-                // Copy the data contents to the new memory region.
-                void *new_data = newMem;
+                    out_ptr = new_data;
 
-                out_ptr = new_data;
+                    size_t validDataSize = std::min( newSize, oldObjSize );
 
-                size_t validDataSize = std::min( newSize, oldDataSize );
+                    memcpy( new_data, valid_ptr, validDataSize );
+                }
 
-                memcpy( new_data, valid_ptr, validDataSize );
+                // Deallocate the old memory.
+                _win32_freeMem( valid_ptr );
             }
+            else
+            {
+                out_ptr = valid_ptr;
 
-            // Deallocate the old memory.
-            _win32_freeMem( valid_ptr );
+                // Get new pointers to meta-data.
+                _memIntro *intro = old_intro;
+                _memOutro *outro = (_memOutro*)( (unsigned char*)valid_ptr + newSize );
+
+                // Rewrite block integrity
+                intro->objSize = newSize;
+                outro->checksum = 0xBABECAFE;
+
+                // If the object size has increased, write the active debug pattern at the new bytes.
+                if ( newSize > oldObjSize )
+                {
+                    memset( (char*)valid_ptr + oldObjSize,
+                        PAGE_MEM_ACTIVE_DEBUG_PATTERN,
+                        newSize - oldObjSize
+                    );
+                }
+
+                // Fill other memory with debug pattern (without killing user data)
+                memset( outro + 1,
+                    PAGE_MEM_DEBUG_PATTERN,
+                    constructNewSize - (sizeof(_memIntro) + sizeof(_memOutro) + newSize)
+                );
+            }
         }
         else
         {
+            // We do not change anything, so return old pointer.
             out_ptr = valid_ptr;
-
-            // Get new pointers to meta-data.
-            _memIntro *intro = (_memIntro*)valid_ptr - 1;
-            _memOutro *outro = (_memOutro*)( (unsigned char*)valid_ptr + newSize );
-
-            // Rewrite block integrity
-            intro->objSize = newSize;
-            outro->checksum = 0xBABECAFE;
-
-            // Fill other memory with debug pattern (without killing user data)
-            memset( outro + 1,
-                PAGE_MEM_DEBUG_PATTERN,
-                constructNewSize - (sizeof(_memIntro) + sizeof(_memOutro) + newSize)
-            );
         }
     }
     return out_ptr;

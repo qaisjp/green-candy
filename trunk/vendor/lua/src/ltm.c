@@ -52,6 +52,43 @@ void luaT_init (lua_State *L) {
   }
 }
 
+unsigned int luaT_getnumtypes( lua_State *L )
+{
+    UNUSED(L);
+    return NUMELMS( luaT_typenames );
+}
+
+int luaT_gettype( lua_State *L, unsigned int index )
+{
+    UNUSED(L);
+    
+    int theTypes[] =
+    {
+        LUA_TNIL,
+        LUA_TBOOLEAN,
+        LUA_TUSERDATA,
+        LUA_TNUMBER,
+        LUA_TSTRING,
+        LUA_TTABLE,
+        LUA_TFUNCTION,
+        LUA_TUSERDATA,
+        LUA_TCLASS,
+        LUA_TDISPATCH,
+        LUA_TTHREAD,
+        LUA_TPROTO,
+        LUA_TUPVAL
+    };
+
+    int iTypeNum = -1;
+
+    if ( index < NUMELMS(theTypes) )
+    {
+        iTypeNum = theTypes[ index ];
+    }
+
+    return iTypeNum;
+}
+
 
 /*
 ** function to be used with macro "fasttm": optimized for absence of

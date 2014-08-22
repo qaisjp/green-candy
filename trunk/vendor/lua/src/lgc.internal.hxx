@@ -10,12 +10,12 @@ struct globalStateGCEnv
 {
     lu_byte gcstate;  /* state of garbage collector */
     int sweepstrgc;  /* position of sweep in `strt' */
-    GCObject *rootgc;  /* list of all collectable objects */
-    GCObject **sweepgc;  /* position of sweep in `rootgc' */
+    gcObjList_t rootgc;  /* list of all collectable objects */
+    gcObjList_t::removable_iterator sweepgc;  /* position of sweep in `rootgc' */
     GrayObject *gray;  /* list of gray objects */
     GrayObject *grayagain;  /* list of objects to be traversed atomically */
     GrayObject *weak;  /* list of weak tables (to be cleared) */
-    GCObject *tmudata;  /* last element of list of userdata to be GC */
+    gcObjList_t tmudata;  /* elements waiting to call their TM_GC methods during GC */
     lua_Thread *GCthread; /* garbage collector runtime */
     lu_mem GCthreshold;
     lu_mem GCcollect; /* amount of memory to be collected until stop */
