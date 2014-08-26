@@ -328,6 +328,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lapi.config.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lapi.exec.c"
 				>
 			</File>
@@ -674,7 +678,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lpluginutil.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lstate.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lstate.lowlevel.hxx"
 				>
 			</File>
 			<File
@@ -691,6 +703,14 @@
 			</File>
 			<File
 				RelativePath="..\src\ltm.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\ltypesys.h"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lua.etc.h"
 				>
 			</File>
 			<File

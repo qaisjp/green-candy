@@ -26,7 +26,6 @@ LUAI_FUNC int luaC_getstate( lua_State *L );
 LUAI_FUNC void luaC_setthreshold( lua_State *L, lu_mem threshold );
 LUAI_FUNC lu_byte luaC_white( global_State *g );
 LUAI_FUNC void luaC_markobject( global_State *g, GCObject *o );
-LUAI_FUNC size_t luaC_separatefinalization( lua_State *L, bool all );
 LUAI_FUNC void luaC_callGCTM (lua_State *L);
 LUAI_FUNC void luaC_freeall (lua_State *L);
 LUAI_FUNC void luaC_step (lua_State *L);
@@ -50,7 +49,7 @@ LUAI_FUNC void luaC_initthread( global_State *g );
 LUAI_FUNC void luaC_shutdown( global_State *g );
 
 // Module initialization.
-LUAI_FUNC void luaC_moduleinit( void );
-LUAI_FUNC void luaC_moduleshutdown( void );
+LUAI_FUNC void luaC_moduleinit( lua_config *cfg );
+LUAI_FUNC void luaC_moduleshutdown( lua_config *cfg );
 
 #endif

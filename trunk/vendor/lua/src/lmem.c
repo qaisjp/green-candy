@@ -7,6 +7,7 @@
 
 #include "luacore.h"
 
+#include "lapi.h"
 #include "ldebug.h"
 #include "ldo.h"
 #include "lmem.h"
@@ -70,10 +71,19 @@ void *luaM_toobig (lua_State *L) {
 /*
 ** generic allocation routine.
 */
+#include "lstate.lowlevel.hxx"
+
 void *luaM_realloc__(global_State *g, void *block, size_t osize, size_t nsize)
 {
     lua_assert((osize == 0) == (block == NULL));
-    block = (*g->frealloc)(g->ud, block, osize, nsize);
+
+    // Get the native allocation data.
+    GlobalStateAllocPluginData *allocData = (GlobalStateAllocPluginData*)g->config->allocData;
+
+    if ( !allocData )
+        return NULL;
+
+    block = allocData->_memAlloc.ReAlloc( block, osize, nsize );
 
     if (block == NULL && nsize > 0)
         return NULL;
@@ -96,12 +106,12 @@ void *luaM_realloc_ (lua_State *L, void *block, size_t osize, size_t nsize)
 }
 
 // Module initialization.
-void luaM_init( void )
+void luaM_init( lua_config *cfg )
 {
     return;
 }
 
-void luaM_shutdown( void )
+void luaM_shutdown( lua_config *cfg )
 {
     return;
 }

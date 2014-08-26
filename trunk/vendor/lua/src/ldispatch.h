@@ -19,7 +19,11 @@ LUAI_FUNC ClassMethodDispatch*  luaQ_newclassmethodenv( lua_State *L, Class *j, 
 LUAI_FUNC void luaQ_free( lua_State *L, Dispatch *q );
 
 // Module initialization.
-LUAI_FUNC void luaQ_init( void );
-LUAI_FUNC void luaQ_shutdown( void );
+LUAI_FUNC void luaQ_init( lua_config *cfg );
+LUAI_FUNC void luaQ_shutdown( lua_config *cfg );
+
+// Runtime initialization.
+LUAI_FUNC void luaQ_runtimeinit( global_State *g );
+LUAI_FUNC void luaQ_runtimeshutdown( global_State *g );
 
 #endif //_LUA_DISPATCHER_

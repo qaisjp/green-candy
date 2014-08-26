@@ -14,9 +14,30 @@
 #include "lvm.h"
 #include "ldebug.h"
 
-extern globalStatePluginOffset_t _classGlobalStatePlugin;
+#include "lpluginutil.hxx"
 
-typedef StaticPluginClassFactory <Class> classObjFactory_t;
+struct namespaceClassTypeInfo
+{
+    inline void Initialize( lua_config *cfg )
+    {
+        this->classTypeInfo = cfg->typeSys.RegisterStructType <Class> ( "class" );
+    }
+
+    inline void Shutdown( lua_config *cfg )
+    {
+        if ( LuaTypeSystem::typeInfoBase *typeInfo = this->classTypeInfo )
+        {
+            cfg->typeSys.DeleteType( typeInfo );
+        }
+    }
+
+    // Types used by the class system.
+    LuaTypeSystem::typeInfoBase *classTypeInfo;
+};
+
+typedef PluginDependantStructRegister <namespaceClassTypeInfo, namespaceFactory_t> classTypeInfoPlugin_t;
+
+extern classTypeInfoPlugin_t classTypeInfoPlugin;
 
 struct globalStateClassEnvPlugin
 {
@@ -25,13 +46,20 @@ struct globalStateClassEnvPlugin
         this->superCached = NULL;
     }
 
-    classObjFactory_t factory;
     TString *superCached;   // 'super' string
 };
 
+typedef PluginConnectingBridge
+    <globalStateClassEnvPlugin,
+        globalStateStructFactoryMeta <globalStateClassEnvPlugin, globalStateFactory_t, lua_config>,
+    namespaceFactory_t>
+        classEnvConnectingBridge_t;
+
+extern classEnvConnectingBridge_t classEnvConnectingBridge;
+
 inline globalStateClassEnvPlugin* GetGlobalClassEnv( global_State *g )
 {
-    return globalStateFactory_t::RESOLVE_STRUCT <globalStateClassEnvPlugin> ( g, _classGlobalStatePlugin );
+    return classEnvConnectingBridge.GetPluginStruct( g->config, g );
 }
 
 inline TString* GetSuperString( lua_State *L )

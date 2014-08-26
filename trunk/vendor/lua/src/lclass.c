@@ -15,13 +15,11 @@
 
 #include "lclass.hxx"
 
-// Class maintenance plugin inside of the global_State.
-globalStatePluginOffset_t _classGlobalStatePlugin = 0;
+// Class type info plugin.
+classTypeInfoPlugin_t classTypeInfoPlugin( namespaceFactory, namespaceFactory_t::ANONYMOUS_PLUGIN_ID );
 
-lu_mem Class::GetTypeSize( global_State *g ) const
-{
-    return (lu_mem)GetGlobalClassEnv( g )->factory.GetClassSize();
-}
+// Class maintenance plugin inside of the global_State.
+classEnvConnectingBridge_t classEnvConnectingBridge( namespaceFactory );
 
 class ClassMethodRegister : public VirtualClassEntry
 {
@@ -1921,11 +1919,13 @@ private:
 
 Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 {
-    // Attempt to get the global class environment.
-    globalStateClassEnvPlugin *globalClassEnv = GetGlobalClassEnv( G(L) );
+    lua_config *cfg = G(L)->config;
+
+    // Attempt to get the namespace class type info interface.
+    namespaceClassTypeInfo *typeInfo = classTypeInfoPlugin.GetPluginStruct( cfg );
 
     // If we cannot, there is no point in constructing classes.
-    if ( !globalClassEnv )
+    if ( !typeInfo )
         return NULL;
 
     Closure *constructor = clvalue( L->top - 1 );
@@ -1937,8 +1937,8 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     // Lock the environment
     constructor->isEnvLocked = true;
 
-    // Allocate the class plugin object.
-    Class *c = globalClassEnv->factory.Construct( L->defaultAlloc );
+    // Allocate the class type object.
+    Class *c = lua_new <Class> ( L, typeInfo->classTypeInfo );
 
     // Link it into the GC system
     luaC_linktmu( L, c, LUA_TCLASS );
@@ -2061,14 +2061,8 @@ void luaJ_free( lua_State *L, Class *j )
         luaM_realloc_( j->hostState, j->trans, j->transCount * sizeof(Class::trans_t), 0 );
     }
 
-    // Get the global class environment.
-    globalStateClassEnvPlugin *globalClassEnv = GetGlobalClassEnv( G(L) );
-
-    if ( globalClassEnv )
-    {
-        // Destroy the class plugin object.
-        globalClassEnv->factory.Destroy( L->defaultAlloc, j );
-    }
+    // Delete the class again.
+    lua_delete( L, j );
 }
 
 Class::~Class()
@@ -2141,13 +2135,12 @@ void luaJ_basicextend( lua_State *L )
 }
 
 // Module initialization.
-void luaJ_init( void )
+void luaJ_init( lua_config *cfg )
 {
-    _classGlobalStatePlugin =
-        globalStateFactory.RegisterStructPlugin <globalStateClassEnvPlugin> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
+    return;
 }
 
-void luaJ_shutdown( void )
+void luaJ_shutdown( lua_config *cfg )
 {
     return;
 }
