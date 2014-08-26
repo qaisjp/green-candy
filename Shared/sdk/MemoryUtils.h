@@ -142,75 +142,44 @@ private:
     char memData[ memorySize ];
 };
 
-// Static plugin system that constructs classes that can be extended at runtime.
-// This one is inspired by the RenderWare plugin system.
-// This container is NOT MULTI-THREAD SAFE.
-// All operations are expected to be ATOMIC.
-template <typename classType>
-struct StaticPluginClassFactory
+// Class used to register anonymous structs that can be placed on top of a C++ type.
+template <typename abstractionType>
+struct AnonymousPluginStructRegistry
 {
-    static const unsigned int ANONYMOUS_PLUGIN_ID = 0xFFFFFFFF;
-
-    unsigned int aliveClasses;
-
-    inline StaticPluginClassFactory( void )
+    inline AnonymousPluginStructRegistry( void )
     {
-        aliveClasses = 0;
-        preferredAlignment = (pluginOffset_t)4;
-        classSize = sizeof( classType );
+        // Reset to zero as we have no plugins allocated.
+        this->pluginAllocSize = 0;
+        this->preferredAlignment = (pluginOffset_t)4;
     }
 
-    inline ~StaticPluginClassFactory( void )
+    inline ~AnonymousPluginStructRegistry( void )
     {
+        // TODO: allow custom memory allocators.
         return;
     }
 
     // Number type used to store the plugin offset.
     typedef ptrdiff_t pluginOffset_t;
 
-    static const pluginOffset_t INVALID_PLUGIN_OFFSET = (pluginOffset_t)0;  // zero is always invalid.
-
-    AINLINE static bool IsOffsetValid( pluginOffset_t offset )
-    {
-        return ( offset >= sizeof( classType ) );
-    }
-
     pluginOffset_t preferredAlignment;
-
-    template <typename pluginStructType>
-    AINLINE static pluginStructType* RESOLVE_STRUCT( classType *object, pluginOffset_t offset )
-    {
-        if ( IsOffsetValid( offset ) == false )
-            return NULL;
-
-        return (pluginStructType*)( (char*)object + offset );
-    }
-
-    template <typename pluginStructType>
-    AINLINE static const pluginStructType* RESOLVE_STRUCT( const classType *object, pluginOffset_t offset )
-    {
-        if ( IsOffsetValid( offset ) == false )
-            return NULL;
-
-        return (const pluginStructType*)( (char*)object + offset );
-    }
 
     // Virtual interface used to describe plugin classes.
     // The construction process must be immutable across the runtime.
     struct pluginInterface
     {
-        virtual bool OnPluginConstruct( classType *object, pluginOffset_t pluginOffset, unsigned int pluginId )
+        virtual bool OnPluginConstruct( abstractionType *object, pluginOffset_t pluginOffset, unsigned int pluginId )
         {
             // By default, construction of plugins should succeed.
             return true;
         }
 
-        virtual void OnPluginDestruct( classType *object, pluginOffset_t pluginOffset, unsigned int pluginId )
+        virtual void OnPluginDestruct( abstractionType *object, pluginOffset_t pluginOffset, unsigned int pluginId )
         {
             return;
         }
 
-        virtual bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, unsigned int pluginId )
+        virtual bool OnPluginAssign( abstractionType *dstObject, const abstractionType *srcObject, pluginOffset_t pluginOffset, unsigned int pluginId )
         {
             // Assignment of data to another plugin struct is optional.
             return false;
@@ -232,8 +201,8 @@ struct StaticPluginClassFactory
 
     registeredPlugins_t regPlugins;
 
-    // Size of the plugin currently.
-    size_t classSize;
+    // Size of the plugins combined, currently.
+    size_t pluginAllocSize;
 
     // Function used to register a new plugin struct into the class.
     inline pluginOffset_t RegisterPlugin( size_t pluginSize, unsigned int pluginId, pluginInterface *plugInterface )
@@ -242,13 +211,10 @@ struct StaticPluginClassFactory
         if ( pluginSize == 0 || plugInterface == NULL )
             return 0;
 
-        // We can only register plugins if we have no constructed objects yet.
-        assert( aliveClasses == 0 );
-
         // Determine the plugin offset that should be used for allocation.
         pluginOffset_t useOffset = 0;
         {
-            useOffset = classSize;
+            useOffset = this->pluginAllocSize;
 
             // Align us to the preferred size.
             useOffset = ALIGN( useOffset, preferredAlignment, preferredAlignment );
@@ -265,13 +231,232 @@ struct StaticPluginClassFactory
 
         // Update the overall class size.
         // It is determined by the end of this plugin struct.
-        classSize = useOffset + pluginSize;
+        this->pluginAllocSize = useOffset + pluginSize;
         return useOffset;
     }
 
     inline void UnregisterPlugin( pluginOffset_t pluginOffset )
     {
         // TODO.
+    }
+
+    inline bool ConstructPluginBlock( abstractionType *pluginObj )
+    {
+        // Construct all plugins.
+        bool pluginConstructionSuccessful = true;
+
+        unsigned int constrPluginIndex = 0;
+
+        try
+        {
+            while ( constrPluginIndex < this->regPlugins.size() )
+            {
+                registered_plugin& regPluginInfo = this->regPlugins.at( constrPluginIndex );
+
+                bool success =
+                    regPluginInfo.descriptor->OnPluginConstruct(
+                        pluginObj,
+                        regPluginInfo.pluginOffset,
+                        regPluginInfo.pluginId
+                    );
+
+                if ( !success )
+                {
+                    pluginConstructionSuccessful = false;
+                    break;
+                }
+                else
+                {
+                    // We succeeded, so continue.
+                    constrPluginIndex++;
+                }
+            }
+        }
+        catch( ... )
+        {
+            // There was an exception while trying to construct a plugin.
+            // We do not let it pass and terminate here.
+            pluginConstructionSuccessful = false;
+        }
+
+        if ( !pluginConstructionSuccessful )
+        {
+            // The plugin failed to construct, so destroy all plugins that
+            // constructed up until that point.
+            unsigned int n = constrPluginIndex;
+
+            while ( n != 0 )
+            {
+                n--;
+
+                registered_plugin& constructed_plugin = this->regPlugins.at( n );
+
+                // Destroy that plugin again.
+                constructed_plugin.descriptor->OnPluginDestruct(
+                    pluginObj,
+                    constructed_plugin.pluginOffset,
+                    constructed_plugin.pluginId
+                );
+            }
+        }
+
+        return pluginConstructionSuccessful;
+    }
+
+    inline bool AssignPluginBlock( abstractionType *dstPluginObj, const abstractionType *srcPluginObj )
+    {
+        // Call all assignment operators.
+        bool cloneSuccess = true;
+
+        try
+        {
+            for ( unsigned int n = 0; n < this->regPlugins.size(); n++ )
+            {
+                registered_plugin& regPluginInfo = this->regPlugins.at( n );
+
+                bool assignSuccess = regPluginInfo.descriptor->OnPluginAssign(
+                    dstPluginObj, srcPluginObj,
+                    regPluginInfo.pluginOffset,
+                    regPluginInfo.pluginId
+                );
+
+                if ( !assignSuccess )
+                {
+                    cloneSuccess = false;
+                    break;
+                }
+            }
+        }
+        catch( ... )
+        {
+            // There was an exception while cloning plugin data.
+            // We do not let it pass and terminate here.
+            cloneSuccess = false;
+        }
+
+        return cloneSuccess;
+    }
+
+    inline void DestroyPluginBlock( abstractionType *pluginObj )
+    {
+        // Call destructors of all registered plugins.
+        try
+        {
+            unsigned int n = this->regPlugins.size();
+
+            while ( n != 0 )
+            {
+                n--;
+
+                registered_plugin& regPlugInfo = this->regPlugins.at( n );
+
+                regPlugInfo.descriptor->OnPluginDestruct(
+                    pluginObj,
+                    regPlugInfo.pluginOffset,
+                    regPlugInfo.pluginId
+                );
+            }
+        }
+        catch( ... )
+        {
+            // There was an exception while destroying a plugin.
+            // This should never happen, so throw a breakpoint.
+            assert( 0 );
+        }
+    }
+};
+
+// Static plugin system that constructs classes that can be extended at runtime.
+// This one is inspired by the RenderWare plugin system.
+// This container is NOT MULTI-THREAD SAFE.
+// All operations are expected to be ATOMIC.
+template <typename classType>
+struct StaticPluginClassFactory
+{
+    typedef classType hostType_t;
+
+    static const unsigned int ANONYMOUS_PLUGIN_ID = 0xFFFFFFFF;
+
+    unsigned int aliveClasses;
+
+    inline StaticPluginClassFactory( void )
+    {
+        aliveClasses = 0;
+    }
+
+    inline ~StaticPluginClassFactory( void )
+    {
+        assert( aliveClasses == 0 );
+    }
+
+    typedef AnonymousPluginStructRegistry <classType> structRegistry_t;
+
+    structRegistry_t structRegistry;
+
+    // Localize certain plugin registry types.
+    typedef typename structRegistry_t::pluginOffset_t pluginOffset_t;
+    typedef typename structRegistry_t::pluginInterface pluginInterface;
+
+    static const pluginOffset_t INVALID_PLUGIN_OFFSET = (pluginOffset_t)-1;  // zero is always invalid.
+
+    AINLINE static bool IsOffsetValid( pluginOffset_t offset )
+    {
+        return ( offset != INVALID_PLUGIN_OFFSET );
+    }
+
+    template <typename pluginStructType>
+    AINLINE static pluginStructType* RESOLVE_STRUCT( classType *object, pluginOffset_t offset )
+    {
+        if ( IsOffsetValid( offset ) == false )
+            return NULL;
+
+        return (pluginStructType*)( (char*)object + sizeof( classType ) + offset );
+    }
+
+    template <typename pluginStructType>
+    AINLINE static const pluginStructType* RESOLVE_STRUCT( const classType *object, pluginOffset_t offset )
+    {
+        if ( IsOffsetValid( offset ) == false )
+            return NULL;
+
+        return (const pluginStructType*)( (char*)object + sizeof( classType ) + offset );
+    }
+
+    // Function used to register a new plugin struct into the class.
+    inline pluginOffset_t RegisterPlugin( size_t pluginSize, unsigned int pluginId, pluginInterface *plugInterface )
+    {
+        assert( this->aliveClasses == 0 );
+
+        return structRegistry.RegisterPlugin( pluginSize, pluginId, plugInterface );
+    }
+
+    inline void UnregisterPlugin( pluginOffset_t pluginOffset )
+    {
+        assert( this->aliveClasses == 0 );
+
+        structRegistry.UnregisterPlugin( pluginOffset );
+    }
+
+    template <typename interfaceType>
+    inline pluginOffset_t RegisterCommonPluginInterface( interfaceType *plugInterface, size_t structSize, unsigned int pluginId )
+    {
+        pluginOffset_t pluginOffset = 0;
+
+        if ( plugInterface )
+        {
+            // Register our plugin!
+            pluginOffset = RegisterPlugin(
+                structSize, pluginId,
+                plugInterface
+            );
+
+            // Delete our interface again if the plugin offset is invalid.
+            if ( !IsOffsetValid( pluginOffset ) )
+            {
+                delete plugInterface;
+            }
+        }
+        return pluginOffset;
     }
 
     // Helper functions used to create common plugin templates.
@@ -312,39 +497,75 @@ struct StaticPluginClassFactory
             }
         };
 
-        pluginOffset_t pluginOffset = 0;
+        // Create the interface that should handle our plugin.
+        structPluginInterface *plugInterface = new structPluginInterface();
+
+        return RegisterCommonPluginInterface( plugInterface, sizeof( structType ), pluginId );
+    }
+
+    template <typename structType>
+    inline pluginOffset_t RegisterDependantStructPlugin( unsigned int pluginId, size_t structSize = sizeof(structType) )
+    {
+        struct structPluginInterface : pluginInterface
+        {
+            bool OnPluginConstruct( classType *obj, pluginOffset_t pluginOffset, unsigned int pluginId )
+            {
+                void *structMem = RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+                if ( structMem == NULL )
+                    return false;
+
+                // Construct the struct!
+                structType *theStruct = new (structMem) structType;
+
+                if ( theStruct )
+                {
+                    // Initialize the manager.
+                    theStruct->Initialize( obj );
+                }
+
+                return ( theStruct != NULL );
+            }
+
+            void OnPluginDestruct( classType *obj, pluginOffset_t pluginOffset, unsigned int pluginId )
+            {
+                structType *theStruct = RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+                // Deinitialize the manager.
+                theStruct->Shutdown( obj );
+
+                // Destruct the struct!
+                theStruct->~structType();
+            }
+
+            bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, unsigned int pluginId )
+            {
+                // To an assignment operation.
+                structType *dstStruct = RESOLVE_STRUCT <structType> ( dstObject, pluginOffset );
+                const structType *srcStruct = RESOLVE_STRUCT <structType> ( srcObject, pluginOffset );
+
+                *dstStruct = *srcStruct;
+                return true;
+            }
+        };
 
         // Create the interface that should handle our plugin.
         structPluginInterface *plugInterface = new structPluginInterface();
 
-        if ( plugInterface )
-        {
-            // Register our plugin!
-            pluginOffset = RegisterPlugin(
-                sizeof( structType ), pluginId,
-                plugInterface
-            );
-
-            // Delete our interface again if the plugin offset is invalid.
-            if ( !IsOffsetValid( pluginOffset ) )
-            {
-                delete plugInterface;
-            }
-        }
-        return pluginOffset;
+        return RegisterCommonPluginInterface( plugInterface, structSize, pluginId );
     }
 
     inline size_t GetClassSize( void ) const
     {
-        return this->classSize;
+        return ( sizeof( classType ) + this->structRegistry.pluginAllocSize );
     }
 
-    template <typename allocatorType>
-    inline classType* Construct( allocatorType& memAllocator )
+    template <typename allocatorType, typename constructorType>
+    inline classType* ConstructTemplate( allocatorType& memAllocator, constructorType constructor )
     {
         // Attempt to allocate the necessary memory.
         const size_t baseClassSize = sizeof( classType );
-        const size_t wholeClassSize = this->classSize;
+        const size_t wholeClassSize = this->GetClassSize();
 
         void *classMem = memAllocator.Allocate( wholeClassSize );
 
@@ -357,7 +578,7 @@ struct StaticPluginClassFactory
 
             try
             {
-                intermediateClassObject = new (classMem) classType;
+                intermediateClassObject = constructor.Construct( classMem );
             }
             catch( ... )
             {
@@ -367,42 +588,7 @@ struct StaticPluginClassFactory
 
             if ( intermediateClassObject )
             {
-                // Construct all plugins.
-                bool pluginConstructionSuccessful = true;
-
-                unsigned int constrPluginIndex = 0;
-
-                try
-                {
-                    while ( constrPluginIndex < this->regPlugins.size() )
-                    {
-                        registered_plugin& regPluginInfo = this->regPlugins.at( constrPluginIndex );
-
-                        bool success =
-                            regPluginInfo.descriptor->OnPluginConstruct(
-                                intermediateClassObject,
-                                regPluginInfo.pluginOffset,
-                                regPluginInfo.pluginId
-                            );
-
-                        if ( !success )
-                        {
-                            pluginConstructionSuccessful = false;
-                            break;
-                        }
-                        else
-                        {
-                            // We succeeded, so continue.
-                            constrPluginIndex++;
-                        }
-                    }
-                }
-                catch( ... )
-                {
-                    // There was an exception while trying to construct a plugin.
-                    // We do not let it pass and terminate here.
-                    pluginConstructionSuccessful = false;
-                }
+                bool pluginConstructionSuccessful = structRegistry.ConstructPluginBlock( intermediateClassObject );
 
                 if ( pluginConstructionSuccessful )
                 {
@@ -412,23 +598,8 @@ struct StaticPluginClassFactory
                 }
                 else
                 {
-                    // The plugin failed to construct, so destroy all plugins that
-                    // constructed up until that point.
-                    unsigned int n = constrPluginIndex;
-
-                    while ( n != 0 )
-                    {
-                        n--;
-
-                        registered_plugin& constructed_plugin = this->regPlugins.at( n );
-
-                        // Destroy that plugin again.
-                        constructed_plugin.descriptor->OnPluginDestruct(
-                            intermediateClassObject,
-                            constructed_plugin.pluginOffset,
-                            constructed_plugin.pluginId
-                        );
-                    }
+                    // Else we cannot keep the intermediate class object anymore.
+                    intermediateClassObject->~classType();
                 }
             }
         }
@@ -446,6 +617,22 @@ struct StaticPluginClassFactory
         return resultObject;
     }
 
+    struct basicClassConstructor
+    {
+        inline classType* Construct( void *mem )
+        {
+            return new (mem) classType;
+        }
+    };
+
+    template <typename allocatorType>
+    inline classType* Construct( allocatorType& memAllocator )
+    {
+        basicClassConstructor constructor;
+
+        return ConstructTemplate( memAllocator, constructor );
+    }
+
     template <typename allocatorType>
     inline classType* Clone( allocatorType& memAllocator, const classType *srcObject )
     {
@@ -456,34 +643,7 @@ struct StaticPluginClassFactory
 
             if ( dstObject )
             {
-                // Call all assignment operators.
-                bool cloneSuccess = true;
-
-                try
-                {
-                    for ( unsigned int n = 0; n < this->regPlugins.size(); n++ )
-                    {
-                        registered_plugin& regPluginInfo = this->regPlugins.at( n );
-
-                        bool assignSuccess = regPluginInfo.descriptor->OnPluginAssign(
-                            dstObject, srcObject,
-                            regPluginInfo.pluginOffset,
-                            regPluginInfo.pluginId
-                        );
-
-                        if ( !assignSuccess )
-                        {
-                            cloneSuccess = false;
-                            break;
-                        }
-                    }
-                }
-                catch( ... )
-                {
-                    // There was an exception while cloning plugin data.
-                    // We do not let it pass and terminate here.
-                    cloneSuccess = false;
-                }
+                bool cloneSuccess = structRegistry.AssignPluginBlock( dstObject, srcObject );
 
                 if ( cloneSuccess )
                 {
@@ -509,30 +669,8 @@ struct StaticPluginClassFactory
             return;
 
         {
-            // Call destructors of all registered plugins.
-            try
-            {
-                unsigned int n = this->regPlugins.size();
-
-                while ( n != 0 )
-                {
-                    n--;
-
-                    registered_plugin& regPlugInfo = this->regPlugins.at( n );
-
-                    regPlugInfo.descriptor->OnPluginDestruct(
-                        classObject,
-                        regPlugInfo.pluginOffset,
-                        regPlugInfo.pluginId
-                    );
-                }
-            }
-            catch( ... )
-            {
-                // There was an exception while destroying a plugin.
-                // This should never happen, so throw a breakpoint.
-                assert( 0 );
-            }
+            // Destroy plugin data first.
+            structRegistry.DestroyPluginBlock( classObject );
 
             try
             {
@@ -553,7 +691,7 @@ struct StaticPluginClassFactory
         // Free our memory.
         void *classMem = classObject;
 
-        memAllocator.Free( classMem, this->classSize );
+        memAllocator.Free( classMem, this->GetClassSize() );
     }
 
     template <typename allocatorType>
@@ -575,6 +713,12 @@ struct StaticPluginClassFactory
         inline classType* Construct( void )
         {
             return pluginRegistry->Construct( memAllocator );
+        }
+
+        template <typename constructorType>
+        inline classType* ConstructTemplate( constructorType& constructor )
+        {
+            return pluginRegistry->ConstructTemplate( memAllocator, constructor );
         }
 
         inline classType* Clone( const classType *srcObject )

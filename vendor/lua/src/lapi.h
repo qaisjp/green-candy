@@ -23,8 +23,12 @@
 
 LUAI_FUNC void luaA_pushobject (lua_State *L, const TValue *o);
 
+// Library lifetime management.
+LUAI_FUNC void lua_reflibrary( void );
+LUAI_FUNC void lua_unreflibrary( void );
+
 // Module initialization.
-LUAI_FUNC void luaapi_init( void );
-LUAI_FUNC void luaapi_shutdown( void );
+LUAI_FUNC void luaapi_init( lua_config *cfg );
+LUAI_FUNC void luaapi_shutdown( lua_config *cfg );
 
 #endif

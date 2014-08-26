@@ -32,6 +32,21 @@ struct SingleLinkedList
         list.root = myRoot;
     }
 
+    inline void SuspendTo( SingleLinkedList& list )
+    {
+        node *suspensionPoint = list.GetTail();
+
+        if ( suspensionPoint )
+        {
+            suspensionPoint->next = this->root;
+        }
+        else
+        {
+            list.root = this->root;
+        }
+        this->root = NULL;
+    }
+
     static inline void InsertAfter( node *listNode, node *theNode )
     {
         theNode->next = listNode->next;
@@ -52,6 +67,21 @@ struct SingleLinkedList
     inline node* GetFirst( void )
     {
         return root;
+    }
+
+    inline node* GetTail( void )
+    {
+        node *tail = this->root;
+
+        if ( tail )
+        {
+            while ( node *nextNode = tail->next )
+            {
+                tail = nextNode;
+            }
+        }
+
+        return tail;
     }
 
     inline bool IsEmpty( void ) const

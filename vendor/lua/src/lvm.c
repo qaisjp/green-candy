@@ -813,12 +813,12 @@ reentry:  /* entry point */
 }
 
 // Module initialization.
-void luaV_init( void )
+void luaV_init( lua_config *cfg )
 {
     return;
 }
 
-void luaV_shutdown( void )
+void luaV_shutdown( lua_config *cfg )
 {
     return;
 }

@@ -10,8 +10,10 @@
 #include "lfunc.hxx"
 
 // Global state plugin definitions.
-globalStatePluginOffset_t _closureEnvPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
+closureEnvConnectingBridge_t closureEnvConnectingBridge( namespaceFactory );
 
+// Closure type information plugin.
+closureTypeInfo_t closureTypeInfo( namespaceFactory );
 
 TValue* luaF_getcurraccessor( lua_State *L )
 {
@@ -29,23 +31,31 @@ TValue* luaF_getcurraccessor( lua_State *L )
 
 CClosureMethodRedirect* luaF_newCmethodredirect( lua_State *L, GCObject *e, Closure *redirect, Class *j )
 {
-    CClosureMethodRedirect *c = lua_new <CClosureMethodRedirect> ( L );
+    global_State *g = G(L);
 
-    if ( c )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link(L, c, LUA_TFUNCTION);
+        CClosureMethodRedirect *c = lua_new <CClosureMethodRedirect> ( L, typeInfo->cclosureMethodRedirectTypeInfo );
 
-        c->genFlags = 0;
-        c->isC = true;
-        c->isEnvLocked = true;
-        c->env = e;
-        c->nupvalues = 0;
-        c->accessor = gcvalue( luaF_getcurraccessor( L ) );
-        c->redirect = redirect;
-        c->m_class = j;
+        if ( c )
+        {
+            luaC_link(L, c, LUA_TFUNCTION);
+
+            c->genFlags = 0;
+            c->isC = true;
+            c->isEnvLocked = true;
+            c->env = e;
+            c->nupvalues = 0;
+            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+            c->redirect = redirect;
+            c->m_class = j;
+        }
+
+        return c;
     }
-
-    return c;
+    return NULL;
 }
 
 TValue* CClosureMethodRedirect::ReadUpValue( unsigned char index )
@@ -55,23 +65,31 @@ TValue* CClosureMethodRedirect::ReadUpValue( unsigned char index )
 
 CClosureMethodRedirectSuper* luaF_newCmethodredirectsuper( lua_State *L, GCObject *e, Closure *redirect, Class *j, Closure *super )
 {
-    CClosureMethodRedirectSuper *c = lua_new <CClosureMethodRedirectSuper> ( L );
+    global_State *g = G(L);
 
-    if ( c )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link(L, c, LUA_TFUNCTION);
+        CClosureMethodRedirectSuper *c = lua_new <CClosureMethodRedirectSuper> ( L, typeInfo->cclosureMethodRedirectSuperTypeInfo );
 
-        c->genFlags = 0;
-        c->isC = true;
-        c->isEnvLocked = true;
-        c->env = e;
-        c->nupvalues = 0;
-        c->accessor = gcvalue( luaF_getcurraccessor( L ) );
-        c->redirect = redirect;
-        c->m_class = j;
-        c->super = super;
+        if ( c )
+        {
+            luaC_link(L, c, LUA_TFUNCTION);
+
+            c->genFlags = 0;
+            c->isC = true;
+            c->isEnvLocked = true;
+            c->env = e;
+            c->nupvalues = 0;
+            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+            c->redirect = redirect;
+            c->m_class = j;
+            c->super = super;
+        }
+        return c;
     }
-    return c;
+    return NULL;
 }
 
 TValue* CClosureMethodRedirectSuper::ReadUpValue( unsigned char index )
@@ -81,25 +99,31 @@ TValue* CClosureMethodRedirectSuper::ReadUpValue( unsigned char index )
 
 CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
 {
-    CClosureBasic *c = lua_new <CClosureBasic> ( L, sizeCclosure( nelems ) );
+    global_State *g = G(L);
 
-    if ( c )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link(L, c, LUA_TFUNCTION);
+        cclosureSharedConstructionParams params;
+        params.nelems = nelems;
 
-        c->genFlags = 0;
-        c->isC = true;
-        c->isEnvLocked = false;
-        c->env = e;
-        c->nupvalues = cast_byte(nelems);
-        c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+        CClosureBasic *c = lua_new <CClosureBasic> ( L, typeInfo->cclosureBasicTypeInfo, &params );
+
+        if ( c )
+        {
+            luaC_link(L, c, LUA_TFUNCTION);
+
+            c->genFlags = 0;
+            c->isC = true;
+            c->isEnvLocked = false;
+            c->env = e;
+            c->nupvalues = cast_byte(nelems);
+            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+        }
+        return c;
     }
-    return c;
-}
-
-lu_mem CClosureBasic::GetTypeSize( global_State *g ) const
-{
-    return (lu_mem)sizeCclosure( this->nupvalues );
+    return NULL;
 }
 
 TValue* CClosureBasic::ReadUpValue( unsigned char index )
@@ -112,26 +136,32 @@ TValue* CClosureBasic::ReadUpValue( unsigned char index )
 
 CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j )
 {
-    CClosureMethod *c = lua_new <CClosureMethod> ( L, sizeCmethod( nelems ) );
-    
-    if ( c )
+    global_State *g = G(L);
+
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link( L, c, LUA_TFUNCTION );
+        cclosureSharedConstructionParams params;
+        params.nelems = nelems;
 
-        c->genFlags = 0;
-        c->isC = true;
-        c->isEnvLocked = true;
-        c->env = e;
-        c->nupvalues = cast_byte(nelems);
-        c->accessor = gcvalue( luaF_getcurraccessor( L ) );
-        c->m_class = j;
+        CClosureMethod *c = lua_new <CClosureMethod> ( L, typeInfo->cclosureMethodTypeInfo, &params );
+        
+        if ( c )
+        {
+            luaC_link( L, c, LUA_TFUNCTION );
+
+            c->genFlags = 0;
+            c->isC = true;
+            c->isEnvLocked = true;
+            c->env = e;
+            c->nupvalues = cast_byte(nelems);
+            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+            c->m_class = j;
+        }
+        return c;
     }
-    return c;
-}
-
-lu_mem CClosureMethod::GetTypeSize( global_State *g ) const
-{
-    return (lu_mem)sizeCmethod( this->nupvalues );
+    return NULL;
 }
 
 TValue* CClosureMethod::ReadUpValue( unsigned char index )
@@ -144,27 +174,33 @@ TValue* CClosureMethod::ReadUpValue( unsigned char index )
 
 CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e, Class *j, int trans )
 {
-    CClosureMethodTrans *c = lua_new <CClosureMethodTrans> ( L, sizeCmethodt( nelems ) );
+    global_State *g = G(L);
 
-    if ( c )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link( L, c, LUA_TFUNCTION );
+        cclosureSharedConstructionParams params;
+        params.nelems = nelems;
 
-        c->genFlags = 0;
-        c->isC = true;
-        c->isEnvLocked = true;
-        c->env = e;
-        c->nupvalues = cast_byte(nelems);
-        c->accessor = gcvalue( luaF_getcurraccessor( L ) );
-        c->m_class = j;
-        c->trans = trans;
+        CClosureMethodTrans *c = lua_new <CClosureMethodTrans> ( L, typeInfo->cclosureMethodTransTypeInfo, &params );
+
+        if ( c )
+        {
+            luaC_link( L, c, LUA_TFUNCTION );
+
+            c->genFlags = 0;
+            c->isC = true;
+            c->isEnvLocked = true;
+            c->env = e;
+            c->nupvalues = cast_byte(nelems);
+            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
+            c->m_class = j;
+            c->trans = trans;
+        }
+        return c;
     }
-    return c;
-}
-
-lu_mem CClosureMethodTrans::GetTypeSize( global_State *g ) const
-{
-    return sizeCmethodt( this->nupvalues );
+    return NULL;
 }
 
 TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
@@ -177,29 +213,35 @@ TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
 
 LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)
 {
-    LClosure *c = lua_new <LClosure> ( L, sizeLclosure(nelems) );
+    global_State *g = G(L);
 
-    if ( c )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link(L, c, LUA_TFUNCTION);
+        cclosureSharedConstructionParams params;
+        params.nelems = nelems;
 
-        c->genFlags = 0;
-        c->isC = false;
-        c->isEnvLocked = false;
-        c->env = e;
-        c->nupvalues = cast_byte(nelems);
+        LClosure *c = lua_new <LClosure> ( L, typeInfo->lclosureTypeInfo, &params );
 
-        while ( nelems-- )
+        if ( c )
         {
-            c->upvals[nelems] = NULL;
-        }
-    }
-    return c;
-}
+            luaC_link(L, c, LUA_TFUNCTION);
 
-lu_mem LClosure::GetTypeSize( global_State *g ) const
-{
-    return sizeLclosure( this->nupvalues );
+            c->genFlags = 0;
+            c->isC = false;
+            c->isEnvLocked = false;
+            c->env = e;
+            c->nupvalues = cast_byte(nelems);
+
+            while ( nelems-- )
+            {
+                c->upvals[nelems] = NULL;
+            }
+        }
+        return c;
+    }
+    return NULL;
 }
 
 void luaF_freeclosure (lua_State *L, Closure *c)
@@ -217,15 +259,23 @@ TValue* LClosure::ReadUpValue( unsigned char index )
 
 UpVal *luaF_newupval (lua_State *L)
 {
-    UpVal *uv = lua_new <UpVal> ( L );
+    global_State *g = G(L);
 
-    if ( uv )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link(L, uv, LUA_TUPVAL);
-        uv->v = &uv->u.value;
-        setnilvalue(uv->v);
+        UpVal *uv = lua_new <UpVal> ( L, typeInfo->upvalueTypeInfo );
+
+        if ( uv )
+        {
+            luaC_link(L, uv, LUA_TUPVAL);
+            uv->v = &uv->u.value;
+            setnilvalue(uv->v);
+        }
+        return uv;
     }
-    return uv;
+    return NULL;
 }
 
 void luaF_freeupval (lua_State *L, UpVal *u)
@@ -237,7 +287,7 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
 {
     global_State *g = G(L);
     gcObjList_t::removable_iterator iter = L->openupval.GetRemovableIterator();
-    UpVal *uv;
+    UpVal *uv = NULL;
 
     {
         UpVal *p;
@@ -260,31 +310,36 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
         }
     }
 
-    uv = lua_new <UpVal> ( L );  /* not found: create a new one */
-    
-    if ( uv )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_register( L, uv, LUA_TUPVAL );
-        uv->v = level;  /* current value lives in the stack */
-
-        iter.Insert( uv );  /* chain it in the proper position */
-
+        uv = lua_new <UpVal> ( L, typeInfo->upvalueTypeInfo );    /* not found: create a new one */
+        
+        if ( uv )
         {
-            globalStateClosureEnvPlugin *closureEnv = GetGlobalClosureEnv( g );
+            luaC_register( L, uv, LUA_TUPVAL );
+            uv->v = level;  /* current value lives in the stack */
 
-            if ( closureEnv )
-            {
-                uv->u.l.prev = &closureEnv->uvhead;  /* double link it in `uvhead' list */
-                uv->u.l.next = closureEnv->uvhead.u.l.next;
-                uv->u.l.next->u.l.prev = uv;
-                closureEnv->uvhead.u.l.next = uv;
+            iter.Insert( uv );  /* chain it in the proper position */
 
-                lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
-            }
-            else
             {
-                uv->u.l.next = uv;
-                uv->u.l.prev = uv;
+                globalStateClosureEnvPlugin *closureEnv = closureEnvConnectingBridge.GetPluginStruct( g->config, g );
+
+                if ( closureEnv )
+                {
+                    uv->u.l.prev = &closureEnv->uvhead;  /* double link it in `uvhead' list */
+                    uv->u.l.next = closureEnv->uvhead.u.l.next;
+                    uv->u.l.next->u.l.prev = uv;
+                    closureEnv->uvhead.u.l.next = uv;
+
+                    lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
+                }
+                else
+                {
+                    uv->u.l.next = uv;
+                    uv->u.l.prev = uv;
+                }
             }
         }
     }
@@ -337,32 +392,40 @@ void luaF_close (lua_State *L, StkId level)
 
 Proto *luaF_newproto (lua_State *L)
 {
-    Proto *f = lua_new <Proto> ( L );
+    global_State *g = G(L);
 
-    if ( f )
+    closureTypeInfoPlugin_t *typeInfo = closureTypeInfo.GetPluginStruct( g->config );
+
+    if ( typeInfo )
     {
-        luaC_link(L, f, LUA_TPROTO);
-        f->k = NULL;
-        f->sizek = 0;
-        f->p = NULL;
-        f->sizep = 0;
-        f->code = NULL;
-        f->sizecode = 0;
-        f->sizelineinfo = 0;
-        f->sizeupvalues = 0;
-        f->nups = 0;
-        f->upvalues = NULL;
-        f->numparams = 0;
-        f->is_vararg = 0;
-        f->maxstacksize = 0;
-        f->lineinfo = NULL;
-        f->sizelocvars = 0;
-        f->locvars = NULL;
-        f->linedefined = 0;
-        f->lastlinedefined = 0;
-        f->source = NULL;
+        Proto *f = lua_new <Proto> ( L, typeInfo->protoTypeInfo );
+
+        if ( f )
+        {
+            luaC_link(L, f, LUA_TPROTO);
+            f->k = NULL;
+            f->sizek = 0;
+            f->p = NULL;
+            f->sizep = 0;
+            f->code = NULL;
+            f->sizecode = 0;
+            f->sizelineinfo = 0;
+            f->sizeupvalues = 0;
+            f->nups = 0;
+            f->upvalues = NULL;
+            f->numparams = 0;
+            f->is_vararg = 0;
+            f->maxstacksize = 0;
+            f->lineinfo = NULL;
+            f->sizelocvars = 0;
+            f->locvars = NULL;
+            f->linedefined = 0;
+            f->lastlinedefined = 0;
+            f->source = NULL;
+        }
+        return f;
     }
-    return f;
+    return NULL;
 }
 
 void luaF_freeproto (lua_State *L, Proto *p)
@@ -434,13 +497,23 @@ const char *luaF_getlocalname (const Proto *f, int local_number, int pc) {
 }
 
 // Module initialization.
-void luaF_init( void )
+void luaF_init( lua_config *cfg )
 {
-    _closureEnvPluginOffset =
-        globalStateFactory.RegisterStructPlugin <globalStateClosureEnvPlugin> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
+    return;
 }
 
-void luaF_shutdown( void )
+void luaF_shutdown( lua_config *cfg )
+{
+    return;
+}
+
+// Runtime initialization.
+void luaF_runtimeinit( global_State *g )
+{
+    return;
+}
+
+void luaF_runtimeshutdown( global_State *g )
 {
     return;
 }

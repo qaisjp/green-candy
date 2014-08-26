@@ -30,9 +30,14 @@
 #define GCSWEEPCOST	10
 #define GCFINALIZECOST	100
 
-// GC Environment global variables.
-globalStatePluginOffset_t _gcEnvPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
+// NOTE: Lua5.1ex can actually run without GC support and not crash.
 
+// GC Environment global variables.
+gcEnvConnectingBridge_t gcEnvConnectingBridge
+#ifndef LUA_EXCLUDE_GARBAGE_COLLECTOR
+    ( namespaceFactory )
+#endif
+    ;
 
 FASTAPI void setthreshold( globalStateGCEnv *g )
 {
@@ -57,8 +62,10 @@ void Udata::MarkGC( global_State *g )
 {
     gray2black( this );  /* udata are never gray */
 
-    if ( metatable )
-        markobject( g, metatable );
+    if ( Table *mt = this->metatable )
+    {
+        markobject( g, mt );
+    }
 
     markobject( g, env );
 }
@@ -174,17 +181,9 @@ void luaC_markobject( global_State *g, GCObject *o )
     markobject( g, o );
 }
 
-/* move `dead' udata that need finalization to list `tmudata' */
-size_t luaC_separatefinalization( lua_State *L, bool all )
+/* move `dead' udata that need finalization to list 'tmudata' */
+static size_t luaC_separatefinalization( lua_State *L, global_State *g, globalStateGCEnv *gcEnv, bool all )
 {
-    global_State *g = G(L);
-
-    // Get the GC environment.
-    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
-
-    if ( !gcEnv )
-        return 0;
-
     size_t deadmem = 0;
 
     do
@@ -221,7 +220,7 @@ size_t luaC_separatefinalization( lua_State *L, bool all )
                         // Remove from the garbage collector list.
                         iter.Remove();
 
-                        /* link `curr' at the end of `tmudata' list */
+                        /* link 'curr' at the end of 'tmudata' list */
                         gcEnv->tmudata.Insert( curr );
                     }
 
@@ -426,12 +425,12 @@ size_t Table::Propagate( global_State *g )
 
 static void markmt( lua_State *L )
 {
-    int i;
-
-    for ( i=0; i<NUM_TAGS; i++ )
+    for ( int i = 0; i < NUM_TAGS; i++ )
     {
-        if ( L->mt[i] )
-            markobject( G(L), L->mt[i] );
+        if ( Table *mt = L->mt[i] )
+        {
+            markobject( G(L), mt );
+        }
     }
 }
 
@@ -476,7 +475,7 @@ size_t lua_State::Propagate( global_State *g )
 
 /*
 ** traverse one gray object, turning it to black.
-** Returns `quantity' traversed.
+** Returns 'quantity' traversed.
 */
 static l_mem propagatemark (global_State *g)
 {
@@ -500,18 +499,13 @@ static l_mem propagatemark (global_State *g)
 }
 
 
-static size_t propagateall (global_State *g)
+static size_t propagateall (global_State *g, globalStateGCEnv *gcEnv)
 {
     size_t m = 0;
 
-    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
-   
-    if ( gcEnv )
+    while ( !gcEnv->gray.IsEmpty() )
     {
-        while ( !gcEnv->gray.IsEmpty() )
-        {
-            m += propagatemark(g);
-        }
+        m += propagatemark(g);
     }
 
     return m;
@@ -649,56 +643,50 @@ static void delete_gcobject( lua_State *L, GCObject *obj )
     }
 }
 
-static void sweeplist( lua_State *L, gcObjList_t::removable_iterator& p, lu_mem count )
+static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *gcEnv, gcObjList_t::removable_iterator& p, lu_mem count )
 {
-    global_State *g = G(L);
     int deadmask = otherwhite(g);
 
-    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
-
-    if ( gcEnv )
+    while ( !p.IsEnd() && count-- > 0 )
     {
-        while ( !p.IsEnd() && count-- > 0 )
+        GCObject *curr = (GCObject*)p.Resolve();
+
+        if ( curr->tt == LUA_TTHREAD )  /* sweep open upvalues of each thread */
         {
-            GCObject *curr = (GCObject*)p.Resolve();
+            gcObjList_t::removable_iterator iter = gco2th(curr)->openupval.GetRemovableIterator();
 
-            if ( curr->tt == LUA_TTHREAD )  /* sweep open upvalues of each thread */
+            sweeplist( L, g, gcEnv, iter, MAX_LUMEM );
+        }
+
+        if ( (curr->marked ^ WHITEBITS) & deadmask )
+        {  /* not dead? */
+            lua_assert( !isdead(g, curr) || testbit(curr->marked, FIXEDBIT) );
+
+            makewhite( g, curr );  /* make it white (for next cycle) */
+
+            p.Increment();
+        }
+        else
+        {  /* must erase `curr' */
+            lua_assert( isdead(g, curr) || deadmask == bitmask(SFIXEDBIT) );
+
+            p.Remove();
+
+            if ( curr == gcEnv->rootgc.root )  /* is the first element of the list? */
             {
-                gcObjList_t::removable_iterator iter = gco2th(curr)->openupval.GetRemovableIterator();
-
-                sweeplist( L, iter, MAX_LUMEM );
+                gcEnv->rootgc.root = curr->next;  /* adjust first */
             }
 
-            if ( (curr->marked ^ WHITEBITS) & deadmask )
-            {  /* not dead? */
-                lua_assert( !isdead(g, curr) || testbit(curr->marked, FIXEDBIT) );
-
-                makewhite( g, curr );  /* make it white (for next cycle) */
-
-                p.Increment();
-            }
-            else
-            {  /* must erase `curr' */
-                lua_assert( isdead(g, curr) || deadmask == bitmask(SFIXEDBIT) );
-
-                p.Remove();
-
-                if ( curr == gcEnv->rootgc.root )  /* is the first element of the list? */
-                {
-                    gcEnv->rootgc.root = curr->next;  /* adjust first */
-                }
-
-                delete_gcobject( L, curr );
-            }
+            delete_gcobject( L, curr );
         }
     }
 }
 
-static inline void sweepwholelist( lua_State *L, gcObjList_t& theList )
+static inline void sweepwholelist( lua_State *L, global_State *g, globalStateGCEnv *gcEnv, gcObjList_t& theList )
 {
     gcObjList_t::removable_iterator iter = theList.GetRemovableIterator();
 
-    sweeplist( L, iter, MAX_LUMEM );
+    sweeplist( L, g, gcEnv, iter, MAX_LUMEM );
 }
 
 static void checkSizes (lua_State *L)
@@ -772,11 +760,11 @@ void luaC_freeall (lua_State *L)
 
         g->currentwhite = WHITEBITS | bitmask(SFIXEDBIT);  /* mask to collect all elements */
 
-        sweepwholelist(L, gcEnv->rootgc);
+        sweepwholelist(L, g, gcEnv, gcEnv->rootgc);
 
         for (i = 0; i < g->strt.size; i++)  /* free all string lists */
         {
-            sweepwholelist(L, g->strt.hash[i]);
+            sweepwholelist(L, g, gcEnv, g->strt.hash[i]);
         }
 
         lua_assert(gcEnv->rootgc.GetFirst() == L);
@@ -1130,44 +1118,51 @@ static int luaC_runtime( lua_State *L )
                 lua_call( L, 0, 0 );
             }
 
+            // Propagate all GrayObjects that have been marked above.
             while ( !gcEnv->gray.IsEmpty() )
             {
                 _luaC_paycost( gcEnv, (lua_Thread*)L, propagatemark(g) );
             }
 
-            /* no more `gray' objects */
-            size_t udsize;  /* total size of userdata to be finalized */
+            /* no more 'gray' objects */
             /* give control to sub-modules to mark their global values */
             {
                 luaJ_gcruntime( L );
                 luaF_gcruntime( L );
             }
             /* traverse objects caught by write barrier and by 'remarkupvals' */
-            propagateall(g);
+            propagateall(g, gcEnv);
+
             /* remark weak tables */
-            gcEnv->weak.SwapWith( gcEnv->gray );
+            gcEnv->weak.SuspendTo( gcEnv->gray );
             lua_assert(!iswhite(g->mainthread));
             markmt( L );  /* mark basic metatables (again) */
-            propagateall(g);
+            propagateall(g, gcEnv);
+
             /* remark gray again */
-            gcEnv->grayagain.SwapWith( gcEnv->gray );
-            propagateall(g);
-            udsize = luaC_separatefinalization(L, false);  /* separate userdata to be finalized */
+            gcEnv->grayagain.SuspendTo( gcEnv->gray );
+            propagateall(g, gcEnv);
+            size_t udsize; /* total size of userdata to be finalized */
+            udsize = luaC_separatefinalization(L, g, gcEnv, false);  /* separate userdata to be finalized */
             marktmu(g, gcEnv);  /* mark `preserved' userdata */
-            udsize += propagateall(g);  /* remark, to propagate `preserveness' */
+            udsize += propagateall(g, gcEnv);  /* remark, to propagate `preserveness' */
             cleartable(gcEnv->weak);  /* remove collected objects from weak tables */
+
             /* flip current white */
             g->currentwhite = cast_byte(otherwhite(g));
+
             gcEnv->sweepstrgc = 0;
             gcEnv->sweepgc = gcEnv->rootgc.GetRemovableIterator();
             gcEnv->gcstate = GCSsweepstring;
             gcEnv->estimate = g->totalbytes;
             luaC_processestimate( gcEnv, udsize );  /* first estimate */
 
+            // We assume that there always is at least one entry in "g->strt.hash".
+            lua_assert( g->strt.size > 0 );
             do
             {
                 lu_mem old = g->totalbytes;
-                sweepwholelist( L, g->strt.hash[gcEnv->sweepstrgc++] );
+                sweepwholelist( L, g, gcEnv, g->strt.hash[gcEnv->sweepstrgc++] );
 
                 lua_assert(old >= g->totalbytes);
                 luaC_processestimate( gcEnv, old - g->totalbytes );
@@ -1182,7 +1177,7 @@ static int luaC_runtime( lua_State *L )
             for (;;)
             {
                 lu_mem old = g->totalbytes;
-                sweeplist(L, gcEnv->sweepgc, GCSWEEPMAX);
+                sweeplist(L, g, gcEnv, gcEnv->sweepgc, GCSWEEPMAX);
 
                 lua_assert( old >= g->totalbytes );
                 luaC_processestimate( gcEnv, old - g->totalbytes );
@@ -1302,7 +1297,7 @@ void luaC_shutdown( global_State *g )
 
     if ( gcEnv )
     {
-        luaC_separatefinalization( L, true );
+        luaC_separatefinalization( L, g, gcEnv, true );
 
         // Make sure we eliminated all classes.
         // If we have not, the runtime is faulty.
@@ -1342,7 +1337,7 @@ void luaC_shutdown( global_State *g )
             if ( nonFinalizedObject )
             {
                 // Attempt to finalize more objects.
-                luaC_separatefinalization( L, true );
+                luaC_separatefinalization( L, g, gcEnv, true );
             }
         }
 
@@ -1374,17 +1369,12 @@ void luaC_shutdown( global_State *g )
 }
 
 // Module initialization.
-void luaC_moduleinit( void )
+void luaC_moduleinit( lua_config *cfg )
 {
-    // NOTE: Lua5.1ex can actually run without GC support and not crash.
-#ifndef LUA_EXCLUDE_GARBAGE_COLLECTOR
-    // Register the Lua garbage collector runtime.
-    _gcEnvPluginOffset =
-        globalStateFactory.RegisterStructPlugin <globalStateGCEnv> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
-#endif
+    return;
 }
 
-void luaC_moduleshutdown( void )
+void luaC_moduleshutdown( lua_config *cfg )
 {
     return;
 }

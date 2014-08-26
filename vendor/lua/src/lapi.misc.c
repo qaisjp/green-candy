@@ -95,25 +95,6 @@ LUA_API void lua_concat (lua_State *L, int n) {
   lua_unlock(L);
 }
 
-
-LUA_API lua_Alloc lua_getallocf (lua_State *L, void **ud) {
-  lua_Alloc f;
-  lua_lock(L);
-  if (ud) *ud = G(L)->ud;
-  f = G(L)->frealloc;
-  lua_unlock(L);
-  return f;
-}
-
-
-LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud) {
-  lua_lock(L);
-  G(L)->ud = ud;
-  G(L)->frealloc = f;
-  lua_unlock(L);
-}
-
-
 LUA_API void *lua_newuserdata (lua_State *L, size_t size) {
   Udata *u;
   lua_lock(L);

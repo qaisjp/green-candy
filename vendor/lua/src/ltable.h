@@ -37,8 +37,8 @@ LUAI_FUNC Node *luaH_mainposition (const Table *t, const TValue *key);
 #endif
 
 // Module initialization.
-void luaH_init( void );
-void luaH_shutdown( void );
+void luaH_init( lua_config *cfg );
+void luaH_shutdown( lua_config *cfg );
 
 
 #endif

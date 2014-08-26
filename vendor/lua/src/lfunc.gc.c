@@ -9,7 +9,7 @@ void luaF_gcruntime( lua_State *L )
 {
     global_State *g = G(L);
 
-    globalStateClosureEnvPlugin *closureEnv = GetGlobalClosureEnv( g );
+    globalStateClosureEnvPlugin *closureEnv = closureEnvConnectingBridge.GetPluginStruct( g->config, g );
 
     if ( closureEnv )
     {
@@ -107,9 +107,11 @@ size_t CClosureMethodRedirect::Propagate( global_State *g )
 
 size_t CClosureMethodRedirectSuper::Propagate( global_State *g )
 {
+    markobject( g, redirect );
+    markobject( g, m_class );
     markobject( g, super );
 
-    return CClosureMethodRedirect::Propagate( g ) + sizeof(void*);
+    return CClosure::Propagate( g ) + sizeof(*this);
 }
 
 size_t CClosureBasic::Propagate( global_State *g )

@@ -14,6 +14,7 @@
 
 #include "lua.h"
 
+#include "lapi.h"
 #include "lobject.h"
 #include "ltm.h"
 #include "lfiber.h"
@@ -26,12 +27,6 @@ LUAI_FUNC const TValue *index2constadr( lua_State *L, int idx );
 // Since we use advanced memory allocation techniques, we depend on custom
 // memory management templates.
 #include <MemoryUtils.h>
-
-typedef StaticPluginClassFactory <global_State> globalStateFactory_t;
-
-typedef globalStateFactory_t::pluginOffset_t globalStatePluginOffset_t;
-
-extern globalStateFactory_t globalStateFactory;
 
 // Put plugin ids here!
 #define GLOBAL_STATE_PLUGIN_ALLOC_HOLD          0x00000000
@@ -48,10 +43,8 @@ enum eLuaThreadStatus : unsigned char
 class lua_Thread : public lua_State
 {
 public:
-    lua_Thread();
+    lua_Thread( void *construction_params );
     ~lua_Thread();
-
-    lu_mem  GetTypeSize( global_State *g ) const;
 
     void    SetMainThread( bool enable )        { isMain = enable; }
     bool    IsThread()                          { return !isMain; }
@@ -108,6 +101,10 @@ LUAI_FUNC lua_Thread* luaE_newthread (lua_State *L);
 LUAI_FUNC void luaE_newenvironment( lua_State *L );
 LUAI_FUNC void luaE_terminate( lua_Thread *L );
 LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);
+
+// Library initialization.
+LUAI_FUNC void luaE_libraryinit( void );
+LUAI_FUNC void luaE_libraryshutdown( void );
 
 #endif
 

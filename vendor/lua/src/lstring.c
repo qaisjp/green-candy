@@ -14,18 +14,104 @@
 #include "ldebug.h"
 #include "lvm.h"
 
+#include "lpluginutil.hxx"
 
-// Global string plugin.
-static globalStatePluginOffset_t _stringEnvPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
 
+struct stringConstructionParams
+{
+    int length;
+};
+
+// String type information.
+struct stringTypeInfo_t
+{
+    struct stringTypeMetaInfo : public LuaTypeSystem::structTypeMetaInfo
+    {
+        size_t GetTypeSize( void *construction_params ) const
+        {
+            stringConstructionParams *params = (stringConstructionParams*)construction_params;
+
+            return _sizestring( sizeof( TString ), params->length );
+        }
+
+        size_t GetTypeSizeByObject( void *langObj ) const
+        {
+            TString *strObj = (TString*)langObj;
+
+            return _sizestring( sizeof( TString ), strObj->len );
+        }
+    };
+
+    struct udataTypeMetaInfo : public LuaTypeSystem::structTypeMetaInfo
+    {
+        size_t GetTypeSize( void *construction_params ) const
+        {
+            stringConstructionParams *params = (stringConstructionParams*)construction_params;
+
+            return _sizeudata( sizeof( Udata ), params->length );
+        }
+
+        size_t GetTypeSizeByObject( void *langObj ) const
+        {
+            Udata *u = (Udata*)langObj;
+
+            return _sizeudata( sizeof( Udata ), u->len );
+        }
+    };
+
+    stringTypeMetaInfo _stringMetaInfo;
+    udataTypeMetaInfo _udataMetaInfo;
+
+    inline void Initialize( lua_config *cfg )
+    {
+        LuaTypeSystem& typeSys = cfg->typeSys;
+
+        // Register the string type.
+        stringTypeInfo = typeSys.RegisterDynamicStructType <TString> ( "string", &_stringMetaInfo );
+        udataTypeInfo = typeSys.RegisterDynamicStructType <Udata> ( "udata", &_stringMetaInfo );
+
+        // Set up the inheritance.
+        typeSys.SetTypeInfoInheritingClass(
+            stringTypeInfo,
+            cfg->gcobjTypeInfo
+        );
+        typeSys.SetTypeInfoInheritingClass(
+            udataTypeInfo,
+            cfg->gcobjTypeInfo
+        );
+    }
+
+    inline void Shutdown( lua_config *cfg )
+    {
+        LuaTypeSystem& typeSys = cfg->typeSys;
+
+        // Delete all types.
+        typeSys.DeleteType( stringTypeInfo );
+    }
+
+    LuaTypeSystem::typeInfoBase *stringTypeInfo;
+    LuaTypeSystem::typeInfoBase *udataTypeInfo;
+};
+
+PluginDependantStructRegister <stringTypeInfo_t, namespaceFactory_t> stringTypeInfo( namespaceFactory );
+
+// Global state string environment.
 struct globalStateStringEnv
 {
     Mbuffer buff;  /* temporary buffer for string concatentation */
 };
 
+typedef PluginConnectingBridge
+    <globalStateStringEnv,
+        globalStateStructFactoryMeta <globalStateStringEnv, globalStateFactory_t, lua_config>,
+    namespaceFactory_t>
+        stringEnvConnectingBridge_t;
+
+stringEnvConnectingBridge_t stringEnvConnectingBridge( namespaceFactory );
+
 globalStateStringEnv* GetGlobalStringEnv( global_State *g )
 {
-    return globalStateFactory_t::RESOLVE_STRUCT <globalStateStringEnv> ( g, _stringEnvPluginOffset );
+    return stringEnvConnectingBridge.GetPluginStruct( g->config, g );
 }
 
 void luaS_resize (lua_State *L, int newsize)
@@ -35,7 +121,8 @@ void luaS_resize (lua_State *L, int newsize)
 
     if (luaC_getstate( L ) == GCSsweepstring)
     {
-        return;  /* cannot resize during GC traverse */
+        /* cannot resize during GC traverse, so lock until we have left it */
+        luaC_finish( L );
     }
 
     newhash = luaM_newvector <gcObjList_t> (L, newsize);
@@ -73,17 +160,24 @@ TString::~TString()
 {
 }
 
-static TString *newlstr (lua_State *L, const char *str, size_t l, unsigned int h)
+static TString* newlstr (lua_State *L, const char *str, size_t l, unsigned int h)
 {
-    TString *ts;
-    stringtable *tb;
+    // Attempt to get the string type information.
+    stringTypeInfo_t *typeInfo = stringTypeInfo.GetPluginStruct( G(L)->config );
+
+    // If we have no information about the string type, fail.
+    if ( !typeInfo )
+        return NULL;
 
     if (l+1 > (MAX_SIZET - sizeof(TString))/sizeof(char))
     {
         luaM_toobig(L);
     }
 
-    ts = lua_new <TString> ( L, sizeof(TString) + ( l + 1 ) );
+    stringConstructionParams params;
+    params.length = l;
+
+    TString *ts = lua_new <TString> ( L, typeInfo->stringTypeInfo, &params );
 
     if ( ts )
     {
@@ -97,7 +191,7 @@ static TString *newlstr (lua_State *L, const char *str, size_t l, unsigned int h
         memcpy(ts+1, str, l*sizeof(char));
         ((char *)(ts+1))[l] = '\0';  /* ending 0 */
 
-        tb = &G(L)->strt;
+        stringtable *tb = &G(L)->strt;
         h = lmod(h, tb->size);
         tb->hash[h].Insert( ts );  /* chain new entry */
         tb->nuse++;
@@ -217,7 +311,12 @@ Udata::~Udata()
 
 Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
 {
-    Udata *u;
+    // Attempt to get the string type information.
+    stringTypeInfo_t *typeInfo = stringTypeInfo.GetPluginStruct( G(L)->config );
+
+    // If we have no information about the string type, fail.
+    if ( !typeInfo )
+        return NULL;
 
     // Check that we do not encounter number overflow!
     if (s > MAX_SIZET - sizeof(Udata))
@@ -225,7 +324,10 @@ Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
         luaM_toobig(L);
     }
 
-    u = lua_new <Udata> ( L, sizeof(Udata) + s );
+    stringConstructionParams params;
+    params.length = s;
+
+    Udata *u = lua_new <Udata> ( L, typeInfo->udataTypeInfo, &params );
 
     if ( u )
     {
@@ -264,13 +366,12 @@ void luaS_stateshutdown( lua_State *L )
 }
 
 // Module initialization.
-void luaS_init( void )
+void luaS_init( lua_config *cfg )
 {
-    _stringEnvPluginOffset =
-        globalStateFactory.RegisterStructPlugin <globalStateStringEnv> ( GLOBAL_STATE_PLUGIN_STRING_META );
+    return;
 }
 
-void luaS_shutdown( void )
+void luaS_shutdown( lua_config *cfg )
 {
     return;
 }

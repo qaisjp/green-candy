@@ -175,12 +175,12 @@ LUA_API void lua_newenvironment( lua_State *L )
 }
 
 // Module initialization.
-void luaapi_init( void )
+void luaapi_init( lua_config *cfg )
 {
     return;
 }
 
-void luaapi_shutdown( void )
+void luaapi_shutdown( lua_config *cfg )
 {
     return;
 }

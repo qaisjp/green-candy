@@ -10,6 +10,8 @@
 
 #include <stddef.h>
 
+#include <MemoryUtils.h>
+
 #include "llimits.h"
 #include "lua.h"
 
@@ -129,43 +131,67 @@ FASTAPI void luaM_reallocvector( lua_State *L, structType*& vInOut, size_t oldN,
 }
 
 // Module initialization.
-LUAI_FUNC void luaM_init( void );
-LUAI_FUNC void luaM_shutdown( void );
+LUAI_FUNC void luaM_init( lua_config *cfg );
+LUAI_FUNC void luaM_shutdown( lua_config *cfg );
 
 // Default class factory memory allocator.
-struct LuaDefaultAllocator
+struct GeneralMemoryAllocator
 {
-    global_State *globalState;
+    lua_Alloc allocCallback;
+    void *userdata;
 
-    inline LuaDefaultAllocator( void )
+    inline GeneralMemoryAllocator( void *userdata, lua_Alloc allocCallback )
     {
-        this->globalState = NULL;
+        this->allocCallback = allocCallback;
+        this->userdata = userdata;
     }
 
-    inline ~LuaDefaultAllocator( void )
+    inline ~GeneralMemoryAllocator( void )
     {
         return;
     }
 
-    inline void SetState( global_State *theState )
-    {
-        this->globalState = theState;
-    }
-
     inline void* Allocate( size_t memSize )
     {
-        void *mem = luaM_realloc__( this->globalState, NULL, 0, memSize );
-       
-        lua_assert( mem != NULL );
-
-        return mem;
+        return allocCallback( this->userdata, NULL, 0, memSize );
     }
 
     inline void Free( void *ptr, size_t memSize )
     {
-        luaM_realloc__( this->globalState, ptr, memSize, 0 );
+        allocCallback( this->userdata, ptr, memSize, 0 );
+    }
+
+    inline void* ReAlloc( void *ptr, size_t oldMemSize, size_t newMemSize )
+    {
+        return allocCallback( this->userdata, ptr, oldMemSize, newMemSize );
     }
 };
+
+template <typename structType, typename allocatorType>
+inline structType* _newstruct( allocatorType& allocData )
+{
+    structType *valOut = NULL;
+    {
+        // Attempt to allocate a block of memory for bootstrapping.
+        void *mem = allocData.Allocate( sizeof( structType ) );
+
+        if ( mem )
+        {
+            valOut = new (mem) structType;
+        }
+    }
+    return valOut;
+}
+
+template <typename structType, typename allocatorType>
+inline void _delstruct( structType *theStruct, allocatorType& allocData )
+{
+    theStruct->~structType();
+
+    void *mem = theStruct;
+
+    allocData.Free( mem, sizeof( structType ) );
+}
 
 #endif
 

@@ -23,7 +23,7 @@ LUAI_FUNC void luaJ_basicextend( lua_State *L );
 LUAI_FUNC void luaJ_gcruntime( lua_State *L );
 
 // Module initialization.
-LUAI_FUNC void luaJ_init( void );
-LUAI_FUNC void luaJ_shutdown( void );
+LUAI_FUNC void luaJ_init( lua_config *cfg );
+LUAI_FUNC void luaJ_shutdown( lua_config *cfg );
 
 #endif //_LUA_CLASS_

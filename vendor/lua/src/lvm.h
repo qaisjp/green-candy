@@ -34,7 +34,7 @@ LUAI_FUNC void luaV_execute (lua_State *L, int nexeccalls);
 LUAI_FUNC void luaV_concat (lua_State *L, int total, int last);
 
 // Module initialization.
-LUAI_FUNC void luaV_init( void );
-LUAI_FUNC void luaV_shutdown( void );
+LUAI_FUNC void luaV_init( lua_config *cfg );
+LUAI_FUNC void luaV_shutdown( lua_config *cfg );
 
 #endif

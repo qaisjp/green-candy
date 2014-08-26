@@ -32,7 +32,7 @@ LUAI_FUNC void luaS_stateinit( lua_State *L );
 LUAI_FUNC void luaS_stateshutdown( lua_State *L );
 
 // Module initialization.
-LUAI_FUNC void luaS_init( void );
-LUAI_FUNC void luaS_shutdown( void );
+LUAI_FUNC void luaS_init( lua_config *cfg );
+LUAI_FUNC void luaS_shutdown( lua_config *cfg );
 
 #endif

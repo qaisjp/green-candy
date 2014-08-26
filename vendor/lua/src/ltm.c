@@ -131,12 +131,12 @@ const TValue *luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )
 }
 
 // Module initialization.
-void luaT_moduleinit( void )
+void luaT_moduleinit( lua_config *cfg )
 {
     return;
 }
 
-void luaT_moduleshutdown( void )
+void luaT_moduleshutdown( lua_config *cfg )
 {
     return;
 }

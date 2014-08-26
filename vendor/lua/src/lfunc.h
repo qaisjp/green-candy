@@ -29,7 +29,11 @@ LUAI_FUNC void luaF_freeclosure (lua_State *L, Closure *c);
 LUAI_FUNC const char *luaF_getlocalname (const Proto *func, int local_number, int pc);
 
 // Module initialization.
-LUAI_FUNC void luaF_init( void );
-LUAI_FUNC void luaF_shutdown( void );
+LUAI_FUNC void luaF_init( lua_config *cfg );
+LUAI_FUNC void luaF_shutdown( lua_config *cfg );
+
+// Runtime initialization.
+LUAI_FUNC void luaF_runtimeinit( global_State *g );
+LUAI_FUNC void luaF_runtimeshutdown( global_State *g );
 
 #endif

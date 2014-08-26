@@ -4,7 +4,7 @@
 
 #include "lobject.h"
 
-extern globalStatePluginOffset_t _gcEnvPluginOffset;
+#include "lpluginutil.hxx"
 
 struct globalStateGCEnv
 {
@@ -25,9 +25,17 @@ struct globalStateGCEnv
     int gcstepmul;  /* GC `granularity' */
 };
 
+typedef PluginConnectingBridge
+    <globalStateGCEnv,
+        globalStateStructFactoryMeta <globalStateGCEnv, globalStateFactory_t, lua_config>,
+    namespaceFactory_t>
+        gcEnvConnectingBridge_t;
+
+extern gcEnvConnectingBridge_t gcEnvConnectingBridge;
+
 inline globalStateGCEnv* GetGlobalGCEnvironment( global_State *g )
 {
-    return globalStateFactory_t::RESOLVE_STRUCT <globalStateGCEnv> ( g, _gcEnvPluginOffset );
+    return gcEnvConnectingBridge.GetPluginStruct( g->config, g );
 }
 
 #endif //_LUA_GC_INTERNALS_

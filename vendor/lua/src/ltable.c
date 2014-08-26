@@ -29,6 +29,8 @@
 #include "ltable.h"
 #include "lvm.h"
 
+#include "lpluginutil.hxx"
+
 
 /*
 ** max size of array part is 2^MAXBITS
@@ -63,11 +65,37 @@
 */
 #define numints		cast_int(sizeof(lua_Number)/sizeof(int))
 
-typedef StaticPluginClassFactory <Table> tableObjFactory_t;
+// Table type information plugin.
+struct tableTypeInfoPlugin
+{
+    inline void Initialize( lua_config *cfg )
+    {
+        LuaTypeSystem& typeSys = cfg->typeSys;
 
-// Plugin that holds table meta-data.
-static globalStatePluginOffset_t _tableGlobalStatePlugin = 0;
+        // Register type information.
+        tableTypeInfo = typeSys.RegisterStructType <Table> ( "table" );
 
+        // Set inheritance information.
+        typeSys.SetTypeInfoInheritingClass(
+            tableTypeInfo,
+            cfg->grayobjTypeInfo
+        );
+    }
+
+    inline void Shutdown( lua_config *cfg )
+    {
+        LuaTypeSystem& typeSys = cfg->typeSys;
+
+        // Delete the types again.
+        typeSys.DeleteType( tableTypeInfo );
+    }
+
+    LuaTypeSystem::typeInfoBase *tableTypeInfo;
+};
+
+PluginDependantStructRegister <tableTypeInfoPlugin, namespaceFactory_t> tableTypeInfo( namespaceFactory );
+
+// Table environment plugin.
 struct globalStateTableEnvPlugin
 {
     inline globalStateTableEnvPlugin( void )
@@ -79,18 +107,19 @@ struct globalStateTableEnvPlugin
     }
         
     Node dummynode;
-    
-    tableObjFactory_t factory;
 };
+
+typedef PluginConnectingBridge
+    <globalStateTableEnvPlugin,
+        globalStateStructFactoryMeta <globalStateTableEnvPlugin, globalStateFactory_t, lua_config>,
+    namespaceFactory_t>
+        tableEnvConnectingBridge_t;
+
+tableEnvConnectingBridge_t tableEnvConnectingBridge( namespaceFactory );
 
 inline globalStateTableEnvPlugin* GetGlobalTableEnv( global_State *g )
 {
-    return globalStateFactory_t::RESOLVE_STRUCT <globalStateTableEnvPlugin> ( g, _tableGlobalStatePlugin );
-}
-
-lu_mem Table::GetTypeSize( global_State *g ) const
-{
-    return (lu_mem)GetGlobalTableEnv( g )->factory.GetClassSize();
+    return tableEnvConnectingBridge.GetPluginStruct( g->config, g );
 }
 
 inline Node* GetDummyNode( global_State *g )
@@ -103,14 +132,12 @@ inline Node* GetDummyNode( global_State *g )
 }
 
 // Lua table environment initializator.
-void luaH_init( void )
+void luaH_init( lua_config *cfg )
 {
-    // Register our plugins.
-    _tableGlobalStatePlugin =
-        globalStateFactory.RegisterStructPlugin <globalStateTableEnvPlugin> ( globalStateFactory_t::ANONYMOUS_PLUGIN_ID );
+    return;
 }
 
-void luaH_shutdown( void )
+void luaH_shutdown( lua_config *cfg )
 {
     return;
 }
@@ -404,15 +431,17 @@ static void rehash (lua_State *L, Table *t, const TValue *ek) {
 
 Table *luaH_new (lua_State *L, int narray, int nhash)
 {
-    // Get the global table environment.
-    globalStateTableEnvPlugin *globalEnv = GetGlobalTableEnv( G(L) );
+    global_State *g = G(L);
 
-    // No point in creating table if we cannot get our environment.
-    if ( !globalEnv )
+    // Get the table type info plugin.
+    tableTypeInfoPlugin *typeInfo = tableTypeInfo.GetPluginStruct( g->config );
+
+    // No point in creating table if we cannot get our type information.
+    if ( !typeInfo )
         return NULL;
 
     // Construct the table using its factory.
-    Table *t = globalEnv->factory.Construct( L->defaultAlloc );
+    Table *t = lua_new <Table> ( L, typeInfo->tableTypeInfo );
 
     if ( t )
     {
@@ -424,7 +453,7 @@ Table *luaH_new (lua_State *L, int narray, int nhash)
         t->array = NULL;
         t->sizearray = 0;
         t->lsizenode = 0;
-        t->node = GetDummyNode( G(L) );
+        t->node = GetDummyNode( g );
         setarrayvector(L, t, narray);
         setnodevector(L, t, nhash);
     }
@@ -443,14 +472,8 @@ void luaH_free (lua_State *L, Table *t)
         luaM_freearray( L, t->array, t->sizearray );
     }
 
-    // Get our environment.
-    globalStateTableEnvPlugin *globalEnv = GetGlobalTableEnv( G(L) );
-
-    if ( globalEnv )
-    {
-        // Destroy the table.
-        globalEnv->factory.Destroy( L->defaultAlloc, t );
-    }
+    // Destroy the table.
+    lua_delete( L, t );
 }
 
 Table::~Table()

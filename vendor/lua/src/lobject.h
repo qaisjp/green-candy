@@ -19,6 +19,8 @@
 #include "lmem.h"
 #include "lutils.h"
 
+#include "ltypesys.h"
+
 
 /* tags for values visible from Lua */
 #define LAST_TAG	LUA_TTHREAD
@@ -32,6 +34,40 @@
 #define LUA_TPROTO	(LAST_TAG+1)
 #define LUA_TUPVAL	(LAST_TAG+2)
 #define LUA_TDEADKEY	(LAST_TAG+3)
+
+/*
+** Plugin variables.
+*/
+typedef StaticPluginClassFactory <global_State> globalStateFactory_t;
+
+typedef globalStateFactory_t::pluginOffset_t globalStatePluginOffset_t;
+
+// Virtual machine global configuration struct.
+struct lua_config
+{
+    // The heart of the Lua runtime.
+    LuaTypeSystem typeSys;  /* global type descriptor manager */
+
+    // Important Lua types.
+    LuaTypeSystem::typeInfoBase *gcobjTypeInfo;
+    LuaTypeSystem::typeInfoBase *grayobjTypeInfo;
+
+    // Factory for producing specialized Lua VMs.
+    globalStateFactory_t globalStateFactory;
+
+    // Properties for VM creation.
+    bool isMultithreaded;
+
+    // Allocation meta-data.
+    void *allocData;    /* private allocation data used for memory requests */
+};
+
+// Plugin registry at module namespace level.
+typedef StaticPluginClassFactory <lua_config> namespaceFactory_t;
+
+typedef namespaceFactory_t::pluginOffset_t namespacePluginOffset_t;
+
+extern namespaceFactory_t namespaceFactory;
 
 
 /*
@@ -81,12 +117,11 @@ struct global_State;
 typedef SingleLinkedList <class GCObject> gcObjList_t;
 
 // Type that holds garbage collectible Lua types.
+// NOTE: this type must only be allocated by LuaTypeSystem!
+// It must be preceeded by a LuaRTTI struct!
 class GCObject abstract : public gcObjList_t::node
 {
 public:
-    // Every type must give a runtime sizeof operator.
-    virtual lu_mem      GetTypeSize( global_State *g ) const = 0;
-
     virtual TString*    GetTString()        { return NULL; }
     virtual Udata*      GetUserData()       { return NULL; }
     virtual Closure*    GetClosure()        { return NULL; }
@@ -141,9 +176,9 @@ FASTAPI size_t _sizeudata( size_t baseSize, size_t n )      { return (baseSize +
 LUA_MAXALIGN class TString : public GCObject
 {
 public:
-    ~TString();
+    inline TString( void *construction_params )     {}
 
-    lu_mem GetTypeSize( global_State *g ) const             { return _sizestring( sizeof(*this), this->len ); }
+    ~TString();
 
     lu_byte reserved;
     unsigned int hash;
@@ -153,9 +188,9 @@ public:
 LUA_MAXALIGN class Udata : public GCObject
 {
 public:
-    ~Udata();
+    inline Udata( void *construction_params )       {}
 
-    lu_mem GetTypeSize( global_State *g ) const             { return _sizeudata( sizeof(*this), this->len ); }
+    ~Udata();
 
     void MarkGC( global_State *g );
 
@@ -170,9 +205,9 @@ public:
 class Proto : public GrayObject
 {
 public:
-    ~Proto();
+    inline Proto( void *construction_params )       {}
 
-    lu_mem GetTypeSize( global_State *g ) const             { return sizeof(*this); }
+    ~Proto();
 
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
@@ -223,9 +258,10 @@ public:
 class UpVal : public GCObject
 {
 public:
-    ~UpVal();
+    inline UpVal( void )                            {}
+    inline UpVal( void *construction_params )       {}
 
-    lu_mem GetTypeSize( global_State *g ) const             { return sizeof(*this); }
+    ~UpVal();
 
     void MarkGC( global_State *g );
 
@@ -295,9 +331,9 @@ public:
 class CClosureMethodRedirect : public CClosure
 {
 public:
-    ~CClosureMethodRedirect();
+    inline CClosureMethodRedirect( void *construction_params )          {}
 
-    lu_mem GetTypeSize( global_State *g ) const         { return sizeof(*this); }
+    ~CClosureMethodRedirect();
 
     size_t Propagate( global_State *g );
 
@@ -307,26 +343,28 @@ public:
     Class* m_class;
 };
 
-class CClosureMethodRedirectSuper : public CClosureMethodRedirect
+class CClosureMethodRedirectSuper : public CClosure
 {
 public:
-    ~CClosureMethodRedirectSuper();
+    inline CClosureMethodRedirectSuper( void *construction_params )     {}
 
-    lu_mem GetTypeSize( global_State *g ) const         { return sizeof(*this); }
+    ~CClosureMethodRedirectSuper();
 
     size_t Propagate( global_State *g );
 
     TValue* ReadUpValue( unsigned char index );
 
+    Closure *redirect;
+    Class *m_class;
     Closure *super;
 };
 
 class CClosureBasic : public CClosure
 {
 public:
-    ~CClosureBasic();
+    inline CClosureBasic( void *construction_params )       {}
 
-    lu_mem GetTypeSize( global_State *g ) const;
+    ~CClosureBasic();
 
     size_t Propagate( global_State *g );
 
@@ -350,9 +388,9 @@ public:
 class CClosureMethod : public CClosureMethodBase
 {
 public:
-    ~CClosureMethod();
+    inline CClosureMethod( void *construction_params )      {}
 
-    lu_mem GetTypeSize( global_State *g ) const;
+    ~CClosureMethod();
 
     size_t Propagate( global_State *g );
 
@@ -364,9 +402,9 @@ public:
 class CClosureMethodTrans : public CClosureMethodBase
 {
 public:
-    ~CClosureMethodTrans();
+    inline CClosureMethodTrans( void *construction_params )     {}
 
-    lu_mem GetTypeSize( global_State *g ) const;
+    ~CClosureMethodTrans();
 
     size_t Propagate( global_State *g );
 
@@ -380,9 +418,9 @@ public:
 class LClosure : public Closure
 {
 public:
-    ~LClosure();
+    inline LClosure( void *construction_params )        {}
 
-    lu_mem GetTypeSize( global_State *g ) const;
+    ~LClosure();
 
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
@@ -417,9 +455,9 @@ typedef struct Node {
 class Table : public GrayObject
 {
 public:
-    ~Table();
+    inline Table( void *construction_params )       {}
 
-    lu_mem  GetTypeSize( global_State *g ) const;
+    ~Table();
 
     bool GCRequiresBackBarrier( void ) const    { return true; }
 
@@ -468,7 +506,7 @@ public:
 class ClassEnvDispatch : public ClassDispatch
 {
 public:
-    lu_mem                  GetTypeSize( global_State *g ) const    { return sizeof( ClassEnvDispatch ); }
+    inline ClassEnvDispatch( void *construct_params )           {}
 
     void                    Index( lua_State *L, const TValue *key, StkId val );
     void                    NewIndex( lua_State *L, const TValue *key, StkId val );
@@ -477,7 +515,7 @@ public:
 class ClassOutEnvDispatch : public ClassDispatch
 {
 public:
-    lu_mem                  GetTypeSize( global_State *g ) const    { return sizeof( ClassOutEnvDispatch ); }
+    inline ClassOutEnvDispatch( void *construct_params )        {}
 
     void                    Index( lua_State *L, const TValue *key, StkId val );
     void                    NewIndex( lua_State *L, const TValue *key, StkId val );
@@ -486,7 +524,7 @@ public:
 class ClassMethodDispatch : public ClassDispatch
 {
 public:
-    lu_mem                  GetTypeSize( global_State *g ) const    { return sizeof( ClassMethodDispatch ); }
+    inline ClassMethodDispatch( void *construct_params )        {}
 
     size_t                  Propagate( global_State *g );
 
@@ -519,9 +557,9 @@ struct _methodCacheEntry : _methodRegisterInfo
 class Class : public GCObject, public virtual ILuaClass
 {
 public:
-    ~Class();
+    inline Class( void *construction_params )       {}
 
-    lu_mem  GetTypeSize( global_State *g ) const;
+    ~Class();
 
     void    Propagate( lua_State *L );
 
@@ -683,8 +721,6 @@ public:
     }
     virtual ~lua_State();
 
-    lu_mem GetTypeSize( global_State *g ) const;
-
     // lua_State is always the main thread
     virtual void    SetMainThread( bool enabled )       {}
     virtual bool    IsThread()                          { return false; }
@@ -700,7 +736,7 @@ public:
     StkId base;  /* base of current function */
     global_State *l_G;
     CallInfo *ci;  /* call info for current function */
-    const Instruction *savedpc;  /* `savedpc' of current function */
+    const Instruction *savedpc;  /* 'savedpc' of current function */
     StkId stack_last;  /* last free slot in the stack */
     StkId stack;  /* stack base */
     CallInfo *end_ci;  /* points after end of ci array*/
@@ -773,8 +809,6 @@ class Closure;
 struct global_State
 {
     stringtable strt;  /* hash table for strings */
-    lua_Alloc frealloc;  /* function to (re-)allocate memory */
-    void *ud;         /* auxiliary data to 'frealloc' */
     lu_byte currentwhite;
 
     lu_mem totalbytes;  /* number of bytes currently allocated */
@@ -786,38 +820,42 @@ struct global_State
 
     RwList <lua_Thread> threads; /* all existing threads in this machine */
 
-    void *allocData; /* private allocation data used for memory requests */
+    lua_config *config; /* configuration shared across global states for specialized VM creation */
+    bool hasUniqueConfig;
+
+    // Immutable configuration values.
+    bool isMultithreaded;   // if true, the runtime must support parallel execution at well-defined points.
 };
 
 // Macros to create and destroy Lua types accordingly.
 template <typename classType>
-FASTAPI classType* lua_new( lua_State *L, lu_mem memSize = sizeof( classType ) )
+FASTAPI classType* lua_new( lua_State *L, LuaTypeSystem::typeInfoBase *theType, void *construct_params = NULL )
 {
-    // Allocate the memory.
-    void *objMem = L->defaultAlloc.Allocate( memSize );
-
-    if ( objMem )
+    classType *outObj = NULL;
     {
-        // Try to construct the object and return it.
-        return new (objMem) classType;
-    }
+        LuaTypeSystem& typeSys = G(L)->config->typeSys;
 
-    return NULL;
+        LuaRTTI *rtObj = typeSys.Construct( theType, construct_params );
+
+        if ( rtObj )
+        {
+            outObj = (classType*)typeSys.GetObjectFromTypeStruct( rtObj );
+        }
+    }
+    return outObj;
 }
 
 template <typename classType>
 FASTAPI void lua_delete( lua_State *L, classType *obj )
 {
-    // Obtain the type size.
-    lu_mem memSize = obj->GetTypeSize( G(L) );
+    LuaTypeSystem& typeSys = G(L)->config->typeSys;
 
-    // Deconstruct the type.
-    obj->~classType();
+    LuaRTTI *rtObj = typeSys.GetTypeStructFromObject( obj );
 
-    // Release the memory.
-    void *objMem = obj;
-
-    L->defaultAlloc.Free( objMem, memSize );
+    if ( rtObj )
+    {
+        typeSys.Destroy( rtObj );
+    }
 }
 
 // Helper macros for using lua_State and global_State.
@@ -1348,8 +1386,8 @@ LUAI_FUNC const char *luaO_pushfstring (lua_State *L, const char *fmt, ...);
 LUAI_FUNC void luaO_chunkid (char *out, const char *source, size_t len);
 
 // Module initialization.
-LUAI_FUNC void luaO_init( void );
-LUAI_FUNC void luaO_shutdown( void );
+LUAI_FUNC void luaO_init( lua_config *cfg );
+LUAI_FUNC void luaO_shutdown( lua_config *cfg );
 
 
 #endif

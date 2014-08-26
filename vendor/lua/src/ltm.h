@@ -49,7 +49,7 @@ LUAI_DATA const char *const luaT_typenames[];
 
 
 // Module initialization.
-LUAI_FUNC void luaT_moduleinit( void );
-LUAI_FUNC void luaT_moduleshutdown( void );
+LUAI_FUNC void luaT_moduleinit( lua_config *cfg );
+LUAI_FUNC void luaT_moduleshutdown( lua_config *cfg );
 
 #endif

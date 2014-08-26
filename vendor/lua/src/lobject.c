@@ -222,12 +222,12 @@ void GCObject::NewIndex( lua_State *L, const TValue *key, StkId val )
 }
 
 // Module initialization.
-void luaO_init( void )
+void luaO_init( lua_config *cfg )
 {
     return;
 }
 
-void luaO_shutdown( void )
+void luaO_shutdown( lua_config *cfg )
 {
     return;
 }
