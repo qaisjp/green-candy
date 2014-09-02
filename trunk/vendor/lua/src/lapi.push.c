@@ -45,6 +45,17 @@ LUA_API void lua_pushinteger (lua_State *L, lua_Integer n)
 }
 
 
+LUA_API void lua_pushwideinteger( lua_State *L, lua_WideInteger n )
+{
+    lua_lock(L);
+
+    setnvalue(L->top, cast_num(n));
+    api_incr_top(L);
+
+    lua_unlock(L);
+}
+
+
 LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len)
 {
   lua_lock(L);
@@ -110,7 +121,7 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
 LUA_API void lua_pushboolean (lua_State *L, int b)
 {
   lua_lock(L);
-  setbvalue(L->top, (b != 0));  /* ensure that true is 1 */
+  setbvalue(L->top, (b != 0));  /* ensure that C integer 1 is true */
   api_incr_top(L);
   lua_unlock(L);
 }

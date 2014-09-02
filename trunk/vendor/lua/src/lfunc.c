@@ -97,6 +97,13 @@ TValue* CClosureMethodRedirectSuper::ReadUpValue( unsigned char index )
     return (TValue*)luaO_nilobject;
 }
 
+CClosureBasic::CClosureBasic( void *construction_params )
+{
+    cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
+
+    this->nupvalues = params->nelems;
+}
+
 CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
 {
     global_State *g = G(L);
@@ -118,7 +125,6 @@ CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
             c->isC = true;
             c->isEnvLocked = false;
             c->env = e;
-            c->nupvalues = cast_byte(nelems);
             c->accessor = gcvalue( luaF_getcurraccessor( L ) );
         }
         return c;
@@ -132,6 +138,13 @@ TValue* CClosureBasic::ReadUpValue( unsigned char index )
         return (TValue*)luaO_nilobject; // we trust the programmer that he will not write into the nil object (possibly through upvalues)
 
     return &upvalues[index];
+}
+
+CClosureMethod::CClosureMethod( void *construction_params )
+{
+    cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
+
+    this->nupvalues = params->nelems;
 }
 
 CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j )
@@ -155,7 +168,6 @@ CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j
             c->isC = true;
             c->isEnvLocked = true;
             c->env = e;
-            c->nupvalues = cast_byte(nelems);
             c->accessor = gcvalue( luaF_getcurraccessor( L ) );
             c->m_class = j;
         }
@@ -170,6 +182,13 @@ TValue* CClosureMethod::ReadUpValue( unsigned char index )
         return (TValue*)luaO_nilobject; // we trust the programmer that he will not write into the nil object (possibly through upvalues)
 
     return &upvalues[index];
+}
+
+CClosureMethodTrans::CClosureMethodTrans( void *construction_params )
+{
+    cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
+
+    this->nupvalues = params->nelems;
 }
 
 CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e, Class *j, int trans )
@@ -209,6 +228,13 @@ TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
         return (TValue*)luaO_nilobject; // we trust the programmer that he will not write into the nil object (possibly through upvalues)
 
     return &upvalues[index];
+}
+
+LClosure::LClosure( void *construction_params )
+{
+    cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
+
+    this->nupvalues = params->nelems;
 }
 
 LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)

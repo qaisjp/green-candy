@@ -54,9 +54,16 @@ EXPORTS
   lua_getallocf
   lua_tocfunction
   lua_tointeger
+  lua_tointegerW
+  lua_towideinteger
   lua_tonumber
   lua_tothread
+  lua_newconfig
+  lua_setconfig
+  lua_getconfig
+  lua_freeconfig
   lua_newstate
+  lua_newstateconfig
   lua_newthread
   lua_newenvironment
   lua_objlen
@@ -78,6 +85,7 @@ EXPORTS
   lua_pushboolean
   lua_pushcclosure
   lua_pushinteger
+  lua_pushwideinteger
   lua_pushlightuserdata
   lua_pushlstring
   lua_pushnil
@@ -119,6 +127,7 @@ EXPORTS
   luaL_checknumber
   luaL_optnumber
   luaL_newstate
+  luaL_newconfig
   luaL_openlib
   luaL_addlstring
   luaL_addstring
@@ -141,6 +150,7 @@ EXPORTS
   luaopen_string
   luaopen_class
   luaopen_table
+  luaopen_typelib
   luaL_openlibs
   luaU_dump
   luaM_toobig

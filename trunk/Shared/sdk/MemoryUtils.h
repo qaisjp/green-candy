@@ -143,9 +143,13 @@ private:
 };
 
 // Class used to register anonymous structs that can be placed on top of a C++ type.
-template <typename abstractionType>
+template <typename abstractionType, typename pluginDescriptorType>
 struct AnonymousPluginStructRegistry
 {
+    typedef typename pluginDescriptorType::pluginOffset_t pluginOffset_t;
+
+    pluginOffset_t preferredAlignment;
+
     inline AnonymousPluginStructRegistry( void )
     {
         // Reset to zero as we have no plugins allocated.
@@ -159,27 +163,22 @@ struct AnonymousPluginStructRegistry
         return;
     }
 
-    // Number type used to store the plugin offset.
-    typedef ptrdiff_t pluginOffset_t;
-
-    pluginOffset_t preferredAlignment;
-
     // Virtual interface used to describe plugin classes.
     // The construction process must be immutable across the runtime.
     struct pluginInterface
     {
-        virtual bool OnPluginConstruct( abstractionType *object, pluginOffset_t pluginOffset, unsigned int pluginId )
+        virtual bool OnPluginConstruct( abstractionType *object, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
         {
             // By default, construction of plugins should succeed.
             return true;
         }
 
-        virtual void OnPluginDestruct( abstractionType *object, pluginOffset_t pluginOffset, unsigned int pluginId )
+        virtual void OnPluginDestruct( abstractionType *object, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
         {
             return;
         }
 
-        virtual bool OnPluginAssign( abstractionType *dstObject, const abstractionType *srcObject, pluginOffset_t pluginOffset, unsigned int pluginId )
+        virtual bool OnPluginAssign( abstractionType *dstObject, const abstractionType *srcObject, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
         {
             // Assignment of data to another plugin struct is optional.
             return false;
@@ -190,7 +189,7 @@ struct AnonymousPluginStructRegistry
     struct registered_plugin
     {
         size_t pluginSize;
-        unsigned int pluginId;
+        pluginDescriptorType pluginId;
         pluginOffset_t pluginOffset;
         pluginInterface *descriptor;
     };
@@ -205,7 +204,7 @@ struct AnonymousPluginStructRegistry
     size_t pluginAllocSize;
 
     // Function used to register a new plugin struct into the class.
-    inline pluginOffset_t RegisterPlugin( size_t pluginSize, unsigned int pluginId, pluginInterface *plugInterface )
+    inline pluginOffset_t RegisterPlugin( size_t pluginSize, const pluginDescriptorType& pluginId, pluginInterface *plugInterface )
     {
         // Make sure we have got valid parameters passed.
         if ( pluginSize == 0 || plugInterface == NULL )
@@ -366,6 +365,138 @@ struct AnonymousPluginStructRegistry
     }
 };
 
+// Helper struct for common plugin system functions.
+template <typename classType, typename systemType, typename pluginDescriptorType>
+struct CommonPluginSystemDispatch
+{
+    systemType& sysType;
+
+    typedef typename systemType::pluginOffset_t pluginOffset_t;
+
+    inline CommonPluginSystemDispatch( systemType& sysType ) : sysType( sysType )
+    {
+        return;
+    }
+
+    template <typename interfaceType>
+    inline pluginOffset_t RegisterCommonPluginInterface( interfaceType *plugInterface, size_t structSize, const pluginDescriptorType& pluginId )
+    {
+        pluginOffset_t pluginOffset = 0;
+
+        if ( plugInterface )
+        {
+            // Register our plugin!
+            pluginOffset = sysType.RegisterPlugin(
+                structSize, pluginId,
+                plugInterface
+            );
+
+            // Delete our interface again if the plugin offset is invalid.
+            if ( !systemType::IsOffsetValid( pluginOffset ) )
+            {
+                delete plugInterface;
+            }
+        }
+        return pluginOffset;
+    }
+
+    // Helper functions used to create common plugin templates.
+    template <typename structType>
+    inline pluginOffset_t RegisterStructPlugin( const pluginDescriptorType& pluginId )
+    {
+        struct structPluginInterface : systemType::pluginInterface
+        {
+            bool OnPluginConstruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+            {
+                void *structMem = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+                if ( structMem == NULL )
+                    return false;
+
+                // Construct the struct!
+                structType *theStruct = new (structMem) structType;
+
+                return ( theStruct != NULL );
+            }
+
+            void OnPluginDestruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+            {
+                structType *theStruct = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+                // Destruct the struct!
+                theStruct->~structType();
+            }
+
+            bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+            {
+                // To an assignment operation.
+                structType *dstStruct = pluginId.RESOLVE_STRUCT <structType> ( dstObject, pluginOffset );
+                const structType *srcStruct = pluginId.RESOLVE_STRUCT <structType> ( srcObject, pluginOffset );
+
+                *dstStruct = *srcStruct;
+                return true;
+            }
+        };
+
+        // Create the interface that should handle our plugin.
+        structPluginInterface *plugInterface = new structPluginInterface();
+
+        return RegisterCommonPluginInterface( plugInterface, sizeof( structType ), pluginId );
+    }
+
+    template <typename structType>
+    inline pluginOffset_t RegisterDependantStructPlugin( const pluginDescriptorType& pluginId, size_t structSize = sizeof(structType) )
+    {
+        struct structPluginInterface : systemType::pluginInterface
+        {
+            bool OnPluginConstruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+            {
+                void *structMem = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+                if ( structMem == NULL )
+                    return false;
+
+                // Construct the struct!
+                structType *theStruct = new (structMem) structType;
+
+                if ( theStruct )
+                {
+                    // Initialize the manager.
+                    theStruct->Initialize( obj );
+                }
+
+                return ( theStruct != NULL );
+            }
+
+            void OnPluginDestruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+            {
+                structType *theStruct = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+                // Deinitialize the manager.
+                theStruct->Shutdown( obj );
+
+                // Destruct the struct!
+                theStruct->~structType();
+            }
+
+            bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+            {
+                // To an assignment operation.
+                structType *dstStruct = pluginId.RESOLVE_STRUCT <structType> ( dstObject, pluginOffset );
+                const structType *srcStruct = pluginId.RESOLVE_STRUCT <structType> ( srcObject, pluginOffset );
+
+                *dstStruct = *srcStruct;
+                return true;
+            }
+        };
+
+        // Create the interface that should handle our plugin.
+        structPluginInterface *plugInterface = new structPluginInterface();
+
+        return RegisterCommonPluginInterface( plugInterface, structSize, pluginId );
+    }
+};
+
 // Static plugin system that constructs classes that can be extended at runtime.
 // This one is inspired by the RenderWare plugin system.
 // This container is NOT MULTI-THREAD SAFE.
@@ -389,12 +520,49 @@ struct StaticPluginClassFactory
         assert( aliveClasses == 0 );
     }
 
-    typedef AnonymousPluginStructRegistry <classType> structRegistry_t;
+    // Number type used to store the plugin offset.
+    typedef ptrdiff_t pluginOffset_t;
+
+    // Helper functoid.
+    struct pluginDescriptor
+    {
+        typedef pluginOffset_t pluginOffset_t;
+
+        inline pluginDescriptor( void )
+        {
+            this->pluginId = StaticPluginClassFactory::ANONYMOUS_PLUGIN_ID;
+        }
+
+        inline pluginDescriptor( unsigned int pluginId )
+        {
+            this->pluginId = pluginId;
+        }
+
+        operator const unsigned int& ( void ) const
+        {
+            return this->pluginId;
+        }
+
+        template <typename pluginStructType>
+        AINLINE static pluginStructType* RESOLVE_STRUCT( classType *object, pluginOffset_t offset )
+        {
+            return StaticPluginClassFactory::RESOLVE_STRUCT <pluginStructType> ( object, offset );
+        }
+
+        template <typename pluginStructType>
+        AINLINE static const pluginStructType* RESOLVE_STRUCT( const classType *object, pluginOffset_t offset )
+        {
+            return StaticPluginClassFactory::RESOLVE_STRUCT <const pluginStructType> ( object, offset );
+        }
+
+        unsigned int pluginId;
+    };
+
+    typedef AnonymousPluginStructRegistry <classType, pluginDescriptor> structRegistry_t;
 
     structRegistry_t structRegistry;
 
     // Localize certain plugin registry types.
-    typedef typename structRegistry_t::pluginOffset_t pluginOffset_t;
     typedef typename structRegistry_t::pluginInterface pluginInterface;
 
     static const pluginOffset_t INVALID_PLUGIN_OFFSET = (pluginOffset_t)-1;  // zero is always invalid.
@@ -437,122 +605,19 @@ struct StaticPluginClassFactory
         structRegistry.UnregisterPlugin( pluginOffset );
     }
 
-    template <typename interfaceType>
-    inline pluginOffset_t RegisterCommonPluginInterface( interfaceType *plugInterface, size_t structSize, unsigned int pluginId )
-    {
-        pluginOffset_t pluginOffset = 0;
-
-        if ( plugInterface )
-        {
-            // Register our plugin!
-            pluginOffset = RegisterPlugin(
-                structSize, pluginId,
-                plugInterface
-            );
-
-            // Delete our interface again if the plugin offset is invalid.
-            if ( !IsOffsetValid( pluginOffset ) )
-            {
-                delete plugInterface;
-            }
-        }
-        return pluginOffset;
-    }
+    typedef CommonPluginSystemDispatch <classType, StaticPluginClassFactory, pluginDescriptor> functoidHelper_t;
 
     // Helper functions used to create common plugin templates.
     template <typename structType>
     inline pluginOffset_t RegisterStructPlugin( unsigned int pluginId )
     {
-        struct structPluginInterface : pluginInterface
-        {
-            bool OnPluginConstruct( classType *obj, pluginOffset_t pluginOffset, unsigned int pluginId )
-            {
-                void *structMem = RESOLVE_STRUCT <structType> ( obj, pluginOffset );
-
-                if ( structMem == NULL )
-                    return false;
-
-                // Construct the struct!
-                structType *theStruct = new (structMem) structType;
-
-                return ( theStruct != NULL );
-            }
-
-            void OnPluginDestruct( classType *obj, pluginOffset_t pluginOffset, unsigned int pluginId )
-            {
-                structType *theStruct = RESOLVE_STRUCT <structType> ( obj, pluginOffset );
-
-                // Destruct the struct!
-                theStruct->~structType();
-            }
-
-            bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, unsigned int pluginId )
-            {
-                // To an assignment operation.
-                structType *dstStruct = RESOLVE_STRUCT <structType> ( dstObject, pluginOffset );
-                const structType *srcStruct = RESOLVE_STRUCT <structType> ( srcObject, pluginOffset );
-
-                *dstStruct = *srcStruct;
-                return true;
-            }
-        };
-
-        // Create the interface that should handle our plugin.
-        structPluginInterface *plugInterface = new structPluginInterface();
-
-        return RegisterCommonPluginInterface( plugInterface, sizeof( structType ), pluginId );
+        return functoidHelper_t( *this ).RegisterStructPlugin <structType> ( pluginId );
     }
 
     template <typename structType>
-    inline pluginOffset_t RegisterDependantStructPlugin( unsigned int pluginId, size_t structSize = sizeof(structType) )
+    inline pluginOffset_t RegisterDependantStructPlugin( unsigned int pluginId, size_t structSize = sizeof( structType ) )
     {
-        struct structPluginInterface : pluginInterface
-        {
-            bool OnPluginConstruct( classType *obj, pluginOffset_t pluginOffset, unsigned int pluginId )
-            {
-                void *structMem = RESOLVE_STRUCT <structType> ( obj, pluginOffset );
-
-                if ( structMem == NULL )
-                    return false;
-
-                // Construct the struct!
-                structType *theStruct = new (structMem) structType;
-
-                if ( theStruct )
-                {
-                    // Initialize the manager.
-                    theStruct->Initialize( obj );
-                }
-
-                return ( theStruct != NULL );
-            }
-
-            void OnPluginDestruct( classType *obj, pluginOffset_t pluginOffset, unsigned int pluginId )
-            {
-                structType *theStruct = RESOLVE_STRUCT <structType> ( obj, pluginOffset );
-
-                // Deinitialize the manager.
-                theStruct->Shutdown( obj );
-
-                // Destruct the struct!
-                theStruct->~structType();
-            }
-
-            bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, unsigned int pluginId )
-            {
-                // To an assignment operation.
-                structType *dstStruct = RESOLVE_STRUCT <structType> ( dstObject, pluginOffset );
-                const structType *srcStruct = RESOLVE_STRUCT <structType> ( srcObject, pluginOffset );
-
-                *dstStruct = *srcStruct;
-                return true;
-            }
-        };
-
-        // Create the interface that should handle our plugin.
-        structPluginInterface *plugInterface = new structPluginInterface();
-
-        return RegisterCommonPluginInterface( plugInterface, structSize, pluginId );
+        return functoidHelper_t( *this ).RegisterDependantStructPlugin <structType> ( pluginId, structSize );
     }
 
     inline size_t GetClassSize( void ) const

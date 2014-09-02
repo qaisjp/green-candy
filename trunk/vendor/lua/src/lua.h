@@ -135,6 +135,10 @@ typedef LUA_NUMBER lua_Number;
 typedef LUA_INTEGER lua_Integer;
 
 
+/* type for wide integer functions */
+typedef LUA_WIDE_INTEGER lua_WideInteger;
+
+
 /* type for internal lua string (for export to runtime) */
 typedef const char* lua_String;
 
@@ -155,6 +159,7 @@ LUA_API void        (lua_freeconfig) (lua_config *cfg);
 ** state manipulation
 */
 LUA_API lua_State *(lua_newstate) (lua_Alloc f, void *ud);
+LUA_API lua_State *(lua_newstateconfig) (lua_config *config);
 LUA_API void       (lua_close) (lua_State *L);
 LUA_API lua_State *(lua_newthread) (lua_State *L);
 LUA_API void       (lua_newenvironment) (lua_State *L);
@@ -213,6 +218,7 @@ LUA_API int            (lua_lessthan) (lua_State *L, int idx1, int idx2);
 LUA_API lua_Number      (lua_tonumber) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointeger) (lua_State *L, int idx);
 LUA_API lua_Integer     (lua_tointegerW) (lua_State *L, int idx);   // MTA Specific
+LUA_API lua_WideInteger (lua_towideinteger) (lua_State *L, int idx);
 LUA_API int             (lua_toboolean) (lua_State *L, int idx);
 LUA_API lua_String      (lua_tolstring) (lua_State *L, int idx, size_t *len);
 LUA_API size_t          (lua_objlen) (lua_State *L, int idx);
@@ -228,6 +234,7 @@ LUA_API const void     *(lua_topointer) (lua_State *L, int idx);
 LUA_API void  (lua_pushnil) (lua_State *L);
 LUA_API void  (lua_pushnumber) (lua_State *L, lua_Number n);
 LUA_API void  (lua_pushinteger) (lua_State *L, lua_Integer n);
+LUA_API void  (lua_pushwideinteger) (lua_State *L, lua_WideInteger n);
 LUA_API void  (lua_pushlstring) (lua_State *L, const char *s, size_t l);
 LUA_API void  (lua_pushstring) (lua_State *L, const char *s);
 LUA_API const char *(lua_pushvfstring) (lua_State *L, const char *fmt,

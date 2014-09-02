@@ -176,7 +176,7 @@ FASTAPI size_t _sizeudata( size_t baseSize, size_t n )      { return (baseSize +
 LUA_MAXALIGN class TString : public GCObject
 {
 public:
-    inline TString( void *construction_params )     {}
+    TString( void *construction_params );
 
     ~TString();
 
@@ -188,7 +188,7 @@ public:
 LUA_MAXALIGN class Udata : public GCObject
 {
 public:
-    inline Udata( void *construction_params )       {}
+    Udata( void *construction_params );
 
     ~Udata();
 
@@ -362,7 +362,7 @@ public:
 class CClosureBasic : public CClosure
 {
 public:
-    inline CClosureBasic( void *construction_params )       {}
+    CClosureBasic( void *construction_params );
 
     ~CClosureBasic();
 
@@ -388,7 +388,7 @@ public:
 class CClosureMethod : public CClosureMethodBase
 {
 public:
-    inline CClosureMethod( void *construction_params )      {}
+    CClosureMethod( void *construction_params );
 
     ~CClosureMethod();
 
@@ -402,7 +402,7 @@ public:
 class CClosureMethodTrans : public CClosureMethodBase
 {
 public:
-    inline CClosureMethodTrans( void *construction_params )     {}
+    CClosureMethodTrans( void *construction_params );
 
     ~CClosureMethodTrans();
 
@@ -418,7 +418,7 @@ public:
 class LClosure : public Closure
 {
 public:
-    inline LClosure( void *construction_params )        {}
+    LClosure( void *construction_params );
 
     ~LClosure();
 

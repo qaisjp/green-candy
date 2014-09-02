@@ -115,6 +115,18 @@ LUA_API lua_Integer lua_tointegerW (lua_State *L, int idx)
     return (lua_Integer)nvalue(o);
 }
 
+LUA_API lua_WideInteger lua_towideinteger( lua_State *L, int idx )
+{
+    TValue n;
+    const TValue *o = index2constadr(L, idx);
+
+    if (!tonumber(o, &n))
+        return 0;
+
+    // Transform to a wide integer (often that is 64bit)
+    return (lua_WideInteger)nvalue(o);
+}
+
 LUA_API int lua_toboolean (lua_State *L, int idx) {
   const TValue *o = index2constadr(L, idx);
   return !l_isfalse(o);

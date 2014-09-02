@@ -245,6 +245,8 @@ protected:
     
     std::list <env_status>          m_envStack;
 
+    lua_config*                     m_luaConfig;
+
     lua_State*                      m_lua;
 
     std::list <lua_State*>          m_threadStack;
