@@ -3,6 +3,57 @@
 #ifndef _LUA_PLUGIN_UTILITIES_
 #define _LUA_PLUGIN_UTILITIES_
 
+// Helper structure to handle plugin dependant struct registration.
+template <typename structType, typename factoryType>
+class PluginDependantStructRegister
+{
+    typedef typename factoryType::pluginOffset_t pluginOffset_t;
+
+    factoryType *hostFactory;
+
+    pluginOffset_t structPluginOffset;
+
+    unsigned int pluginId;
+
+public:
+    inline PluginDependantStructRegister( factoryType& theFactory, unsigned int pluginId = factoryType::ANONYMOUS_PLUGIN_ID )
+    {
+        this->hostFactory = NULL;
+        this->pluginId = pluginId;
+        this->structPluginOffset = factoryType::INVALID_PLUGIN_OFFSET;
+
+        RegisterPlugin( theFactory );
+    }
+
+    inline PluginDependantStructRegister( unsigned int pluginId = factoryType::ANONYMOUS_PLUGIN_ID )
+    {
+        this->hostFactory = NULL;
+        this->pluginId = pluginId;
+        this->structPluginOffset = factoryType::INVALID_PLUGIN_OFFSET;
+    }
+
+    inline ~PluginDependantStructRegister( void )
+    {
+        if ( this->hostFactory && factoryType::IsOffsetValid( this->structPluginOffset ) )
+        {
+            this->hostFactory->UnregisterPlugin( this->structPluginOffset );
+        }
+    }
+
+    inline void RegisterPlugin( factoryType& theFactory )
+    {
+        this->structPluginOffset =
+            theFactory.RegisterDependantStructPlugin <structType> ( this->pluginId );
+
+        this->hostFactory = &theFactory;
+    }
+
+    inline structType* GetPluginStruct( typename factoryType::hostType_t *hostObj )
+    {
+        return factoryType::RESOLVE_STRUCT <structType> ( hostObj, this->structPluginOffset );
+    }
+};
+
 template <typename hostType, typename factoryType, typename structType, typename metaInfoType>
 struct factoryMetaDefault
 {
@@ -93,8 +144,7 @@ public:
     typedef typename hostFactory_t::hostType_t hostType_t;
 
 private:
-    hostFactory_t *hostFactory;
-    hostPluginOffset_t connectingBridgePluginOffset;
+    PluginDependantStructRegister <factoryMetaType, hostFactoryType> connectingBridgePlugin;
 
     typedef factoryMetaType hostFactoryDependantStruct;
     
@@ -102,38 +152,22 @@ public:
 
     inline PluginConnectingBridge( void )
     {
-        this->hostFactory = NULL;
+        return;
     }
 
-    inline PluginConnectingBridge( hostFactory_t& hostFactory )
+    inline PluginConnectingBridge( hostFactory_t& hostFactory ) : connectingBridgePlugin( hostFactory )
     {
-        this->hostFactory = NULL;
-
-        RegisterPluginStruct( hostFactory );
+        return;
     }
 
     inline void RegisterPluginStruct( hostFactory_t& theFactory )
     {
-        this->hostFactory = &theFactory;
-
-        this->connectingBridgePluginOffset =
-            theFactory.RegisterDependantStructPlugin <hostFactoryDependantStruct> ( hostFactory_t::ANONYMOUS_PLUGIN_ID );
-    }
-
-    inline ~PluginConnectingBridge( void )
-    {
-        if ( this->hostFactory )
-        {
-            if ( this->connectingBridgePluginOffset != hostFactory_t::INVALID_PLUGIN_OFFSET )
-            {
-                this->hostFactory->UnregisterPlugin( this->connectingBridgePluginOffset );
-            }
-        }
+        connectingBridgePlugin.RegisterPlugin( theFactory );
     }
 
     inline factoryMetaType* GetMetaStruct( hostType_t *host )
     {
-        return hostFactory_t::RESOLVE_STRUCT <hostFactoryDependantStruct> ( host, this->connectingBridgePluginOffset );
+        return connectingBridgePlugin.GetPluginStruct( host );
     }
 
     inline structType* GetPluginStructFromMetaStruct( factoryMetaType *metaStruct, endingPointType_t *endingPoint )
@@ -153,57 +187,6 @@ public:
             }
         }
         return resultStruct;
-    }
-};
-
-// Helper structure to handle plugin dependant struct registration.
-template <typename structType, typename factoryType>
-class PluginDependantStructRegister
-{
-    typedef typename factoryType::pluginOffset_t pluginOffset_t;
-
-    factoryType *hostFactory;
-
-    pluginOffset_t structPluginOffset;
-
-    unsigned int pluginId;
-
-public:
-    inline PluginDependantStructRegister( factoryType& theFactory, unsigned int pluginId = factoryType::ANONYMOUS_PLUGIN_ID )
-    {
-        this->hostFactory = NULL;
-        this->pluginId = pluginId;
-        this->structPluginOffset = factoryType::INVALID_PLUGIN_OFFSET;
-
-        RegisterPlugin( theFactory );
-    }
-
-    inline PluginDependantStructRegister( unsigned int pluginId = factoryType::ANONYMOUS_PLUGIN_ID )
-    {
-        this->hostFactory = NULL;
-        this->pluginId = pluginId;
-        this->structPluginOffset = factoryType::INVALID_PLUGIN_OFFSET;
-    }
-
-    inline ~PluginDependantStructRegister( void )
-    {
-        if ( this->hostFactory && factoryType::IsOffsetValid( this->structPluginOffset ) )
-        {
-            this->hostFactory->UnregisterPlugin( this->structPluginOffset );
-        }
-    }
-
-    inline void RegisterPlugin( factoryType& theFactory )
-    {
-        this->structPluginOffset =
-            theFactory.RegisterDependantStructPlugin <structType> ( this->pluginId );
-
-        this->hostFactory = &theFactory;
-    }
-
-    inline structType* GetPluginStruct( typename factoryType::hostType_t *hostObj )
-    {
-        return factoryType::RESOLVE_STRUCT <structType> ( hostObj, this->structPluginOffset );
     }
 };
 

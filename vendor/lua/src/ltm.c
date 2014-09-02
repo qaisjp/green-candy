@@ -62,7 +62,7 @@ int luaT_gettype( lua_State *L, unsigned int index )
 {
     UNUSED(L);
     
-    int theTypes[] =
+    const int theTypes[] =
     {
         LUA_TNIL,
         LUA_TBOOLEAN,
@@ -99,7 +99,7 @@ const TValue *luaT_gettm (Table *events, TMS event, TString *ename)
   const TValue *tm = luaH_getstr(events, ename);
   lua_assert(event <= TM_EQ);
   if (ttisnil(tm)) {  /* no tag method? */
-    events->flags |= cast_byte(1u<<event);  /* cache this fact */
+    events->flags |= bitmask((lu_byte)event);  /* cache this fact */
     return NULL;
   }
   else return tm;

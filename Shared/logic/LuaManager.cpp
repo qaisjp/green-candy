@@ -203,18 +203,30 @@ LuaManager::LuaManager( Events& events, ScriptDebugging& debug ) :
     m_debug( debug )
 {
     // Setup the virtual machine
+    lua_config *cfg = NULL;
+
 #ifdef LUA_ISOLATE_OS_RESOURCES
     _memAllocatorInfo *info = new _memAllocatorInfo;
     info->heap = HeapCreate( 0, 0, 0 );
 
     m_privateAllocator = info;
 
-    g_L = m_lua = lua_newstate( (lua_Alloc)_lua_allocate, info );
+    cfg = lua_newconfig( (lua_Alloc)_lua_allocate, info );
 #else
     m_privateAllocator = NULL;
 
-    g_L = m_lua = luaL_newstate();
+    cfg = luaL_newconfig();
 #endif
+
+    // Create a multi-threaded Lua runtime.
+    lua_setconfig( cfg, "mt", TRUE );
+
+    // Create the new specialized Lua state.
+    lua_State *L = lua_newstateconfig( cfg );
+
+    g_L = L; m_lua = L;
+
+    m_luaConfig = cfg;
 
 	// Register ourselves
 	g_luaManager = this;
@@ -255,6 +267,9 @@ void LuaManager::Shutdown()
     lua_close( m_lua );
 
     g_L = m_lua = NULL;
+
+    // Destroy the configuration instance.
+    lua_freeconfig( m_luaConfig );
 }
 
 LuaManager::~LuaManager()
@@ -572,6 +587,7 @@ void LuaManager::Init( LuaMain *lua )
     luaopen_debug( thread ); // WARNING: CREATE OUR OWN DEBUG LIB!!!
 #endif
     luaopen_class( thread );
+    luaopen_typelib( thread );
     luabitwise_open( thread );
 
     // Load our functions into the hyperstructure

@@ -22,6 +22,8 @@ struct LuaTypeSystem
 {
     typedef GeneralMemoryAllocator memAllocType;
 
+    static const unsigned int ANONYMOUS_PLUGIN_ID = 0xFFFFFFFF;
+
     // Exceptions thrown by this system.
     class abstraction_construction_exception    {};
 
@@ -57,6 +59,48 @@ struct LuaTypeSystem
         virtual size_t GetTypeSizeByObject( void *mem ) const = 0;
     };
 
+    struct typeInfoBase;
+
+    struct pluginDescriptor
+    {
+        typedef ptrdiff_t pluginOffset_t;
+
+        inline pluginDescriptor( void )
+        {
+            this->pluginId = LuaTypeSystem::ANONYMOUS_PLUGIN_ID;
+            this->typeInfo = NULL;
+        }
+
+        inline pluginDescriptor( unsigned int id, typeInfoBase *typeInfo )
+        {
+            this->pluginId = id;
+            this->typeInfo = typeInfo;
+        }
+
+        unsigned int pluginId;
+        typeInfoBase *typeInfo;
+
+        template <typename pluginStructType>
+        AINLINE pluginStructType* RESOLVE_STRUCT( LuaRTTI *object, pluginOffset_t offset )
+        {
+            return LuaTypeSystem::RESOLVE_STRUCT <pluginStructType> ( object, this->typeInfo, offset );
+        }
+
+        template <typename pluginStructType>
+        AINLINE const pluginStructType* RESOLVE_STRUCT( const LuaRTTI *object, pluginOffset_t offset )
+        {
+            return LuaTypeSystem::RESOLVE_STRUCT <const pluginStructType> ( object, this->typeInfo, offset );
+        }
+    };
+
+    typedef AnonymousPluginStructRegistry <LuaRTTI, pluginDescriptor> structRegistry_t;
+
+    // Localize important struct details.
+    typedef structRegistry_t::pluginOffset_t pluginOffset_t;
+    typedef structRegistry_t::pluginInterface pluginInterface;
+
+    static const pluginOffset_t INVALID_PLUGIN_OFFSET = (pluginOffset_t)-1;
+
     struct typeInfoBase
     {
         virtual void Cleanup( memAllocType& memAlloc ) = 0;
@@ -72,15 +116,125 @@ struct LuaTypeSystem
             return ( this->refCount != 0 );
         }
 
+        unsigned long inheritanceCount; // number of types inheriting from this type
+
+        inline bool IsEndType( void ) const
+        {
+            return ( this->inheritanceCount == 0 );
+        }
+
         // Inheritance information.
         typeInfoBase *inheritsFrom; // type that this type inherits from
 
         // Plugin information.
-        typedef AnonymousPluginStructRegistry <LuaRTTI> structRegistry_t;
         structRegistry_t structRegistry;
 
         RwListEntry <typeInfoBase> node;
     };
+
+    AINLINE static size_t GetTypePluginOffset( typeInfoBase *subclassTypeInfo, typeInfoBase *offsetInfo )
+    {
+        size_t offset = 0;
+
+        if ( typeInfoBase *inheritsFrom = offsetInfo->inheritsFrom )
+        {
+            offset += GetTypePluginOffset( subclassTypeInfo, inheritsFrom );
+
+            offset += inheritsFrom->structRegistry.pluginAllocSize;
+        }
+
+        return offset;
+    }
+
+    AINLINE static typeInfoBase* GetTypeInfoFromTypeStruct( LuaRTTI *rtObj )
+    {
+        return (typeInfoBase*)rtObj->type_meta;
+    }
+
+    // Function to get the offset of a type information on an object.
+    AINLINE static pluginOffset_t GetTypeInfoStructOffset( LuaRTTI *rtObj, typeInfoBase *offsetInfo )
+    {
+        pluginOffset_t baseOffset = 0;
+
+        // Get generic type information.
+        typeInfoBase *subclassTypeInfo = GetTypeInfoFromTypeStruct( rtObj );
+
+        // Get the pointer to the language object.
+        void *langObj = GetObjectFromTypeStruct( rtObj );
+
+        baseOffset += sizeof( LuaRTTI );
+
+        // Add the dynamic size of the language object.
+        baseOffset += subclassTypeInfo->tInterface->GetTypeSizeByObject( langObj );
+
+        // Add the plugin offset.
+        baseOffset += GetTypePluginOffset( subclassTypeInfo, offsetInfo );
+
+        return baseOffset;
+    }
+
+    AINLINE static bool IsOffsetValid( pluginOffset_t offset )
+    {
+        return ( offset != INVALID_PLUGIN_OFFSET );
+    }
+
+    template <typename pluginStructType>
+    AINLINE static pluginStructType* RESOLVE_STRUCT( LuaRTTI *rtObj, typeInfoBase *typeInfo, pluginOffset_t offset )
+    {
+        if ( !IsOffsetValid( offset ) )
+            return NULL;
+
+        size_t baseOffset = GetTypeInfoStructOffset( rtObj, typeInfo );
+
+        return (pluginStructType*)( (char*)rtObj + baseOffset + offset );
+    }
+
+    template <typename pluginStructType>
+    AINLINE static const pluginStructType* RESOLVE_STRUCT( const LuaRTTI *rtObj, typeInfoBase *typeInfo, pluginOffset_t offset )
+    {
+        if ( !IsOffsetValid( offset ) )
+            return NULL;
+
+        size_t baseOffset = GetTypeInfoStructOffset( (LuaRTTI*)rtObj, typeInfo );
+
+        return (const pluginStructType*)( (char*)rtObj + baseOffset + offset );
+    }
+
+    // Function used to register a new plugin struct into the class.
+    inline pluginOffset_t RegisterPlugin( size_t pluginSize, const pluginDescriptor& descriptor, pluginInterface *plugInterface )
+    {
+        lua_assert( descriptor.typeInfo->IsImmutable() == false );
+
+        return descriptor.typeInfo->structRegistry.RegisterPlugin( pluginSize, descriptor, plugInterface );
+    }
+
+    inline void UnregisterPlugin( typeInfoBase *typeInfo, pluginOffset_t pluginOffset )
+    {
+        lua_assert( typeInfo->IsImmutable() == false );
+
+        typeInfo->structRegistry.UnregisterPlugin( pluginOffset );
+    }
+
+    // Plugin registration functions.
+    typedef CommonPluginSystemDispatch <LuaRTTI, LuaTypeSystem, pluginDescriptor> functoidHelper_t;
+
+    template <typename structType>
+    inline pluginOffset_t RegisterStructPlugin( typeInfoBase *typeInfo, unsigned int pluginId )
+    {
+        pluginDescriptor descriptor( pluginId, typeInfo );
+
+        return functoidHelper_t( *this ).RegisterStructPlugin <structType> ( descriptor );
+    }
+
+    typedef CommonPluginSystemDispatch <LuaRTTI, LuaTypeSystem, pluginDescriptor> functoidHelper_t;
+
+    template <typename structType>
+    inline pluginOffset_t RegisterDependantStructPlugin( typeInfoBase *typeInfo, unsigned int pluginId, size_t structSize = sizeof(structType) )
+    {
+        pluginDescriptor descriptor( pluginId, typeInfo );
+
+        return functoidHelper_t( *this ).RegisterDependantStructPlugin <structType> ( descriptor, structSize );
+    }
 
     RwList <typeInfoBase> registeredTypes;
 
@@ -88,6 +242,7 @@ struct LuaTypeSystem
     {
         tInfo->name = typeName;
         tInfo->refCount = 0;
+        tInfo->inheritanceCount = 0;
         tInfo->tInterface = tInterface;
         tInfo->inheritsFrom = NULL;
         LIST_INSERT( registeredTypes.root, tInfo->node );
@@ -204,6 +359,82 @@ struct LuaTypeSystem
         return RegisterCommonTypeInterface( typeName, tInterface );
     }
 
+    template <typename classType, typename staticRegistry>
+    inline pluginOffset_t StaticPluginRegistryRegisterTypeConstruction( staticRegistry& registry, typeInfoBase *typeInfo, void *construction_params = NULL )
+    {
+        struct structPluginInterface : staticRegistry::pluginInterface
+        {
+            bool OnPluginConstruct( staticRegistry::hostType_t *obj, staticRegistry::pluginOffset_t pluginOffset, staticRegistry::pluginDescriptor pluginId )
+            {
+                void *structMem = pluginId.RESOLVE_STRUCT <void> ( obj, pluginOffset );
+
+                if ( structMem == NULL )
+                    return false;
+
+                // Construct the type.
+                LuaRTTI *rtObj = typeSys->ConstructPlacement( structMem, typeInfo, construction_params );
+
+                // Hack: tell it about the struct.
+                if ( rtObj != NULL )
+                {
+                    void *langObj = LuaTypeSystem::GetObjectFromTypeStruct( rtObj );
+
+                    ((classType*)langObj)->Initialize( obj );
+                }
+                
+                return ( rtObj != NULL );
+            }
+
+            void OnPluginDestruct( staticRegistry::hostType_t *obj, staticRegistry::pluginOffset_t pluginOffset, staticRegistry::pluginDescriptor pluginId )
+            {
+                LuaRTTI *rtObj = pluginId.RESOLVE_STRUCT <LuaRTTI> ( obj, pluginOffset );
+
+                // Hack: deinitialize the class.
+                {
+                    void *langObj = LuaTypeSystem::GetObjectFromTypeStruct( rtObj );
+
+                    ((classType*)langObj)->Shutdown( obj );
+                }
+
+                // Destruct the type.
+                typeSys->DestroyPlacement( rtObj );
+            }
+
+            bool OnPluginAssign( staticRegistry::hostType_t *dstObject, const staticRegistry::hostType_t *srcObject, staticRegistry::pluginOffset_t pluginOffset, staticRegistry::pluginDescriptor pluginId )
+            {
+                return false;
+            }
+
+            LuaTypeSystem *typeSys;
+            typeInfoBase *typeInfo;
+            void *construction_params;
+        };
+
+        staticRegistry::pluginOffset_t offset = 0;
+
+        structPluginInterface *tInterface = _newstruct <structPluginInterface> ( *_memAlloc );
+
+        if ( tInterface )
+        {
+            tInterface->typeSys = this;
+            tInterface->typeInfo = typeInfo;
+            tInterface->construction_params = construction_params;
+
+            offset = registry.RegisterPlugin(
+                this->GetTypeStructSize( typeInfo, construction_params ),
+                staticRegistry::pluginDescriptor( staticRegistry::ANONYMOUS_PLUGIN_ID ),
+                tInterface
+            );
+
+            if ( !staticRegistry::IsOffsetValid( offset ) )
+            {
+                _delstruct( tInterface, *_memAlloc );
+            }
+        }
+
+        return offset;
+    }
+
     struct structTypeMetaInfo abstract
     {
         virtual ~structTypeMetaInfo( void )     {}
@@ -262,24 +493,21 @@ struct LuaTypeSystem
 
     inline bool ConstructPlugins( typeInfoBase *typeInfo, LuaRTTI *rtObj )
     {
-        bool pluginConstructSuccess = typeInfo->structRegistry.ConstructPluginBlock( rtObj );
+        bool pluginConstructSuccess = true;
+
+        if ( typeInfoBase *inheritedClass = typeInfo->inheritsFrom )
+        {
+            pluginConstructSuccess = ConstructPlugins( inheritedClass, rtObj );
+        }
 
         if ( pluginConstructSuccess )
         {
-            if ( typeInfoBase *inheritedClass = typeInfo->inheritsFrom )
-            {
-                bool parentSuccess = ConstructPlugins( inheritedClass, rtObj );
+            pluginConstructSuccess = typeInfo->structRegistry.ConstructPluginBlock( rtObj );
+        }
 
-                if ( !parentSuccess )
-                {
-                    pluginConstructSuccess = false;
-                }
-            }
-
-            if ( !pluginConstructSuccess )
-            {
-                typeInfo->structRegistry.DestroyPluginBlock( rtObj );
-            }
+        if ( !pluginConstructSuccess )
+        {
+            typeInfo->structRegistry.DestroyPluginBlock( rtObj );
         }
 
         return pluginConstructSuccess;
@@ -323,7 +551,7 @@ struct LuaTypeSystem
 
     inline size_t GetTypeStructSize( LuaRTTI *rtObj )
     {
-        typeInfoBase *typeInfo = (typeInfoBase*)rtObj->type_meta;
+        typeInfoBase *typeInfo = GetTypeInfoFromTypeStruct( rtObj );
         typeInterface *tInterface = typeInfo->tInterface;
 
         // Get the pointer to the object.
@@ -460,16 +688,26 @@ struct LuaTypeSystem
 
         if ( subClassImmutability == false )
         {
+            if ( typeInfoBase *prevInherit = subClass->inheritsFrom )
+            {
+                prevInherit->inheritanceCount--;
+            }
+
             subClass->inheritsFrom = inheritedClass;
+
+            if ( inheritedClass )
+            {
+                inheritedClass->inheritanceCount++;
+            }
         }
     }
 
-    inline void* GetObjectFromTypeStruct( LuaRTTI *rtObj )
+    static inline void* GetObjectFromTypeStruct( LuaRTTI *rtObj )
     {
         return (void*)( rtObj + 1 );
     }
 
-    inline LuaRTTI* GetTypeStructFromObject( void *langObj )
+    static inline LuaRTTI* GetTypeStructFromObject( void *langObj )
     {
         return ( (LuaRTTI*)langObj - 1 );
     }
@@ -489,7 +727,7 @@ struct LuaTypeSystem
 
     inline void DestroyPlacement( LuaRTTI *typeStruct )
     {
-        typeInfoBase *typeInfo = (typeInfoBase*)typeStruct->type_meta;
+        typeInfoBase *typeInfo = GetTypeInfoFromTypeStruct( typeStruct );
         typeInterface *tInterface = typeInfo->tInterface;
 
         // Destroy all object plugins.
@@ -533,7 +771,41 @@ struct LuaTypeSystem
     {
         LIST_REMOVE( typeInfo->node );
 
+        // Make sure we do not inherit from anything anymore.
+        SetTypeInfoInheritingClass( typeInfo, NULL );
+
         typeInfo->Cleanup( *_memAlloc );
+    }
+
+    struct type_iterator
+    {
+        RwList <typeInfoBase>& listRoot;
+        RwListEntry <typeInfoBase> *curNode;
+
+        inline type_iterator( LuaTypeSystem& typeSys ) : listRoot( typeSys.registeredTypes )
+        {
+            this->curNode = listRoot.root.next;
+        }
+
+        inline bool IsEnd( void ) const
+        {
+            return ( &listRoot.root == curNode );
+        }
+
+        inline typeInfoBase* Resolve( void ) const
+        {
+            return LIST_GETITEM( typeInfoBase, curNode, node );
+        }
+
+        inline void Increment( void )
+        {
+            this->curNode = this->curNode->next;
+        }
+    };
+
+    inline type_iterator GetTypeIterator( void )
+    {
+        return type_iterator( *this );
     }
 };
 

@@ -156,6 +156,13 @@ void luaS_resize (lua_State *L, int newsize)
     tb->hash = newhash;
 }
 
+TString::TString( void *construction_params )
+{
+    stringConstructionParams *params = (stringConstructionParams*)construction_params;
+
+    this->len = params->length;
+}
+
 TString::~TString()
 {
 }
@@ -303,6 +310,13 @@ void luaS_free (lua_State *L, TString *s)
     G(L)->strt.nuse--;
 
     lua_delete <TString> ( L, s );
+}
+
+Udata::Udata( void *construction_params )
+{
+    stringConstructionParams *params = (stringConstructionParams*)construction_params;
+
+    this->len = params->length;
 }
 
 Udata::~Udata()

@@ -139,9 +139,17 @@
 @@ LUA_INTEGER is the integral type used by lua_pushinteger/lua_tointeger.
 ** CHANGE that if ptrdiff_t is not adequate on your machine. (On most
 ** machines, ptrdiff_t gives a good choice between int or long.)
+** NOTE: this type is expected to be the fastest integer on the target system.
 */
-#define LUA_INTEGER	ptrdiff_t
+typedef ptrdiff_t LUA_INTEGER;
 
+/*
+@@ LUA_WIDE_INTEGER is the integral type used in functions when LUA_INTEGER is too narrow.
+** CHANGE that if LUA_INTEGER matches this type or you have compiler support for
+** even larger integers. A good measure is to let this type be at least as wide as the
+** integral part of LUA_NUMBER.
+*/
+typedef long long LUA_WIDE_INTEGER;
 
 /*
 @@ LUA_API is a mark for all core API functions.
@@ -502,7 +510,7 @@
 */
 
 #define LUA_NUMBER_DOUBLE
-#define LUA_NUMBER	double
+typedef double LUA_NUMBER;
 
 /*
 @@ LUAI_UACNUMBER is the result of an 'usual argument conversion'

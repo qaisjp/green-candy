@@ -231,6 +231,7 @@ inline bool _is_string_equal( const char *left, const char *right )
     return ( strcmp( left, right ) == 0 );
 }
 
+// I wish that future C++ standards make creating such functions much easier through templates.
 LUA_API int lua_setconfig( lua_config *cfg, const char *cfgName, lua_cfgValue valueIn )
 {
     lua_assert( cfg != NULL );
@@ -249,6 +250,7 @@ LUA_API int lua_setconfig( lua_config *cfg, const char *cfgName, lua_cfgValue va
     return ( success ) ? TRUE : FALSE;
 }
 
+// Because things just tend to reoccur and its hard to maintain.
 LUA_API int lua_getconfig( lua_config *cfg, const char *cfgName, lua_cfgValue *valueOut )
 {
     lua_assert( cfg != NULL );
@@ -286,10 +288,4 @@ LUA_API void lua_freeconfig( lua_config *cfg )
 
     // Dereference the library.
     _dereferenceLibrary();
-
-    // Shutdown the allocation data.
-    allocData->Shutdown( cfg );
-
-    // Delete the allocation data holder interface.
-    _delstruct( allocData, allocMem );
 }

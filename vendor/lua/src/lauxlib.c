@@ -664,3 +664,7 @@ LUALIB_API lua_State* luaL_newstate()
     return lua_newstate(l_alloc, NULL);
 }
 
+LUALIB_API lua_config* luaL_newconfig()
+{
+    return lua_newconfig(l_alloc, NULL);
+}

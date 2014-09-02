@@ -26,11 +26,6 @@
 // Main state of the whole Lua VM.
 struct lua_MainState : public lua_State
 {
-    inline lua_MainState( void )
-    {
-        return;
-    }
-
     inline lua_MainState( void *construction_params )
     {
         return;
@@ -119,12 +114,10 @@ struct globalStateMainStateFactoryMeta
     {
         if ( this->refCount++ == 0 )
         {
-            // Get the dynamic size of the main lua state.
-            size_t mainStateSize = this->managerStruct->typeSys.GetTypeStructSize( this->luaStateTypeInfo, NULL );
-
             // Register the plugin to the global_State!
-            this->endingPointPluginOffset = this->managerStruct->globalStateFactory.RegisterDependantStructPlugin <lua_MainState> (
-                GLOBAL_STATE_PLUGIN_MAIN_STATE, mainStateSize
+            this->endingPointPluginOffset = this->managerStruct->typeSys.StaticPluginRegistryRegisterTypeConstruction <lua_MainState> (
+                this->managerStruct->globalStateFactory,
+                this->luaStateTypeInfo
             );
         }
     }
@@ -142,7 +135,7 @@ struct globalStateMainStateFactoryMeta
     }
 };
 
-static PluginConnectingBridge <lua_MainState, globalStateMainStateFactoryMeta, namespaceFactory_t> mainLuaStateConnectingBridge( namespaceFactory );
+static PluginConnectingBridge <LuaRTTI, globalStateMainStateFactoryMeta, namespaceFactory_t> mainLuaStateConnectingBridge( namespaceFactory );
 
 
 static void stack_init (lua_State *L1, lua_State *L) {
@@ -467,6 +460,8 @@ static void dealloc_state( global_State *globalState )
     // Get the Lua VM configuration.
     lua_config *config = globalState->config;
 
+    bool hasUniqueConfiguration = globalState->hasUniqueConfig;
+
     // Delete the plugin object and destroy the allocator info.
     GlobalStateAllocPluginData *allocData = (GlobalStateAllocPluginData*)config->allocData;
 
@@ -485,21 +480,15 @@ static void dealloc_state( global_State *globalState )
     GeneralMemoryAllocator memAlloc( allocData->_memAlloc );
 
     // Destroy configuration (if unique).
-    if ( globalState->hasUniqueConfig )
+    if ( hasUniqueConfiguration )
     {
         // This should delete all remaining memory.
         lua_freeconfig( config );
     }
 }
 
-lua_State *lua_newstate (lua_Alloc f, void *ud)
+inline lua_State *_newstatetemplate( lua_config *cfg, bool hasUniqueConfig, bool& hasCleanedUpConfig )
 {
-    // Create a Lua configuration entity.
-    lua_config *cfg = lua_newconfig( f, ud );
-
-    if ( !cfg )
-        return NULL;
-
     // Get the allocation data.
     GlobalStateAllocPluginData *allocData = (GlobalStateAllocPluginData*)cfg->allocData;
 
@@ -536,13 +525,19 @@ lua_State *lua_newstate (lua_Alloc f, void *ud)
         if ( g )
         {
             // Attempt to get the main thread from the global state.
-            lua_MainState *L = mainLuaStateConnectingBridge.GetPluginStructFromMetaStruct( metaInfo, g );
+            lua_MainState *L = NULL;
+            {
+                LuaRTTI *rtObjMainState = mainLuaStateConnectingBridge.GetPluginStructFromMetaStruct( metaInfo, g );
+
+                // State-cast to the main state.
+                L = (lua_MainState*)cfg->typeSys.GetObjectFromTypeStruct( rtObjMainState );
+            }
 
             if ( L )
             {
                 // Store whether we have a unique configuration.
                 // If so, we will have to destroy it when we close this state.
-                g->hasUniqueConfig = true;
+                g->hasUniqueConfig = hasUniqueConfig;
                 g->config = cfg;
 
                 // Store local configuration values.
@@ -591,11 +586,44 @@ lua_State *lua_newstate (lua_Alloc f, void *ud)
             }
 
             dealloc_state( g );
+
+            hasCleanedUpConfig = true;
         }
+    }
+
+    return NULL;
+}
+
+lua_State *lua_newstate (lua_Alloc f, void *ud)
+{
+    // Create a Lua configuration entity.
+    lua_config *cfg = lua_newconfig( f, ud );
+
+    if ( !cfg )
+        return NULL;
+
+    bool hasCleanedUpConfig = false;
+
+    if ( lua_State *returnState = _newstatetemplate( cfg, true, hasCleanedUpConfig ) )
+    {
+        return returnState;
+    }
+
+    if ( !hasCleanedUpConfig )
+    {
+        lua_freeconfig( cfg );
     }
 
     // No success creating a Lua state.
     return NULL;
+}
+
+lua_State* lua_newstateconfig( lua_config *config )
+{
+    // We already have a config, so just try constructing.
+    bool hasCleanedUpConfig;
+
+    return _newstatetemplate( config, false, hasCleanedUpConfig );
 }
 
 LUA_API void lua_close (lua_State *L)

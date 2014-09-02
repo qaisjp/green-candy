@@ -73,6 +73,7 @@ LUALIB_API int (luaL_loadbuffer) (lua_State *L, const char *buff, size_t sz, con
 LUALIB_API int (luaL_loadstring) (lua_State *L, const char *s);
 
 LUALIB_API lua_State *(luaL_newstate) ();
+LUALIB_API lua_config *(luaL_newconfig) ();
 
 
 LUALIB_API const char *(luaL_gsub) (lua_State *L, const char *s, const char *p, const char *r);
