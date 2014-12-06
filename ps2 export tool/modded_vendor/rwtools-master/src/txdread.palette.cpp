@@ -855,14 +855,14 @@ struct palettizer
 };
 
 // Custom algorithm for palettizing image data.
-void NativeTexture::convertToPalette(uint32 convPaletteFormat)
+void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 {
-    if ( this->platform != PLATFORM_D3D8 )
+    if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
         return;
 
     NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
-    if (convPaletteFormat != RASTER_PAL8 && convPaletteFormat != RASTER_PAL4)
+    if (convPaletteFormat != PALETTE_8BIT && convPaletteFormat != PALETTE_4BIT)
         return;
 
     // If the texture is DXT compressed, decompress it.
@@ -871,20 +871,21 @@ void NativeTexture::convertToPalette(uint32 convPaletteFormat)
         platformTex->decompressDxt();
     }
 
-    uint32 rasterFormat = this->rasterFormat;
+    eRasterFormat rasterFormat = this->rasterFormat;
+    ePaletteType paletteType = platformTex->paletteType;
 
-    if ((rasterFormat & convPaletteFormat) != 0)
+    if (paletteType == convPaletteFormat)
         return;
 
     uint32 maxPaletteEntries = 0;
     uint8 newDepth = 0;
 
-    if (convPaletteFormat == RASTER_PAL8)
+    if (convPaletteFormat == PALETTE_8BIT)
     {
         maxPaletteEntries = 256;
         newDepth = 8;
     }
-    else if (convPaletteFormat == RASTER_PAL4)
+    else if (convPaletteFormat == PALETTE_4BIT)
     {
         maxPaletteEntries = 16;
         newDepth = 4;
@@ -915,7 +916,7 @@ void NativeTexture::convertToPalette(uint32 convPaletteFormat)
                     uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
 
                     uint8 red, green, blue, alpha;
-                    bool hasColor = browsetexelcolor(texelSource, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
+                    bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
 
                     if ( hasColor )
                     {
@@ -935,7 +936,7 @@ void NativeTexture::convertToPalette(uint32 convPaletteFormat)
                     uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
 
                     uint8 red, green, blue, alpha;
-                    bool hasColor = browsetexelcolor(texelSource, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
+                    bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
 
                     if ( hasColor )
                     {
@@ -962,11 +963,11 @@ void NativeTexture::convertToPalette(uint32 convPaletteFormat)
             void *newTexelData = NULL;
 
             // Allocate appropriate memory.
-            if (convPaletteFormat == RASTER_PAL4)
+            if (convPaletteFormat == PALETTE_4BIT)
             {
                 dataSize = PixelFormat::palette4bit::sizeitems( itemCount );
             }
-            else if (convPaletteFormat == RASTER_PAL8)
+            else if (convPaletteFormat == PALETTE_8BIT)
             {
                 dataSize = PixelFormat::palette8bit::sizeitems( itemCount );
             }
@@ -977,16 +978,16 @@ void NativeTexture::convertToPalette(uint32 convPaletteFormat)
             {
                 // Browse each texel of the original image and link it to a palette entry.
                 uint8 red, green, blue, alpha;
-                browsetexelcolor(texelSource, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
+                browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
 
                 uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
 
                 // Store it in the palette data.
-                if (convPaletteFormat == RASTER_PAL4)
+                if (convPaletteFormat == PALETTE_4BIT)
                 {
                     ( (PixelFormat::palette4bit*)newTexelData )->setvalue(colorIndex, paletteIndex);
                 }
-                else if (convPaletteFormat == RASTER_PAL8)
+                else if (convPaletteFormat == PALETTE_8BIT)
                 {
                     ( (PixelFormat::palette8bit*)newTexelData )->setvalue(colorIndex, paletteIndex);
                 }
@@ -1015,7 +1016,7 @@ void NativeTexture::convertToPalette(uint32 convPaletteFormat)
     }
 
     // Notify the raster about its new format.
-    this->rasterFormat = ( rasterFormat & (~RASTER_PALMASK) ) | convPaletteFormat;
+    platformTex->paletteType = convPaletteFormat;
 }
 
 };

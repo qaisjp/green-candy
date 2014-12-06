@@ -8,7 +8,10 @@ struct NativeTexturePS2 : public PlatformTexture
         // Initialize the texture object.
         this->palette = NULL;
         this->paletteSize = 0;
+        this->paletteType = PALETTE_NONE;
         this->mipmapCount = 0;
+        this->autoMipmaps = false;
+        this->requiresHeaders = true;
         this->alphaDistribution = 0;
         this->skyMipMapVal = 4032;
 
@@ -22,8 +25,12 @@ struct NativeTexturePS2 : public PlatformTexture
         gsParams.lodParamL = 0;
         gsParams.lodParamK = 0;
 
+        // Whatever those are.
         gsParams.gsTEX1Unknown1 = 0;
         gsParams.gsTEX1Unknown2 = 0;
+
+        // And whatever that is.
+        this->unknownFormatFlags = 0x04;
     }
 
     void Delete( void )
@@ -56,6 +63,11 @@ struct NativeTexturePS2 : public PlatformTexture
         return this->mipmapDepth[0];
     }
 
+    ePaletteType getPaletteType( void ) const
+    {
+        return this->paletteType;
+    }
+
     PlatformTexture* Clone( void ) const
     {
         NativeTexturePS2 *newTex = new NativeTexturePS2();
@@ -70,7 +82,7 @@ struct NativeTexturePS2 : public PlatformTexture
         {
 	        if (this->palette)
             {
-                size_t wholeDataSize = this->paletteSize*4*sizeof(uint8);
+                size_t wholeDataSize = this->paletteSize * sizeof(uint32);
 
 		        newTex->palette = new uint8[wholeDataSize];
 		        memcpy(newTex->palette, this->palette, wholeDataSize);
@@ -81,6 +93,9 @@ struct NativeTexturePS2 : public PlatformTexture
 	        }
 
             newTex->paletteSize = this->paletteSize;
+            newTex->paletteType = this->paletteType;
+
+            newTex->palUnknowns = this->palUnknowns;
         }
 
         // Copy image texel information.
@@ -107,9 +122,13 @@ struct NativeTexturePS2 : public PlatformTexture
         newTex->swizzleWidth = this->swizzleWidth;
         newTex->swizzleHeight = this->swizzleHeight;
         newTex->mipmapUnknowns = this->mipmapUnknowns;
+        newTex->autoMipmaps = this->autoMipmaps;
+        newTex->requiresHeaders = this->requiresHeaders;
         newTex->alphaDistribution = this->alphaDistribution;
         newTex->skyMipMapVal = this->skyMipMapVal;
         newTex->gsParams = this->gsParams;
+
+        newTex->unknownFormatFlags = this->unknownFormatFlags;
 
         return newTex;
     }
@@ -128,6 +147,11 @@ struct NativeTexturePS2 : public PlatformTexture
 	uint8 *palette;
 	uint32 paletteSize;
 
+    ePaletteType paletteType;
+
+    bool requiresHeaders;
+    bool autoMipmaps;
+
     std::vector<bool> isSwizzled;
 	std::vector<uint32> swizzleWidth;
 	std::vector<uint32> swizzleHeight;
@@ -137,6 +161,8 @@ struct NativeTexturePS2 : public PlatformTexture
 	// both 0: no info
 	uint32 alphaDistribution;
     uint32 skyMipMapVal;
+
+    uint8 unknownFormatFlags;
 
     ps2MipmapUnknowns palUnknowns;
 

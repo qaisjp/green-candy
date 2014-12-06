@@ -35,7 +35,8 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         strncpy( metaHeader.name, this->name.c_str(), 32 );
         strncpy( metaHeader.maskName, this->maskName.c_str(), 32 );
 
-        metaHeader.rasterFormat = this->rasterFormat;
+        // Construct raster flags.
+        metaHeader.rasterFormat = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, platformTex->mipmapCount > 1, platformTex->autoMipmaps );
 
         rw.write((const char*)&metaHeader, sizeof(metaHeader));
 
@@ -82,7 +83,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         }
 
 		/* Palette */
-		if (rasterFormat & RASTER_PAL8 || rasterFormat & RASTER_PAL4)
+		if (platformTex->paletteType != PALETTE_NONE)
         {
             uint32 paletteDataSize = platformTex->paletteSize * sizeof(uint32);
 

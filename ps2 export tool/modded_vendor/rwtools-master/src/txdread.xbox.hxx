@@ -8,6 +8,7 @@ struct NativeTextureXBOX : public PlatformTexture
         // Initialize the texture object.
         this->palette = NULL;
         this->paletteSize = 0;
+        this->paletteType = PALETTE_NONE;
         this->mipmapCount = 0;
         this->dxtCompression = 0;
     }
@@ -44,6 +45,11 @@ struct NativeTextureXBOX : public PlatformTexture
         return this->mipmapDepth[0];
     }
 
+    ePaletteType getPaletteType( void ) const
+    {
+        return this->paletteType;
+    }
+
     PlatformTexture* Clone( void ) const
     {
         NativeTextureXBOX *newTex = new NativeTextureXBOX();
@@ -58,7 +64,7 @@ struct NativeTextureXBOX : public PlatformTexture
         {
 	        if (this->palette)
             {
-                size_t wholeDataSize = this->paletteSize*4*sizeof(uint8);
+                size_t wholeDataSize = this->paletteSize * sizeof(uint32);
 
 		        newTex->palette = new uint8[wholeDataSize];
 		        memcpy(newTex->palette, this->palette, wholeDataSize);
@@ -69,6 +75,7 @@ struct NativeTextureXBOX : public PlatformTexture
 	        }
 
             newTex->paletteSize = this->paletteSize;
+            newTex->paletteType = this->paletteType;
         }
 
         // Copy image texel information.
@@ -107,6 +114,8 @@ struct NativeTextureXBOX : public PlatformTexture
 					// (also per mipmap)
 	uint8 *palette;
 	uint32 paletteSize;
+
+    ePaletteType paletteType;
 
 	// PC/XBOX
 	uint32 dxtCompression;

@@ -1,5 +1,63 @@
+#include <d3d9.h>
+
 namespace rw
 {
+
+inline D3DFORMAT getD3DFormatFromRasterType(eRasterFormat paletteRasterType)
+{
+    D3DFORMAT d3dFormat = D3DFMT_A8R8G8B8;
+
+    if ( paletteRasterType == RASTER_1555 )
+    {
+        d3dFormat = D3DFMT_A1R5G5B5;
+    }
+    else if ( paletteRasterType == RASTER_565 )
+    {
+        d3dFormat = D3DFMT_R5G6B5;
+    }
+    else if ( paletteRasterType == RASTER_4444 )
+    {
+        d3dFormat = D3DFMT_A4R4G4B4;
+    }
+    else if ( paletteRasterType == RASTER_LUM8 )
+    {
+        d3dFormat = D3DFMT_L8;
+    }
+    else if ( paletteRasterType == RASTER_8888 )
+    {
+        d3dFormat = D3DFMT_A8R8G8B8;
+    }
+    else if ( paletteRasterType == RASTER_888 )
+    {
+        d3dFormat = D3DFMT_X8R8G8B8;
+    }
+    else if ( paletteRasterType == RASTER_16 )
+    {
+        // not sure.
+        d3dFormat = D3DFMT_L16;
+    }
+    else if ( paletteRasterType == RASTER_24 )
+    {
+        // not sure.
+        d3dFormat = D3DFMT_R8G8B8;
+    }
+    else if ( paletteRasterType == RASTER_32 )
+    {
+        // not sure.
+        d3dFormat = D3DFMT_X8R8G8B8;
+    }
+    else if ( paletteRasterType == RASTER_555 )
+    {
+        d3dFormat = D3DFMT_X1R5G5B5;
+    }
+    else
+    {
+        // unknown format.
+        assert( 0 );
+    }
+
+    return d3dFormat;
+}
 
 struct NativeTextureD3D : public PlatformTexture
 {
@@ -8,7 +66,12 @@ struct NativeTextureD3D : public PlatformTexture
         // Initialize the texture object.
         this->palette = NULL;
         this->paletteSize = 0;
+        this->paletteType = PALETTE_NONE;
         this->mipmapCount = 0;
+        this->isCubeTexture = false;
+        this->autoMipmaps = false;
+        this->compressed = false;
+        this->d3dFormat = D3DFMT_A8R8G8B8;
         this->dxtCompression = 0;
         this->rasterType = 0;
     }
@@ -45,21 +108,20 @@ struct NativeTextureD3D : public PlatformTexture
         return this->mipmapDepth[0];
     }
 
+    ePaletteType getPaletteType( void ) const
+    {
+        return this->paletteType;
+    }
+
     PlatformTexture* Clone( void ) const
     {
         NativeTextureD3D *newTex = new NativeTextureD3D();
 
-        // Copy over attributes.
-        newTex->width = this->width;
-        newTex->height = this->height;
-        newTex->mipmapDepth = this->mipmapDepth;
-        newTex->dataSizes = this->dataSizes;
-        
         // Copy palette information.
         {
 	        if (this->palette)
             {
-                size_t wholeDataSize = this->paletteSize*4*sizeof(uint8);
+                size_t wholeDataSize = this->paletteSize * sizeof(uint32);
 
 		        newTex->palette = new uint8[wholeDataSize];
 		        memcpy(newTex->palette, this->palette, wholeDataSize);
@@ -70,6 +132,7 @@ struct NativeTextureD3D : public PlatformTexture
 	        }
 
             newTex->paletteSize = this->paletteSize;
+            newTex->paletteType = this->paletteType;
         }
 
         // Copy image texel information.
@@ -90,6 +153,10 @@ struct NativeTextureD3D : public PlatformTexture
         }
 
         newTex->mipmapCount = this->mipmapCount;
+        newTex->isCubeTexture = this->isCubeTexture;
+        newTex->autoMipmaps = this->autoMipmaps;
+        newTex->compressed = this->compressed;
+        newTex->d3dFormat = this->d3dFormat;
         newTex->dxtCompression = this->dxtCompression;
         newTex->rasterType = this->rasterType;
 
@@ -110,7 +177,14 @@ struct NativeTextureD3D : public PlatformTexture
 	uint8 *palette;
 	uint32 paletteSize;
 
+    ePaletteType paletteType;
+
 	// PC/XBOX
+    bool isCubeTexture;
+    bool autoMipmaps;
+    bool compressed;
+
+    D3DFORMAT d3dFormat;
     uint32 dxtCompression;
     uint32 rasterType;
 
@@ -138,7 +212,14 @@ struct textureMetaHeaderStructDimInfo
     uint8 depth;
     uint8 mipmapCount;
     uint8 rasterType;
-    uint8 dxtCompression;
+};
+
+struct textureContentInfoStruct
+{
+    uint8 hasAlpha : 1;
+    uint8 isCubeTexture : 1;
+    uint8 autoMipMaps : 1;
+    uint8 isCompressed : 1;
 };
 #pragma pack()
 
