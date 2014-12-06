@@ -83,7 +83,6 @@ void NativeTexture::readD3d(std::istream &rw)
 		this->hasAlpha = contentInfo.hasAlpha;
         platformTex->isCubeTexture = contentInfo.isCubeTexture;
         platformTex->autoMipmaps = contentInfo.autoMipMaps;
-        platformTex->compressed = contentInfo.isCompressed;
 
 		if ( contentInfo.isCompressed )
         {
@@ -330,6 +329,7 @@ void NativeTextureD3D::decompressDxt4(void)
         this->mipmapDepth[i] = 0x20;
 	}
 	parent->rasterFormat = RASTER_8888;
+    this->d3dFormat = D3DFMT_A8R8G8B8;
 	dxtCompression = 0;
 }
 
@@ -410,6 +410,7 @@ void NativeTextureD3D::decompressDxt3(void)
         this->mipmapDepth[i] = 0x20;
 	}
 	parent->rasterFormat = RASTER_8888;
+    this->d3dFormat = D3DFMT_A8R8G8B8;
 	dxtCompression = 0;
 }
 
@@ -508,10 +509,14 @@ void NativeTextureD3D::decompressDxt1(void)
     if ( parent->rasterFormat == RASTER_1555 )
     {
         parent->rasterFormat = RASTER_8888;
+
+        this->d3dFormat = D3DFMT_A8R8G8B8;
     }
     else if ( parent->rasterFormat == RASTER_565 )
     {
         parent->rasterFormat = RASTER_888;
+
+        this->d3dFormat = D3DFMT_X8R8G8B8;
     }
     else
     {

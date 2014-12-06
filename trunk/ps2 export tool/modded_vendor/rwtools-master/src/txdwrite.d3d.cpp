@@ -48,18 +48,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 		}
         else
         {
-			if (platformTex->dxtCompression)
-            {
-				char fourcc[5] = "DXT0";
-				fourcc[3] += platformTex->dxtCompression;
-				rw.write(fourcc, 4);
-				bytesWritten += 4;
-			}
-            else
-            {
-				// 0x15 or 0x16
-				bytesWritten += writeUInt32(0x16 - hasAlpha, rw);
-			}
+		    bytesWritten += writeUInt32((uint32)platformTex->d3dFormat, rw);
 		}
 
         textureMetaHeaderStructDimInfo dimInfo;
@@ -79,7 +68,15 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         }
 		else
         {
-            bytesWritten += writeUInt8( (platformTex->dxtCompression ? 8 : 0) | ( hasAlpha ? 1 : 0 ), rw );
+            textureContentInfoStruct contentInfo;
+            contentInfo.hasAlpha = this->hasAlpha;
+            contentInfo.isCubeTexture = platformTex->isCubeTexture;
+            contentInfo.autoMipMaps = platformTex->autoMipmaps;
+            contentInfo.isCompressed = ( platformTex->dxtCompression != 0 );
+
+            rw.write((const char*)&contentInfo, sizeof(contentInfo));
+
+            bytesWritten += sizeof(contentInfo);
         }
 
 		/* Palette */

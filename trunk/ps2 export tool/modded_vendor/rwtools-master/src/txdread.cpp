@@ -174,7 +174,11 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
             }
 	    }
 
+        // Update the format.
         this->rasterFormat = newFormat;
+
+        // Make sure we update the d3dFormat.
+        platformTex->d3dFormat = getD3DFormatFromRasterType( newFormat );
 
         // Delete unnecessary palette data.
 	    if (isPaletteRaster)
