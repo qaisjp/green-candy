@@ -70,7 +70,6 @@ struct NativeTextureD3D : public PlatformTexture
         this->mipmapCount = 0;
         this->isCubeTexture = false;
         this->autoMipmaps = false;
-        this->compressed = false;
         this->d3dFormat = D3DFMT_A8R8G8B8;
         this->dxtCompression = 0;
         this->rasterType = 0;
@@ -155,7 +154,6 @@ struct NativeTextureD3D : public PlatformTexture
         newTex->mipmapCount = this->mipmapCount;
         newTex->isCubeTexture = this->isCubeTexture;
         newTex->autoMipmaps = this->autoMipmaps;
-        newTex->compressed = this->compressed;
         newTex->d3dFormat = this->d3dFormat;
         newTex->dxtCompression = this->dxtCompression;
         newTex->rasterType = this->rasterType;
@@ -182,7 +180,6 @@ struct NativeTextureD3D : public PlatformTexture
 	// PC/XBOX
     bool isCubeTexture;
     bool autoMipmaps;
-    bool compressed;
 
     D3DFORMAT d3dFormat;
     uint32 dxtCompression;
