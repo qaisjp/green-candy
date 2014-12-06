@@ -18,10 +18,10 @@ struct _exportFileStruct
 
 static void SaveTexture( rw::NativeTexture& tex, const char *absPath, const char *txdName )
 {
-    if (!(tex.rasterFormat & rw::RASTER_PAL4))
+    if ( tex.platformData->getPaletteType() != rw::PALETTE_4BIT )
     {
         //tex.convertToFormat(rw::RASTER_8888);
-        tex.convertToPalette(rw::RASTER_PAL4);
+        tex.convertToPalette(rw::PALETTE_4BIT);
         tex.writeTGA( absPath );
     }
 }
@@ -306,25 +306,36 @@ static void DebugFuncs( CFileTranslator *discHandle )
                 {
                     rw::NativeTexture& tex = txd.texList.at( n );
 
-                    tex.convertFromPS2( 0x40 );
+                    // WARNING: conversion does destroy some platform native data that
+                    // is embedded into the texture!
+                    // We need a way to retrieve the data and set it back after conversion.
 
-                    // Write the texture somewhere.
-                    std::string newName = std::string( "txdout/" ) + tex.name;
-                    newName += ".tga";
-
-                    //tex.convertToFormat( rw::RASTER_8888 );
-                    if ( tex.platformData->getDepth() == 4 )
+                    if ( tex.platform == rw::PLATFORM_PS2 )
                     {
-                        tex.convertToPalette( rw::RASTER_PAL8 );
-                    }
-                    else if ( tex.platformData->getDepth() == 8 )
-                    {
-                        tex.convertToPalette( rw::RASTER_PAL4 );
-                    }
+                        tex.convertFromPS2( 0x40 );
 
-                    tex.writeTGA(newName.c_str());
+                        // Write the texture somewhere.
+                        std::string newName = std::string( "txdout/" ) + tex.name;
+                        newName += ".tga";
 
-                    tex.convertToPS2();
+                        //tex.convertToFormat( rw::RASTER_8888 );
+                        if ( tex.platformData->getDepth() == 4 )
+                        {
+                            tex.convertToPalette( rw::PALETTE_8BIT );
+                        }
+                        else if ( tex.platformData->getDepth() == 8 )
+                        {
+                            tex.convertToPalette( rw::PALETTE_4BIT );
+                        }
+                        else
+                        {
+                            tex.convertToPalette( rw::PALETTE_8BIT );
+                        }
+
+                        tex.writeTGA(newName.c_str());
+
+                        tex.convertToPS2();
+                    }
                 }
 
                 txd.write(rwout);
@@ -332,7 +343,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
                 // Check how much we have actually written.
                 fsOffsetNumber_t curWritePos = targetStream->TellNative();
 
-                // If there a difference to the original file, then notify us.
+                // If there is a difference to the original file, then notify us.
                 if ( origTxdEndPos != curWritePos )
                 {
                     __asm nop
@@ -430,6 +441,7 @@ int main( int argc, char *argv[] )
 
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
 
         if ( discHandle )
         {

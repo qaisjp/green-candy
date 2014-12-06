@@ -100,7 +100,7 @@ TextureDictionary::~TextureDictionary(void)
  * Native Texture
  */
 
-void NativeTexture::convertToFormat(uint32 newFormat)
+void NativeTexture::convertToFormat(eRasterFormat newFormat)
 {
     if (this->platform != PLATFORM_D3D8)
         return;
@@ -113,12 +113,13 @@ void NativeTexture::convertToFormat(uint32 newFormat)
         platformTex->decompressDxt();
     }
 
-    uint32 rasterFormat = this->rasterFormat;
+    eRasterFormat rasterFormat = this->rasterFormat;
+    ePaletteType paletteType = platformTex->paletteType;
     uint32 mipmapCount = platformTex->mipmapCount;
 
-    bool isPaletteRaster = (rasterFormat & RASTER_PAL8 || rasterFormat & RASTER_PAL4) != 0;
+    bool isPaletteRaster = ( paletteType != PALETTE_NONE );
 
-    if ( isPaletteRaster || newFormat != (rasterFormat & RASTER_MASK) )
+    if ( isPaletteRaster || newFormat != rasterFormat )
     {
         void *paletteData = platformTex->palette;
         uint32 maxpalette = platformTex->paletteSize;
@@ -150,7 +151,7 @@ void NativeTexture::convertToFormat(uint32 newFormat)
 
                         // Grab the color values.
                         uint8 red, green, blue, alpha;
-                        bool hasColor = browsetexelcolor(texelSource, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
 
                         if ( !hasColor )
                         {
@@ -173,24 +174,31 @@ void NativeTexture::convertToFormat(uint32 newFormat)
             }
 	    }
 
-        this->rasterFormat = ( rasterFormat & (~RASTER_MASK) ) | (newFormat);
+        this->rasterFormat = newFormat;
 
         // Delete unnecessary palette data.
 	    if (isPaletteRaster)
         {
 		    delete[] paletteData;
 		    platformTex->palette = 0;
-		    this->rasterFormat &= ~(RASTER_PALMASK);
+		    
+            platformTex->paletteType = PALETTE_NONE;
 	    }
     }
 }
 
 void NativeTexture::writeTGA(const char *path)
 {
-    if ( this->platform != PLATFORM_D3D8 )
+    if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
         return;
 
     NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+
+    // If the texture is compressed, decompress it.
+    if ( platformTex->dxtCompression )
+    {
+        platformTex->decompressDxt();
+    }
 
 	ofstream tga(path, ios::binary);
 	if (tga.fail()) {
@@ -217,12 +225,13 @@ void NativeTexture::writeTGA(const char *path)
     void *texelSource = platformTex->texels[0];
     void *paletteData = platformTex->palette;
     uint32 maxpalette = platformTex->paletteSize;
-    uint32 rasterFormat = this->rasterFormat;
+    eRasterFormat rasterFormat = this->rasterFormat;
+    ePaletteType paletteType = platformTex->paletteType;
 
 	for (uint32 j = 0; j < width*height; j++)
     {
         uint8 red, green, blue, alpha;
-        browsetexelcolor(texelSource, paletteData, maxpalette, j, rasterFormat, red, green, blue, alpha);
+        browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, j, rasterFormat, red, green, blue, alpha);
 
 		writeUInt8(red, tga);
 		writeUInt8(green, tga);
@@ -233,7 +242,7 @@ void NativeTexture::writeTGA(const char *path)
 }
 
 NativeTexture::NativeTexture(void)
-: platform(0), name(""), maskName(""), filterFlags(0), uAddressing(1), vAddressing(1), rasterFormat(0), hasAlpha(false)
+: platform(0), name(""), maskName(""), filterFlags(0), uAddressing(1), vAddressing(1), rasterFormat(rw::RASTER_DEFAULT), hasAlpha(false)
 {
     this->platformData = NULL;
 }

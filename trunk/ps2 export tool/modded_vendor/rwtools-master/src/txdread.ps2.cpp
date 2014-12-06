@@ -74,7 +74,16 @@ void NativeTexture::readPs2(std::istream &rw)
 	platformTex->width.push_back(textureMeta.width);
 	platformTex->height.push_back(textureMeta.height);
 	uint32 depth = textureMeta.depth;
-	rasterFormat = textureMeta.rasterFormat;
+
+    // Deconstruct the rasterFormat.
+    bool hasMipmaps = false;        // TODO: actually use this flag.
+
+    readRasterFormatFlags( textureMeta.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, platformTex->autoMipmaps );
+
+    platformTex->requiresHeaders = ( textureMeta.rasterFormat & 0x20000 ) != 0;
+
+    // Some really unknown format flags. We should debug this!
+    platformTex->unknownFormatFlags = ( textureMeta.rasterFormat & 0xFF );
 
     // Store unique parameters from the texture registers.
     platformTex->gsParams.maxMIPLevel = textureMeta.tex1.maximumMIPLevel;
@@ -98,21 +107,20 @@ void NativeTexture::readPs2(std::istream &rw)
 	// 0x10000 means the texture is swizzled and has no headers
 	// 0x20000 means swizzling information is contained in the header
 	// the rest is the same as the generic raster format
-	bool hasHeader = (rasterFormat & 0x20000) != 0;
-    bool hasSwizzle = (rasterFormat & 0x10000) != 0;
+	bool hasHeader = platformTex->requiresHeaders;
+    bool hasSwizzle = (textureMeta.rasterFormat & 0x10000) != 0;
 
 /*
 	// only these are ever used (so alpha for all textures :/ )
-	if ((rasterFormat & RASTER_1555) ||
-	    (rasterFormat & RASTER_4444) ||
-	    (rasterFormat & RASTER_8888))
+	if ((rasterFormat == RASTER_1555) ||
+	    (rasterFormat == RASTER_4444) ||
+	    (rasterFormat == RASTER_8888))
 		hasAlpha = true;
 	else
 		hasAlpha = false;
 */
 	hasAlpha = false;
 
-//	hasAlpha = !(rasterFormat & 0x4000);
 //	cout << " " << maskName;
 	if (maskName.size() != 0 || depth == 16)
     {
@@ -123,7 +131,7 @@ void NativeTexture::readPs2(std::istream &rw)
 	READ_HEADER(CHUNK_STRUCT);
 
     // Decide about texture properties.
-    bool isPalettized = (rasterFormat & RASTER_PAL8 || rasterFormat & RASTER_PAL4);
+    bool isPalettized = (platformTex->paletteType != PALETTE_NONE);
     bool isSwizzled = false;
 
     if (hasHeader)
@@ -271,14 +279,7 @@ void NativeTexture::readPs2(std::istream &rw)
 		}
         else
         {
-            if ( rasterFormat & RASTER_PAL8 )
-            {
-                paletteColorComponents = 256;
-            }
-            else
-            {
-                paletteColorComponents = 16;
-            }
+            paletteColorComponents = getPaletteItemCount( platformTex->paletteType );
 
             palTexDataSize = textureMeta.paletteDataSize;
         }
@@ -410,6 +411,8 @@ void NativeTexture::convertFromPS2(uint32 aref)
     d3dtex->mipmapCount = platformTex->mipmapCount;
     d3dtex->mipmapDepth = platformTex->mipmapDepth;
 
+    d3dtex->autoMipmaps = platformTex->autoMipmaps;
+
 	for (uint32 j = 0; j < platformTex->mipmapCount; j++)
     {
 		bool swizzled = (platformTex->isSwizzled[j]);
@@ -455,7 +458,7 @@ void NativeTexture::convertFromPS2(uint32 aref)
         }
 	}
 
-	if (rasterFormat & RASTER_PAL8 || rasterFormat & RASTER_PAL4)
+	if (platformTex->paletteType != PALETTE_NONE)
     {
         typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
@@ -491,6 +494,7 @@ void NativeTexture::convertFromPS2(uint32 aref)
     d3dtex->dataSizes = platformTex->dataSizes;
     d3dtex->palette = platformTex->palette;
     d3dtex->paletteSize = platformTex->paletteSize;
+    d3dtex->paletteType = platformTex->paletteType;
 
     // Set the backlink.
     d3dtex->parent = this;
@@ -523,11 +527,14 @@ void NativeTexture::convertToPS2( void )
         ps2tex->mipmapCount = platformTex->mipmapCount;
         ps2tex->mipmapDepth = platformTex->mipmapDepth;
 
+        ps2tex->autoMipmaps = platformTex->autoMipmaps;
+
         // Copy over more complex data.
         ps2tex->dataSizes = platformTex->dataSizes;
         ps2tex->texels = platformTex->texels;
         ps2tex->palette = platformTex->palette;
         ps2tex->paletteSize = platformTex->paletteSize;
+        ps2tex->paletteType = platformTex->paletteType;
 
         // Store the backlink.
         ps2tex->parent = this;
@@ -599,7 +606,7 @@ void NativeTexture::convertToPS2( void )
         ps2tex->mipmapUnknowns.push_back( unkData );
     }
 
-	if (rasterFormat & RASTER_PAL8 || rasterFormat & RASTER_PAL4)
+	if (ps2tex->paletteType != PALETTE_NONE)
     {
         typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 

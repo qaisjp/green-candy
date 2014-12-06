@@ -41,20 +41,27 @@ void NativeTexture::readD3d(std::istream &rw)
     this->name = metaHeader.name;
     this->maskName = metaHeader.maskName;
 
-	this->rasterFormat = metaHeader.rasterFormat;
+    // Deconstruct the format flags.
+    bool hasMipmaps = false;    // TODO: actually use this flag.
+
+	readRasterFormatFlags( metaHeader.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, platformTex->autoMipmaps );
 
 	hasAlpha = false;
 
-	char fourcc[5];
-	fourcc[4] = 0;
-
 	if ( platform == PLATFORM_D3D9 )
     {
-		rw.read(fourcc, 4*sizeof(char));
+        D3DFORMAT d3dFormat;
+
+		rw.read((char*)&d3dFormat, sizeof(d3dFormat));
+
+        // Alpha is not decided here.
+        platformTex->d3dFormat = d3dFormat;
     }
 	else
     {
 		hasAlpha = ( readUInt32(rw) != 0 );
+
+        // Set d3dFormat later.
     }
 
     textureMetaHeaderStructDimInfo dimInfo;
@@ -67,15 +74,44 @@ void NativeTexture::readD3d(std::istream &rw)
 
     platformTex->rasterType = dimInfo.rasterType;
 
-	uint32 dxtInfo = dimInfo.dxtCompression;
-
 	if ( platform == PLATFORM_D3D9 )
     {
-		hasAlpha = dxtInfo & 0x1;
+        // Here we decide about alpha.
+        textureContentInfoStruct contentInfo;
+        rw.read((char*)&contentInfo, sizeof(contentInfo));
 
-		if (dxtInfo & 0x8)
+		this->hasAlpha = contentInfo.hasAlpha;
+        platformTex->isCubeTexture = contentInfo.isCubeTexture;
+        platformTex->autoMipmaps = contentInfo.autoMipMaps;
+        platformTex->compressed = contentInfo.isCompressed;
+
+		if ( contentInfo.isCompressed )
         {
-			platformTex->dxtCompression = fourcc[3] - '0';
+			// Detect FOUR-CC versions for compression method.
+            if ( platformTex->d3dFormat == D3DFMT_DXT1 )
+            {
+                platformTex->dxtCompression = 1;
+            }
+            else if ( platformTex->d3dFormat == D3DFMT_DXT2 )
+            {
+                platformTex->dxtCompression = 2;
+            }
+            else if ( platformTex->d3dFormat == D3DFMT_DXT3 )
+            {
+                platformTex->dxtCompression = 3;
+            }
+            else if ( platformTex->d3dFormat == D3DFMT_DXT4 )
+            {
+                platformTex->dxtCompression = 4;
+            }
+            else if ( platformTex->d3dFormat == D3DFMT_DXT5 )
+            {
+                platformTex->dxtCompression = 5;
+            }
+            else
+            {
+                assert( 0 );
+            }
         }
 		else
         {
@@ -84,15 +120,58 @@ void NativeTexture::readD3d(std::istream &rw)
     }
     else
     {
+        uint32 dxtInfo = readUInt8(rw);
+
         platformTex->dxtCompression = dxtInfo;
+
+        // Auto-decide the Direct3D format.
+        D3DFORMAT d3dFormat = D3DFMT_A8R8G8B8;
+
+        if ( dxtInfo != 0 )
+        {
+            if ( dxtInfo == 1 )
+            {
+                d3dFormat = D3DFMT_DXT1;
+            }
+            else if ( dxtInfo == 2 )
+            {
+                d3dFormat = D3DFMT_DXT2;
+            }
+            else if ( dxtInfo == 3 )
+            {
+                d3dFormat = D3DFMT_DXT3;
+            }
+            else if ( dxtInfo == 4 )
+            {
+                d3dFormat = D3DFMT_DXT4;
+            }
+            else if ( dxtInfo == 5 )
+            {
+                d3dFormat = D3DFMT_DXT5;
+            }
+            else
+            {
+                assert( 0 );
+            }
+        }
+        else
+        {
+            eRasterFormat paletteRasterType = this->rasterFormat;
+
+            d3dFormat = getD3DFormatFromRasterType( paletteRasterType );
+        }
+
+        platformTex->d3dFormat = d3dFormat;
     }
 
-	if (rasterFormat & RASTER_PAL8 || rasterFormat & RASTER_PAL4)
+	if (platformTex->paletteType != PALETTE_NONE)
     {
-		platformTex->paletteSize = (rasterFormat & RASTER_PAL8) ? 0x100 : 0x10;
+		platformTex->paletteSize = getPaletteItemCount( platformTex->paletteType );
 
-		platformTex->palette = new uint8[platformTex->paletteSize*4 *sizeof(uint8)];
-		rw.read(reinterpret_cast <char *> (platformTex->palette), platformTex->paletteSize*4*sizeof(uint8));
+        size_t paletteDataSize = platformTex->paletteSize * sizeof(uint32);
+
+		platformTex->palette = new uint8[paletteDataSize];
+		rw.read(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
 	}
 
     uint32 mipmapCount = platformTex->mipmapCount;
@@ -103,8 +182,8 @@ void NativeTexture::readD3d(std::istream &rw)
 
 		if (i > 0)
         {
-            texWidth = platformTex->width[i-1];
-            texHeight = platformTex->height[i-1];
+            texWidth = platformTex->width[i-1] / 2;
+            texHeight = platformTex->height[i-1] / 2;
         }
         else
         {
@@ -330,7 +409,7 @@ void NativeTextureD3D::decompressDxt3(void)
 		dataSizes[i] = dataSize;
         this->mipmapDepth[i] = 0x20;
 	}
-	parent->rasterFormat += 0x0200;
+	parent->rasterFormat = RASTER_8888;
 	dxtCompression = 0;
 }
 
@@ -383,7 +462,7 @@ void NativeTextureD3D::decompressDxt1(void)
 				c[3][0] = 0x00;
 				c[3][1] = 0x00;
 				c[3][2] = 0x00;
-				if (parent->rasterFormat & 0x0200)
+				if (parent->rasterFormat == RASTER_565)
                 {
 					c[3][3] = 0xFF;
                 }
@@ -425,7 +504,20 @@ void NativeTextureD3D::decompressDxt1(void)
 		dataSizes[i] = dataSize;
         this->mipmapDepth[i] = 0x20;
 	}
-	parent->rasterFormat += 0x0400;
+    
+    if ( parent->rasterFormat == RASTER_1555 )
+    {
+        parent->rasterFormat = RASTER_8888;
+    }
+    else if ( parent->rasterFormat == RASTER_565 )
+    {
+        parent->rasterFormat = RASTER_888;
+    }
+    else
+    {
+        assert( 0 );
+    }
+
 	dxtCompression = 0;
 }
 
@@ -435,13 +527,21 @@ void NativeTextureD3D::decompressDxt(void)
 		return;
 
 	if (dxtCompression == 1)
+    {
 		decompressDxt1();
+    }
 	else if (dxtCompression == 3)
+    {
 		decompressDxt3();
-	else if (dxtCompression == 4) {
+    }
+	else if (dxtCompression == 4)
+    {
 		decompressDxt4();
-	} else
+	}
+    else
+    {
         std::cout << "dxt" << dxtCompression << " not supported\n";
+    }
 }
 
 };

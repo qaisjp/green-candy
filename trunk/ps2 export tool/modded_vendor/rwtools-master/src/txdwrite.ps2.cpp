@@ -10,18 +10,18 @@
 namespace rw
 {
 
-inline void genpalettetexeldata(const void *paletteData, uint32 rasterFormat, uint32 itemCount, void*& texelData, uint32& texelDataSize, uint32& palWidth, uint32& palHeight)
+inline void genpalettetexeldata(const void *paletteData, eRasterFormat rasterFormat, ePaletteType paletteType, uint32 itemCount, void*& texelData, uint32& texelDataSize, uint32& palWidth, uint32& palHeight)
 {
     // Select a compatible texture size for our palette data.
     uint32 texelWidth = 0;
     uint32 texelHeight = 0;
 
-    if ( ( rasterFormat & RASTER_PAL4 ) != 0 )
+    if ( paletteType == PALETTE_4BIT )
     {
         texelWidth = 8;
         texelHeight = 3;
     }
-    else if ( ( rasterFormat & RASTER_PAL8 ) != 0 )
+    else if ( paletteType == PALETTE_8BIT )
     {
         texelWidth = 16;
         texelHeight = 16;
@@ -104,7 +104,7 @@ void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
     uint32 height = this->height[0];
     uint32 depth = this->mipmapDepth[0];
 
-    bool hasMipmaps = ( parent->rasterFormat & RASTER_AUTOMIPMAP ) != 0;
+    bool hasMipmaps = this->autoMipmaps;
 
     gsParams_t params;
 
@@ -369,7 +369,7 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
     // Reconstruct GPU flags, kinda.
     rw::ps2GSRegisters::TEX0_REG tex0;
 
-    uint32 pixelFormatRaster = ( parent->rasterFormat & RASTER_MASK );
+    eRasterFormat pixelFormatRaster = parent->rasterFormat;
 
     tex0.textureBasePointer = 0;
 
@@ -477,9 +477,10 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
     tex1.unknown2 = this->gsParams.gsTEX1Unknown2;
 
 
-    uint32 rasterFormat = parent->rasterFormat;
+    eRasterFormat rasterFormat = parent->rasterFormat;
+    ePaletteType paletteType = this->paletteType;
 
-    bool hasMipmaps = (rasterFormat & RASTER_AUTOMIPMAP) != 0;
+    bool hasMipmaps = this->autoMipmaps;
 
     // Calculate mipmap offsets.
     const uint32 maxMipmaps = 6;
@@ -509,7 +510,7 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
         uint32 widthBlocksPerPage = 0;
         uint32 heightBlocksPerPage = 0;
 
-        if ( ( rasterFormat & RASTER_PAL4 ) != 0 )
+        if ( paletteType == PALETTE_4BIT )
         {
             pixelWidthPerColumn = 32;
             pixelHeightPerColumn = 4;
@@ -517,7 +518,7 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
             widthBlocksPerPage = 4;
             heightBlocksPerPage = 8;
         }
-        else if ( ( rasterFormat & RASTER_PAL8 ) != 0 )
+        else if ( paletteType == PALETTE_8BIT )
         {
             pixelWidthPerColumn = 16;
             pixelHeightPerColumn = 4;
@@ -705,8 +706,6 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
 
 uint32 NativeTexture::writePs2(std::ostream& rw)
 {
-    // TODO: combine all texture writing routines so they use the same generic data writer.
-
 	HeaderInfo header;
     header.version = rw::rwInterface.GetVersion();
 	uint32 writtenBytesReturn;
@@ -748,7 +747,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         // Write the master header.
         SKIP_HEADER();
 
-        bool requiresHeaders = ( this->rasterFormat & 0x20000 ) != 0;
+        bool requiresHeaders = platformTex->requiresHeaders;
 
         // Prepare palette data.
         uint32 palTexWidth, palTexHeight;
@@ -756,11 +755,11 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         void *paletteTexelMemory = NULL;
         bool hasAllocatedPaletteTexelMemory = false;
 
-        if ( this->rasterFormat & RASTER_PAL8 || this->rasterFormat & RASTER_PAL4 )
+        if ( platformTex->paletteType != PALETTE_NONE )
         {
             if ( requiresHeaders )
             {
-                genpalettetexeldata(platformTex->palette, this->rasterFormat, platformTex->paletteSize, paletteTexelMemory, palDataSize, palTexWidth, palTexHeight);
+                genpalettetexeldata(platformTex->palette, this->rasterFormat, platformTex->paletteType, platformTex->paletteSize, paletteTexelMemory, palDataSize, palTexWidth, palTexHeight);
 
                 hasAllocatedPaletteTexelMemory = true;
             }
@@ -790,7 +789,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
                 justTextureSize += dataSize;
             }
 
-            if ( this->rasterFormat & RASTER_PAL8 || this->rasterFormat & RASTER_PAL4 )
+            if ( platformTex->paletteType != PALETTE_NONE )
             {
                 if ( requiresHeaders )
                 {
@@ -810,6 +809,22 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
 
             assert( isCompatible == true );
 
+            // Create raster format flags.
+            uint32 formatFlags = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, platformTex->mipmapCount > 1, platformTex->autoMipmaps );
+
+            // Apply special flags.
+            if ( platformTex->requiresHeaders )
+            {
+                formatFlags |= 0x20000;
+            }
+            else if ( platformTex->isSwizzled[0] )
+            {
+                formatFlags |= 0x10000;
+            }
+
+            // Apply unknown stuff.
+            formatFlags |= platformTex->unknownFormatFlags;
+
             textureMetaDataHeader metaHeader;
             metaHeader.miptbp1 = gpuData.miptbp1;
             metaHeader.miptbp2 = gpuData.miptbp2;
@@ -818,7 +833,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             metaHeader.depth = platformTex->mipmapDepth[0];
             metaHeader.tex0 = gpuData.tex0;
             metaHeader.tex1 = gpuData.tex1;
-            metaHeader.rasterFormat = this->rasterFormat;
+            metaHeader.rasterFormat = formatFlags;
             metaHeader.dataSize = justTextureSize;
             metaHeader.paletteDataSize = justPaletteSize;
             metaHeader.combinedGPUDataSize = platformTex->calculateGPUDataSize(palDataSize / 4);
@@ -864,7 +879,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             }
 
             // Write palette information.
-            if ( this->rasterFormat & RASTER_PAL8 || this->rasterFormat & RASTER_PAL4 )
+            if ( platformTex->paletteType != PALETTE_NONE )
             {
                 if ( requiresHeaders )
                 {

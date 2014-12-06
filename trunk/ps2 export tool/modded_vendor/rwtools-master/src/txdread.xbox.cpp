@@ -59,7 +59,11 @@ void NativeTexture::readXbox(std::istream &rw)
 	this->name = metaInfo.name;
     this->maskName = metaInfo.maskName;
 
-	this->rasterFormat = metaInfo.rasterFormat;
+    // Deconstruct the rasterFormat flags.
+    bool hasMipmaps = false;        // TODO: actually use this flag.
+    bool autoMipmaps = false;
+
+    readRasterFormatFlags( metaInfo.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, autoMipmaps );
 
 	this->hasAlpha = ( metaInfo.hasAlpha != 0 );
 
@@ -72,12 +76,14 @@ void NativeTexture::readXbox(std::istream &rw)
 
     // TODO: debug the size parameter.
 
-	if (rasterFormat & RASTER_PAL8 || rasterFormat & RASTER_PAL4)
+	if (platformTex->paletteType != PALETTE_NONE)
     {
-		platformTex->paletteSize = (rasterFormat & RASTER_PAL8) ? 0x100 : 0x10;
+		platformTex->paletteSize = getPaletteItemCount( platformTex->paletteType );
 
-		platformTex->palette = new uint8[platformTex->paletteSize*4 *sizeof(uint8)];
-		rw.read(reinterpret_cast <char *> (platformTex->palette), platformTex->paletteSize*4*sizeof(uint8));
+        uint32 paletteDataSize = platformTex->paletteSize * sizeof(uint32);
+
+		platformTex->palette = new uint8[paletteDataSize];
+		rw.read(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
 	}
 
 	for (uint32 i = 0; i < platformTex->mipmapCount; i++)
@@ -86,8 +92,8 @@ void NativeTexture::readXbox(std::istream &rw)
 
 		if (i > 0)
         {
-            texWidth = platformTex->width[i-1];
-            texHeight = platformTex->height[i-1];
+            texWidth = platformTex->width[i-1] / 2;
+            texHeight = platformTex->height[i-1] / 2;
         }
         else
         {
@@ -211,29 +217,28 @@ void NativeTexture::convertFromXbox(void)
     // Move over palette information.
     d3dTex->palette = platformTex->palette;
     d3dTex->paletteSize = platformTex->paletteSize;
+    d3dTex->paletteType = platformTex->paletteType;
 
     uint32 targetCompression = 0;
 
 	if (platformTex->dxtCompression == 0xc)
     {
 		targetCompression = 1;
-		rasterFormat &= ~RASTER_MASK;
 
 		if (hasAlpha)
         {
-			rasterFormat |= RASTER_1555;
+			this->rasterFormat = RASTER_1555;
         }
 		else
         {
-			rasterFormat |= RASTER_565;
+			this->rasterFormat = RASTER_565;
         }
 	}
     else if (platformTex->dxtCompression == 0xe)
     {
 		targetCompression = 3;
 
-		rasterFormat &= ~RASTER_MASK;
-		rasterFormat |= RASTER_4444;
+		this->rasterFormat = RASTER_4444;
 	}
     else if (platformTex->dxtCompression == 0xf)
     {

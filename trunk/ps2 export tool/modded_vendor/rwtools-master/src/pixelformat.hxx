@@ -1,13 +1,13 @@
 namespace rw
 {
 
-static inline bool browsetexelcolor(void *texelSource, void *paletteData, uint32 maxpalette, uint32 colorIndex, uint32 rasterFormat, uint8& red, uint8& green, uint8& blue, uint8& alpha)
+static inline bool browsetexelcolor(void *texelSource, ePaletteType paletteType, void *paletteData, uint32 maxpalette, uint32 colorIndex, eRasterFormat rasterFormat, uint8& red, uint8& green, uint8& blue, uint8& alpha)
 {
     typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
     bool hasColor = false;
 
-    if (rasterFormat & RASTER_PAL4)
+    if (paletteType == PALETTE_4BIT)
     {
         pixel32_t *paletteColorData = (pixel32_t*)paletteData;
 
@@ -24,7 +24,7 @@ static inline bool browsetexelcolor(void *texelSource, void *paletteData, uint32
             hasColor = true;
         }
     }
-    else if (rasterFormat & RASTER_PAL8)
+    else if (paletteType == PALETTE_8BIT)
     {
         pixel32_t *paletteColorData = (pixel32_t*)paletteData;
 
@@ -41,7 +41,7 @@ static inline bool browsetexelcolor(void *texelSource, void *paletteData, uint32
             hasColor = true;
         }
     }
-    else if ((rasterFormat & RASTER_MASK) == RASTER_1555)
+    else if (rasterFormat == RASTER_1555)
     {
         struct pixel_t
         {
@@ -65,7 +65,7 @@ static inline bool browsetexelcolor(void *texelSource, void *paletteData, uint32
 
         hasColor = true;
     }
-    else if ((rasterFormat & RASTER_MASK) == RASTER_565)
+    else if (rasterFormat == RASTER_565)
     {
         struct pixel_t
         {
@@ -84,7 +84,7 @@ static inline bool browsetexelcolor(void *texelSource, void *paletteData, uint32
 
         hasColor = true;
     }
-    else if ((rasterFormat & RASTER_MASK) == RASTER_4444)
+    else if (rasterFormat == RASTER_4444)
     {
         struct pixel_t
         {
@@ -108,7 +108,7 @@ static inline bool browsetexelcolor(void *texelSource, void *paletteData, uint32
 
         hasColor = true;
     }
-    else if ((rasterFormat & RASTER_MASK) == RASTER_8888)
+    else if (rasterFormat == RASTER_8888)
     {
         pixel32_t *srcData = (pixel32_t*)texelSource;
 
@@ -116,13 +116,14 @@ static inline bool browsetexelcolor(void *texelSource, void *paletteData, uint32
 
         hasColor = true;
     }
-    else if ((rasterFormat & RASTER_MASK) == RASTER_888)
+    else if (rasterFormat == RASTER_888)
     {
         struct pixel_t
         {
             uint8 red;
             uint8 green;
             uint8 blue;
+            uint8 unused;
         };
 
         pixel_t *srcData = ( (pixel_t*)texelSource + colorIndex );
@@ -144,7 +145,7 @@ static inline uint8 scalecolor(uint8 color, uint32 curMax, uint32 newMax)
     return (uint8)( (double)color / (double)curMax * (double)newMax );
 }
 
-static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, uint32 rasterFormat, uint8 red, uint8 green, uint8 blue, uint8 alpha)
+static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterFormat rasterFormat, uint8 red, uint8 green, uint8 blue, uint8 alpha)
 {
     typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
@@ -235,6 +236,7 @@ static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, uint32 rast
             uint8 red;
             uint8 green;
             uint8 blue;
+            uint8 unused;
         };
 
         pixel_t *dstData = ( (pixel_t*)texelDest + colorIndex );
