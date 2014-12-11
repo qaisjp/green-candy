@@ -259,6 +259,8 @@ inline uint8 randcolor( void )
 
 static void DebugFuncs( CFileTranslator *discHandle )
 {
+    return;
+
     // Debug a weird txd container...
     CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
 
@@ -448,7 +450,7 @@ int main( int argc, char *argv[] )
             // Debug some obscurities.
             DebugFuncs( discHandle );
 
-            if ( false )
+            if ( true )
             {
                 // Create the build directory and get a link to it.
                 bool dirCreationSuccess = fileRoot->CreateDir( "BUILD_ROOT/" );
