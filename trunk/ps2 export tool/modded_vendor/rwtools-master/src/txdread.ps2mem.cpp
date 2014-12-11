@@ -373,13 +373,35 @@ public:
     }
 };
 
-uint32 NativeTexturePS2::calculateGPUDataSize(uint32 palDataSize) const
+uint32 NativeTexturePS2::calculateGPUDataSize(
+    const uint32 mipmapBasePointer[], const uint32 mipmapMemorySize[], uint32 mipmapMax,
+    eMemoryLayoutType memLayoutType,
+    uint32 paletteDataSize
+) const
 {
     uint32 numMipMaps = this->mipmapCount;
 
     if ( numMipMaps == 0 )
         return 0;
 
+#if 1
+    // Calculate the maximum memory offset required.
+    uint32 maxMemOffset = 0;
+
+    for ( uint32 n = 0; n < numMipMaps; n++ )
+    {
+        uint32 thisOffset = ( mipmapBasePointer[n] + mipmapMemorySize[n] );
+
+        if ( maxMemOffset < thisOffset )
+        {
+            maxMemOffset = thisOffset;
+        }
+    }
+
+    uint32 textureMemoryDataSize = ( maxMemOffset * 64 );
+
+    uint32 combinedMemoryDataSize = ALIGN_SIZE( textureMemoryDataSize + paletteDataSize, 2048u );
+#else
     // Assume uniform depth.
     uint32 depth = this->mipmapDepth[0];
 
@@ -392,8 +414,9 @@ uint32 NativeTexturePS2::calculateGPUDataSize(uint32 palDataSize) const
 
         textureMemoryDataSize += curDataSize / 4 + mipunk.unk1 + mipunk.unk2;
     }
-
-    uint32 gpuMinMemory = ALIGN_SIZE( textureMemoryDataSize + palDataSize, (uint32)2048 );
+#endif
+#if 0
+    uint32 gpuMinMemory = textureMemoryDataSize;
 
     //if ( ( this->rasterFormat & RASTER_AUTOMIPMAP ) != 0 )
     {
@@ -402,6 +425,8 @@ uint32 NativeTexturePS2::calculateGPUDataSize(uint32 palDataSize) const
         uint32 minMemoryFootprint = 2048;
 
         uint32 curSplitStart = 0;
+
+        uint32 depth = this->mipmapDepth[ 0 ];
 
         if ( depth == 4 )
         {
@@ -428,6 +453,9 @@ uint32 NativeTexturePS2::calculateGPUDataSize(uint32 palDataSize) const
     }
 
     return gpuMinMemory;
+#else
+    return combinedMemoryDataSize;
+#endif
 }
 
 bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
@@ -551,6 +579,900 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
     }
 
     return operationSuccessful;
+}
+
+// The PS2 memory is a rectangular device. Basically its a set of pages that can be used for allocating image chunks.
+// This class is supposed to emulate the texture allocation behavior.
+namespace ps2GSMemoryLayoutArrangements
+{
+    // Layout arrangements.
+    const static uint32 psmct32[4][8] =
+    {
+        { 0u, 1u, 4u, 5u, 16u, 17u, 20u, 21u },
+        { 2u, 3u, 6u, 7u, 18u, 19u, 22u, 23u },
+        { 8u, 9u, 12u, 13u, 24u, 25u, 28u, 29u },
+        { 10u, 11u, 14u, 15u, 26u, 27u, 30u, 31u }
+    };
+    const static uint32 psmz32[4][8] =
+    {
+        { 24u, 25u, 28u, 29u, 8u, 9u, 12u, 13u },
+        { 26u, 27u, 30u, 31u, 10u, 11u, 14u, 15u },
+        { 16u, 17u, 20u, 21u, 0u, 1u, 4u, 5u },
+        { 18u, 19u, 22u, 23u, 2u, 3u, 6u, 7u }
+    };
+    const static uint32 psmct16[8][4] =
+    {
+        { 0u, 2u, 8u, 10u },
+        { 1u, 3u, 9u, 11u },
+        { 4u, 6u, 12u, 14u },
+        { 5u, 7u, 13u, 15u },
+        { 16u, 18u, 24u, 26u },
+        { 17u, 19u, 25u, 27u },
+        { 20u, 22u, 28u, 30u },
+        { 21u, 23u, 29u, 31u }
+    };
+    const static uint32 psmz16[8][4] =
+    {
+        { 24u, 26u, 16u, 18u },
+        { 25u, 27u, 17u, 19u },
+        { 28u, 30u, 20u, 22u },
+        { 29u, 31u, 21u, 23u },
+        { 8u, 10u, 0u, 2u },
+        { 9u, 11u, 1u, 3u },
+        { 12u, 14u, 4u, 6u },
+        { 13u, 15u, 5u, 7u }
+    };
+    const static uint32 psmct16s[8][4] =
+    {
+        { 0u, 2u, 16u, 18u },
+        { 1u, 3u, 17u, 19u },
+        { 8u, 10u, 24u, 26u },
+        { 9u, 11u, 25u, 27u },
+        { 4u, 6u, 20u, 22u },
+        { 5u, 7u, 21u, 23u },
+        { 12u, 14u, 28u, 30u },
+        { 13u, 15u, 29u, 31u }
+    };
+    const static uint32 psmz16s[8][4] =
+    {
+        { 24u, 26u, 8u, 10u },
+        { 25u, 27u, 9u, 11u },
+        { 16u, 18u, 0u, 2u },
+        { 17u, 19u, 1u, 3u },
+        { 28u, 30u, 12u, 14u },
+        { 29u, 31u, 13u, 15u },
+        { 20u, 22u, 4u, 6u },
+        { 21u, 23u, 5u, 7u }
+    };
+    const static uint32 psmt8[4][8] =
+    {
+        { 0u, 1u, 4u, 5u, 16u, 17u, 20u, 21u },
+        { 2u, 3u, 6u, 7u, 18u, 19u, 22u, 23u },
+        { 8u, 9u, 12u, 13u, 24u, 25u, 28u, 29u },
+        { 10u, 11u, 14u, 15u, 26u, 27u, 30u, 31u }
+    };
+    const static uint32 psmt4[8][4] =
+    {
+        { 0u, 2u, 8u, 10u },
+        { 1u, 3u, 9u, 11u },
+        { 4u, 6u, 12u, 14u },
+        { 5u, 7u, 13u, 15u },
+        { 16u, 18u, 24u, 26u },
+        { 17u, 19u, 25u, 27u },
+        { 20u, 22u, 28u, 30u },
+        { 21u, 23u, 29u, 31u }
+    };
+};
+
+struct ps2GSMemoryLayoutManager
+{
+    inline static bool getMemoryLayoutFromPaletteType(ePaletteType paletteType, eMemoryLayoutType& memLayout)
+    {
+        eMemoryLayoutType theLayout;
+
+        if ( paletteType == PALETTE_4BIT )
+        {
+            theLayout = PSMT4;
+        }
+        else if ( paletteType == PALETTE_8BIT )
+        {
+            theLayout = PSMT8;
+        }
+        else
+        {
+            return false;
+        }
+
+        memLayout = theLayout;
+
+        return true;
+    }
+
+    inline static bool getMemoryLayoutFromRasterFormat(eRasterFormat rasterFormat, eMemoryLayoutType& memLayout)
+    {
+        eMemoryLayoutType theLayout;
+
+        if ( rasterFormat == RASTER_1555 ||
+             rasterFormat == RASTER_565 ||
+             rasterFormat == RASTER_4444 ||
+             rasterFormat == RASTER_16 ||
+             rasterFormat == RASTER_555 )
+        {
+            theLayout = PSMCT16S;
+        }
+        else if ( rasterFormat == RASTER_LUM8 )
+        {
+            theLayout = PSMT8;
+        }
+        else if ( rasterFormat == RASTER_888 ||
+                  rasterFormat == RASTER_24 )
+        {
+            theLayout = PSMCT24;
+        }
+        else if ( rasterFormat == RASTER_8888 ||
+                  rasterFormat == RASTER_32 )
+        {
+            theLayout = PSMCT32;
+        }
+        else
+        {
+            return false;
+        }
+
+        memLayout = theLayout;
+
+        return true;
+    }
+
+    typedef sliceOfData <uint32> memUnitSlice_t;
+
+    struct MemoryRectBase
+    {
+        typedef memUnitSlice_t side_t;
+
+        side_t x_slice, y_slice;
+
+        inline MemoryRectBase( uint32 blockX, uint32 blockY, uint32 blockWidth, uint32 blockHeight )
+            : x_slice( blockX, blockWidth ), y_slice( blockY, blockHeight )
+        {
+            return;
+        }
+
+        inline bool IsColliding( const MemoryRectBase *right ) const
+        {
+            side_t::eIntersectionResult x_result =
+                this->x_slice.intersectWith( right->x_slice );
+
+            side_t::eIntersectionResult y_result =
+                this->y_slice.intersectWith( right->y_slice );
+
+            return ( !side_t::isFloatingIntersect( x_result ) && !side_t::isFloatingIntersect( y_result ) );
+        }
+
+        inline MemoryRectBase SubRect( const MemoryRectBase *right ) const
+        {
+            uint32 maxStartX =
+                std::max( this->x_slice.GetSliceStartPoint(), right->x_slice.GetSliceStartPoint() );
+            uint32 maxStartY =
+                std::max( this->y_slice.GetSliceStartPoint(), right->y_slice.GetSliceStartPoint() );
+
+            uint32 minEndX =
+                std::min( this->x_slice.GetSliceEndPoint(), right->x_slice.GetSliceEndPoint() );
+            uint32 minEndY =
+                std::min( this->y_slice.GetSliceEndPoint(), right->y_slice.GetSliceEndPoint() );
+
+            MemoryRectBase subRect(
+                maxStartX,
+                maxStartY,
+                minEndX - maxStartX + 1,
+                minEndY - maxStartY + 1
+            );
+
+            return subRect;
+        }
+
+        inline bool HasSpace( void ) const
+        {
+            return
+                this->x_slice.GetSliceSize() > 0 &&
+                this->y_slice.GetSliceSize() > 0;
+        }
+    };
+
+    struct MemoryRectangle : public MemoryRectBase
+    {
+        inline MemoryRectangle( uint32 blockX, uint32 blockY, uint32 blockWidth, uint32 blockHeight )
+            : MemoryRectBase( blockX, blockY, blockWidth, blockHeight )
+        {
+            return;
+        }
+
+        RwListEntry <MemoryRectangle> node;
+    };
+
+    struct VirtualMemoryPage
+    {
+        inline VirtualMemoryPage( void )
+        {
+            LIST_CLEAR( allocatedRects.root );
+        }
+
+        inline ~VirtualMemoryPage( void )
+        {
+            LIST_FOREACH_BEGIN( MemoryRectangle, allocatedRects.root, node )
+                
+                delete item;
+
+            LIST_FOREACH_END
+
+            LIST_CLEAR( allocatedRects.root );
+        }
+
+        inline bool IsColliding( const MemoryRectBase *theRect ) const
+        {
+            LIST_FOREACH_BEGIN( MemoryRectangle, this->allocatedRects.root, node )
+
+                if ( item->IsColliding( theRect ) == true )
+                {
+                    // There is a collision, so this rectangle is invalid.
+                    // Try another position.
+                    return true;
+                }
+
+            LIST_FOREACH_END
+
+            return false;
+        }
+
+        // has a constant blockWidth and blockHeight same for every virtual page with same memLayout.
+        // has a constant blocksPerWidth and blocksPerHeight same for every virtual page with same memLayout.
+        eMemoryLayoutType memLayout;
+
+        RwList <MemoryRectangle> allocatedRects;
+
+        RwListEntry <VirtualMemoryPage> node;
+    };
+
+    struct MemoryPage
+    {
+        inline MemoryPage( void )
+        {
+            LIST_CLEAR( vmemList.root );
+        }
+
+        inline ~MemoryPage( void )
+        {
+            LIST_FOREACH_BEGIN( VirtualMemoryPage, vmemList.root, node )
+
+                delete item;
+
+            LIST_FOREACH_END
+
+            LIST_CLEAR( vmemList.root );
+        }
+
+        RwList <VirtualMemoryPage> vmemList;
+
+        RwListEntry <MemoryPage> node;
+
+        inline VirtualMemoryPage* GetVirtualMemoryLayout( eMemoryLayoutType layoutType )
+        {
+            LIST_FOREACH_BEGIN( VirtualMemoryPage, vmemList.root, node )
+            
+                if ( item->memLayout == layoutType )
+                {
+                    return item;
+                }
+
+            LIST_FOREACH_END
+
+            return NULL;
+        }
+
+        inline VirtualMemoryPage* AllocateVirtualMemoryLayout( eMemoryLayoutType layoutType )
+        {
+            VirtualMemoryPage *newPage = new VirtualMemoryPage();
+
+            newPage->memLayout = layoutType;
+
+            LIST_APPEND( this->vmemList.root, newPage->node );
+
+            return newPage;
+        }
+    };
+
+    RwList <MemoryPage> pages;
+
+    inline ps2GSMemoryLayoutManager( void )
+    {
+        LIST_CLEAR( pages.root );
+    }
+
+    inline ~ps2GSMemoryLayoutManager( void )
+    {
+        LIST_FOREACH_BEGIN( MemoryPage, pages.root, node )
+            
+            delete item;
+
+        LIST_FOREACH_END
+
+        LIST_CLEAR( pages.root );
+    }
+
+    // Memory management constants of the PS2 Graphics Synthesizer.
+    static const uint32 gsColumnSize = 16 * sizeof(uint32);
+    static const uint32 gsBlockSize = gsColumnSize * 4;
+    static const uint32 gsPageSize = gsBlockSize * 32;
+
+    struct memoryLayoutProperties_t
+    {
+        uint32 pixelWidthPerBlock, pixelHeightPerBlock;
+        uint32 widthBlocksPerPage, heightBlocksPerPage;
+
+        const uint32 *const* blockArrangement;
+
+        memUnitSlice_t pageDimX, pageDimY;
+    };
+
+    inline static void getMemoryLayoutProperties(eMemoryLayoutType memLayout, memoryLayoutProperties_t& layoutProps)
+    {
+        uint32 pixelWidthPerColumn = 0;
+        uint32 pixelHeightPerColumn = 0;
+
+        // For safety.
+        layoutProps.blockArrangement = NULL;
+
+        if ( memLayout == PSMT4 )
+        {
+            pixelWidthPerColumn = 32;
+            pixelHeightPerColumn = 4;
+
+            layoutProps.widthBlocksPerPage = 4;
+            layoutProps.heightBlocksPerPage = 8;
+
+            layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmt4;
+        }
+        else if ( memLayout == PSMT8 )
+        {
+            pixelWidthPerColumn = 16;
+            pixelHeightPerColumn = 4;
+
+            layoutProps.widthBlocksPerPage = 8;
+            layoutProps.heightBlocksPerPage = 4;
+
+            layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmt8;
+        }
+        else if ( memLayout == PSMCT32 || memLayout == PSMCT24 ||
+                  memLayout == PSMZ32 || memLayout == PSMZ24 )
+        {
+            pixelWidthPerColumn = 8;
+            pixelHeightPerColumn = 2;
+
+            layoutProps.widthBlocksPerPage = 8;
+            layoutProps.heightBlocksPerPage = 4;
+
+            if ( memLayout == PSMCT32 || memLayout == PSMCT24 )
+            {
+                layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmct32;
+            }
+            else if ( memLayout == PSMZ32 || memLayout == PSMZ24 )
+            {
+                layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmz32;
+            }
+        }
+        else if ( memLayout == PSMCT16 || memLayout == PSMCT16S ||
+                  memLayout == PSMZ16 || memLayout == PSMZ16S )
+        {
+            pixelWidthPerColumn = 16;
+            pixelHeightPerColumn = 2;
+
+            layoutProps.widthBlocksPerPage = 4;
+            layoutProps.heightBlocksPerPage = 8;
+
+            if ( memLayout == PSMCT16 )
+            {
+                layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmct16;
+            }
+            else if ( memLayout == PSMCT16S )
+            {
+                layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmct16s;
+            }
+            else if ( memLayout == PSMZ16 )
+            {
+                layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmz16;
+            }
+            else if ( memLayout == PSMZ16S )
+            {
+                layoutProps.blockArrangement = (const uint32*const*)ps2GSMemoryLayoutArrangements::psmz16s;
+            }
+        }
+        else
+        {
+            // TODO.
+            assert( 0 );
+        }
+
+        // Expand to block dimensions.
+        layoutProps.pixelWidthPerBlock = pixelWidthPerColumn;
+        layoutProps.pixelHeightPerBlock = pixelHeightPerColumn * 4;
+
+        // Set up the page dimensions.
+        layoutProps.pageDimX = memUnitSlice_t( 0, layoutProps.widthBlocksPerPage );
+        layoutProps.pageDimY = memUnitSlice_t( 0, layoutProps.heightBlocksPerPage );
+    }
+
+    inline MemoryPage* GetPage( uint32 pageIndex )
+    {
+        uint32 n = 0;
+
+        // Try to fetch an existing page.
+        LIST_FOREACH_BEGIN( MemoryPage, pages.root, node )
+
+            if ( n++ == pageIndex )
+            {
+                return item;
+            }
+
+        LIST_FOREACH_END
+
+        // Allocate missing pages.
+        MemoryPage *allocPage = NULL;
+
+        while ( n++ <= pageIndex )
+        {
+            allocPage = new MemoryPage();
+
+            LIST_APPEND( pages.root, allocPage->node );
+        }
+
+        return allocPage;
+    }
+
+    inline static uint32 getTextureBasePointer(const memoryLayoutProperties_t& layoutProps, uint32 pageX, uint32 pageY, uint32 bufferWidth, uint32 blockOffsetX, uint32 blockOffsetY)
+    {
+        // Get block index from the dimensional coordinates.
+        // This requires a dispatch according to the memory layout.
+        uint32 blockIndex = 0;
+        {
+            const uint32 *const *blockArrangement = layoutProps.blockArrangement;
+
+            const uint32 *row = (const uint32*)( blockArrangement + blockOffsetY * layoutProps.widthBlocksPerPage );
+
+            blockIndex = row[ blockOffsetX ];
+        }
+
+        // Allocate the texture at the current position in the buffer.
+        uint32 pageIndex = ( pageY * bufferWidth + pageX );
+
+        return ( pageIndex * 32 + blockIndex );
+    }
+
+    inline bool allocateTexture(eMemoryLayoutType memLayoutType, const memoryLayoutProperties_t& layoutProps, uint32 texelWidth, uint32 texelHeight, uint32& texBasePointer, uint32& texMemSize, uint32& texBufferWidthOut)
+    {
+        // Scale up texel dimensions.
+        uint32 alignedTexelWidth = ALIGN_SIZE( texelWidth, layoutProps.pixelWidthPerBlock );
+        uint32 alignedTexelHeight = ALIGN_SIZE( texelHeight, layoutProps.pixelHeightPerBlock );
+
+        // Get block dimensions.
+        uint32 texelBlockWidth = ( alignedTexelWidth / layoutProps.pixelWidthPerBlock );
+        uint32 texelBlockHeight = ( alignedTexelHeight / layoutProps.pixelHeightPerBlock );
+
+        // Get the width in pages.
+        uint32 pageMaxBlockWidth = ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage );
+
+        uint32 texelPageWidth = pageMaxBlockWidth / layoutProps.widthBlocksPerPage;
+
+        // Get the height in pages.
+        uint32 pageMaxBlockHeight = ALIGN_SIZE( texelBlockHeight, layoutProps.heightBlocksPerPage );
+
+        uint32 texelPageHeight = pageMaxBlockHeight / layoutProps.heightBlocksPerPage;
+
+        // Get the minimum required texture buffer width.
+        // It must be aligned to the page dimensions.
+        // This value should be atleast 2.
+        uint32 texBufferWidth = ( texelPageWidth * layoutProps.widthBlocksPerPage * layoutProps.pixelWidthPerBlock ) / 64;
+
+        // TODO: this is not the real buffer width yet.
+
+        // Loop through all pages and try to find the correct placement for the new texture.
+        uint32 pageX = 0;
+        uint32 pageY = 0;
+        uint32 blockOffsetX = 0;
+        uint32 blockOffsetY = 0;
+
+        bool validAllocation = false;
+
+        if ( texelPageWidth > 1 || texelPageHeight > 1 )
+        {
+            uint32 currentSideIter = 1;
+
+            while ( true )
+            {
+                bool isProperAllocation = false;
+
+                // Go down lines until we found a suitable position in the buffer for this page.
+                {
+                    // The alloc area is a rectangle placed linearly.
+                    uint32 pageBlockOffX =
+                        pageX * layoutProps.widthBlocksPerPage;
+
+                    MemoryRectBase pageAllocArea(
+                        pageBlockOffX + pageY * pageMaxBlockWidth,
+                        0,
+                        texelBlockWidth,
+                        texelBlockHeight
+                    );
+
+                    bool hasFoundCollision = false;
+
+                    // Check from the (0,0) point of all pages.
+                    for ( uint32 y = 0; y < texelPageHeight; y++ )
+                    {
+                        for ( uint32 x = 0; x < texelPageWidth; x++ )
+                        {
+                            uint32 real_x = ( x + pageX );
+                            uint32 real_y = ( y + pageY );
+
+                            // Calculate the real index of this page.
+                            uint32 pageIndex = ( texelPageWidth * real_y + real_x );
+
+                            MemoryPage *thePage = this->GetPage( pageIndex );
+
+                            // Collide our page rect with the contents of this page.
+                            VirtualMemoryPage *vmemLayout = thePage->GetVirtualMemoryLayout( memLayoutType );
+
+                            if ( vmemLayout )
+                            {
+                                bool isCollided = vmemLayout->IsColliding( &pageAllocArea );
+
+                                if ( isCollided )
+                                {
+                                    hasFoundCollision = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ( hasFoundCollision )
+                        {
+                            break;
+                        }
+                    }
+
+                    if ( !hasFoundCollision )
+                    {
+                        // We appear to be okay. We can allocate in this area!
+                        isProperAllocation = true;
+                    }
+                }
+
+                // Check that we got to allocate anything.
+                if ( isProperAllocation )
+                {
+                    // Mark our region and return!
+                    validAllocation = true;
+                    break;
+                }
+
+                pageY++;
+            }
+        }
+        else
+        {
+            uint32 layoutStartX = layoutProps.pageDimX.GetSliceStartPoint();
+            uint32 layoutStartY = layoutProps.pageDimY.GetSliceStartPoint();
+
+            while ( true )
+            {
+                bool allocationSuccessful = false;
+
+                // Try to allocate on the memory plane.
+                {
+                    uint32 pageIndex = ( pageY * texelPageWidth + pageX );
+
+                    // The current page.
+                    MemoryPage *currentPage = this->GetPage( pageIndex );
+
+                    VirtualMemoryPage *vmemLayout = currentPage->GetVirtualMemoryLayout( memLayoutType );
+
+                    bool canAllocateOnPage = true;
+
+                    if ( vmemLayout )
+                    {
+                        MemoryRectBase thisRect(
+                            layoutStartX,
+                            layoutStartY,
+                            texelBlockWidth,
+                            texelBlockHeight
+                        );
+
+                        // We have to assume that we cannot allocate on this page.
+                        canAllocateOnPage = false;
+
+                        while ( true )
+                        {
+                            // Make sure we are not outside of the page dimensions.
+                            {
+                                memUnitSlice_t::eIntersectionResult x_result =
+                                    thisRect.x_slice.intersectWith( layoutProps.pageDimX );
+
+                                if ( x_result != memUnitSlice_t::INTERSECT_INSIDE && x_result != memUnitSlice_t::INTERSECT_EQUAL )
+                                {
+                                    // Advance to next line.
+                                    thisRect.x_slice.SetSlicePosition( layoutStartX );
+                                    thisRect.y_slice.OffsetSliceBy( 1 );
+                                }
+
+                                memUnitSlice_t::eIntersectionResult y_result =
+                                    thisRect.y_slice.intersectWith( layoutProps.pageDimY );
+
+                                if ( y_result != memUnitSlice_t::INTERSECT_INSIDE && y_result != memUnitSlice_t::INTERSECT_EQUAL )
+                                {
+                                    // This page is not it.
+                                    break;
+                                }
+                            }
+
+                            uint32 pageBlockOffX =
+                                pageX * layoutProps.widthBlocksPerPage;
+
+                            MemoryRectBase actualRect(
+                                thisRect.x_slice.GetSliceStartPoint() + pageBlockOffX + pageY * pageMaxBlockWidth,
+                                thisRect.y_slice.GetSliceStartPoint(),
+                                texelBlockWidth,
+                                texelBlockHeight
+                            );
+
+                            bool foundFreeSpot = ( vmemLayout->IsColliding( &actualRect ) == false );
+
+                            // If there are no conflicts on our page, we can allocate on it.
+                            if ( foundFreeSpot == true )
+                            {
+                                blockOffsetX = thisRect.x_slice.GetSliceStartPoint();
+                                blockOffsetY = thisRect.y_slice.GetSliceStartPoint();
+
+                                canAllocateOnPage = true;
+                                break;
+                            }
+
+                            // We need to advance our position.
+                            thisRect.x_slice.OffsetSliceBy( 1 );
+                        }
+                    }
+                    
+                    // If we can allocate on this page, then we succeeded!
+                    if ( canAllocateOnPage == true )
+                    {
+                        allocationSuccessful = true;
+                    }
+                }
+
+                // If the allocation has been successful, break.
+                if ( allocationSuccessful )
+                {
+                    validAllocation = true;
+                    break;
+                }
+
+                // We need to try from the next page.
+                pageX++;
+
+                // If the page is the limit, then restart and go to next line.
+                if ( pageX == texelPageWidth )
+                {
+                    pageX = 0;
+
+                    pageY++;
+                }
+            }
+        }
+
+        // This may trigger if we overshot memory capacity.
+        if ( validAllocation == false )
+            return false;
+
+        // Calculate the texture base pointer.
+        texBasePointer = getTextureBasePointer(layoutProps, pageX, pageY, texelPageWidth, blockOffsetX, blockOffsetY);
+
+        // Calculate the required memory size.
+        {
+            uint32 texelBlockWidthOffset = ( texelBlockWidth - 1 ) + blockOffsetX;
+            uint32 texelBlockHeightOffset = ( texelBlockHeight - 1 ) + blockOffsetY;
+
+            uint32 finalPageX = pageX + texelBlockWidthOffset / layoutProps.widthBlocksPerPage;
+            uint32 finalPageY = pageY + texelBlockHeightOffset / layoutProps.heightBlocksPerPage;
+
+            uint32 finalBlockOffsetX = texelBlockWidthOffset % layoutProps.widthBlocksPerPage;
+            uint32 finalBlockOffsetY = texelBlockHeightOffset % layoutProps.heightBlocksPerPage;
+
+            uint32 texEndOffset =
+                getTextureBasePointer(layoutProps, finalPageX, finalPageY, texelPageWidth, finalBlockOffsetX, finalBlockOffsetY);
+
+            uint32 memSizeInBlocks = ( ( texEndOffset + 1 ) - texBasePointer );
+
+            // Get the size that the GPU understands.
+            texMemSize = memSizeInBlocks;//( memSizeInBlocks * layoutProps.pixelWidthPerBlock ) / 64;
+        }
+
+        // Give the texture buffer width to the runtime.
+        texBufferWidthOut = texBufferWidth;
+
+        // Add our collision rectangles onto the pages we allocated.
+        MemoryRectBase pageAllocArea(
+            pageX * layoutProps.widthBlocksPerPage + blockOffsetX,
+            pageY * layoutProps.heightBlocksPerPage + blockOffsetY,
+            texelBlockWidth,
+            texelBlockHeight
+        );
+
+        for ( uint32 allocPageY = 0; allocPageY < texelPageHeight; allocPageY++ )
+        {
+            for ( uint32 allocPageX = 0; allocPageX < texelPageWidth; allocPageX++ )
+            {
+                uint32 realPageX = ( allocPageX + pageX );
+                uint32 realPageY = ( allocPageY + pageY );
+
+                uint32 pageBlockOffX =
+                    layoutProps.pageDimX.GetSliceStartPoint() + realPageX * layoutProps.widthBlocksPerPage;
+                uint32 pageBlockOffY =
+                    layoutProps.pageDimY.GetSliceStartPoint() + realPageY * layoutProps.heightBlocksPerPage;
+
+                MemoryRectBase pageZone(
+                    pageBlockOffX,
+                    pageBlockOffY,
+                    layoutProps.widthBlocksPerPage,
+                    layoutProps.heightBlocksPerPage
+                );
+
+                MemoryRectBase subRectAllocZone = pageZone.SubRect( &pageAllocArea );
+
+                // If there is a zone to include, we do that.
+                if ( subRectAllocZone.HasSpace() )
+                {
+                    // Transform the subrect onto a linear zone.
+                    uint32 blockLocalX =
+                        subRectAllocZone.x_slice.GetSliceStartPoint() - pageBlockOffX;
+                    uint32 blockLocalY =
+                        subRectAllocZone.y_slice.GetSliceStartPoint() - pageBlockOffY;
+
+                    uint32 pageIndex = ( realPageY * texelPageWidth + realPageX );
+
+                    MemoryPage *thePage = this->GetPage( pageIndex );
+
+                    VirtualMemoryPage *vmemLayout = thePage->GetVirtualMemoryLayout( memLayoutType );
+
+                    if ( !vmemLayout )
+                    {
+                        vmemLayout = thePage->AllocateVirtualMemoryLayout( memLayoutType );
+                    }
+
+                    if ( vmemLayout )
+                    {
+                        MemoryRectangle *memRect =
+                            new MemoryRectangle(
+                                blockLocalX + realPageX * layoutProps.widthBlocksPerPage + realPageY * pageMaxBlockWidth,
+                                blockLocalY,
+                                subRectAllocZone.x_slice.GetSliceSize(),
+                                subRectAllocZone.y_slice.GetSliceSize()
+                            );
+
+                        if ( memRect )
+                        {
+                            LIST_INSERT( vmemLayout->allocatedRects.root, memRect->node );
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+};
+
+bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], uint32 maxMipmaps, eMemoryLayoutType& memLayoutTypeOut) const
+{
+    uint32 mainTexWidth = this->swizzleWidth[0];
+    uint32 mainTexHeight = this->swizzleHeight[0];
+    uint32 depth = this->mipmapDepth[0];
+
+    eRasterFormat pixelFormatRaster = parent->rasterFormat;
+    ePaletteType paletteType = this->paletteType;
+
+    uint32 mipmapCount = this->mipmapCount;
+
+    // Try to get a valid memory model from the palette type.
+    eMemoryLayoutType memLayout;
+
+    if ( !ps2GSMemoryLayoutManager::getMemoryLayoutFromPaletteType( paletteType, memLayout ) )
+    {
+        // If not from the palette, we get it from the pixel format.
+        if ( !ps2GSMemoryLayoutManager::getMemoryLayoutFromRasterFormat( pixelFormatRaster, memLayout ) )
+        {
+            // We do not know how to handle this raster, so quit.
+            return false;
+        }
+    }
+
+    // Get format properties.
+    ps2GSMemoryLayoutManager::memoryLayoutProperties_t layoutProps;
+
+    ps2GSMemoryLayoutManager::getMemoryLayoutProperties( memLayout, layoutProps );
+
+    // Perform the allocation.
+    {
+        // Create a new memory environment.
+        ps2GSMemoryLayoutManager gsMem;
+
+        // Get page dimensions
+        uint32 pixelWidthPerPage = ( layoutProps.widthBlocksPerPage * layoutProps.pixelWidthPerBlock );
+        uint32 pixelHeightPerPage = ( layoutProps.heightBlocksPerPage * layoutProps.pixelHeightPerBlock );
+
+        for ( uint32 n = 0; n < mipmapCount; n++ )
+        {
+            // Get the texel dimensions of this texture.
+            uint32 texelWidth = this->swizzleWidth[n];
+            uint32 texelHeight = this->swizzleHeight[n];
+
+            uint32 texBasePointer = 0;
+            uint32 texBufferWidth = 0;
+            uint32 texMemSize = 0;
+
+            bool allocationSuccess = gsMem.allocateTexture( memLayout, layoutProps, texelWidth, texelHeight, texBasePointer, texMemSize, texBufferWidth );
+
+            // If we fail to allocate any texture, we must terminate here.
+            if ( !allocationSuccess )
+            {
+                return false;
+            }
+
+            if ( n >= maxMipmaps )
+            {
+                // We do not know how to handle more mipmaps than the hardware allows.
+                // For safety reasons terminate.
+                return false;
+            }
+
+            // Store the results.
+            mipmapBasePointer[ n ] = texBasePointer;
+
+            // Store the size of the texture in memory.
+            mipmapMemorySize[ n ] = texMemSize;
+
+            // Also store our texture buffer width.
+            mipmapBufferWidth[ n ] = texBufferWidth;
+        }
+
+        // Normalize all the remaining fields.
+        for ( uint32 n = mipmapCount; n < maxMipmaps; n++ )
+        {
+            mipmapBasePointer[ n ] = 0;
+            mipmapMemorySize[ n ] = 0;
+            mipmapBufferWidth[ n ] = 1;
+        }
+    }
+
+    // Make sure buffer sizes are in their limits.
+    for ( uint32 n = 0; n < mipmapCount; n++ )
+    {
+        uint32 thisBase = mipmapBasePointer[n];
+        
+        if ( thisBase >= 0x4000 )
+        {
+            return false;
+        }
+
+        uint32 thisBufferWidth = mipmapBufferWidth[n];
+
+        if ( thisBufferWidth >= 64 )
+        {
+            return false;
+        }
+    }
+
+    // Give the final memory layout to the runtime.
+    memLayoutTypeOut = memLayout;
+
+    return true;
 }
 
 }

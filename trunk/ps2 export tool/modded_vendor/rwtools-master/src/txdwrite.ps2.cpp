@@ -358,7 +358,7 @@ void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
     paramsOut = params;
 }
 
-bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
+bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData, const uint32 mipmapBasePointer[], const uint32 mipmapBufferWidth[], const uint32 mipmapMemorySize[], uint32 maxMipmaps, eMemoryLayoutType memLayoutType) const
 {
     // This algorithm is guarranteed to produce correct values on identity-transformed PS2 GTA:SA textures.
     // There is no guarrantee that this works for modified textures!
@@ -371,36 +371,9 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
 
     eRasterFormat pixelFormatRaster = parent->rasterFormat;
 
-    tex0.textureBasePointer = 0;
-
-    // Calculate the buffer width.
-    uint32 minBufferWidth = 2;
-
-    if ( depth == 32 )
-    {
-        minBufferWidth = 1;
-    }
-
-    tex0.textureBufferWidth = std::max( minBufferWidth, width / 64 );
-    
-    // Decide about the pixel storage format.
-    if ( depth == 4 )
-    {
-        tex0.pixelStorageFormat = 20;   //PSMT4
-    }
-    else if ( depth == 8 )
-    {
-        tex0.pixelStorageFormat = 19;   //PSMT8
-    }
-    else if ( depth == 32 )
-    {
-        tex0.pixelStorageFormat = 0;
-    }
-    else
-    {
-        // Unsupported pixel storage format.
-        return false;
-    }
+    tex0.textureBasePointer = mipmapBasePointer[ 0 ];
+    tex0.textureBufferWidth = mipmapBufferWidth[ 0 ];
+    tex0.pixelStorageFormat = memLayoutType;
 
     // Store texture dimensions.
     {
@@ -482,217 +455,26 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData) const
 
     bool hasMipmaps = this->autoMipmaps;
 
-    // Calculate mipmap offsets.
-    const uint32 maxMipmaps = 6;
-
-    uint32 mipmapBasePointer[maxMipmaps];
-    uint32 mipmapBufferWidth[maxMipmaps];
-
-    for ( uint32 n = 0; n < maxMipmaps; n++ )
-    {
-        mipmapBasePointer[n] = 0;
-        mipmapBufferWidth[n] = 1;
-    }
-
-    if ( hasMipmaps )
-    {
-        uint32 mipmapCount = this->mipmapCount;
-
-        // Memory management constants of the PS2 Graphics Synthesizer.
-        const uint32 gsColumnSize = 16 * sizeof(uint32);
-        const uint32 gsBlockSize = gsColumnSize * 4;
-        const uint32 gsPageSize = gsBlockSize * 32;
-
-        // Get format properties.
-        uint32 pixelWidthPerColumn = 0;
-        uint32 pixelHeightPerColumn = 0;
-
-        uint32 widthBlocksPerPage = 0;
-        uint32 heightBlocksPerPage = 0;
-
-        if ( paletteType == PALETTE_4BIT )
-        {
-            pixelWidthPerColumn = 32;
-            pixelHeightPerColumn = 4;
-
-            widthBlocksPerPage = 4;
-            heightBlocksPerPage = 8;
-        }
-        else if ( paletteType == PALETTE_8BIT )
-        {
-            pixelWidthPerColumn = 16;
-            pixelHeightPerColumn = 4;
-
-            widthBlocksPerPage = 8;
-            heightBlocksPerPage = 4;
-        }
-        else if ( pixelFormatRaster == RASTER_1555 )
-        {
-            pixelWidthPerColumn = 16;
-            pixelHeightPerColumn = 2;
-
-            widthBlocksPerPage = 4;
-            heightBlocksPerPage = 8;
-        }
-        else if ( pixelFormatRaster == RASTER_8888 )
-        {
-            pixelWidthPerColumn = 8;
-            pixelHeightPerColumn = 2;
-
-            widthBlocksPerPage = 8;
-            heightBlocksPerPage = 4;
-        }
-        else
-        {
-            // Unknown pixel format.
-            return false;
-        }
-
-        // Get the block dimensions.
-        uint32 pixelWidthPerBlock = pixelWidthPerColumn;
-        uint32 pixelHeightPerBlock = pixelHeightPerColumn * 4;
-
-        // Get page dimensions
-        uint32 pixelWidthPerPage = ( widthBlocksPerPage * pixelWidthPerBlock );
-        uint32 pixelHeightPerPage = ( heightBlocksPerPage * pixelHeightPerBlock );
-
-        // Make sure we have enough pages in a row to place our textures.
-        // This should be a minimal values.
-        uint32 texBufferWidth = 2;
-
-        while ( texBufferWidth * pixelWidthPerPage < width )
-        {
-            texBufferWidth++;
-        }
-
-        // Get texture buffer dimensions.
-        uint32 texBufferPixelWidth = texBufferWidth * pixelWidthPerPage;
-
-        // Get the amount of blocks on the x dimensions.
-        uint32 texBufferWidthBlocks = texBufferWidth * widthBlocksPerPage;
-
-        // Allocation parameters.
-        uint32 currentBufferX = 0;  // block x coordinate
-        uint32 currentBufferY = 0;  // block y coordinate
-
-        uint32 currentRowMaxBlockHeight = 0;
-
-        // Stack all textures along the y axis and respect allocation
-        // on page points.
-
-        for ( uint32 n = 0; n < mipmapCount; n++ )
-        {
-            // Get the texel dimensions of this texture.
-            uint32 texelWidth = ALIGN_SIZE( this->swizzleWidth[n], pixelWidthPerBlock );
-            uint32 texelHeight = ALIGN_SIZE( this->swizzleHeight[n], pixelHeightPerBlock );
-
-            // Get block dimensions.
-            uint32 texelBlockWidth = ( texelWidth / pixelWidthPerBlock );
-            uint32 texelBlockHeight = ( texelHeight / pixelHeightPerBlock );
-
-            // Get the amount of blocks required.
-            uint32 texelBlockCount = texelBlockWidth * texelBlockHeight;
-
-            // Update the maximal block height
-            if ( currentRowMaxBlockHeight < texelBlockHeight )
-            {
-                currentRowMaxBlockHeight = texelBlockHeight;
-            }
-
-            bool advanceLine = false;
-
-            // If we are not the main texture...
-            if ( n != 0 )
-            {
-                uint32 realMipmapIndex = ( n - 1 );
-
-                if ( realMipmapIndex >= maxMipmaps )
-                {
-                    // We do not know how to handle more mipmaps than the hardware allows.
-                    // For safety reasons terminate.
-                    return false;
-                }
-
-                // Get block index from the dimensional coordinates.
-                uint32 blockIndex = ( currentBufferY * texBufferWidthBlocks + currentBufferX );
-
-                // Allocate the texture at the current position in the buffer.
-                mipmapBasePointer[ realMipmapIndex ] = blockIndex;
-
-                // The buffer width should be the same all the time
-                // since mipmaps are all stored in the same buffer.
-                mipmapBufferWidth[ realMipmapIndex ] = texBufferWidth;
-
-                // Advance one line.
-                if ( n == 1 )
-                {
-                    advanceLine = true;
-                }
-            }
-
-            // Advance the buffer position.
-            currentBufferX += texelBlockCount;
-
-            if ( advanceLine )
-            {
-                if ( currentBufferX < texBufferWidthBlocks )
-                {
-                    currentBufferX = 0;
-                }
-                else
-                {
-                    currentBufferX -= texBufferWidthBlocks;
-                }
-
-                currentBufferY++;
-            }
-
-            if ( false )// currentBufferX >= texBufferWidthBlocks )
-            {
-                currentBufferX = 0;
-
-                currentBufferY++;
-
-                currentRowMaxBlockHeight = 0;
-            }
-        }
-
-        // Make sure buffer sizes are in their limits.
-        for ( uint32 n = 0; n < maxMipmaps; n++ )
-        {
-            uint32 thisBase = mipmapBasePointer[n];
-            
-            if ( thisBase >= 0x4000 )
-            {
-                return false;
-            }
-
-            uint32 thisBufferWidth = mipmapBufferWidth[n];
-
-            if ( thisBufferWidth >= 64 )
-            {
-                return false;
-            }
-        }
-    }
-
+    // Store mipmap data.
     ps2GSRegisters::MIPTBP1_REG miptbp1;
     ps2GSRegisters::MIPTBP2_REG miptbp2;
 
-    // Store the sizes and widths in the registers.
-    miptbp1.textureBasePointer1 = mipmapBasePointer[0];
-    miptbp1.textureBufferWidth1 = mipmapBufferWidth[0];
-    miptbp1.textureBasePointer2 = mipmapBasePointer[1];
-    miptbp1.textureBufferWidth2 = mipmapBufferWidth[1];
-    miptbp1.textureBasePointer3 = mipmapBasePointer[2];
-    miptbp1.textureBufferWidth3 = mipmapBufferWidth[2];
+    assert(maxMipmaps >= 7);
 
-    miptbp2.textureBasePointer4 = mipmapBasePointer[3];
-    miptbp2.textureBufferWidth4 = mipmapBufferWidth[3];
-    miptbp2.textureBasePointer5 = mipmapBasePointer[4];
-    miptbp2.textureBufferWidth5 = mipmapBufferWidth[4];
-    miptbp2.textureBasePointer6 = mipmapBasePointer[5];
-    miptbp2.textureBufferWidth6 = mipmapBufferWidth[5];
+    // Store the sizes and widths in the registers.
+    miptbp1.textureBasePointer1 = mipmapBasePointer[1];
+    miptbp1.textureBufferWidth1 = mipmapBufferWidth[1];
+    miptbp1.textureBasePointer2 = mipmapBasePointer[2];
+    miptbp1.textureBufferWidth2 = mipmapBufferWidth[2];
+    miptbp1.textureBasePointer3 = mipmapBasePointer[3];
+    miptbp1.textureBufferWidth3 = mipmapBufferWidth[3];
+
+    miptbp2.textureBasePointer4 = mipmapBasePointer[4];
+    miptbp2.textureBufferWidth4 = mipmapBufferWidth[4];
+    miptbp2.textureBasePointer5 = mipmapBasePointer[5];
+    miptbp2.textureBufferWidth5 = mipmapBufferWidth[5];
+    miptbp2.textureBasePointer6 = mipmapBasePointer[6];
+    miptbp2.textureBufferWidth6 = mipmapBufferWidth[6];
 
     // Give the data to the runtime.
     gpuData.tex0 = tex0;
@@ -804,8 +586,19 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         {
             SKIP_HEADER();
 
+            // Allocate textures.
+            const size_t maxMipmaps = 7;
+
+            uint32 mipmapBasePointer[ maxMipmaps ];
+            uint32 mipmapBufferWidth[ maxMipmaps ];
+            uint32 mipmapMemorySize[ maxMipmaps ];
+
+            eMemoryLayoutType memLayoutType;
+
+            bool couldAllocate = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
+
             ps2GSRegisters gpuData;
-            bool isCompatible = platformTex->generatePS2GPUData(gpuData);
+            bool isCompatible = platformTex->generatePS2GPUData(gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
 
             assert( isCompatible == true );
 
@@ -836,7 +629,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             metaHeader.rasterFormat = formatFlags;
             metaHeader.dataSize = justTextureSize;
             metaHeader.paletteDataSize = justPaletteSize;
-            metaHeader.combinedGPUDataSize = platformTex->calculateGPUDataSize(palDataSize / 4);
+            metaHeader.combinedGPUDataSize = platformTex->calculateGPUDataSize(mipmapBasePointer, mipmapMemorySize, maxMipmaps, memLayoutType, palDataSize / 4);
             metaHeader.skyMipmapVal = platformTex->skyMipMapVal;
 
             rw.write((const char*)&metaHeader, sizeof(metaHeader));

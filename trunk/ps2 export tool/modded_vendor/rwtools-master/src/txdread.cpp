@@ -184,7 +184,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
 	    if (isPaletteRaster)
         {
 		    delete[] paletteData;
-		    platformTex->palette = 0;
+		    platformTex->palette = NULL;
 		    
             platformTex->paletteType = PALETTE_NONE;
 	    }

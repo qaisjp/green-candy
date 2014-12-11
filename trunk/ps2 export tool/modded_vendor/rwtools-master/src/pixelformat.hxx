@@ -1,47 +1,44 @@
 namespace rw
 {
 
-static inline bool browsetexelcolor(void *texelSource, ePaletteType paletteType, void *paletteData, uint32 maxpalette, uint32 colorIndex, eRasterFormat rasterFormat, uint8& red, uint8& green, uint8& blue, uint8& alpha)
+static inline bool browsetexelcolor(const void *texelSource, ePaletteType paletteType, const void *paletteData, uint32 maxpalette, uint32 colorIndex, eRasterFormat rasterFormat, uint8& red, uint8& green, uint8& blue, uint8& alpha)
 {
     typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
     bool hasColor = false;
 
-    if (paletteType == PALETTE_4BIT)
+    const void *realTexelSource = NULL;
+    uint32 realColorIndex = 0;
+
+    if (paletteType == PALETTE_4BIT || paletteType == PALETTE_8BIT)
     {
-        pixel32_t *paletteColorData = (pixel32_t*)paletteData;
+        realTexelSource = paletteData;
 
-        PixelFormat::palette4bit *srcData = (PixelFormat::palette4bit*)texelSource;
-
+        // Get the color lookup index from the texel.
         uint8 paletteIndex;
-        srcData->getvalue(colorIndex, paletteIndex);
 
-        // swap r and b
-        if ( paletteIndex < maxpalette )
+        if (paletteType == PALETTE_4BIT)
         {
-            paletteColorData->getcolor(paletteIndex, blue, green, red, alpha);
+            PixelFormat::palette4bit *srcData = (PixelFormat::palette4bit*)texelSource;
 
-            hasColor = true;
+            srcData->getvalue(colorIndex, paletteIndex);
         }
+        else if (paletteType == PALETTE_8BIT)
+        {
+            PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)texelSource;
+
+            srcData->getvalue(colorIndex, paletteIndex);
+        }
+
+        realColorIndex = paletteIndex;
     }
-    else if (paletteType == PALETTE_8BIT)
+    else
     {
-        pixel32_t *paletteColorData = (pixel32_t*)paletteData;
-
-        PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)texelSource;
-
-        uint8 paletteIndex;
-        srcData->getvalue(colorIndex, paletteIndex);
-
-        // swap r and b
-        if ( paletteIndex < maxpalette )
-        {
-            paletteColorData->getcolor(paletteIndex, blue, green, red, alpha);
-
-            hasColor = true;
-        }
+        realTexelSource = texelSource;
+        realColorIndex = colorIndex;
     }
-    else if (rasterFormat == RASTER_1555)
+
+    if (rasterFormat == RASTER_1555)
     {
         struct pixel_t
         {
@@ -53,9 +50,9 @@ static inline bool browsetexelcolor(void *texelSource, ePaletteType paletteType,
 
         typedef PixelFormat::texeltemplate <pixel_t> pixel1555_t;
 
-        pixel1555_t *srcData = (pixel1555_t*)texelSource;
+        pixel1555_t *srcData = (pixel1555_t*)realTexelSource;
 
-        srcData->getcolor(colorIndex, red, green, blue, alpha);
+        srcData->getcolor(realColorIndex, red, green, blue, alpha);
 
         // Scale the color values.
         red *= 0xFF / 0x1F;
@@ -74,7 +71,7 @@ static inline bool browsetexelcolor(void *texelSource, ePaletteType paletteType,
             uint16 blue : 5;
         };
 
-        pixel_t *srcData = ( (pixel_t*)texelSource + colorIndex );
+        pixel_t *srcData = ( (pixel_t*)realTexelSource + realColorIndex );
 
         // Scale the color values.
         red = srcData->red * 0xFF / 0x1F;
@@ -96,9 +93,9 @@ static inline bool browsetexelcolor(void *texelSource, ePaletteType paletteType,
 
         typedef PixelFormat::texeltemplate <pixel_t> pixel4444_t;
 
-        pixel4444_t *srcData = (pixel4444_t*)texelSource;
+        pixel4444_t *srcData = (pixel4444_t*)realTexelSource;
 
-        srcData->getcolor(colorIndex, red, green, blue, alpha);
+        srcData->getcolor(realColorIndex, red, green, blue, alpha);
 
         // Scale the color values.
         red *= 0xFF / 0xF;
@@ -110,9 +107,9 @@ static inline bool browsetexelcolor(void *texelSource, ePaletteType paletteType,
     }
     else if (rasterFormat == RASTER_8888)
     {
-        pixel32_t *srcData = (pixel32_t*)texelSource;
+        pixel32_t *srcData = (pixel32_t*)realTexelSource;
 
-        srcData->getcolor(colorIndex, red, green, blue, alpha);
+        srcData->getcolor(realColorIndex, blue, green, red, alpha);
 
         hasColor = true;
     }
@@ -126,7 +123,7 @@ static inline bool browsetexelcolor(void *texelSource, ePaletteType paletteType,
             uint8 unused;
         };
 
-        pixel_t *srcData = ( (pixel_t*)texelSource + colorIndex );
+        pixel_t *srcData = ( (pixel_t*)realTexelSource + realColorIndex );
 
         // Get the color values.
         red = srcData->red;
