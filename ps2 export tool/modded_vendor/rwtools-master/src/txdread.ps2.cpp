@@ -10,6 +10,8 @@
 #include "txdread.ps2.hxx"
 #include "txdread.d3d.hxx"
 
+#include "pixelformat.hxx"
+
 namespace rw
 {
 
@@ -286,7 +288,7 @@ void NativeTexture::readPs2(std::istream &rw)
 
         if ( paletteColorComponents != 0 )
         {
-            size_t paletteDataSize = ( paletteColorComponents * sizeof(PixelFormat::pixeldata32bit) );
+            size_t paletteDataSize = palTexDataSize;
 
             platformTex->palUnknowns.unk1 = gpuSize1;
             platformTex->palUnknowns.unk2 = gpuSize2;
@@ -297,8 +299,25 @@ void NativeTexture::readPs2(std::istream &rw)
         }
 	}
 
+    // Allocate texture memory.
+    const size_t maxMipmaps = 7;
+
+    uint32 mipmapBasePointer[ maxMipmaps ];
+    uint32 mipmapMemorySize[ maxMipmaps ];
+    uint32 mipmapBufferWidth[ maxMipmaps ];
+
+    eMemoryLayoutType memLayoutType;
+
+    bool hasAllocatedMemory = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
+
+    // Could fail if no memory left.
+    if ( !hasAllocatedMemory )
+    {
+        assert( 0 );
+    }
+
     // Verify that our memory calculation routine is correct.
-    uint32 gpuMinMemory = platformTex->calculateGPUDataSize(platformTex->paletteSize);
+    uint32 gpuMinMemory = platformTex->calculateGPUDataSize(mipmapBasePointer, mipmapMemorySize, maxMipmaps, memLayoutType, platformTex->paletteSize);
 
     if ( textureMeta.combinedGPUDataSize > gpuMinMemory )
     {
@@ -316,7 +335,7 @@ void NativeTexture::readPs2(std::istream &rw)
     // Verify that our GPU data calculation routine is correct.
     ps2GSRegisters gpuData;
     
-    bool isValidTexture = platformTex->generatePS2GPUData(gpuData);
+    bool isValidTexture = platformTex->generatePS2GPUData(gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
 
     if ( platformTex->mipmapCount > 1 )
     {
@@ -460,15 +479,13 @@ void NativeTexture::convertFromPS2(uint32 aref)
 
 	if (platformTex->paletteType != PALETTE_NONE)
     {
-        typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
-
-        pixel32_t *paletteTexels = (pixel32_t*)platformTex->palette;
+        void *paletteTexelSource = platformTex->palette;
 
 		for (uint32 i = 0; i < platformTex->paletteSize; i++)
         {
             uint8 red, green, blue, alpha;
 
-            paletteTexels->getcolor( i, red, green, blue, alpha );
+            browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
             {
 			    if ((platformTex->alphaDistribution & 0x1) == 0 && alpha >= aref)
                 {
@@ -485,7 +502,7 @@ void NativeTexture::convertFromPS2(uint32 aref)
 
 			    alpha = newalpha;
             }
-            paletteTexels->setcolor( i, red, green, blue, alpha );
+            puttexelcolor(paletteTexelSource, i, this->rasterFormat, blue, green, red, alpha);
 		}
 	}
 
@@ -608,15 +625,13 @@ void NativeTexture::convertToPS2( void )
 
 	if (ps2tex->paletteType != PALETTE_NONE)
     {
-        typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
-
-        pixel32_t *paletteTexels = (pixel32_t*)ps2tex->palette;
+        void *paletteTexelSource = ps2tex->palette;
 
 		for (uint32 i = 0; i < ps2tex->paletteSize; i++)
         {
             uint8 red, green, blue, alpha;
 
-            paletteTexels->getcolor( i, red, green, blue, alpha );
+            browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
             {
 			    uint32 newalpha = alpha * 0x80;
 
@@ -624,7 +639,7 @@ void NativeTexture::convertToPS2( void )
 
 			    alpha = newalpha;
             }
-            paletteTexels->setcolor( i, red, green, blue, alpha );
+            puttexelcolor(paletteTexelSource, i, this->rasterFormat, blue, green, red, alpha);
 		}
 
         // Initialize palette unknowns.

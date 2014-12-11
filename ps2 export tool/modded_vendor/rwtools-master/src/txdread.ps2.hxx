@@ -1,6 +1,28 @@
 namespace rw
 {
 
+enum eMemoryLayoutType
+{
+    PSMCT32 = 0,
+    PSMCT24,
+    PSMCT16,
+
+    PSMCT16S = 10,
+
+    PSMT8 = 19,
+    PSMT4,
+
+    PSMT8H = 27,
+    PSMT4HL = 36,
+    PSMT4HH = 44,
+
+    PSMZ32 = 48,
+    PSMZ24,
+    PSMZ16,
+
+    PSMZ16S = 58
+};
+
 struct NativeTexturePS2 : public PlatformTexture
 {
     NativeTexturePS2( void )
@@ -186,8 +208,23 @@ struct NativeTexturePS2 : public PlatformTexture
 
     bool swizzleEncryptPS2(uint32 mip);
 	bool swizzleDecryptPS2(uint32 mip);
-    uint32 calculateGPUDataSize(uint32 palDataSize) const;
-    bool generatePS2GPUData(ps2GSRegisters& gpuData) const;
+
+    bool allocateTextureMemory(
+        uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], uint32 maxMipmaps,
+        eMemoryLayoutType& memLayoutType
+    ) const;
+
+    uint32 calculateGPUDataSize(
+        const uint32 mipmapBasePointer[], const uint32 mipmapMemorySize[], uint32 maxMipmaps,
+        eMemoryLayoutType memLayoutType,
+        uint32 paletteDataSize
+    ) const;
+
+    bool generatePS2GPUData(
+        ps2GSRegisters& gpuData,
+        const uint32 mipmapBasePointer[], const uint32 mipmapBufferWidth[], const uint32 mipmapMemorySize[], uint32 maxMipmaps,
+        eMemoryLayoutType memLayoutType
+    ) const;
 
     void getOptimalGSParameters(gsParams_t& paramsOut) const;
 };
