@@ -19,12 +19,19 @@
 
 // Include extensions (public headers only)
 #include "CFileSystem.zip.h"
+#include "CFileSystem.img.h"
 
 class CFileSystem : public CFileSystemInterface
 {
-public:
+protected:
+    // Creation is not allowed by the general runtime anymore.
                             CFileSystem             ( void );
                             ~CFileSystem            ( void );
+
+public:
+    // Global functions for initialization of the FileSystem library.
+    static CFileSystem*     Create                  ( void );
+    static void             Destroy                 ( CFileSystem *lib );
 
     void                    InitZIP                 ( void );
     void                    DestroyZIP              ( void );
@@ -34,11 +41,19 @@ public:
     CFileTranslator*        CreateTranslator        ( const char *path );
     CArchiveTranslator*     OpenArchive             ( CFile& file );
 
+    CArchiveTranslator*     OpenZIPArchive          ( CFile& file );
+    CArchiveTranslator*     OpenIMGArchive          ( CFileTranslator *srcRoot, const char *srcPath );
+
     CArchiveTranslator*     CreateZIPArchive        ( CFile& file );
+    CArchiveTranslator*     CreateIMGArchive        ( CFileTranslator *srcRoot, const char *srcPath );
 
     // Function to cast a CFileTranslator into a CArchiveTranslator.
     // If not possible, it returns NULL.
     CArchiveTranslator*     GetArchiveTranslator    ( CFileTranslator *translator );
+
+    // Temporary directory generation for temporary data storage.
+    CFileTranslator*        GetSystemTempTranslator ( void )                { return sysTmp; }
+    CFileTranslator*        GenerateTempRepository  ( void );
 
     // Insecure functions
     bool                    IsDirectory             ( const char *path );
@@ -59,8 +74,8 @@ public:
     bool                    m_hasDirectoryAccessPriviledge; // decides whether directories can be locked by the application
 #endif //_WIN32
 
-    // Embed extensions here.
-    zipExtension            m_zipExtension;
+    // Temporary directory generator members.
+    CFileTranslator*        sysTmp;
 };
 
 // These variables are exported for easy usage by the application.

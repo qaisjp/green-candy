@@ -83,27 +83,25 @@ static inline bool _File_ParseRelativePath( const char *path, dirTree& tree, boo
 // This is the reverse of _File_ParseRelativePath.
 static void AINLINE _File_OutputPathTree( const dirTree& tree, bool file, filePath& output )
 {
+    size_t actualDirEntries = tree.size();
+
     if ( file )
     {
         if ( tree.empty() )
             return;
 
-        unsigned int n;
-
-        for ( n = 0; n < tree.size() - 1; n++ )
-        {
-            output += tree[n];
-            output += '/';
-        }
-
-        output += tree[n];
-        return;
+        actualDirEntries--;
     }
 
-    for ( unsigned int n = 0; n < tree.size(); n++ )
+    for ( unsigned int n = 0; n < actualDirEntries; n++ )
     {
         output += tree[n];
         output += '/';
+    }
+
+    if ( file )
+    {
+        output += tree.back();
     }
 }
 
@@ -134,7 +132,7 @@ static inline bool _File_ParseRelativeTree( const char *path, const dirTree& roo
     return true;
 }
 
-static const filePath _dirBack = "..";
+static const filePath _dirBack( ".." );
 
 static inline bool _File_ParseDeriviation( const dirTree& curTree, dirTree::const_iterator treeIter, dirTree& output, size_t sizeDiff, bool file )
 {
@@ -226,7 +224,7 @@ static inline bool _File_ParseRelativeTreeDeriviate( const char *path, const dir
     return true;
 }
 
-inline bool _File_ParseMode( const CFileTranslator& root, const filePath& path, const char *mode, unsigned int& access, unsigned int& m )
+inline bool _File_ParseMode( const CFileTranslator& root, const char *path, const char *mode, unsigned int& access, unsigned int& m )
 {
     switch( *mode )
     {
@@ -247,7 +245,9 @@ inline bool _File_ParseMode( const CFileTranslator& root, const filePath& path, 
     }
 
     if ( ( mode[1] == 'b' && mode[2] == '+' ) || mode[1] == '+' )
+    {
         access |= FILE_ACCESS_WRITE | FILE_ACCESS_READ;
+    }
 
     return true;
 }
@@ -419,7 +419,7 @@ inline filePattern_t* _File_CreatePattern( const char *buf )
     return pattern;
 }
 
-inline bool _File_CompareStrings_Count( const char *primary, const char *secondary, size_t count )
+inline bool _File_CompareStrings_Count( const char *primary, const char *secondary, size_t count, bool case_insensitive )
 {
     for ( size_t n = 0; n < count; n++ )
     {
@@ -428,18 +428,34 @@ inline bool _File_CompareStrings_Count( const char *primary, const char *seconda
 
         bool equal = false;
 
-#ifdef FILESYSTEM_FORCE_CASE_INSENSITIVE_GLOB
-        equal = ( tolower( prim ) == tolower( sec ) );
-#else
-        equal = _File_PathCharComp( prim, sec );
-#endif //FILESYSTEM_FORCE_CASE_INSENSITIVE_GLOB
+        if ( case_insensitive )
+        {
+            equal = ( tolower( prim ) == tolower( sec ) );
+        }
+        else
+        {
+            equal = ( prim == sec );
+        }
 
         if ( !equal )
             return false;
     }
 
     return true;
+}
 
+// TODO: make sure path resolution does not depend on this.
+inline bool _File_DoesNeedCaseInsensitivity( void )
+{
+#ifdef FILESYSTEM_FORCE_CASE_INSENSITIVE_GLOB
+    return true;
+#endif //FILESYSTEM_FORCE_CASE_INSENSITIVE_GLOB
+
+#ifdef _WIN32
+    return true;
+#endif //_WIN32
+
+    return false;
 }
 
 inline const char* _File_strnstr( const char *input, size_t input_len, const char *cookie, size_t cookie_len, size_t& off_find )
@@ -453,11 +469,13 @@ inline const char* _File_strnstr( const char *input, size_t input_len, const cha
         return input;
     }
 
+    bool need_case_insensitive = _File_DoesNeedCaseInsensitivity();
+
     size_t scanEnd = input_len - cookie_len;
 
     for ( size_t n = 0; n <= scanEnd; n++ )
     {
-        if ( _File_CompareStrings_Count( input + n, cookie, cookie_len ) )
+        if ( _File_CompareStrings_Count( input + n, cookie, cookie_len, need_case_insensitive ) )
         {
             off_find = n;
             return input + n;
@@ -470,6 +488,8 @@ inline const char* _File_strnstr( const char *input, size_t input_len, const cha
 inline bool _File_MatchPattern( const char *input, filePattern_t *pattern )
 {
     size_t input_len = strlen( input );
+
+    bool need_case_insensitive = _File_DoesNeedCaseInsensitivity();
 
     for ( filePattern_t::cmdList_t::const_iterator iter = pattern->commands.begin(); iter != pattern->commands.end(); ++iter )
     {
@@ -485,7 +505,7 @@ inline bool _File_MatchPattern( const char *input, filePattern_t *pattern )
                 if ( len > input_len )
                     return false;
 
-                if ( _File_CompareStrings_Count( input, cmpCmd->string, len ) == false )
+                if ( _File_CompareStrings_Count( input, cmpCmd->string, len, need_case_insensitive ) == false )
                     return false;
 
                 input_len -= len;
@@ -544,6 +564,60 @@ inline void _File_OnDirectoryFound( filePattern_t *pattern, const char *entryNam
     {
         dirCallback( absPath, userdata );
     }
+}
+
+// Function for creating a OS native directory.
+inline bool _File_CreateDirectory( const filePath& thePath )
+{
+#ifdef __linux__
+    if ( mkdir( osPath, FILE_ACCESS_FLAG ) == 0 )
+        return true;
+
+    switch( errno )
+    {
+    case EEXIST:
+    case 0:
+        return true;
+    }
+
+    return false;
+#elif defined(_WIN32)
+    // Make sure a file with that name does not exist.
+    DWORD attrib = INVALID_FILE_ATTRIBUTES;
+
+    filePath pathToMaybeFile = thePath;
+    pathToMaybeFile.resize( pathToMaybeFile.size() - 1 );
+
+    if ( const char *ansiPath = pathToMaybeFile.c_str() )
+    {
+        attrib = GetFileAttributesA( ansiPath );
+    }
+    else if ( const wchar_t *widePath = pathToMaybeFile.w_str() )
+    {
+        attrib = GetFileAttributesW( widePath );
+    }
+
+    if ( attrib != INVALID_FILE_ATTRIBUTES )
+    {
+        if ( !( attrib & FILE_ATTRIBUTE_DIRECTORY ) )
+            return false;
+    }
+
+    BOOL dirSuccess = FALSE;
+
+    if ( const char *ansiPath = thePath.c_str() )
+    {
+        dirSuccess = CreateDirectoryA( ansiPath, NULL );
+    }
+    else if ( const wchar_t *widePath = thePath.w_str() )
+    {
+        dirSuccess = CreateDirectoryW( widePath, NULL );
+    }
+
+    return ( dirSuccess == TRUE || GetLastError() == ERROR_ALREADY_EXISTS );
+#else
+    return false;
+#endif //OS DEPENDANT CODE
 }
 
 #endif //_FILESYSUTILS_

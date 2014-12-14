@@ -10,6 +10,8 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+#include <MemoryUtils.h>
+#include <core/COSUtils.h>
 
 /*
     DebugHeap memory debugging environment

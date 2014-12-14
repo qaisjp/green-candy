@@ -12,12 +12,43 @@
 #ifndef _FILESYSTEM_ZIP_PRIVATE_MODULES_
 #define _FILESYSTEM_ZIP_PRIVATE_MODULES_
 
+// ZIP extension struct.
+struct zipExtension
+{
+    static fileSystemFactory_t::pluginOffset_t _zipPluginOffset;
+
+    static zipExtension*        Get( CFileSystem *sys )
+    {
+        if ( _zipPluginOffset != fileSystemFactory_t::INVALID_PLUGIN_OFFSET )
+        {
+            return fileSystemFactory_t::RESOLVE_STRUCT <zipExtension> ( (CFileSystemNative*)sys, _zipPluginOffset );
+        }
+        return NULL;
+    }
+
+    void                        Initialize      ( CFileSystemNative *sys );
+    void                        Shutdown        ( CFileSystemNative *sys );
+
+    CArchiveTranslator*         NewArchive      ( CFile& writeStream );
+    CArchiveTranslator*         OpenArchive     ( CFile& readWriteStream );
+
+    // Private extension methods.
+    CFileTranslator*            GetTempRoot     ( void );
+
+    // Extension members.
+    // ... for managing temporary files (OS dependent).
+    // See zipExtension::Init().
+    CRepository                 repo;
+};
+
 // Checksums.
 #define ZIP_SIGNATURE               0x06054B50
 #define ZIP_FILE_SIGNATURE          0x02014B50
 #define ZIP_LOCAL_FILE_SIGNATURE    0x04034B50
 
 #include <time.h>
+
+#include "CFileSystem.vfs.h"
 
 #pragma warning(push)
 #pragma warning(disable:4250)
@@ -101,51 +132,21 @@ public:
 #pragma pack()
 
 private:
-    void            ReadFiles( unsigned int count );
+    void            ReadFiles( unsigned int count );    // throws an exception on failure.
 
 public:
-    struct file;
-    struct directory;
-
-private:
-    class stream abstract : public CFile
-    {
-        friend class CZIPArchiveTranslator;
-    public:
-        stream( CZIPArchiveTranslator& zip, file& info, CFile& sysFile ) : m_sysFile( sysFile ), m_archive( zip ), m_info( info )
-        {
-            info.locks.push_back( this );
-        }
-
-        ~stream( void )
-        {
-            m_info.locks.remove( this );
-
-            delete &m_sysFile;
-        }
-
-        const filePath& GetPath( void ) const
-        {
-            return m_path;
-        }
-
-    private:
-        CFile&                      m_sysFile;
-        CZIPArchiveTranslator&      m_archive;
-        file&                       m_info;
-        filePath                    m_path;
-    };
+    struct fileMetaData;
+    struct directoryMetaData;
 
 public:
-    struct fsActiveEntry
+    struct genericMetaData abstract
     {
-        fsActiveEntry( const filePath& name, const filePath& relPath ) : name( name ), relPath( relPath )
-        {
-            return;
-        }
+        VirtualFileSystem::fsObjectInterface *genericInterface;
 
-        filePath        name;
-        filePath        relPath;
+        inline void SetInterface( VirtualFileSystem::fsObjectInterface *intf )
+        {
+            this->genericInterface = intf;
+        }
 
         unsigned short  version;
         unsigned short  reqVersion;
@@ -167,7 +168,7 @@ public:
             header.signature = ZIP_LOCAL_FILE_SIGNATURE;
             header.modTime = modTime;
             header.modDate = modDate;
-            header.nameLen = relPath.size();
+            header.nameLen = this->genericInterface->GetRelativePath().size();
             header.commentLen = comment.size();
             return header;
         }
@@ -185,7 +186,7 @@ public:
             //header.crc32
             //header.sizeCompressed
             //header.sizeReal
-            header.nameLen = relPath.size();
+            header.nameLen = this->genericInterface->GetRelativePath().size();
             header.extraLen = extra.size();
             header.commentLen = comment.size();
             header.diskID = diskID;
@@ -255,13 +256,10 @@ public:
         }
     };
 
-    struct file : public fsActiveEntry
-    {
-        file( const filePath& name ) : fsActiveEntry( name, filePath() )
-        {
-            return;
-        }
+    class stream;
 
+    struct fileMetaData : public genericMetaData
+    {
         unsigned short  compression;
 
         unsigned int    crc32;
@@ -275,14 +273,17 @@ public:
         bool            cached;
         bool            subParsed;
 
-        typedef std::list <stream*> lockList;
-        lockList        locks;
-        directory*      dir;
+        typedef std::list <stream*> lockList_t;
+        lockList_t locks;
+
+        directoryMetaData*  dir;
+
+        CZIPArchiveTranslator *translator;
 
         inline void Reset( void )
         {
-            // Common reset.
-            fsActiveEntry::Reset();
+            // Reset generic data.
+            genericMetaData::Reset();
 
             // File-specific reset.
             compression = 8;
@@ -298,6 +299,16 @@ public:
             subParsed = false;
         }
 
+        inline bool IsLocked( void ) const
+        {
+            return ( locks.empty() == false );
+        }
+
+        inline void OnSetDirectory( directoryMetaData *data )
+        {
+            this->dir = data;
+        }
+
         inline bool IsNative( void ) const
         {
 #ifdef _WIN32
@@ -309,38 +320,178 @@ public:
 
         inline void UpdateTime( void )
         {
-            fsActiveEntry::UpdateTime();
+            genericMetaData::UpdateTime();
 
             // Update the time of its parent directories.
             dir->UpdateTime();
         }
+
+        // Virtual node methods.
+        inline fsOffsetNumber_t GetSize( void ) const
+        {
+            fsOffsetNumber_t resourceSize = 0;
+
+            if ( !this->cached )
+            {
+                resourceSize = this->sizeReal;
+            }
+            else
+            {
+                const filePath& ourPath = this->genericInterface->GetRelativePath();
+
+                CFileTranslator *realtimeRoot = translator->GetRealtimeRoot();
+
+                if ( realtimeRoot )
+                {
+                    resourceSize = realtimeRoot->Size( ourPath.c_str() );
+                }
+            }
+
+            return resourceSize;
+        }
+
+        bool OnFileCopy( const dirTree& tree, const filePath& newName ) const;
+        bool OnFileRename( const dirTree& tree, const filePath& newName );
+        void OnFileDelete( void );
+
+        inline void GetANSITimes( time_t& mtime, time_t& ctime, time_t& atime ) const
+        {
+            tm date;
+            GetModTime( date );
+
+            date.tm_year -= 1900;
+
+            mtime = ctime = atime = mktime( &date );
+        }
+
+        inline void GetDeviceIdentifier( dev_t& deviceIdx ) const
+        {
+            deviceIdx = (dev_t)this->diskID;
+        }
+
+        inline void CopyAttributesTo( fileMetaData& dstEntry )
+        {
+            // Copy over general attributes
+            dstEntry.flags          = flags;
+            dstEntry.compression    = compression;
+            dstEntry.modTime        = modTime;
+            dstEntry.modDate        = modDate;
+            dstEntry.diskID         = diskID;
+            dstEntry.internalAttr   = internalAttr;
+            dstEntry.externalAttr   = externalAttr;
+            dstEntry.extra          = extra;
+            dstEntry.comment        = comment;
+            dstEntry.cached         = cached;
+            dstEntry.subParsed      = subParsed;
+
+            if ( !cached )
+            {
+                dstEntry.version            = version;
+                dstEntry.reqVersion         = reqVersion;
+                dstEntry.crc32              = crc32;
+                dstEntry.sizeCompressed     = sizeCompressed;
+                dstEntry.sizeReal           = sizeReal;
+            }
+        }
     };
 
 private:
-    inline void seekFile( const file& info, _localHeader& header );
+    inline void seekFile( const fileMetaData& info, _localHeader& header );
 
-    // We need to cache data on the disk
-    void            Extract( CFile& dstFile, file& info );
-
-    inline const file*  GetFileEntry( const char *path ) const
+public:
+    struct directoryMetaData : public genericMetaData
     {
-        dirTree tree;
-        bool isFile;
+        VirtualFileSystem::directoryInterface *dirInterface;
 
-        if ( !GetRelativePathTree( path, tree, isFile ) || !isFile )
-            return NULL;
+        inline void SetInterface( VirtualFileSystem::directoryInterface *intf )
+        {
+            dirInterface = intf;
+        }
+    
+        inline bool     NeedsWriting( void ) const
+        {
+            return ( this->dirInterface->IsEmpty() || comment.size() != 0 || extra.size() != 0 );
+        }
 
-        filePath fileName = tree[ tree.size() - 1 ];
-        tree.pop_back();
+        inline void     UpdateTime( void )
+        {
+            genericMetaData::UpdateTime();
 
-        const directory *dir = GetDeriviateDir( *m_curDirEntry, tree );
+            // Update the time of its parent directories.
+            if ( VirtualFileSystem::directoryInterface *parent = dirInterface->GetParent() )
+            {
+                ((directory*)parent)->metaData.UpdateTime();
+            }
+        }
+    };
 
-        if ( !dir )
-            return NULL;
+    // Tree of all filesystem objects.
+    typedef CVirtualFileSystem <CZIPArchiveTranslator, directoryMetaData, fileMetaData> vfs_t;
 
-        return dir->GetFile( fileName );
+    vfs_t m_virtualFS;
+
+    typedef vfs_t::fsActiveEntry fsActiveEntry;
+    typedef vfs_t::file file;
+    typedef vfs_t::directory directory;
+    typedef vfs_t::fileList fileList;
+
+    // Initializators for meta-data.
+    inline void InitializeFileMeta( fileMetaData& meta )
+    {
+        meta.translator = this;
     }
 
+    inline void ShutdownFileMeta( fileMetaData& meta )
+    {
+        meta.translator = NULL;
+    }
+
+    inline void InitializeDirectoryMeta( directoryMetaData& meta )
+    {
+
+    }
+
+    inline void ShutdownDirectoryMeta( directoryMetaData& meta )
+    {
+
+    }
+
+    // Special functions for the VFS.
+    CFile* OpenNativeFileStream( file *fsObject, unsigned int openMode, unsigned int access );
+
+    // Implement the stream now.
+    class stream abstract : public CFile
+    {
+        friend class CZIPArchiveTranslator;
+    public:
+        stream( CZIPArchiveTranslator& zip, file& info, CFile& sysFile ) : m_sysFile( sysFile ), m_archive( zip ), m_info( info )
+        {
+            info.metaData.locks.push_back( this );
+        }
+
+        ~stream( void )
+        {
+            m_info.metaData.locks.remove( this );
+
+            delete &m_sysFile;
+        }
+
+        const filePath& GetPath( void ) const
+        {
+            return m_path;
+        }
+
+    private:
+        CFile&                      m_sysFile;
+        CZIPArchiveTranslator&      m_archive;
+        file&                       m_info;
+        filePath                    m_path;
+    };
+
+    // We need to cache data on the disk
+    void            Extract( CFile& dstFile, vfs_t::file& info );
+
+    // Stream that decompresses things using deflate.
     class fileDeflate : public stream
     {
         friend class CZIPArchiveTranslator;
@@ -368,233 +519,10 @@ private:
         bool            m_readable;
     };
 
-public:
-    typedef std::list <file*> fileList;
-
-    struct directory : public fsActiveEntry
-    {
-        directory( filePath fileName, filePath path ) : fsActiveEntry( fileName, path )
-        {
-            return;
-        }
-
-        ~directory( void )
-        {
-            subDirs::iterator iter = children.begin();
-
-            for ( ; iter != children.end(); ++iter )
-                delete *iter;
-
-            fileList::iterator fileIter = files.begin();
-
-            for ( ; fileIter != files.end(); ++fileIter )
-                delete *fileIter;
-        }
-
-        typedef std::list <directory*> subDirs;
-
-        fileList files;
-        subDirs children;
-
-        directory* parent;
-
-        inline directory*  FindDirectory( const filePath& dirName ) const
-        {
-            subDirs::const_iterator iter;
-
-            for ( iter = children.begin(); iter != children.end(); ++iter )
-            {
-                if ( (*iter)->name == dirName )
-                    return *iter;
-            }
-
-            return NULL;
-        }
-
-        inline directory&  GetDirectory( const filePath& dirName )
-        {
-            directory *dir = FindDirectory( dirName );
-
-            if ( dir )
-                return *dir;
-
-            dir = new directory( dirName, relPath + dirName + "/" );
-            dir->name = dirName;
-            dir->parent = this;
-            dir->Reset();
-
-            children.push_back( dir );
-            return *dir;
-        }
-
-        inline void     PositionFile( file& entry )
-        {
-            entry.relPath = relPath;
-            entry.relPath += entry.name;
-        }
-
-        inline file&    AddFile( const filePath& fileName )
-        {
-            file& entry = *new file( fileName );
-			entry.flags = 0;
-
-            PositionFile( entry );
-
-            entry.cached = false;
-            entry.subParsed = false;
-            entry.archived = false;
-            entry.dir = this;
-
-            files.push_back( &entry );
-            return entry;
-        }
-
-        inline void     UnlinkFile( file& entry )
-        {
-            files.remove( &entry );
-        }
-
-        inline void     MoveTo( file& entry )
-        {
-            entry.dir->UnlinkFile( entry );
-
-            entry.dir = this;
-
-            files.push_back( &entry );
-
-            PositionFile( entry );
-        }
-
-        inline bool     IsLocked( void ) const
-        {
-            fileList::const_iterator iter = files.begin();
-
-            for ( ; iter != files.end(); ++iter )
-            {
-                if ( !(*iter)->locks.empty() )
-                    return true;
-            }
-
-            return false;
-        }
-
-        inline file*    GetFile( const filePath& fileName )
-        {
-            fileList::const_iterator iter = files.begin();
-
-            for ( ; iter != files.end(); ++iter )
-            {
-                if ( (*iter)->name == fileName )
-                    return *iter;
-            }
-
-            return NULL;
-        }
-
-        inline file*    MakeFile( const filePath& fileName )
-        {
-            file *entry = GetFile( fileName );
-
-            if ( entry )
-            {
-                if ( !entry->locks.empty() )
-                    return NULL;
-
-                entry->name = fileName;
-                entry->Reset();
-                return entry;
-            }
-
-            return &AddFile( fileName );
-        }
-
-        inline const file*  GetFile( const filePath& fileName ) const
-        {
-            fileList::const_iterator iter = files.begin();
-
-            for ( ; iter != files.end(); ++iter )
-            {
-                if ( (*iter)->name == fileName )
-                    return *iter;
-            }
-
-            return NULL;
-        }
-
-        inline bool     RemoveFile( file& entry )
-        {
-            if ( !entry.locks.empty() )
-                return false;
-
-            delete &entry;
-
-            UnlinkFile( entry );
-            return true;
-        }
-
-        inline bool     RemoveFile( const filePath& fileName )
-        {
-            fileList::const_iterator iter = files.begin();
-
-            for ( ; iter != files.end(); ++iter )
-            {
-                if ( (*iter)->name == fileName )
-                    return RemoveFile( **iter );
-            }
-            return false;
-        }
-
-        inline bool     IsEmpty( void ) const
-        {
-            return ( files.empty() && children.empty() );
-        }
-
-        inline bool     NeedsWriting( void ) const
-        {
-            return ( IsEmpty() || comment.size() != 0 || extra.size() != 0 );
-        }
-
-        inline void     UpdateTime( void )
-        {
-            fsActiveEntry::UpdateTime();
-
-            // Update the time of its parent directories.
-            if ( parent )
-            {
-                parent->UpdateTime();
-            }
-        }
-    };
-
 private:
-    directory m_rootDir;
-
     void            CacheDirectory( const directory& dir );
     void            SaveDirectory( directory& dir, size_t& size );
     unsigned int    BuildCentralFileHeaders( const directory& dir, size_t& size );
-
-    inline const directory* GetDirTree( const directory& root, dirTree::const_iterator iter, dirTree::const_iterator end ) const
-    {
-        const directory *curDir = &root;
-
-        for ( ; iter != end; ++iter )
-        {
-            if ( !( curDir = root.FindDirectory( *iter ) ) )
-                return NULL;
-        }
-
-        return curDir;
-    }
-
-    inline const directory* GetDirTree( const dirTree& tree ) const
-    {
-        return GetDirTree( this->m_rootDir, tree.begin(), tree.end() );
-    }
-
-    const directory*    GetDeriviateDir( const directory& root, const dirTree& tree ) const;
-    directory&          MakeDeriviateDir( directory& root, const dirTree& tree );
-
-    directory&          _CreateDirTree( directory& root, const dirTree& tree );
 
     struct extraData
     {
@@ -604,7 +532,6 @@ private:
         //data
     };
 
-    directory*  m_curDirEntry;
     std::string m_comment;
 
     CFileTranslator*    GetFileRoot         ( void );

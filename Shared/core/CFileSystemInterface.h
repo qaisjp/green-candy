@@ -80,7 +80,7 @@ public:
             If successful, zero is returned. Otherwise, any other value
             than zero is returned.
     ===================================================*/
-    virtual int SeekNative( fsOffsetNumber_t iOffset, int iType )
+    virtual int             SeekNative( fsOffsetNumber_t iOffset, int iType )
     {
         // Overwrite this function to offer actual native functionality.
         // Implementations do not have to support broader access.
@@ -262,7 +262,7 @@ public:
         return Write(cBuffer, 1, strlen(cBuffer));
     }
 
-    size_t                  WriteString( const std::string& input )
+    size_t                  WriteString( std::string input )
     {
         return Write( input.c_str(), 1, input.size() );
     }
@@ -288,7 +288,7 @@ public:
             bool successful = ReadByte( c );
 
             if ( !successful || !c || c == '\n' )
-                return true;
+                break;
 
             output += c;
         }
@@ -657,6 +657,8 @@ public:
     virtual void            GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const = 0;
 };
 
+#include "CFileSystem.common.stl.h"
+
 /*===================================================
     CArchiveTranslator (archive root class)
 
@@ -676,7 +678,11 @@ public:
     virtual CFileTranslator*    CreateTranslator    ( const char *path ) = 0;
     virtual CArchiveTranslator* OpenArchive         ( CFile& file ) = 0;
 
+    virtual CArchiveTranslator* OpenZIPArchive      ( CFile& file ) = 0;
+    virtual CArchiveTranslator* OpenIMGArchive      ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
+
     virtual CArchiveTranslator* CreateZIPArchive    ( CFile& file ) = 0;
+    virtual CArchiveTranslator* CreateIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
 
     // Insecure, use with caution!
     virtual bool                IsDirectory         ( const char *path ) = 0;
@@ -725,13 +731,32 @@ namespace FileSystem
     {
         char buf[8096];
 
+#ifdef FILESYSTEM_STREAM_PARANOIA
+        // Check for nasty implementation bugs.
+        size_t actualFileSize = src.GetSize() - src.Tell();
+        size_t addedFileSize = 0;
+#endif //FILESYSTEM_STREAM_PARANOIA
+
         while ( !src.IsEOF() )
         {
             size_t rb = src.Read( buf, 1, sizeof( buf ) );
-            dst.Write( buf, 1, rb );
+            size_t writtenBytes = dst.Write( buf, 1, rb );
+
+#ifdef FILESYSTEM_STREAM_PARANOIA
+            assert( rb == writtenBytes );
+
+            addedFileSize += rb;
+#endif //FILESYSTEM_STREAM_PARANOIA
         }
 
-        dst.SetSeekEnd();
+#ifdef FILESYSTEM_STREAM_PARANOIA
+        if ( actualFileSize != addedFileSize )
+        {
+            __asm int 3
+        }
+
+        assert( actualFileSize == addedFileSize );
+#endif //FILESYSTEM_STREAM_PARANOIA
     }
 
     // Memory friendly file copy function which only copies 'cnt' bytes
@@ -749,8 +774,6 @@ namespace FileSystem
 
             dst.Write( buf, 1, rb );
         }
-
-        dst.SetSeekEnd();
     }
 
     // Function which is used to parse a source stream into
@@ -865,7 +888,7 @@ namespace FileSystem
     }
 
     // Useful utility to get the file name out of a path.
-    inline std::string  GetFileNameItem( const char *name, bool includeExtension = false, std::string *outDirectory = NULL )
+    inline std::string  GetFileNameItem( const char *name, bool includeExtension = false, std::string *outDirectory = NULL, std::string *outExtention = NULL )
     {
         const char *fileStartFrom = NULL;
         const char *origName = name;
@@ -890,7 +913,8 @@ namespace FileSystem
             name++;
         }
 
-        const char *fileEnd = NULL;
+        const char *extStart = NULL;
+        const char *strEnd = NULL;
 
         name = fileStartFrom;
 
@@ -898,13 +922,35 @@ namespace FileSystem
         {
             char ichr = *name;
 
-            if ( !includeExtension && ichr == '.' || ichr == '\0' )
+            if ( !includeExtension && ichr == '.' )
             {
-                fileEnd = name;
+                extStart = name + 1;
+            }
+
+            if ( ichr == '\0' )
+            {
+                strEnd = name;
                 break;
             }
 
             name++;
+        }
+
+        const char *fileEnd = NULL;
+
+        if ( !includeExtension && extStart != NULL )
+        {
+            fileEnd = extStart - 1;
+        }
+        else
+        {
+            fileEnd = strEnd;
+        }
+
+        // Grab the extension if required.
+        if ( outExtention && extStart != NULL )
+        {
+            *outExtention = std::string( extStart, strEnd );
         }
 
         if ( outDirectory )
@@ -921,6 +967,23 @@ namespace FileSystem
         }
 
         return std::string( fileStartFrom, fileEnd );
+    }
+
+    // Returns whether a path is a directory.
+    inline bool IsPathDirectory( const filePath& thePath )
+    {
+        size_t pathSize = thePath.size();
+
+        if ( pathSize == 0 )
+            return true;
+
+        if ( thePath.compareCharAt( '/', pathSize - 1 ) ||
+             thePath.compareCharAt( '\\', pathSize - 1 ) )
+        {
+            return true;
+        }
+
+        return false;
     }
 }
 

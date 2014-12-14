@@ -157,6 +157,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\renderware.bmp.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\renderware.dff.h"
 				>
 			</File>
@@ -239,6 +243,10 @@
 		</File>
 		<File
 			RelativePath="..\src\renderware.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\rwbmp.cpp"
 			>
 		</File>
 		<File

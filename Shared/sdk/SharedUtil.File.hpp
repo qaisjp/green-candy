@@ -66,14 +66,14 @@ filePath SharedUtil::GetCurrentDirectory()
 {
     char szCurDir[1024] = "";
     ::GetCurrentDirectory( sizeof(szCurDir), szCurDir );
-    return szCurDir;
+    return filePath( szCurDir );
 }
 
 filePath SharedUtil::GetWindowsDirectory()
 {
     char szWinDir[MAX_PATH] = "";
     ::GetWindowsDirectory( szWinDir, sizeof(szWinDir) );
-    return szWinDir;
+    return filePath( szWinDir );
 }
 
 #else
@@ -154,11 +154,16 @@ SString SharedUtil::ExtractBeforeExtention( const SString& strPathFilename )
 filePath SharedUtil::MakeUniquePath( const filePath& path )
 {
     unsigned int n = 0;
-    const char *ext;
     filePath pre, post;
-    filePath strPath = path.GetPath();
+    std::string strPath;
 
-    if ( ext = path.GetExtension() )
+    FileSystem::GetFileNameItem( path.c_str(), false, &strPath );
+
+    SString ext;
+
+    bool hasExtention = SharedUtil::ExtractExtention( SString( std::string( path ) ), NULL, &ext );
+
+    if ( hasExtention )
     {
         pre = strPath;
         post = ".";
@@ -190,7 +195,7 @@ std::vector <filePath> SharedUtil::FindFiles( const filePath& path, bool bFiles,
     std::vector <filePath> res;
     filePath match = path;
 
-    if ( path.IsDirectory() )
+    if ( FileSystem::IsPathDirectory( path ) )
         match += "*";
 
     WIN32_FIND_DATA findData;
@@ -203,7 +208,7 @@ std::vector <filePath> SharedUtil::FindFiles( const filePath& path, bool bFiles,
     {
         if ( ( findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) ? bDirectories : bFiles )
             if ( strcmp( findData.cFileName, "." ) && strcmp( findData.cFileName, ".." ) )
-                res.push_back( findData.cFileName );
+                res.push_back( filePath( findData.cFileName ) );
     }
     while ( FindNextFile( hFind, &findData ) );
 

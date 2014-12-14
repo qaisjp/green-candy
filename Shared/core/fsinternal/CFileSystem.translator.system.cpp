@@ -88,7 +88,10 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
 
     // Make sure directory exists
     tree.pop_back();
-    _CreateDirTree( tree );
+    bool dirSuccess = _CreateDirTree( tree );
+
+    if ( !dirSuccess )
+        return false;
 
 #ifdef _WIN32
     HANDLE file;
@@ -117,7 +120,7 @@ bool CSystemFileTranslator::WriteData( const char *path, const char *buffer, siz
 #endif //OS DEPENDANT CODE
 }
 
-void CSystemFileTranslator::_CreateDirTree( const dirTree& tree )
+bool CSystemFileTranslator::_CreateDirTree( const dirTree& tree )
 {
     dirTree::const_iterator iter;
     filePath path = m_root;
@@ -127,12 +130,13 @@ void CSystemFileTranslator::_CreateDirTree( const dirTree& tree )
         path += *iter;
         path += '/';
 
-#ifdef _WIN32
-        CreateDirectory( path.c_str(), NULL );
-#else
-        mkdir( path.c_str(), FILE_ACCESS_FLAG );
-#endif //OS DEPENDANT CODE
+        bool success = _File_CreateDirectory( path );
+
+        if ( !success )
+            return false;
     }
+
+    return true;
 }
 
 bool CSystemFileTranslator::CreateDir( const char *path )
@@ -146,8 +150,7 @@ bool CSystemFileTranslator::CreateDir( const char *path )
     if ( file )
         tree.pop_back();
 
-    _CreateDirTree( tree );
-    return true;
+    return _CreateDirTree( tree );
 }
 
 CFile* CSystemFileTranslator::OpenEx( const char *path, const char *mode, unsigned int flags )
@@ -178,7 +181,10 @@ CFile* CSystemFileTranslator::OpenEx( const char *path, const char *mode, unsign
     {
         tree.pop_back();
 
-        _CreateDirTree( tree );
+        bool dirSuccess = _CreateDirTree( tree );
+
+        if ( !dirSuccess )
+            return NULL;
     }
 
 #ifdef _WIN32
@@ -238,8 +244,10 @@ CFile* CSystemFileTranslator::OpenEx( const char *path, const char *mode, unsign
 
     outFile = pFile;
 
+    // TODO: improve the buffering implementation, so it does not fail in write-only mode.
+
     // If required, wrap the file into a buffered stream.
-    if ( true ) // todo: add a property that decides this?
+    if ( false ) // todo: add a property that decides this?
     {
         outFile = new CBufferedStreamWrap( pFile, true );
     }
@@ -282,7 +290,12 @@ inline bool _deleteFile( const char *path )
 
 static void _deleteFileCallback( const filePath& path, void *ud )
 {
-    _deleteFile( path.c_str() );
+    bool deletionSuccess = _deleteFile( path.c_str() );
+
+    if ( !deletionSuccess )
+    {
+        __asm int 3
+    }
 }
 
 inline bool _deleteDir( const char *path )
@@ -301,7 +314,12 @@ static void _deleteDirCallback( const filePath& path, void *ud )
     // Delete all subdirectories too.
     ((CSystemFileTranslator*)ud)->ScanDirectory( path, "*", false, _deleteDirCallback, _deleteFileCallback, ud );
 
-    _deleteDir( path.c_str() );
+    bool deletionSuccess = _deleteDir( path.c_str() );
+
+    if ( !deletionSuccess )
+    {
+        __asm int 3
+    }
 }
 
 bool CSystemFileTranslator::Delete( const char *path )
@@ -311,7 +329,7 @@ bool CSystemFileTranslator::Delete( const char *path )
     if ( !GetFullPath( path, true, output ) )
         return false;
 
-    if ( output.at( output.size() - 1 ) == '/' )
+    if ( FileSystem::IsPathDirectory( output ) )
     {
         if ( !File_IsDirectoryAbsolute( output.c_str() ) )
             return false;
@@ -374,7 +392,10 @@ bool CSystemFileTranslator::Copy( const char *src, const char *dst )
 
     // Make sure dir exists
     dstTree.pop_back();
-    _CreateDirTree( dstTree );
+    bool dirSuccess = _CreateDirTree( dstTree );
+
+    if ( !dirSuccess )
+        return false;
 
     // Copy data using quick kernel calls.
     return _File_Copy( source.c_str(), target.c_str() );
@@ -397,7 +418,10 @@ bool CSystemFileTranslator::Rename( const char *src, const char *dst )
 
     // Make sure dir exists
     dstTree.pop_back();
-    _CreateDirTree( dstTree );
+    bool dirSuccess = _CreateDirTree( dstTree );
+
+    if ( !dirSuccess )
+        return false;
 
 #ifdef _WIN32
     return MoveFile( source.c_str(), target.c_str() ) != FALSE;
@@ -445,7 +469,7 @@ bool CSystemFileTranslator::GetRelativePathTreeFromRoot( const char *path, dirTr
     if ( _File_IsAbsolutePath( path ) )
     {
 #ifdef _WIN32
-        if ( !_File_PathCharComp( path[0], m_root[0] ) )
+        if ( m_root.compareCharAt( path[0], 0 ) == false )
             return false;   // drive mismatch
 
         return _File_ParseRelativeTree( path + 3, m_rootTree, tree, file );
@@ -462,7 +486,7 @@ bool CSystemFileTranslator::GetRelativePathTree( const char *path, dirTree& tree
     if ( _File_IsAbsolutePath( path ) )
     {
 #ifdef _WIN32
-        if ( !_File_PathCharComp( path[0], m_root[0] ) )
+        if ( m_root.compareCharAt( path[0], 0 ) == false )
             return false;   // drive mismatch
 
         return _File_ParseRelativeTreeDeriviate( path + 3, m_rootTree, m_curDirTree, tree, file );
@@ -479,7 +503,7 @@ bool CSystemFileTranslator::GetFullPathTree( const char *path, dirTree& tree, bo
     if ( _File_IsAbsolutePath( path ) )
     {
 #ifdef _WIN32
-        if ( !_File_PathCharComp( path[0], m_root[0] ) )
+        if ( m_root.compareCharAt( path[0], 0 ) == false )
             return false;   // drive mismatch
 
         tree = m_rootTree;
@@ -599,7 +623,7 @@ void CSystemFileTranslator::ScanDirectory( const char *directory, const char *wi
                         filePath filename = output;
                         filename += finddata.cFileName;
 
-                        fileCallback( filename.c_str(), userdata );
+                        fileCallback( filename, userdata );
                     }
                 } while ( FindNextFile(handle, &finddata) );
 

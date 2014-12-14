@@ -35,11 +35,41 @@
 #include <dirent.h>
 #endif //__linux__
 
+// FileSystem is plugin-based. Drivers register a plugin memory to build on.
+#include <MemoryUtils.h>
+
+// The native class of the FileSystem library.
+struct CFileSystemNative : public CFileSystem
+{
+public:
+    inline CFileSystemNative( void )
+    {
+        return;
+    }
+
+    inline ~CFileSystemNative( void )
+    {
+        return;
+    }
+
+    // All drivers have to add their registration routines here.
+    static void RegisterZIPDriver( void );
+    static void UnregisterZIPDriver( void );
+
+    static void RegisterIMGDriver( void );
+    static void UnregisterIMGDriver( void );
+};
+
+typedef StaticPluginClassFactory <CFileSystemNative> fileSystemFactory_t;
+
+extern fileSystemFactory_t _fileSysFactory;
+
 #include "CFileSystem.internal.common.h"
 #include "CFileSystem.stream.raw.h"
 #include "CFileSystem.stream.buffered.h"
 #include "CFileSystem.translator.pathutil.h"
 #include "CFileSystem.translator.system.h"
+#include "CFileSystem.internal.repo.h"
 
 /*===================================================
     CSystemCapabilities

@@ -12,21 +12,108 @@
 #ifndef _GLOBAL_MEMORY_UTILITIES_
 #define _GLOBAL_MEMORY_UTILITIES_
 
-#include <SharedUtil.h>
+#include <list>
 #include <rwlist.hpp>
 #include <core/CFileSystem.common.h>
+
+template <typename numberType>
+class InfiniteCollisionlessBlockAllocator
+{
+public:
+    typedef sliceOfData <numberType> memSlice_t;
+
+    struct block_t
+    {
+        RwListEntry <block_t> node;
+
+        memSlice_t slice;
+    };
+
+    RwList <block_t> blockList;
+
+    typedef RwListEntry <block_t>* blockIter_t;
+
+    struct allocInfo
+    {
+        memSlice_t slice;
+        blockIter_t blockToAppendAt;
+    };
+
+    inline InfiniteCollisionlessBlockAllocator( void )
+    {
+        LIST_CLEAR( blockList.root );
+    }
+
+    inline bool FindSpace( numberType sizeOfBlock, allocInfo& infoOut )
+    {
+        // Try to allocate memory at the first position we find.
+        memSlice_t newAllocSlice( 0, sizeOfBlock );
+
+        blockIter_t appendNode = &blockList.root;
+
+        LIST_FOREACH_BEGIN( block_t, blockList.root, node )
+            // Intersect the current memory slice with the ones on our list.
+            const memSlice_t& blockSlice = item->slice;
+
+            memSlice_t::eIntersectionResult intResult = newAllocSlice.intersectWith( blockSlice );
+
+            if ( !memSlice_t::isFloatingIntersect( intResult ) )
+            {
+                // Advance the try memory offset.
+                {
+                    numberType tryMemPosition = blockSlice.GetSliceEndPoint() + 1;
+                    
+                    // Make sure we align to the system integer.
+                    // todo: maybe this is not correct all the time?
+                    const numberType sysIntSize = sizeof( unsigned long );
+
+                    tryMemPosition = ALIGN( tryMemPosition, sysIntSize, sysIntSize );
+
+                    newAllocSlice.SetSlicePosition( tryMemPosition );
+                }
+
+                // Set the append node further.
+                appendNode = &item->node;
+            }
+            else
+            {
+                // Make sure we do not get behind a memory block.
+                assert( intResult != memSlice_t::INTERSECT_FLOATING_END );
+                break;
+            }
+        LIST_FOREACH_END
+
+        infoOut.slice = newAllocSlice;
+        infoOut.blockToAppendAt = appendNode;
+        return true;
+    }
+
+    inline void PutBlock( block_t *allocatedStruct, allocInfo& info )
+    {
+        allocatedStruct->slice = info.slice;
+
+        LIST_APPEND( *info.blockToAppendAt, allocatedStruct->node );
+    }
+
+    inline void RemoveBlock( block_t *theBlock )
+    {
+        LIST_REMOVE( theBlock->node );
+    }
+};
 
 template <size_t memorySize>
 class StaticMemoryAllocator
 {
+    typedef InfiniteCollisionlessBlockAllocator <size_t> blockAlloc_t;
+
+    blockAlloc_t blockRegions;
 public:
+
     AINLINE StaticMemoryAllocator( void ) : validAllocationRegion( 0, memorySize )
     {
 #ifdef _DEBUG
         memset( memData, 0, memorySize );
 #endif
-
-        LIST_CLEAR( memEntryList.root );
     }
 
     AINLINE ~StaticMemoryAllocator( void )
@@ -48,42 +135,14 @@ public:
         // Get the actual mem block size.
         size_t actualMemSize = ( memSize + sizeof( memoryEntry ) );
 
-        // Try to allocate memory at the first position we find.
-        memSlice_t newAllocSlice( 0, actualMemSize );
+        blockAlloc_t::allocInfo allocInfo;
 
-        RwListEntry <memoryEntry> *appendNode = &memEntryList.root;
+        bool hasSpace = blockRegions.FindSpace( actualMemSize, allocInfo );
 
-        LIST_FOREACH_BEGIN( memoryEntry, memEntryList.root, node )
-            // Intersect the current memory slice with the ones on our list.
-            const memSlice_t& blockSlice = item->slice;
-
-            memSlice_t::eIntersectionResult intResult = newAllocSlice.intersectWith( blockSlice );
-
-            if ( !memSlice_t::isFloatingIntersect( intResult ) )
-            {
-                // Advance the try memory offset.
-                {
-                    size_t tryMemPosition = blockSlice.GetSliceEndPoint() + 1;
-                    
-                    // Make sure we align to the system integer.
-                    // todo: maybe this is not correct all the time?
-                    const size_t sysIntSize = sizeof( unsigned long );
-
-                    tryMemPosition = ALIGN( tryMemPosition, sysIntSize, sysIntSize );
-
-                    newAllocSlice.SetSlicePosition( tryMemPosition );
-                }
-
-                // Set the append node further.
-                appendNode = &item->node;
-            }
-            else
-            {
-                // Make sure we do not get behind a memory block.
-                assert( intResult != memSlice_t::INTERSECT_FLOATING_END );
-                break;
-            }
-        LIST_FOREACH_END
+        // The space allocation could fail if there is not enough space given by the size_t type.
+        // This is very unlikely to happen, but must be taken care of.
+        if ( hasSpace == false )
+            return NULL;
 
         // Make sure we allocate in the valid region.
         {
@@ -100,10 +159,9 @@ public:
         memoryEntry *entry = (memoryEntry*)( (char*)memData + newAllocSlice.GetSliceStartPoint() );
 
         entry->blockSize = memSize;
-        entry->slice = newAllocSlice;
 
-        // Append us at the correct position.
-        LIST_APPEND( *appendNode, entry->node );
+        // Insert into the block manager.
+        blockRegions.PutBlock( entry, allocInfo );
 
         return entry->GetData();
     }
@@ -116,13 +174,11 @@ public:
         // Remove the structure from existance.
         memoryEntry *entry = (memoryEntry*)ptr - 1;
 
-        LIST_REMOVE( entry->node );
+        blockRegions.RemoveBlock( entry );
     }
 
 private:
-    typedef sliceOfData <size_t> memSlice_t;
-
-    memSlice_t validAllocationRegion;
+    blockAlloc_t::memSlice_t validAllocationRegion;
 
     struct memoryEntry
     {
@@ -132,12 +188,7 @@ private:
         }
 
         size_t blockSize;
-        memSlice_t slice;
-
-        RwListEntry <memoryEntry> node;
     };
-
-    RwList <memoryEntry> memEntryList;
 
     char memData[ memorySize ];
 };
@@ -146,6 +197,12 @@ private:
 template <typename abstractionType, typename pluginDescriptorType>
 struct AnonymousPluginStructRegistry
 {
+    // A plugin struct registry is based on an infinite range of memory that can be allocated on, like a heap.
+    // The structure of this memory heap is then applied onto the underlying type.
+    typedef InfiniteCollisionlessBlockAllocator <size_t> blockAlloc_t;
+
+    blockAlloc_t pluginRegions;
+
     typedef typename pluginDescriptorType::pluginOffset_t pluginOffset_t;
 
     pluginOffset_t preferredAlignment;
@@ -167,6 +224,8 @@ struct AnonymousPluginStructRegistry
     // The construction process must be immutable across the runtime.
     struct pluginInterface
     {
+        virtual ~pluginInterface( void )            {}
+
         virtual bool OnPluginConstruct( abstractionType *object, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
         {
             // By default, construction of plugins should succeed.
@@ -183,10 +242,16 @@ struct AnonymousPluginStructRegistry
             // Assignment of data to another plugin struct is optional.
             return false;
         }
+
+        virtual void DeleteOnUnregister( void )
+        {
+            // Overwrite this method if unregistering should delete this class.
+            return;
+        }
     };
 
     // Struct that holds information about registered plugins.
-    struct registered_plugin
+    struct registered_plugin : public blockAlloc_t::block_t
     {
         size_t pluginSize;
         pluginDescriptorType pluginId;
@@ -195,8 +260,8 @@ struct AnonymousPluginStructRegistry
     };
 
     // Container that holds plugin information.
-    // TODO: Using STL types is crap. Use a custom type instead!
-    typedef std::vector <registered_plugin> registeredPlugins_t;
+    // TODO: Using STL types is crap (?). Use a custom type instead!
+    typedef std::list <registered_plugin> registeredPlugins_t;
 
     registeredPlugins_t regPlugins;
 
@@ -208,16 +273,19 @@ struct AnonymousPluginStructRegistry
     {
         // Make sure we have got valid parameters passed.
         if ( pluginSize == 0 || plugInterface == NULL )
-            return 0;
+            return 0;   // TODO: fix this crap, 0 is ambivalent since its a valid index!
 
         // Determine the plugin offset that should be used for allocation.
-        pluginOffset_t useOffset = 0;
-        {
-            useOffset = this->pluginAllocSize;
+        blockAlloc_t::allocInfo blockAllocInfo;
 
-            // Align us to the preferred size.
-            useOffset = ALIGN( useOffset, preferredAlignment, preferredAlignment );
-        }
+        bool hasSpace = pluginRegions.FindSpace( pluginSize, blockAllocInfo );
+
+        // Handle obscure errors.
+        if ( hasSpace == false )
+            return 0;
+
+        // The beginning of the free space is where our plugin should be placed at.
+        pluginOffset_t useOffset = blockAllocInfo.slice.GetSliceStartPoint();
 
         // Register ourselves.
         registered_plugin info;
@@ -228,15 +296,41 @@ struct AnonymousPluginStructRegistry
         
         regPlugins.push_back( info );
 
+        // Register the pointer to the registered plugin.
+        pluginRegions.PutBlock( &regPlugins.back(), blockAllocInfo );
+
         // Update the overall class size.
         // It is determined by the end of this plugin struct.
         this->pluginAllocSize = useOffset + pluginSize;
+
         return useOffset;
     }
 
-    inline void UnregisterPlugin( pluginOffset_t pluginOffset )
+    inline bool UnregisterPlugin( pluginOffset_t pluginOffset )
     {
-        // TODO.
+        bool hasDeleted = false;
+
+        // Get the plugin information that represents this plugin offset.
+        for ( registeredPlugins_t::iterator iter = regPlugins.begin(); iter != regPlugins.end(); iter++ )
+        {
+            registered_plugin& thePlugin = *iter;
+
+            if ( thePlugin.pluginOffset == pluginOffset )
+            {
+                // We found it!
+                // Now remove it and (probably) delete it.
+                thePlugin.descriptor->DeleteOnUnregister();
+
+                pluginRegions.RemoveBlock( &thePlugin );
+
+                regPlugins.erase( iter );
+
+                hasDeleted = true;
+                break;  // there can be only one.
+            }
+        }
+
+        return hasDeleted;
     }
 
     inline bool ConstructPluginBlock( abstractionType *pluginObj )
@@ -244,13 +338,13 @@ struct AnonymousPluginStructRegistry
         // Construct all plugins.
         bool pluginConstructionSuccessful = true;
 
-        unsigned int constrPluginIndex = 0;
+        registeredPlugins_t::iterator iter = regPlugins.begin();
 
         try
         {
-            while ( constrPluginIndex < this->regPlugins.size() )
+            for ( ; iter != regPlugins.end(); iter++ )
             {
-                registered_plugin& regPluginInfo = this->regPlugins.at( constrPluginIndex );
+                registered_plugin& regPluginInfo = *iter;
 
                 bool success =
                     regPluginInfo.descriptor->OnPluginConstruct(
@@ -263,11 +357,6 @@ struct AnonymousPluginStructRegistry
                 {
                     pluginConstructionSuccessful = false;
                     break;
-                }
-                else
-                {
-                    // We succeeded, so continue.
-                    constrPluginIndex++;
                 }
             }
         }
@@ -282,13 +371,11 @@ struct AnonymousPluginStructRegistry
         {
             // The plugin failed to construct, so destroy all plugins that
             // constructed up until that point.
-            unsigned int n = constrPluginIndex;
-
-            while ( n != 0 )
+            while ( iter != regPlugins.begin() )
             {
-                n--;
+                iter--;
 
-                registered_plugin& constructed_plugin = this->regPlugins.at( n );
+                registered_plugin& constructed_plugin = *iter;
 
                 // Destroy that plugin again.
                 constructed_plugin.descriptor->OnPluginDestruct(
@@ -341,13 +428,9 @@ struct AnonymousPluginStructRegistry
         // Call destructors of all registered plugins.
         try
         {
-            unsigned int n = this->regPlugins.size();
-
-            while ( n != 0 )
+            for ( registeredPlugins_t::reverse_iterator iter = regPlugins.rbegin(); iter != regPlugins.rend(); iter++ )
             {
-                n--;
-
-                registered_plugin& regPlugInfo = this->regPlugins.at( n );
+                registered_plugin& regPlugInfo = *iter;
 
                 regPlugInfo.descriptor->OnPluginDestruct(
                     pluginObj,
@@ -436,6 +519,11 @@ struct CommonPluginSystemDispatch
                 *dstStruct = *srcStruct;
                 return true;
             }
+
+            void DeleteOnUnregister( void )
+            {
+                delete this;
+            }
         };
 
         // Create the interface that should handle our plugin.
@@ -487,6 +575,11 @@ struct CommonPluginSystemDispatch
 
                 *dstStruct = *srcStruct;
                 return true;
+            }
+
+            void DeleteOnUnregister( void )
+            {
+                delete this;
             }
         };
 
@@ -565,7 +658,7 @@ struct StaticPluginClassFactory
     // Localize certain plugin registry types.
     typedef typename structRegistry_t::pluginInterface pluginInterface;
 
-    static const pluginOffset_t INVALID_PLUGIN_OFFSET = (pluginOffset_t)-1;  // zero is always invalid.
+    static const pluginOffset_t INVALID_PLUGIN_OFFSET = (pluginOffset_t)-1;
 
     AINLINE static bool IsOffsetValid( pluginOffset_t offset )
     {
