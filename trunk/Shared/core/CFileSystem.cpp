@@ -12,6 +12,7 @@
 *****************************************************************************/
 
 #include <StdInc.h>
+#include <sstream>
 #include <sys/stat.h>
 
 // Include internal header.
@@ -29,6 +30,25 @@ CFileTranslator *fileRoot = NULL;
 // Create the class at runtime initialization.
 CSystemCapabilities systemCapabilities;
 
+// Constructor of the CFileSystem instance.
+// Every driver should register itself in this.
+fileSystemFactory_t _fileSysFactory;
+
+// Allocator of plugin meta-data.
+struct _fileSystemAllocator
+{
+    inline void* Allocate( size_t memSize )
+    {
+        return new char[ memSize ];
+    }
+
+    inline void Free( void *memPtr, size_t memSize )
+    {
+        delete [] (char*)memPtr;
+    }
+};
+static _fileSystemAllocator _memAlloc;
+
 /*=======================================
     CFileSystem
 
@@ -38,6 +58,65 @@ CSystemCapabilities systemCapabilities;
     not viable.
 =======================================*/
 static bool _hasBeenInitialized = false;
+
+// Creators of the CFileSystem instance.
+// Those are the entry points to this static library.
+CFileSystem* CFileSystem::Create( void )
+{
+    // Make sure that there is no second CFileSystem class alive.
+    assert( _hasBeenInitialized == false );
+
+    // Register addons.
+    CFileSystemNative::RegisterZIPDriver();
+    CFileSystemNative::RegisterIMGDriver();
+
+    // Create our CFileSystem instance!
+    CFileSystemNative *instance = _fileSysFactory.Construct( _memAlloc );
+
+    if ( instance )
+    {
+        char cwd[1024];
+        getcwd( cwd, 1023 );
+
+        // Make sure it is a correct directory
+        filePath cwd_ex( cwd );
+        cwd_ex += '\\';
+
+        // Every application should be able to access itself
+        fileRoot = instance->CreateTranslator( cwd_ex );
+
+        // Set the global fileSystem variable.
+        fileSystem = instance;
+
+        openFiles = new std::list<CFile*>;
+
+        // We have initialized ourselves.
+        _hasBeenInitialized = true;
+    }
+
+    return instance;
+}
+
+void CFileSystem::Destroy( CFileSystem *lib )
+{
+    CFileSystemNative *nativeLib = (CFileSystemNative*)lib;
+
+    assert( nativeLib != NULL );
+
+    if ( nativeLib )
+    {
+        _fileSysFactory.Destroy( _memAlloc, nativeLib );
+
+        // Unregister all addons.
+        CFileSystemNative::UnregisterIMGDriver();
+        CFileSystemNative::UnregisterZIPDriver();
+
+        delete openFiles;
+
+        // We have successfully destroyed FileSystem activity.
+        _hasBeenInitialized = false;
+    }
+}
 
 #ifdef _WIN32
 
@@ -51,45 +130,24 @@ struct MySecurityAttributes
 
 CFileSystem::CFileSystem( void )
 {
-    // Make sure that there is no second CFileSystem class alive.
-    assert( _hasBeenInitialized == false );
-
     // Set up members.
     m_includeAllDirsInScan = false;
 #ifdef _WIN32
     m_hasDirectoryAccessPriviledge = false;
 #endif //_WIN32
 
-    char cwd[1024];
-    getcwd( cwd, 1023 );
-
-    // Make sure it is a correct directory
-    filePath cwd_ex = cwd;
-    cwd_ex += '\\';
-
-    openFiles = new std::list<CFile*>;
-
-    // Every application should be able to access itself
-    fileRoot = CreateTranslator( cwd_ex );
-
-    // Init Addons
-    m_zipExtension.Init();
-
-    fileSystem = this;
-
-    // We have initialized outselves.
-    _hasBeenInitialized = true;
+    this->sysTmp = NULL;
 }
 
 CFileSystem::~CFileSystem( void )
 {
-    // Shutdown addons.
-    m_zipExtension.Shutdown();
+    // Shutdown addon management.
+    if ( sysTmp )
+    {
+        delete sysTmp;
 
-    delete openFiles;
-
-    // We have successfully destroyed FileSystem activity.
-    _hasBeenInitialized = false;
+        sysTmp = NULL;
+    }
 }
 
 bool CFileSystem::CanLockDirectories( void )
@@ -133,9 +191,10 @@ bool CFileSystem::CanLockDirectories( void )
     return m_hasDirectoryAccessPriviledge;
 #elif defined(__linux__)
     // We assume that we can always lock directories under Unix.
+    // This is actually a lie, because it does not exist.
     return true;
 #else
-    // No idea abott directory locking on other environments.
+    // No idea about directory locking on other environments.
     return false;
 #endif //OS DEPENDENT CODE
 }
@@ -175,7 +234,7 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
         char pathBuffer[1024];
         getcwd( pathBuffer, sizeof(pathBuffer) );
 
-        root = pathBuffer;
+        root += pathBuffer;
         root += "\\";
         root += path;
 
@@ -226,6 +285,87 @@ CFileTranslator* CFileSystem::CreateTranslator( const char *path )
 #endif //OS DEPENDANT CODE
 
     return pTranslator;
+}
+
+CFileTranslator* CFileSystem::GenerateTempRepository( void )
+{
+    filePath tmpDir;
+
+    // Check whether we have a handle to the global temporary system storage.
+    // If not, attempt to retrieve it.
+    if ( !this->sysTmp )
+    {
+#ifdef _WIN32
+        char buf[1024];
+
+        GetTempPath( sizeof( buf ), buf );
+
+        // Transform the path into something we can recognize.
+        tmpDir.insert( 0, buf, 2 );
+        tmpDir += '/';
+
+        dirTree tree;
+        bool isFile;
+        
+        bool parseSuccess = _File_ParseRelativePath( buf + 3, tree, isFile );
+
+        assert( parseSuccess == true && isFile == false );
+
+        _File_OutputPathTree( tree, isFile, tmpDir );
+#elif defined(__linux__)
+        const char *dir = getenv("TEMPDIR");
+
+        if ( !dir )
+            tmpDir = "/tmp";
+        else
+            tmpDir = dir;
+
+        tmpDir += '/';
+
+        // On linux we cannot be sure that our directory exists.
+        if ( !_File_CreateDirectory( tmpDir ) )
+            exit( 7098 );
+#endif //OS DEPENDANT CODE
+
+        this->sysTmp = fileSystem->CreateTranslator( tmpDir.c_str() );
+
+        // We failed to get the handle to the temporary storage, hence we cannot deposit temporary files!
+        if ( !this->sysTmp )
+            return NULL;
+    }
+    else
+    {
+        bool success = this->sysTmp->GetFullPath( "@", false, tmpDir );
+
+        if ( !success )
+            return NULL;
+    }
+
+    // Generate a random sub-directory inside of the global OS temp directory.
+    {
+        std::stringstream stream;
+
+        stream.precision( 0 );
+        stream << ( rand() % 647251833 );
+
+        tmpDir += "&$!reAr";
+        tmpDir += stream.str();
+        tmpDir += "_/";
+    }
+
+    // Make sure the temporary directory exists.
+    bool creationSuccessful = _File_CreateDirectory( tmpDir );
+
+    if ( creationSuccessful )
+    {
+        // Create the .zip temporary root
+        CFileTranslator *result = fileSystem->CreateTranslator( tmpDir.c_str() );
+
+        if ( result )
+            return result;
+    }
+
+    return NULL;
 }
 
 bool CFileSystem::IsDirectory( const char *path )

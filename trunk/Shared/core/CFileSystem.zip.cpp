@@ -12,7 +12,6 @@
 *****************************************************************************/
 
 #include <StdInc.h>
-#include <sstream>
 
 // Include internal (private) definitions.
 #include "fsinternal/CFileSystem.internal.h"
@@ -64,138 +63,69 @@ CArchiveTranslator* zipExtension::OpenArchive( CFile& readWriteStream )
     return zip;
 }
 
-bool _File_CreateDirectory( const char *osPath )
-{
-#ifdef __linux__
-    if ( mkdir( osPath, FILE_ACCESS_FLAG ) == 0 )
-        return true;
-
-    switch( errno )
-    {
-    case EEXIST:
-    case 0:
-        return true;
-    }
-
-    return false;
-#elif defined(_WIN32)
-    return CreateDirectory( osPath, NULL ) != FALSE;
-#else
-    return false;
-#endif //OS DEPENDANT CODE
-}
-
 CFileTranslator* zipExtension::GetTempRoot( void )
 {
-    if ( sysTmpRoot )
-        return sysTmpRoot;
-
-    filePath tmpDir;
-
-    if ( !sysTmp )
-    {
-#ifdef _WIN32
-        char buf[1024];
-
-        GetTempPath( sizeof( buf ), buf );
-        tmpDir = buf;
-        tmpDir += '/';
-#elif defined(__linux__)
-        const char *dir = getenv("TEMPDIR");
-
-        if ( !dir )
-            tmpDir = "/tmp";
-        else
-            tmpDir = dir;
-
-        tmpDir += '/';
-
-        // On linux we cannot be sure that our directory exists.
-        if ( !_File_CreateDirectory( tmpDir.c_str() ) )
-            exit( 7098 );
-#endif //OS DEPENDANT CODE
-
-        sysTmp = fileSystem->CreateTranslator( tmpDir.c_str() );
-
-        if ( !sysTmp )
-            return NULL;
-    }
-    else
-    {
-        bool success = sysTmp->GetFullPath( "@", false, tmpDir );
-
-        if ( !success )
-            return NULL;
-    }
-
-    // Generate a random sub-directory inside of the global OS temp directory.
-    {
-        std::stringstream stream;
-
-        stream.precision( 0 );
-        stream << ( rand() % 647251833 );
-
-        tmpDir += "&$!reAr";
-        tmpDir += stream.str();
-        tmpDir += "_/";
-    }
-
-    // Make sure the temporary directory exists.
-    bool creationSuccessful = _File_CreateDirectory( tmpDir.c_str() );
-
-    if ( creationSuccessful )
-    {
-        // Create the .zip temporary root
-        sysTmpRoot = fileSystem->CreateTranslator( tmpDir.c_str() );
-        return sysTmpRoot;
-    }
-
-    return NULL;
+    return repo.GetTranslator();
 }
 
-void zipExtension::Init( void )
+void zipExtension::Initialize( CFileSystemNative *sys )
 {
-    // We do not have to create our private directory if we do not require it.
-    sysTmp = NULL;
-    sysTmpRoot = NULL;
+    return;
 }
 
-void zipExtension::Shutdown( void )
+void zipExtension::Shutdown( CFileSystemNative *sys )
 {
-    if ( sysTmpRoot )
-    {
-        filePath tmpDir;
-
-        if ( sysTmp )
-        {
-            sysTmpRoot->GetFullPath( "@", false, tmpDir );
-        }
-
-        delete sysTmpRoot;
-
-        sysTmpRoot = NULL;
-
-        if ( sysTmp )
-        {
-            sysTmp->Delete( tmpDir.c_str() );
-        }
-    }
-
-    if ( sysTmp )
-    {
-        delete sysTmp;
-
-        sysTmp = NULL;
-    }
+    return;
 }
 
 // Export methods into the CFileSystem class directly.
 CArchiveTranslator* CFileSystem::CreateZIPArchive( CFile& file )
 {
-    return m_zipExtension.NewArchive( file );
+    zipExtension *zipExt = zipExtension::Get( this );
+
+    if ( zipExt )
+    {
+        return zipExt->NewArchive( file );
+    }
+    return NULL;
 }
 
 CArchiveTranslator* CFileSystem::OpenArchive( CFile& file )
 {
-    return m_zipExtension.OpenArchive( file );
+    zipExtension *zipExt = zipExtension::Get( this );
+
+    if ( zipExt )
+    {
+        // TODO: code an automatic detection of the archive format.
+        // Also put this function into the main file (CFileSystem.cpp).
+        return zipExt->OpenArchive( file );
+    }
+    return NULL;
+}
+
+CArchiveTranslator* CFileSystem::OpenZIPArchive( CFile& file )
+{
+    zipExtension *zipExt = zipExtension::Get( this );
+    
+    if ( zipExt )
+    {
+        return zipExt->OpenArchive( file );
+    }
+    return NULL;
+}
+
+fileSystemFactory_t::pluginOffset_t zipExtension::_zipPluginOffset = fileSystemFactory_t::INVALID_PLUGIN_OFFSET;
+
+void CFileSystemNative::RegisterZIPDriver( void )
+{
+    zipExtension::_zipPluginOffset =
+        _fileSysFactory.RegisterDependantStructPlugin <zipExtension> ( fileSystemFactory_t::ANONYMOUS_PLUGIN_ID );
+}
+
+void CFileSystemNative::UnregisterZIPDriver( void )
+{
+    if ( zipExtension::_zipPluginOffset != fileSystemFactory_t::ANONYMOUS_PLUGIN_ID )
+    {
+        _fileSysFactory.UnregisterPlugin( zipExtension::_zipPluginOffset );
+    }
 }

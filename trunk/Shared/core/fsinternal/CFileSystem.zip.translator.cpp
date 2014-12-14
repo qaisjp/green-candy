@@ -13,10 +13,7 @@
 
 #include <StdInc.h>
 #include <zlib.h>
-#include <sstream>
-
-// Global properties used by the .zip extension
-static unsigned int sysTmpCnt = 0;
+#include <sys/stat.h>
 
 // Include internal (private) definitions.
 #include "fsinternal/CFileSystem.internal.h"
@@ -28,7 +25,7 @@ extern CFileSystem *fileSystem;
 #include "CFileSystem.zip.utils.hxx"
 
 /*=======================================
-    CArchiveFile
+    CZIPArchiveTranslator::fileDeflate
 
     ZIP file seeking and handling
 =======================================*/
@@ -54,7 +51,7 @@ size_t CZIPArchiveTranslator::fileDeflate::Write( const void *buffer, size_t sEl
     if ( !m_writeable )
         return 0;
 
-    m_info.UpdateTime();
+    m_info.metaData.UpdateTime();
     return m_sysFile.Write( buffer, sElement, iNumElements );
 }
 
@@ -77,7 +74,7 @@ bool CZIPArchiveTranslator::fileDeflate::Stat( struct stat *stats ) const
 {
     tm date;
 
-    m_info.GetModTime( date );
+    m_info.metaData.GetModTime( date );
 
     date.tm_year -= 1900;
 
@@ -89,12 +86,12 @@ void CZIPArchiveTranslator::fileDeflate::PushStat( const struct stat *stats )
 {
     tm *date = gmtime( &stats->st_mtime );
 
-    m_info.SetModTime( *date );
+    m_info.metaData.SetModTime( *date );
 }
 
 void CZIPArchiveTranslator::fileDeflate::SetSeekEnd( void )
 {
-
+    // TODO.
 }
 
 size_t CZIPArchiveTranslator::fileDeflate::GetSize( void ) const
@@ -123,14 +120,13 @@ bool CZIPArchiveTranslator::fileDeflate::IsWriteable( void ) const
     ZIP translation utility
 =======================================*/
 
-CZIPArchiveTranslator::CZIPArchiveTranslator( zipExtension& theExtension, CFile& fileStream ) : CSystemPathTranslator( false ), m_zipExtension( theExtension ), m_file( fileStream ), m_rootDir( filePath(), filePath() )
+CZIPArchiveTranslator::CZIPArchiveTranslator( zipExtension& theExtension, CFile& fileStream ) : CSystemPathTranslator( false ), m_zipExtension( theExtension ), m_file( fileStream )
 {
     // TODO: Get real .zip structure offset
     m_structOffset = 0;
 
-    // Current directory starts at root
-    m_curDirEntry = &m_rootDir;
-    m_rootDir.parent = NULL;
+    // Set up the virtual filesystem.
+    m_virtualFS.hostTranslator = this;
 
     m_fileRoot = NULL;
     m_realtimeRoot = NULL;
@@ -184,56 +180,9 @@ CFileTranslator* CZIPArchiveTranslator::GetFileRoot( void )
 {
     if ( !m_fileRoot )
     {
-        // Attempt to get the handle to our temporary directory.
-        CFileTranslator *sysTmpRoot = m_zipExtension.GetTempRoot();
-
-        if ( sysTmpRoot )
-        {
-            // Create temporary storage
-            filePath path;
-            {
-                std::stringstream number_stream;
-
-                number_stream << sysTmpCnt++;
-
-                std::string dirName( "/" );
-                dirName += number_stream.str();
-                dirName += "/";
-
-                sysTmpRoot->CreateDir( dirName.c_str() );
-                sysTmpRoot->GetFullPathFromRoot( dirName.c_str(), false, path );
-            }
-
-            m_fileRoot = fileSystem->CreateTranslator( path.c_str() );
-        }
+        m_fileRoot = m_zipExtension.repo.GenerateUniqueDirectory();
     }
     return m_fileRoot;
-}
-
-AINLINE CFileTranslator* AcquireDirectoryTranslator( CFileTranslator *fileRoot, const char *dirName )
-{
-    CFileTranslator *resultTranslator = NULL;
-
-    bool canBeAcquired = true;
-
-    if ( !fileRoot->Exists( dirName ) )
-    {
-        canBeAcquired = fileRoot->CreateDir( dirName );
-    }
-
-    if ( canBeAcquired )
-    {
-        filePath rootPath;
-
-        bool gotRoot = fileRoot->GetFullPath( "", false, rootPath );
-
-        if ( gotRoot )
-        {
-            resultTranslator = fileSystem->CreateTranslator( rootPath + dirName );
-        }
-    }
-
-    return resultTranslator;
 }
 
 CFileTranslator* CZIPArchiveTranslator::GetUnpackRoot( void )
@@ -244,7 +193,7 @@ CFileTranslator* CZIPArchiveTranslator::GetUnpackRoot( void )
 
         if ( fileRoot )
         {
-            m_unpackRoot = AcquireDirectoryTranslator( fileRoot, "unpack/" );
+            m_unpackRoot = CRepository::AcquireDirectoryTranslator( fileRoot, "unpack/" );
         }
     }
     return m_unpackRoot;
@@ -258,40 +207,10 @@ CFileTranslator* CZIPArchiveTranslator::GetRealtimeRoot( void )
 
         if ( fileRoot )
         {
-            m_realtimeRoot = AcquireDirectoryTranslator( fileRoot, "realtime/" );
+            m_realtimeRoot = CRepository::AcquireDirectoryTranslator( fileRoot, "realtime/" );
         }
     }
     return m_realtimeRoot;
-}
-
-inline const CZIPArchiveTranslator::directory* CZIPArchiveTranslator::GetDeriviateDir( const directory& root, const dirTree& tree ) const
-{
-    const directory *curDir = &root;
-    dirTree::const_iterator iter = tree.begin();
-
-    for ( ; iter != tree.end() && ( *iter == _dirBack ); ++iter )
-    {
-        curDir = curDir->parent;
-
-        if ( !curDir )
-            return NULL;
-    }
-
-    return GetDirTree( *curDir, iter, tree.end() );
-}
-
-inline CZIPArchiveTranslator::directory& CZIPArchiveTranslator::MakeDeriviateDir( directory& root, const dirTree& tree )
-{
-    directory *curDir = &root;
-    dirTree::const_iterator iter = tree.begin();
-
-    for ( ; iter != tree.end() && ( *iter == _dirBack ); ++iter )
-        curDir = curDir->parent;
-
-    for ( ; iter != tree.end(); ++iter )
-        curDir = &curDir->GetDirectory( *iter );
-
-    return *curDir;
 }
 
 bool CZIPArchiveTranslator::WriteData( const char *path, const char *buffer, size_t size )
@@ -302,383 +221,261 @@ bool CZIPArchiveTranslator::WriteData( const char *path, const char *buffer, siz
 
 bool CZIPArchiveTranslator::CreateDir( const char *path )
 {
-    dirTree tree;
-    bool isFile;
+    return m_virtualFS.CreateDir( path );
+}
 
-    if ( !GetRelativePathTree( path, tree, isFile ) )
-        return false;
+CFile* CZIPArchiveTranslator::OpenNativeFileStream( file *fsObject, unsigned int openMode, unsigned int access )
+{
+    CFile *dstFile = NULL;
 
-    if ( isFile )
-        tree.pop_back();
+    if ( openMode == FILE_MODE_OPEN )
+    {
+        const filePath& relPath = fsObject->relPath;
 
-    _CreateDirTree( *m_curDirEntry, tree );
-    return true;
+        // Attempt to get a handle to the realtime root.
+        CFileTranslator *realtimeRoot = GetRealtimeRoot();
+
+        if ( realtimeRoot )
+        {
+            if ( fsObject->metaData.archived && !fsObject->metaData.cached )
+            {
+                dstFile = realtimeRoot->Open( relPath.c_str(), "wb+" );
+
+                if ( dstFile )
+                {
+                    Extract( *dstFile, *fsObject );
+                    fsObject->metaData.cached = true;
+                }
+            }
+            else
+            {
+                dstFile = realtimeRoot->Open( relPath.c_str(), "rb+" );
+            }
+        }
+    }
+    else if ( openMode == FILE_MODE_CREATE )
+    {
+        // Attempt to get a handle to the realtime root.
+        CFileTranslator *realtimeRoot = GetRealtimeRoot();
+
+        if ( realtimeRoot )
+        {
+            const filePath& relPath = fsObject->relPath;
+
+            dstFile = realtimeRoot->Open( relPath.c_str(), "wb+" );
+
+            fsObject->metaData.cached = true;
+        }
+    }
+    else
+    {
+        // TODO: implement any unknown cases.
+        return NULL;
+    }
+
+    CFile *outputFile = NULL;
+
+    if ( dstFile )
+    {
+        fileDeflate *f = new fileDeflate( *this, *fsObject, *dstFile );
+
+        if ( f )
+        {
+            f->m_path = fsObject->relPath;
+            f->m_writeable = ( access & FILE_ACCESS_WRITE ) != 0;
+            f->m_readable = ( access & FILE_ACCESS_READ ) != 0;
+
+            // Update the stat
+            {
+                struct stat info;
+                bool statGetSuccess = f->Stat( &info );
+                
+                if ( statGetSuccess )
+                {
+                    dstFile->PushStat( &info );
+                }
+            }
+
+            outputFile = f;
+        }
+    }
+    return outputFile;
 }
 
 CFile* CZIPArchiveTranslator::Open( const char *path, const char *mode )
 {
-    dirTree tree;
-    bool isFile;
-
-    if ( !GetRelativePathTree( path, tree, isFile ) || !isFile )
-        return NULL;
-
-    filePath name = tree[ tree.size() - 1 ];
-    tree.pop_back();
-
-    unsigned int m;
-    unsigned int access;
-
-    if ( !_File_ParseMode( *this, path, mode, access, m ) )
-        return NULL;
-
-    directory *dir;
-    file *entry;
-    CFile *dstFile;
-
-    // We require the offset path, too
-    filePath relPath;
-    GetRelativePathFromRoot( path, true, relPath );
-
-    switch( m )
-    {
-    case FILE_MODE_OPEN:
-        dir = (directory*)GetDeriviateDir( *m_curDirEntry, tree );
-
-        if ( !dir )
-            return NULL;
-
-        entry = dir->GetFile( name );
-
-        if ( !entry )
-            return NULL;
-
-        {
-            // Attempt to get a handle to the realtime root.
-            CFileTranslator *realtimeRoot = GetRealtimeRoot();
-
-            if ( !realtimeRoot )
-                return NULL;
-
-            if ( entry->archived && !entry->cached )
-            {
-                dstFile = realtimeRoot->Open( relPath.c_str(), "wb+" );
-
-                Extract( *dstFile, *entry );
-                entry->cached = true;
-            }
-            else
-                dstFile = realtimeRoot->Open( relPath.c_str(), "rb+" );
-        }
-
-        break;
-    case FILE_MODE_CREATE:
-        {
-            // Attempt to get a handle to the realtime root.
-            CFileTranslator *realtimeRoot = GetRealtimeRoot();
-
-            if ( !realtimeRoot )
-                return NULL;
-
-            entry = MakeDeriviateDir( *m_curDirEntry, tree ).MakeFile( name );
-
-            if ( !entry )
-                return NULL;
-
-		    // Files start off clean
-		    entry->Reset();
-
-            dstFile = realtimeRoot->Open( relPath.c_str(), "wb+" );
-
-            entry->cached = true;
-        }
-        break;
-    }
-
-    // Seek it
-    dstFile->Seek( 0, *mode == 'a' ? SEEK_END : SEEK_SET );
-
-    fileDeflate *f = new fileDeflate( *this, *entry, *dstFile );
-    f->m_path = relPath;
-    f->m_writeable = ( access & FILE_ACCESS_WRITE ) != 0;
-    f->m_readable = ( access & FILE_ACCESS_READ ) != 0;
-
-    // Update the stat
-    struct stat info;
-    f->Stat( &info );
-    dstFile->PushStat( &info );
-
-    return f;
+    return m_virtualFS.OpenStream( path, mode );
 }
 
 bool CZIPArchiveTranslator::Exists( const char *path ) const
 {
-    dirTree tree;
-    bool isFile;
+    return m_virtualFS.Exists( path );
+}
 
-    if ( !GetRelativePathTree( path, tree, isFile ) )
-        return false;
+void CZIPArchiveTranslator::fileMetaData::OnFileDelete( void )
+{
+    // Delete the resources that are associated with this file entry.
+    const filePath& ourPath = this->genericInterface->GetRelativePath();
 
-    if ( isFile )
+    if ( !this->cached )
     {
-        filePath name = tree[ tree.size() - 1 ];
-        tree.pop_back();
+        CFileTranslator *unpackRoot = translator->GetUnpackRoot();
 
-        const directory *dir = GetDeriviateDir( *m_curDirEntry, tree );
-        return dir && dir->GetFile( name ) != NULL;
+        if ( unpackRoot )
+        {
+            unpackRoot->Delete( ourPath.c_str() );
+        }
     }
+    else
+    {
+        CFileTranslator *realtimeRoot = translator->GetRealtimeRoot();
 
-    return GetDeriviateDir( *m_curDirEntry, tree ) != NULL;
+        if ( realtimeRoot )
+        {
+            realtimeRoot->Delete( ourPath.c_str() );
+        }
+    }
 }
 
 bool CZIPArchiveTranslator::Delete( const char *path )
 {
-    dirTree tree;
-    bool isFile;
+    return m_virtualFS.Delete( path );
+}
 
-    if ( !GetRelativePathTree( path, tree, isFile ) )
-        return false;
+bool CZIPArchiveTranslator::fileMetaData::OnFileCopy( const dirTree& tree, const filePath& newName ) const
+{
+    // Copy over the data storage to the new location.
+    bool copySuccess = false;
 
-    directory *dir;
+    // Construct the destination path.
+    filePath dstPath;
+    _File_OutputPathTree( tree, false, dstPath );
 
-    if ( !isFile )
+    dstPath += newName;
+
+    // Get the path to this node.
+    const filePath& ourPath = this->genericInterface->GetRelativePath();
+
+    if ( !this->cached )
     {
-        if ( !( dir = (directory*)GetDeriviateDir( *m_curDirEntry, tree ) ) )
-            return false;
+        // Get the unpack root.
+        CFileTranslator *unpackRoot = translator->GetUnpackRoot();
 
-        if ( dir->IsLocked() )
-            return false;
+        if ( unpackRoot )
+        {
+            if ( !this->subParsed )
+            {
+                _localHeader header;
+                translator->seekFile( *this, header );
 
-        delete dir;
+                CFile *dstFile = unpackRoot->Open( dstPath.c_str(), "wb" );
 
-        return true;
+                if ( dstFile )
+                {
+                    FileSystem::StreamCopyCount( translator->m_file, *dstFile, header.sizeCompressed );
+
+                    dstFile->SetSeekEnd();
+
+                    delete dstFile;
+
+                    copySuccess = true;
+                }
+            }
+            else
+            {
+                copySuccess = unpackRoot->Copy( ourPath.c_str(), dstPath.c_str() );
+            }
+        }
+    }
+    else
+    {
+        // Get the realtime root.
+        CFileTranslator *realtimeRoot = translator->GetRealtimeRoot();
+
+        if ( realtimeRoot )
+        {
+            copySuccess = realtimeRoot->Copy( ourPath.c_str(), dstPath.c_str() );
+        }
     }
 
-    filePath name = tree[ tree.size() - 1 ];
-    tree.pop_back();
-
-    return ( dir = (directory*)GetDeriviateDir( *m_curDirEntry, tree ) ) && dir->RemoveFile( name );
+    return copySuccess;
 }
 
 bool CZIPArchiveTranslator::Copy( const char *src, const char *dst )
 {
-    file *srcEntry = (file*)GetFileEntry( src );
+    return m_virtualFS.Copy( src, dst );
+}
 
-    if ( !srcEntry )
-        return false;
+bool CZIPArchiveTranslator::fileMetaData::OnFileRename( const dirTree& tree, const filePath& newName )
+{
+    bool success = false;
 
-    union
+    // Construct the destination path.
+    filePath dstPath;
+    _File_OutputPathTree( tree, false, dstPath );
+
+    dstPath += newName;
+
+    // Get the path to this node.
+    const filePath& ourPath = this->genericInterface->GetRelativePath();
+
+    // Move our meta-data.
+    if ( !this->cached )
     {
-        CFileTranslator *unpackRoot;
-        CFileTranslator *realtimeRoot;
-    };
+        CFileTranslator *unpackRoot = translator->GetUnpackRoot();
 
-    if ( !srcEntry->cached )
-    {
-        unpackRoot = GetUnpackRoot();
-
-        if ( !unpackRoot )
-            return false;
-    }
-    else
-    {
-        realtimeRoot = GetRealtimeRoot();
-
-        if ( !realtimeRoot )
-            return false;
-    }
-
-    dirTree tree;
-    bool isFile;
-
-    if ( !GetRelativePathTree( dst, tree, isFile ) || !isFile )
-        return false;
-
-    filePath fileName = tree[ tree.size() - 1 ];
-    tree.pop_back();
-
-    file *dstEntry = _CreateDirTree( *m_curDirEntry, tree ).MakeFile( fileName );
-
-    if ( !dstEntry )
-        return false;
-
-    // Copy over general attributes
-    dstEntry->flags = srcEntry->flags;
-    dstEntry->compression = srcEntry->compression;
-    dstEntry->modTime = srcEntry->modTime;
-    dstEntry->modDate = srcEntry->modDate;
-    dstEntry->diskID = srcEntry->diskID;
-    dstEntry->internalAttr = srcEntry->internalAttr;
-    dstEntry->externalAttr = srcEntry->externalAttr;
-    dstEntry->extra = srcEntry->extra;
-    dstEntry->comment = srcEntry->comment;
-
-    if ( !srcEntry->cached )
-    {
-        dstEntry->version = srcEntry->version;
-        dstEntry->reqVersion = srcEntry->reqVersion;
-        dstEntry->crc32 = srcEntry->crc32;
-        dstEntry->sizeCompressed = srcEntry->sizeCompressed;
-        dstEntry->sizeReal = srcEntry->sizeReal;
-        dstEntry->subParsed = true;
-
-        if ( !srcEntry->subParsed )
+        if ( unpackRoot )
         {
-            _localHeader header;
-            seekFile( *srcEntry, header );
+            if ( !this->subParsed )
+            {
+                _localHeader header;
+                translator->seekFile( *this, header );
 
-            CFile *dstFile = unpackRoot->Open( dstEntry->relPath.c_str(), "wb" );
+                CFile *dstFile = unpackRoot->Open( dstPath.c_str(), "wb" );
 
-            FileSystem::StreamCopyCount( m_file, *dstFile, header.sizeCompressed );
+                if ( dstFile )
+                {
+                    FileSystem::StreamCopyCount( translator->m_file, *dstFile, header.sizeCompressed );
 
-            delete dstFile;
+                    dstFile->SetSeekEnd();
+
+                    delete dstFile;
+
+                    success = true;
+                }
+            }
+            else
+            {
+                success = unpackRoot->Rename( ourPath.c_str(), dstPath.c_str() );
+            }
         }
-        else
-            unpackRoot->Copy( srcEntry->relPath.c_str(), dstEntry->relPath.c_str() );
     }
     else
     {
-        dstEntry->cached = true;
+        CFileTranslator *realtimeRoot = translator->GetRealtimeRoot();
 
-        realtimeRoot->Copy( srcEntry->relPath.c_str(), dstEntry->relPath.c_str() );
+        if ( realtimeRoot )
+        {
+            success = realtimeRoot->Rename( ourPath.c_str(), dstPath.c_str() );
+        }
     }
 
-    return true;
+    return success;
 }
 
 bool CZIPArchiveTranslator::Rename( const char *src, const char *dst )
 {
-    // TODO: add directory support.
-    file *entry = (file*)GetFileEntry( src );
-
-    if ( !entry )
-        return false;
-
-    union
-    {
-        CFileTranslator *unpackRoot;
-        CFileTranslator *realtimeRoot;
-    };
-
-    if ( !entry->cached )
-    {
-        unpackRoot = GetUnpackRoot();
-
-        if ( !unpackRoot )
-            return false;
-    }
-    else
-    {
-        realtimeRoot = GetRealtimeRoot();
-
-        if ( !realtimeRoot )
-            return false;
-    }
-
-    dirTree tree;
-    bool isFile;
-
-    if ( !GetRelativePathTree( dst, tree, isFile ) || !isFile )
-        return false;
-
-    filePath fileName = tree[ tree.size() - 1 ];
-    tree.pop_back();
-
-    if ( !entry->cached )
-    {
-        if ( !entry->subParsed )
-        {
-            _localHeader header;
-            seekFile( *entry, header );
-
-            CFile *dstFile = unpackRoot->Open( dst, "wb" );
-
-            FileSystem::StreamCopyCount( m_file, *dstFile, header.sizeCompressed );
-
-            delete dstFile;
-        }
-        else
-            unpackRoot->Rename( entry->relPath.c_str(), dst );
-    }
-    else
-    {
-        if ( !entry->locks.empty() )
-            return false;
-
-        realtimeRoot->Rename( entry->relPath.c_str(), dst );
-    }
-
-    // Give it a new name
-    entry->name = fileName;
-
-    _CreateDirTree( *m_curDirEntry, tree ).MoveTo( *entry );
-    return true;
+    return m_virtualFS.Rename( src, dst );
 }
 
 size_t CZIPArchiveTranslator::Size( const char *path ) const
 {
-    const file *entry = GetFileEntry( path );
-
-    size_t preferableSize = 0;
-
-    if ( entry )
-    {
-        if ( !entry->cached )
-        {
-            preferableSize = entry->sizeReal;
-        }
-        else
-        {
-            CFileTranslator *realtimeRoot = const_cast <CZIPArchiveTranslator*> ( this )->GetRealtimeRoot();
-
-            if ( realtimeRoot )
-            {
-                preferableSize = realtimeRoot->Size( path );
-            }
-        }
-    }
-    return preferableSize;
+    return (size_t)m_virtualFS.Size( path );
 }
 
 bool CZIPArchiveTranslator::Stat( const char *path, struct stat *stats ) const
 {
-    const file *entry = GetFileEntry( path );
-
-    if ( !entry )
-        return false;
-
-    tm date;
-    entry->GetModTime( date );
-
-    date.tm_year -= 1900;
-
-    stats->st_mtime = stats->st_ctime = stats->st_atime = mktime( &date );
-    stats->st_dev = entry->diskID;
-    stats->st_rdev = 0;
-    stats->st_gid = 0;
-    stats->st_ino = 0;
-    stats->st_mode = 0;
-    stats->st_nlink = 0;
-    stats->st_uid = 0;
-    
-    size_t realSize = 0;
-
-    if ( !entry->cached )
-    {
-        realSize = entry->sizeReal;
-    }
-    else
-    {
-        CFileTranslator *realtimeRoot = const_cast <CZIPArchiveTranslator*> ( this )->GetRealtimeRoot();
-
-        if ( realtimeRoot )
-        {
-            realSize = realtimeRoot->Size( entry->relPath.c_str() );
-        }
-    }
-    stats->st_size = realSize;
-
-    return true;
+    return m_virtualFS.Stat( path, stats );
 }
 
 bool CZIPArchiveTranslator::ReadToBuffer( const char *path, std::vector <char>& output ) const
@@ -698,12 +495,12 @@ bool CZIPArchiveTranslator::ChangeDirectory( const char *path )
     if ( isFile )
         tree.pop_back();
 
-    directory *dir = (directory*)GetDirTree( tree );
+    bool contextChangeSuccess = m_virtualFS.ChangeDirectory( tree );
 
-    if ( !dir )
+    if ( !contextChangeSuccess )
         return false;
 
-    m_curDirEntry = dir;
+    // Update the inherited values from the path translator base class.
     m_curDirTree = tree;
 
     m_currentDir.clear();
@@ -711,92 +508,14 @@ bool CZIPArchiveTranslator::ChangeDirectory( const char *path )
     return true;
 }
 
-static void inline _ScanDirectory( const CZIPArchiveTranslator *trans, const dirTree& tree, CZIPArchiveTranslator::directory *dir, filePattern_t *pattern, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata )
-{
-    // First scan for files.
-    if ( fileCallback )
-    {
-        for ( CZIPArchiveTranslator::fileList::const_iterator iter = dir->files.begin(); iter != dir->files.end(); ++iter )
-        {
-            CZIPArchiveTranslator::file *item = *iter;
-
-            if ( _File_MatchPattern( item->name.c_str(), pattern ) )
-            {
-                filePath abs_path = "/";
-                _File_OutputPathTree( tree, false, abs_path );
-
-                abs_path += item->name;
-
-                fileCallback( abs_path, userdata );
-            }
-        }
-    }
-
-    // Continue with the directories
-    if ( dirCallback || recurse )
-    {
-        for ( CZIPArchiveTranslator::directory::subDirs::const_iterator iter = dir->children.begin(); iter != dir->children.end(); ++iter )
-        {
-            CZIPArchiveTranslator::directory *item = *iter;
-
-            if ( dirCallback )
-            {
-                filePath abs_path = "/";
-                _File_OutputPathTree( tree, false, abs_path );
-
-                abs_path += item->name;
-                abs_path += "/";
-
-                _File_OnDirectoryFound( pattern, item->name, abs_path, dirCallback, userdata );
-            }
-
-            if ( recurse )
-            {
-                dirTree newTree = tree;
-                newTree.push_back( item->name );
-
-                _ScanDirectory( trans, newTree, item, pattern, recurse, dirCallback, fileCallback, userdata );
-            }
-        }
-    }
-}
-
-void CZIPArchiveTranslator::ScanDirectory( const char *dirPath, const char *wildcard, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata ) const
-{
-    dirTree tree;
-    bool isFile;
-
-    if ( !GetRelativePathTreeFromRoot( dirPath, tree, isFile ) )
-        return;
-
-    if ( isFile )
-        tree.pop_back();
-
-    directory *dir = (directory*)GetDirTree( tree );
-
-    if ( !dir )
-        return;
-
-    // Create a cached file pattern.
-    filePattern_t *pattern = _File_CreatePattern( wildcard );
-
-    try
-    {
-        _ScanDirectory( this, tree, dir, pattern, recurse, dirCallback, fileCallback, userdata );
-    }
-    catch( ... )
-    {
-        // Any exception may be thrown; we have to clean up.
-        _File_DestroyPattern( pattern );
-        throw;
-    }
-
-    _File_DestroyPattern( pattern );
-}
-
 static void _scanFindCallback( const filePath& path, std::vector <filePath> *output )
 {
     output->push_back( path );
+}
+
+void CZIPArchiveTranslator::ScanDirectory( const char *path, const char *wildcard, bool recurse, pathCallback_t dirCallback, pathCallback_t fileCallback, void *userdata ) const
+{
+    m_virtualFS.ScanDirectory( path, wildcard, recurse, dirCallback, fileCallback, userdata );
 }
 
 void CZIPArchiveTranslator::GetDirectories( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const
@@ -807,17 +526,6 @@ void CZIPArchiveTranslator::GetDirectories( const char *path, const char *wildca
 void CZIPArchiveTranslator::GetFiles( const char *path, const char *wildcard, bool recurse, std::vector <filePath>& output ) const
 {
     ScanDirectory( path, wildcard, recurse, NULL, (pathCallback_t)_scanFindCallback, &output );
-}
-
-CZIPArchiveTranslator::directory& CZIPArchiveTranslator::_CreateDirTree( directory& dir, const dirTree& tree )
-{
-    directory *curDir = &dir;
-    dirTree::const_iterator iter = tree.begin();
-
-    for ( ; iter != tree.end(); ++iter )
-        curDir = &curDir->GetDirectory( *iter );
-
-    return *curDir;
 }
 
 void CZIPArchiveTranslator::ReadFiles( unsigned int count )
@@ -843,9 +551,9 @@ void CZIPArchiveTranslator::ReadFiles( unsigned int count )
 
         union
         {
-            fsActiveEntry *fsObject;
-            file *fileEntry;
-            directory *dirEntry;
+            genericMetaData *fsObject;
+            fileMetaData *fileEntry;
+            directoryMetaData *dirEntry;
         };
         fsObject = NULL;
 
@@ -855,12 +563,12 @@ void CZIPArchiveTranslator::ReadFiles( unsigned int count )
             tree.pop_back();
 
             // Deposit in the correct directory
-            fileEntry = &_CreateDirTree( m_rootDir, tree ).AddFile( name );
+            fileEntry = &m_virtualFS._CreateDirTree( m_virtualFS.GetRootDir(), tree ).AddFile( name ).metaData;
         }
         else
         {
             // Try to create the directory.
-            dirEntry = &_CreateDirTree( m_rootDir, tree );
+            dirEntry = &m_virtualFS._CreateDirTree( m_virtualFS.GetRootDir(), tree ).metaData;
         }
 
         // Initialize common data.
@@ -905,7 +613,7 @@ void CZIPArchiveTranslator::ReadFiles( unsigned int count )
     }
 }
 
-inline void CZIPArchiveTranslator::seekFile( const file& info, _localHeader& header )
+inline void CZIPArchiveTranslator::seekFile( const fileMetaData& info, _localHeader& header )
 {
     m_file.Seek( info.localHeaderOffset, SEEK_SET );
 
@@ -964,11 +672,11 @@ struct zip_inflate_decompression
 void CZIPArchiveTranslator::Extract( CFile& dstFile, file& info )
 {
     CFile *from = NULL;
-    size_t comprSize = info.sizeCompressed;
+    size_t comprSize = info.metaData.sizeCompressed;
 
     bool fromNeedClosing = false;
 
-    if ( info.subParsed )
+    if ( info.metaData.subParsed )
     {
         CFileTranslator *unpackRoot = GetUnpackRoot();
 
@@ -986,16 +694,16 @@ void CZIPArchiveTranslator::Extract( CFile& dstFile, file& info )
     if ( !from )
     {
         _localHeader header;
-        seekFile( info, header );
+        seekFile( info.metaData, header );
 
         from = &m_file;
     }
 
-    if ( info.compression == 0 )
+    if ( info.metaData.compression == 0 )
     {
         FileSystem::StreamCopyCount( *from, dstFile, comprSize );
     }
-    else if ( info.compression == 8 )
+    else if ( info.metaData.compression == 8 )
     {
         zip_inflate_decompression decompressor;
 
@@ -1005,6 +713,8 @@ void CZIPArchiveTranslator::Extract( CFile& dstFile, file& info )
     {
         assert( 0 );
     }
+
+    dstFile.SetSeekEnd();
 
     if ( fromNeedClosing )
     {
@@ -1020,7 +730,7 @@ void CZIPArchiveTranslator::CacheDirectory( const directory& dir )
     {
         file *fileEntry = *fileIter;
 
-        if ( fileEntry->cached || fileEntry->subParsed )
+        if ( fileEntry->metaData.cached || fileEntry->metaData.subParsed )
             continue;
 
         // Dump the compressed content
@@ -1029,15 +739,17 @@ void CZIPArchiveTranslator::CacheDirectory( const directory& dir )
         if ( unpackRoot )
         {
             _localHeader header;
-            seekFile( *fileEntry, header );
+            seekFile( fileEntry->metaData, header );
 
             CFile *dst = unpackRoot->Open( fileEntry->relPath.c_str(), "wb" );
 
-            FileSystem::StreamCopyCount( m_file, *dst, fileEntry->sizeCompressed );
+            FileSystem::StreamCopyCount( m_file, *dst, fileEntry->metaData.sizeCompressed );
+
+            dst->SetSeekEnd();
 
             delete dst;
 
-            fileEntry->subParsed = true;
+            fileEntry->metaData.subParsed = true;
         }
     }
 
@@ -1136,15 +848,15 @@ struct zip_deflate_compression : public zip_stream_compression
 
 void CZIPArchiveTranslator::SaveDirectory( directory& dir, size_t& size )
 {
-    if ( dir.NeedsWriting() )
+    if ( dir.metaData.NeedsWriting() )
     {
-        _localHeader header = dir.ConstructLocalHeader();
+        _localHeader header = dir.metaData.ConstructLocalHeader();
         
         // Allocate space in the archive.
-        dir.AllocateArchiveSpace( this, header, size );
+        dir.metaData.AllocateArchiveSpace( this, header, size );
 
-        header.version = dir.version;
-        header.flags = dir.flags;
+        header.version = dir.metaData.version;
+        header.flags = dir.metaData.flags;
         header.compression = 0;
         header.crc32 = 0;
         header.sizeCompressed = 0;
@@ -1152,7 +864,7 @@ void CZIPArchiveTranslator::SaveDirectory( directory& dir, size_t& size )
 
         m_file.WriteStruct( header );
         m_file.WriteString( dir.relPath );
-        m_file.WriteString( dir.comment );
+        m_file.WriteString( dir.metaData.comment );
     }
     
     directory::subDirs::iterator iter = dir.children.begin();
@@ -1174,7 +886,7 @@ void CZIPArchiveTranslator::SaveDirectory( directory& dir, size_t& size )
             CFileTranslator *realtimeRoot;
         };
 
-        if ( !info.cached )
+        if ( !info.metaData.cached )
         {
             unpackRoot = GetUnpackRoot();
 
@@ -1196,46 +908,48 @@ void CZIPArchiveTranslator::SaveDirectory( directory& dir, size_t& size )
         if ( !canProcess )
             throw;
 
-        _localHeader header = info.ConstructLocalHeader();
+        _localHeader header = info.metaData.ConstructLocalHeader();
 
         // Allocate space in the archive.
-        info.AllocateArchiveSpace( this, header, size );
+        info.metaData.AllocateArchiveSpace( this, header, size );
 
-        if ( !info.cached )
+        if ( !info.metaData.cached )
         {
-            header.version = info.version;
-            header.flags = info.flags;
-            header.compression = info.compression;
-            header.crc32 = info.crc32;
-            header.sizeCompressed = info.sizeCompressed;
-            header.sizeReal = info.sizeReal;
+            header.version          = info.metaData.version;
+            header.flags            = info.metaData.flags;
+            header.compression      = info.metaData.compression;
+            header.crc32            = info.metaData.crc32;
+            header.sizeCompressed   = info.metaData.sizeCompressed;
+            header.sizeReal         = info.metaData.sizeReal;
 
-            size += info.sizeCompressed;
+            size += info.metaData.sizeCompressed;
 
             m_file.WriteStruct( header );
             m_file.WriteString( info.relPath.c_str() );
-            m_file.WriteString( info.comment );
+            m_file.WriteString( info.metaData.comment );
 
             CFile *src = unpackRoot->Open( info.relPath.c_str(), "rb" );
 
             FileSystem::StreamCopy( *src, m_file );
 
+            m_file.SetSeekEnd();
+
             delete src;
         }
         else    // has to be cached
         {
-            header.version = 10;    // WINNT
-            header.flags = info.flags;
-            header.compression = info.compression = 8; // deflate
-            header.crc32 = 0;
+            header.version      = 10;    // WINNT
+            header.flags        = info.metaData.flags;
+            header.compression  = info.metaData.compression = 8; // deflate
+            header.crc32        = 0;
 
             m_file.WriteStruct( header );
-            m_file.WriteString( info.relPath.c_str() );
-            m_file.WriteString( info.comment );
+            m_file.WriteString( info.relPath );
+            m_file.WriteString( info.metaData.comment );
 
             CFile *src = dynamic_cast <CSystemFileTranslator*> ( realtimeRoot )->OpenEx( info.relPath.c_str(), "rb", FILE_FLAG_WRITESHARE );
 
-            info.sizeReal = header.sizeReal = src->GetSize();
+            info.metaData.sizeReal = header.sizeReal = src->GetSize();
 
             if ( header.compression == 0 )
             {
@@ -1256,8 +970,8 @@ void CZIPArchiveTranslator::SaveDirectory( directory& dir, size_t& size )
 
             delete src;
 
-            size += info.sizeCompressed = header.sizeCompressed;
-            info.crc32 = header.crc32;
+            size += info.metaData.sizeCompressed = header.sizeCompressed;
+            info.metaData.crc32 = header.crc32;
 
             long wayOff = header.sizeCompressed + header.nameLen + header.commentLen;
 
@@ -1272,9 +986,9 @@ unsigned int CZIPArchiveTranslator::BuildCentralFileHeaders( const directory& di
 {
     unsigned cnt = 0;
 
-    if ( dir.NeedsWriting() )
+    if ( dir.metaData.NeedsWriting() )
     {
-        _centralFile header = dir.ConstructCentralHeader();
+        _centralFile header = dir.metaData.ConstructCentralHeader();
 
         // Zero out fields which make no sense
         header.compression = 0;
@@ -1290,8 +1004,8 @@ unsigned int CZIPArchiveTranslator::BuildCentralFileHeaders( const directory& di
         
         m_file.WriteStruct( header );
         m_file.WriteString( dir.relPath );
-        m_file.WriteString( dir.extra );
-        m_file.WriteString( dir.comment );
+        m_file.WriteString( dir.metaData.extra );
+        m_file.WriteString( dir.metaData.comment );
         
         cnt++;
     }
@@ -1306,19 +1020,19 @@ unsigned int CZIPArchiveTranslator::BuildCentralFileHeaders( const directory& di
     for ( ; fileIter != dir.files.end(); ++fileIter )
     {
         const file& info = **fileIter;
-        _centralFile header = info.ConstructCentralHeader();
+        _centralFile header = info.metaData.ConstructCentralHeader();
 
-        header.compression = info.compression;
-        header.crc32 = info.crc32;
-        header.sizeCompressed = info.sizeCompressed;
-        header.sizeReal = info.sizeReal;
-        header.internalAttr = info.internalAttr;
-        header.externalAttr = info.externalAttr;
+        header.compression      = info.metaData.compression;
+        header.crc32            = info.metaData.crc32;
+        header.sizeCompressed   = info.metaData.sizeCompressed;
+        header.sizeReal         = info.metaData.sizeReal;
+        header.internalAttr     = info.metaData.internalAttr;
+        header.externalAttr     = info.metaData.externalAttr;
 
         m_file.WriteStruct( header );
         m_file.WriteString( info.relPath.c_str() );
-        m_file.WriteString( info.extra );
-        m_file.WriteString( info.comment );
+        m_file.WriteString( info.metaData.extra );
+        m_file.WriteString( info.metaData.comment );
 
         size += sizeof( header ) + header.nameLen + header.extraLen + header.commentLen;
         cnt++;
@@ -1333,17 +1047,17 @@ void CZIPArchiveTranslator::Save( void )
         return;
 
     // Cache the .zip content
-    CacheDirectory( m_rootDir );
+    CacheDirectory( m_virtualFS.GetRootDir() );
 
     // Rewrite the archive
     m_file.Seek( m_structOffset, SEEK_SET );
 
     size_t fileSize = 0;
-    SaveDirectory( m_rootDir, fileSize );
+    SaveDirectory( m_virtualFS.GetRootDir(), fileSize );
 
     // Create the central directory
     size_t centralSize = 0;
-    unsigned int entryCount = BuildCentralFileHeaders( m_rootDir, centralSize );
+    unsigned int entryCount = BuildCentralFileHeaders( m_virtualFS.GetRootDir(), centralSize );
 
     // Finishing entry
     m_file.WriteInt( ZIP_SIGNATURE );

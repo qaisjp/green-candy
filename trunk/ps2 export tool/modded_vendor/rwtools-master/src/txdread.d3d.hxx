@@ -72,7 +72,7 @@ struct NativeTextureD3D : public PlatformTexture
         this->autoMipmaps = false;
         this->d3dFormat = D3DFMT_A8R8G8B8;
         this->dxtCompression = 0;
-        this->rasterType = 0;
+        this->rasterType = 4;
     }
 
     void Delete( void )
@@ -105,6 +105,11 @@ struct NativeTextureD3D : public PlatformTexture
     uint32 getDepth( void ) const
     {
         return this->mipmapDepth[0];
+    }
+
+    uint32 getMipmapCount( void ) const
+    {
+        return this->mipmapCount;
     }
 
     ePaletteType getPaletteType( void ) const

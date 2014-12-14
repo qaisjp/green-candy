@@ -45,6 +45,11 @@ struct NativeTextureXBOX : public PlatformTexture
         return this->mipmapDepth[0];
     }
 
+    uint32 getMipmapCount( void ) const
+    {
+        return this->mipmapCount;
+    }
+
     ePaletteType getPaletteType( void ) const
     {
         return this->paletteType;

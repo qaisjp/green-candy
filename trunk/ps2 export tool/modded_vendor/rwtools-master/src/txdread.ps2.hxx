@@ -1,6 +1,332 @@
 namespace rw
 {
 
+struct ps2GSRegisters
+{
+    typedef unsigned long long ps2reg_t;
+
+    struct TEX0_REG
+    {
+        inline TEX0_REG( void )
+        {
+            *(ps2reg_t*)this = 0L;
+        }
+
+        ps2reg_t textureBasePointer : 14;
+        ps2reg_t textureBufferWidth : 6;
+        ps2reg_t pixelStorageFormat : 6;
+        ps2reg_t textureWidthLog2 : 4;
+        ps2reg_t textureHeightLog2 : 4;
+        ps2reg_t texColorComponent : 1;
+        ps2reg_t texFunction : 2;
+        ps2reg_t clutBufferBase : 14;
+        ps2reg_t clutStorageFmt : 4;
+        ps2reg_t clutMode : 1;
+        ps2reg_t clutEntryOffset : 5;
+        ps2reg_t clutLoadControl : 3;
+
+        inline bool operator ==( const TEX0_REG& right ) const
+        {
+            return ( *(ps2reg_t*)this == *(ps2reg_t*)&right );
+        }
+
+        inline bool operator !=( const TEX0_REG& right ) const
+        {
+            return !( *this == right );
+        }
+    };
+
+    struct TEX1_REG
+    {
+        inline TEX1_REG( void )
+        {
+            *(ps2reg_t*)this = 0L;
+        }
+
+        ps2reg_t lodCalculationModel : 1;
+        ps2reg_t unknown2 : 1;
+        ps2reg_t maximumMIPLevel : 3;
+        ps2reg_t mmag : 1;
+        ps2reg_t mmin : 3;
+        ps2reg_t mtba : 1;
+        ps2reg_t unknown : 1;
+        ps2reg_t unused2 : 8;
+        ps2reg_t lodParamL : 2;
+        ps2reg_t unused3 : 11;
+        ps2reg_t lodParamK : 12;
+
+        inline bool operator ==( const TEX1_REG& right ) const
+        {
+#if 0
+            return
+                this->lodCalculationModel == right.lodCalculationModel &&
+                this->maximumMIPLevel == right.maximumMIPLevel &&
+                this->mmag == right.mmag &&
+                this->mmin == right.mmin &&
+                this->mtba == right.mtba &&
+                this->lodParamL == right.lodParamL &&
+                this->lodParamK == right.lodParamK &&
+                this->unknown == right.unknown &&
+                this->unknown2 == right.unknown2;
+#else
+            return ( *(ps2reg_t*)this == *(ps2reg_t*)&right );
+#endif
+        }
+
+        inline bool operator !=( const TEX1_REG& right ) const
+        {
+            return !( *this == right );
+        }
+    };
+
+    struct MIPTBP1_REG
+    {
+        inline MIPTBP1_REG( void )
+        {
+            *(ps2reg_t*)this = 0L;
+        }
+
+        ps2reg_t textureBasePointer1 : 14;
+        ps2reg_t textureBufferWidth1 : 6;
+        ps2reg_t textureBasePointer2 : 14;
+        ps2reg_t textureBufferWidth2 : 6;
+        ps2reg_t textureBasePointer3 : 14;
+        ps2reg_t textureBufferWidth3 : 6;
+
+        inline bool operator ==( const MIPTBP1_REG& right ) const
+        {
+#if 0
+            return
+                this->textureBasePointer1 == right.textureBasePointer1 &&
+                this->textureBufferWidth1 == right.textureBufferWidth1 &&
+                this->textureBasePointer2 == right.textureBasePointer2 &&
+                this->textureBufferWidth2 == right.textureBufferWidth2 &&
+                this->textureBasePointer3 == right.textureBasePointer3 &&
+                this->textureBufferWidth3 == right.textureBufferWidth3;
+#else
+            return ( *(ps2reg_t*)this == *(ps2reg_t*)&right );
+#endif
+        }
+
+        inline bool operator !=( const MIPTBP1_REG& right ) const
+        {
+            return !( *this == right );
+        }
+    };
+
+    struct MIPTBP2_REG
+    {
+        inline MIPTBP2_REG( void )
+        {
+            *(ps2reg_t*)this = 0L;
+        }
+
+        ps2reg_t textureBasePointer4 : 14;
+        ps2reg_t textureBufferWidth4 : 6;
+        ps2reg_t textureBasePointer5 : 14;
+        ps2reg_t textureBufferWidth5 : 6;
+        ps2reg_t textureBasePointer6 : 14;
+        ps2reg_t textureBufferWidth6 : 6;
+
+        inline bool operator ==( const MIPTBP2_REG& right ) const
+        {
+#if 0
+            return
+                this->textureBasePointer4 == right.textureBasePointer4 &&
+                this->textureBufferWidth4 == right.textureBufferWidth4 &&
+                this->textureBasePointer5 == right.textureBasePointer5 &&
+                this->textureBufferWidth5 == right.textureBufferWidth5 &&
+                this->textureBasePointer6 == right.textureBasePointer6 &&
+                this->textureBufferWidth6 == right.textureBufferWidth6;
+#else
+            return ( *(ps2reg_t*)this == *(ps2reg_t*)&right );
+#endif
+        }
+
+        inline bool operator !=( const MIPTBP2_REG& right ) const
+        {
+            return !( *this == right );
+        }
+    };
+
+    struct TRXPOS_REG
+    {
+        inline TRXPOS_REG( void )
+        {
+            *(ps2reg_t*)this = 0L;
+        }
+
+        ps2reg_t ssax : 11;
+        ps2reg_t pad1 : 5;
+        ps2reg_t ssay : 11;
+        ps2reg_t pad2 : 5;
+        ps2reg_t dsax : 11;
+        ps2reg_t pad3 : 5;
+        ps2reg_t dsay : 11;
+        ps2reg_t dir : 2;
+    };
+
+    struct TRXREG_REG
+    {
+        inline TRXREG_REG( void )
+        {
+            *(ps2reg_t*)this = 0L;
+        }
+
+        ps2reg_t transmissionAreaWidth : 12;
+        ps2reg_t pad1 : 20;
+        ps2reg_t transmissionAreaHeight : 12;
+    };
+
+    TEX0_REG tex0;
+    TEX1_REG tex1;
+
+    MIPTBP1_REG miptbp1;
+    MIPTBP2_REG miptbp2;
+};
+
+struct textureMetaDataHeader
+{
+    uint32 width;
+    uint32 height;
+    uint32 depth;
+    uint32 rasterFormat;
+
+    ps2GSRegisters::TEX0_REG tex0;
+    ps2GSRegisters::TEX1_REG tex1;
+
+    ps2GSRegisters::MIPTBP1_REG miptbp1;
+    ps2GSRegisters::MIPTBP2_REG miptbp2;
+
+    uint32 dataSize;	// texels + header
+    uint32 paletteDataSize; // palette + header + unknowns
+
+    uint32 combinedGPUDataSize;
+    uint32 skyMipmapVal;			// constant (sky mipmap val)
+};
+
+struct textureImageDataHeader
+{
+    uint32 consts1[4];
+
+    ps2GSRegisters::TRXPOS_REG trxpos;
+
+    uint32 consts4[2];
+
+    ps2GSRegisters::TRXREG_REG trxreg;
+
+    uint32 consts2[6];
+
+    uint32 numberOfDoubleWords;
+
+    uint32 consts3[3];
+};
+
+inline void writeImageDataHeader(std::ostream& rw, uint32 width, uint32 height, uint32 numberOfBytes, uint16 gpuTexOffX, uint16 gpuTexOffY)
+{
+    textureImageDataHeader imgHeader;
+
+    imgHeader.consts1[0] = 0x00000003;
+    imgHeader.consts1[1] = 0x10000000;
+    imgHeader.consts1[2] = 0x0000000e;
+    imgHeader.consts1[3] = 0x00000000;
+
+    // Set TRXPOS register.
+    imgHeader.trxpos.ssax = 0;
+    imgHeader.trxpos.ssay = 0;
+    imgHeader.trxpos.dsax = gpuTexOffX;
+    imgHeader.trxpos.dsay = gpuTexOffY;
+    imgHeader.trxpos.dir = 0;
+
+    imgHeader.consts4[0] = 0x00000051;
+    imgHeader.consts4[1] = 0x00000000;
+
+    imgHeader.consts2[0] = 0x00000052;
+    imgHeader.consts2[1] = 0x00000000;
+    imgHeader.consts2[2] = 0x00000000;
+    imgHeader.consts2[3] = 0x00000000;
+    imgHeader.consts2[4] = 0x00000053;
+    imgHeader.consts2[5] = 0x00000000;
+
+    imgHeader.consts3[0] = 0x08000000;
+    imgHeader.consts3[1] = 0x00000000;
+    imgHeader.consts3[2] = 0x00000000;
+
+    imgHeader.trxreg.transmissionAreaWidth = width;
+    imgHeader.trxreg.transmissionAreaHeight = height;
+    imgHeader.numberOfDoubleWords = ( numberOfBytes / sizeof(uint32) ) / 4;
+
+    rw.write((const char*)&imgHeader, sizeof(imgHeader));
+}
+
+inline bool readImageDataHeader(std::istream& rw, uint32& width, uint32& height, uint32& numberOfBytes, uint16& gpuTexOffX, uint16& gpuTexOffY)
+{
+    textureImageDataHeader imgHeader;
+    rw.read((char*)&imgHeader, sizeof(imgHeader));
+
+    // Assert some constants.
+    bool properConstants =
+        ( imgHeader.consts1[0] == 0x00000003 ) &&
+        ( imgHeader.consts1[1] == 0x10000000 ) &&
+        ( imgHeader.consts1[2] == 0x0000000e ) &&
+        ( imgHeader.consts1[3] == 0x00000000 ) &&
+
+        ( imgHeader.trxpos.ssax == 0 ) &&
+        ( imgHeader.trxpos.ssay == 0 ) &&
+        ( imgHeader.trxpos.dir == 0 ) &&
+
+        ( imgHeader.consts4[0] == 0x00000051 ) &&
+        ( imgHeader.consts4[1] == 0x00000000 ) &&
+
+        ( imgHeader.consts2[0] == 0x00000052 ) &&
+        ( imgHeader.consts2[1] == 0x00000000 ) &&
+        ( imgHeader.consts2[2] == 0x00000000 ) &&
+        ( imgHeader.consts2[3] == 0x00000000 ) &&
+        ( imgHeader.consts2[4] == 0x00000053 ) &&
+        ( imgHeader.consts2[5] == 0x00000000 ) &&
+
+        ( imgHeader.consts3[0] == 0x08000000 ) &&
+        ( imgHeader.consts3[1] == 0x00000000 ) &&
+        ( imgHeader.consts3[2] == 0x00000000 );
+
+    if ( !properConstants )
+    {
+        // Check for a very special header.
+        properConstants =
+            ( imgHeader.consts1[0] == 0x03010000 );
+
+        if ( !properConstants )
+        {
+            return false;
+        }
+
+        // We need to dispatch very special.
+        imgHeader.trxreg.transmissionAreaWidth = 0x10;
+        imgHeader.trxreg.transmissionAreaHeight = 0x10;
+    }
+
+    width = imgHeader.trxreg.transmissionAreaWidth;
+    height = imgHeader.trxreg.transmissionAreaHeight;
+    numberOfBytes = ( imgHeader.numberOfDoubleWords * 4 ) * sizeof(uint32);
+
+#if 0
+    uint64 unk1 = *(uint64*)&imgHeader;
+    uint64 unk2 = *(uint64*)( (char*)&imgHeader + 8 );
+    uint64 unk3 = *(uint64*)( (char*)&imgHeader + 16 );
+    uint64 unk4 = *(uint64*)( (char*)&imgHeader + 24 );
+    uint64 unk5 = *(uint64*)( (char*)&imgHeader + 32 );
+
+    if ( unk3 != 0 )
+    {
+        __asm nop
+    }
+#endif
+
+    gpuTexOffX = imgHeader.trxpos.dsax;
+    gpuTexOffY = imgHeader.trxpos.dsay;
+    return true;
+}
+
 enum eMemoryLayoutType
 {
     PSMCT32 = 0,
@@ -85,6 +411,11 @@ struct NativeTexturePS2 : public PlatformTexture
         return this->mipmapDepth[0];
     }
 
+    uint32 getMipmapCount( void ) const
+    {
+        return this->mipmapCount;
+    }
+
     ePaletteType getPaletteType( void ) const
     {
         return this->paletteType;
@@ -143,7 +474,6 @@ struct NativeTexturePS2 : public PlatformTexture
         newTex->isSwizzled = this->isSwizzled;
         newTex->swizzleWidth = this->swizzleWidth;
         newTex->swizzleHeight = this->swizzleHeight;
-        newTex->mipmapUnknowns = this->mipmapUnknowns;
         newTex->autoMipmaps = this->autoMipmaps;
         newTex->requiresHeaders = this->requiresHeaders;
         newTex->alphaDistribution = this->alphaDistribution;
@@ -177,7 +507,6 @@ struct NativeTexturePS2 : public PlatformTexture
     std::vector<bool> isSwizzled;
 	std::vector<uint32> swizzleWidth;
 	std::vector<uint32> swizzleHeight;
-    std::vector<ps2MipmapUnknowns> mipmapUnknowns;
 	// bit 0: alpha values above (or equal to) the threshold
 	// bit 1: alpha values below the threshold
 	// both 0: no info
@@ -186,7 +515,7 @@ struct NativeTexturePS2 : public PlatformTexture
 
     uint8 unknownFormatFlags;
 
-    ps2MipmapUnknowns palUnknowns;
+    ps2MipmapTransmissionData palUnknowns;
 
     struct gsParams_t
     {
@@ -210,7 +539,7 @@ struct NativeTexturePS2 : public PlatformTexture
 	bool swizzleDecryptPS2(uint32 mip);
 
     bool allocateTextureMemory(
-        uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], uint32 maxMipmaps,
+        uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], ps2MipmapTransmissionData mipmapTransData[], uint32 maxMipmaps,
         eMemoryLayoutType& memLayoutType
     ) const;
 
@@ -227,6 +556,10 @@ struct NativeTexturePS2 : public PlatformTexture
     ) const;
 
     void getOptimalGSParameters(gsParams_t& paramsOut) const;
+
+    void PerformDebugChecks( void ) const;
+
+    bool getDebugBitmap( Bitmap& bmpOut ) const;
 };
 
 }

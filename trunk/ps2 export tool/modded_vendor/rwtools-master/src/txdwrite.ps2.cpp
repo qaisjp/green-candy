@@ -583,19 +583,20 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         }
 
         // Write the texture meta information.
+        const size_t maxMipmaps = 7;
+
+        ps2MipmapTransmissionData mipmapTransData[ maxMipmaps ];
         {
             SKIP_HEADER();
 
             // Allocate textures.
-            const size_t maxMipmaps = 7;
-
             uint32 mipmapBasePointer[ maxMipmaps ];
             uint32 mipmapBufferWidth[ maxMipmaps ];
             uint32 mipmapMemorySize[ maxMipmaps ];
 
             eMemoryLayoutType memLayoutType;
 
-            bool couldAllocate = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
+            bool couldAllocate = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, memLayoutType);
 
             ps2GSRegisters gpuData;
             bool isCompatible = platformTex->generatePS2GPUData(gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
@@ -652,15 +653,45 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
 
                 if ( requiresHeaders )
                 {
-                    // TODO: figure out what those values are.
-                    ps2MipmapUnknowns& mipUnk = platformTex->mipmapUnknowns[n];
+                    uint32 depth = platformTex->mipmapDepth[ n ];
+                    bool isSwizzled = platformTex->isSwizzled[ n ];
+
+                    bool requiresHalving = false;
+
+                    if (header.version == rw::GTA3_1 || header.version == rw::GTA3_2 ||
+                        header.version == rw::GTA3_3 || header.version == rw::GTA3_4)
+                    {
+                        if (isSwizzled && depth == 8)
+                        {
+                            requiresHalving = true;
+                        }
+                    }
+                    else
+                    {
+                        if (isSwizzled)
+                        {
+                            requiresHalving = true;
+                        }
+                    }
+
+                    uint32 texWidth = platformTex->swizzleWidth[ n ];
+                    uint32 texHeight = platformTex->swizzleHeight[ n ];
+
+                    if (requiresHalving)
+                    {
+                        texWidth /= 2;
+                        texHeight /= 2;
+                    }
+
+                    // Save the important stuff.
+                    ps2MipmapTransmissionData& mipTransData = mipmapTransData[ n ];
 
                     writeImageDataHeader(
                         rw,
-                        platformTex->swizzleWidth[ n ] / 2,
-                        platformTex->swizzleHeight[ n ] / 2,
+                        texWidth,
+                        texHeight,
                         curDataSize,
-                        mipUnk.unk1, mipUnk.unk2
+                        mipTransData.destX, mipTransData.destY
                     );
 
                     bytesWritten += sizeof(textureImageDataHeader);
@@ -680,8 +711,8 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
                         rw,
                         palTexWidth, palTexHeight,
                         palDataSize,
-                        platformTex->palUnknowns.unk1, platformTex->palUnknowns.unk2
-                    ); // TODO: calculate real GPU sizes.
+                        platformTex->palUnknowns.destX, platformTex->palUnknowns.destY
+                    );
 
                     bytesWritten += sizeof(textureImageDataHeader);
                 }

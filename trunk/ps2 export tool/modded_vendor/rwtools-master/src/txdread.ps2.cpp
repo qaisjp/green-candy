@@ -65,6 +65,7 @@ void NativeTexture::readPs2(std::istream &rw)
 	READ_HEADER(CHUNK_STRUCT);
 
     uint32 texStructSize = header.length;
+    long texStructPos = rw.tellg();
 
 	READ_HEADER(CHUNK_STRUCT);
 
@@ -153,6 +154,11 @@ void NativeTexture::readPs2(std::istream &rw)
 		}
     }
 
+    // Absolute maximum of mipmaps.
+    const size_t maxMipmaps = 7;
+
+    ps2MipmapTransmissionData _origMipmapTransData[ maxMipmaps ];
+
 	/* Pixels/Indices */
 	long end = rw.tellg();
 	end += (long)dataSize;
@@ -176,8 +182,8 @@ void NativeTexture::readPs2(std::istream &rw)
 
         uint32 texDataSize = 0;
 
-        uint16 mipmapUnk1 = 0;
-        uint16 mipmapUnk2 = 0;
+        uint32 mipOffX = 0;
+        uint32 mipOffY = 0;
 
 		if (hasHeader)
         {
@@ -188,7 +194,25 @@ void NativeTexture::readPs2(std::istream &rw)
 
             if ( validTex )
             {
-                if (isSwizzled)
+                bool requiresDoubling = false;
+
+                if (header.version == rw::GTA3_1 || header.version == rw::GTA3_2 ||
+                    header.version == rw::GTA3_3 || header.version == rw::GTA3_4)
+                {
+                    if (isSwizzled && textureMeta.depth == 8)
+                    {
+                        requiresDoubling = true;
+                    }
+                }
+                else
+                {
+                    if (isSwizzled)
+                    {
+                        requiresDoubling = true;
+                    }
+                }
+
+                if (requiresDoubling)
                 {
                     vImgWidth *= 2;
                     vImgHeight *= 2;
@@ -198,8 +222,8 @@ void NativeTexture::readPs2(std::istream &rw)
 			    platformTex->swizzleHeight.push_back(vImgHeight);
 			    texDataSize = vImgDataSize;
 
-                mipmapUnk1 = vImgSize1;
-                mipmapUnk2 = vImgSize2;
+                mipOffX = vImgSize1;
+                mipOffY = vImgSize2;
             }
 
             // TODO: there is seemingly invalid data in some texture archives; figure out what to do with it...
@@ -223,11 +247,14 @@ void NativeTexture::readPs2(std::istream &rw)
         platformTex->mipmapDepth.push_back( depth );
         platformTex->isSwizzled.push_back(isSwizzled);
 
-        ps2MipmapUnknowns unk;
-        unk.unk1 = mipmapUnk1;
-        unk.unk2 = mipmapUnk2;
+        // Store mipmap offsets (for debugging).
+        if ( i < maxMipmaps )
+        {
+            ps2MipmapTransmissionData& transData = _origMipmapTransData[ i ];
 
-        platformTex->mipmapUnknowns.push_back(unk);
+            transData.destX = mipOffX;
+            transData.destY = mipOffY;
+        }
 
 		platformTex->dataSizes.push_back(texDataSize);
 
@@ -273,6 +300,30 @@ void NativeTexture::readPs2(std::istream &rw)
 
             if ( validTex )
             {
+                if ( textureMeta.depth == 4 )
+                {
+                    if ( gpuSize2 != 0 || gpuSize1 != 0 )
+                    {
+                        __asm nop
+                    }
+                }
+                else if ( textureMeta.depth == 8 )
+                {
+                    if ( gpuSize2 != 0 && gpuSize2 * 2 != textureMeta.height )
+                    {
+                        __asm nop
+                    }
+
+                    if ( gpuSize1 == 0 && gpuSize2 == 0 )
+                    {
+                        __asm nop
+                    }
+                    else
+                    {
+                        __asm nop
+                    }
+                }
+
                 // Give parameters to the runtime to load the palette.
 			    paletteColorComponents = ( palTexWidth * palTexHeight );
 
@@ -290,8 +341,8 @@ void NativeTexture::readPs2(std::istream &rw)
         {
             size_t paletteDataSize = palTexDataSize;
 
-            platformTex->palUnknowns.unk1 = gpuSize1;
-            platformTex->palUnknowns.unk2 = gpuSize2;
+            platformTex->palUnknowns.destX = gpuSize1;
+            platformTex->palUnknowns.destY = gpuSize2;
 
             platformTex->paletteSize = ( paletteColorComponents );
 		    platformTex->palette = new uint8[ paletteDataSize ];
@@ -299,16 +350,20 @@ void NativeTexture::readPs2(std::istream &rw)
         }
 	}
 
-    // Allocate texture memory.
-    const size_t maxMipmaps = 7;
+    // Make sure we are at the end of the tex native struct.
+    // vc "dyn_trash.txd" appears to be damaged.
+    rw.seekg( texStructPos + texStructSize, std::ios::beg );
 
+    // Allocate texture memory.
     uint32 mipmapBasePointer[ maxMipmaps ];
     uint32 mipmapMemorySize[ maxMipmaps ];
     uint32 mipmapBufferWidth[ maxMipmaps ];
 
+    ps2MipmapTransmissionData mipmapTransData[ maxMipmaps ];
+
     eMemoryLayoutType memLayoutType;
 
-    bool hasAllocatedMemory = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
+    bool hasAllocatedMemory = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, memLayoutType);
 
     // Could fail if no memory left.
     if ( !hasAllocatedMemory )
@@ -328,7 +383,7 @@ void NativeTexture::readPs2(std::istream &rw)
 
     if ( textureMeta.combinedGPUDataSize != gpuMinMemory )
     {
-        // It would be perfect is this condition were never triggered for official R* games textures.
+        // It would be perfect if this condition were never triggered for official R* games textures.
         __asm nop
     }
 
@@ -337,35 +392,49 @@ void NativeTexture::readPs2(std::istream &rw)
     
     bool isValidTexture = platformTex->generatePS2GPUData(gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
 
-    if ( platformTex->mipmapCount > 1 )
-    {
-        __asm nop
-
-        if ( textureMeta.width != textureMeta.height )
-        {
-            __asm nop
-        }
-    }
-
     // If any of those assertions fail then either our is routine incomplete
     // or the input texture is invalid (created by wrong tool probably.)
     assert( isValidTexture == true );
     if ( gpuData.tex0 != textureMeta.tex0 )
     {
-        __asm int 3
+        __asm nop
     }
     if ( gpuData.tex1 != textureMeta.tex1 )
     {
-        __asm int 3
+        __asm nop
     }
     if ( gpuData.miptbp1 != textureMeta.miptbp1 )
     {
-        __asm int 3
+        __asm nop
     }
     if ( gpuData.miptbp2 != textureMeta.miptbp2 )
     {
-        __asm int 3
+        __asm nop
     }
+
+    if ( textureMeta.depth == 8 )
+    {
+        if ( platformTex->mipmapCount > 1 )
+        {
+            __asm nop
+        }
+    }
+
+    // Verify transmission rectangle same-ness.
+    for ( uint32 n = 0; n < platformTex->mipmapCount; n++ )
+    {
+        const ps2MipmapTransmissionData& srcTransData = _origMipmapTransData[ n ];
+        const ps2MipmapTransmissionData& dstTransData = mipmapTransData[ n ];
+
+        if ( srcTransData.destX != srcTransData.destX ||
+             srcTransData.destY != srcTransData.destY )
+        {
+            __asm nop
+        }
+    }
+
+    // Weird debugging shit.
+    platformTex->PerformDebugChecks();
 }
 
 /* convert from CLUT format used by the ps2 */
@@ -614,13 +683,6 @@ void NativeTexture::convertToPS2( void )
         {
             assert( 0 );
         }
-
-        // Initialize mipmap data.
-        ps2MipmapUnknowns unkData;
-        unkData.unk1 = 0;
-        unkData.unk2 = 0;
-
-        ps2tex->mipmapUnknowns.push_back( unkData );
     }
 
 	if (ps2tex->paletteType != PALETTE_NONE)
@@ -643,9 +705,9 @@ void NativeTexture::convertToPS2( void )
 		}
 
         // Initialize palette unknowns.
-        ps2MipmapUnknowns unkData;
-        unkData.unk1 = 0;
-        unkData.unk2 = 0;
+        ps2MipmapTransmissionData unkData;
+        unkData.destX = 0;
+        unkData.destY = 0;
 
         ps2tex->palUnknowns = unkData;
 	}

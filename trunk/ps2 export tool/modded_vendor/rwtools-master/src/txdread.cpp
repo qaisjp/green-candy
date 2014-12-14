@@ -191,6 +191,132 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
     }
 }
 
+Bitmap NativeTexture::getBitmap(void) const
+{
+    Bitmap resultBitmap;
+
+    // If the texture is Direct3D, we can easily get the texels.
+    if ( this->platform == PLATFORM_D3D8 || this->platform == PLATFORM_D3D9 )
+    {
+        NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+
+        // If it has any mipmap at all.
+        if ( platformTex->mipmapCount > 0 )
+        {
+            uint32 width = platformTex->width[ 0 ];
+            uint32 height = platformTex->height[ 0 ];
+            uint32 depth = platformTex->mipmapDepth[ 0 ];
+            uint32 dataSize = platformTex->dataSizes[ 0 ];
+            eRasterFormat theFormat = this->rasterFormat;
+            
+            // Get the color data.
+            bool hasAllocatedNewPixelData = false;
+            void *pixelData = NULL;
+
+            // If the image is palletized, it has to be converted to raw colors.
+            if ( platformTex->paletteType != PALETTE_NONE )
+            {
+                hasAllocatedNewPixelData = true;
+
+                
+            }
+            else
+            {
+                pixelData = platformTex->texels[ 0 ];
+            }
+
+            if ( pixelData != NULL )
+            {
+                // Set the data into the bitmap.
+                resultBitmap.setImageData(
+                    pixelData, theFormat, depth, width, height, dataSize
+                );
+
+                if ( hasAllocatedNewPixelData )
+                {
+                    delete pixelData;
+                }
+            }
+        }
+    }
+
+    return resultBitmap;
+}
+
+void NativeTexture::setImageData(const Bitmap& srcImage)
+{
+    // If the texture is Direct3D, we can easily set the texels.
+    if ( this->platform == PLATFORM_D3D8 || this->platform == PLATFORM_D3D9 )
+    {
+        NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+
+        // Delete old image data.
+        {
+            uint32 mipmapCount = platformTex->mipmapCount;
+
+            for ( uint32 n = 0; n < mipmapCount; n++ )
+            {
+                void *texels = platformTex->texels[ n ];
+
+                delete [] texels;
+            }
+
+            // If we have palette data, delete it.
+            if ( void *paletteTexels = platformTex->palette )
+            {
+                delete [] paletteTexels;
+
+                platformTex->palette = NULL;
+            }
+            platformTex->paletteType = PALETTE_NONE;
+            platformTex->paletteSize = 0;
+        }
+
+        // Resize mipmap containers.
+        platformTex->width.resize( 1 );
+        platformTex->height.resize( 1 );
+        platformTex->texels.resize( 1 );
+        platformTex->dataSizes.resize( 1 );
+        platformTex->mipmapDepth.resize( 1 );
+
+        platformTex->mipmapCount = 1;
+
+        // Set the new texel data.
+        uint32 newWidth, newHeight;
+        uint32 newDepth = srcImage.getDepth();
+        eRasterFormat newFormat = srcImage.getFormat();
+        uint32 newDataSize = srcImage.getDataSize();
+
+        srcImage.getSize( newWidth, newHeight );
+
+        platformTex->width[ 0 ] = newWidth;
+        platformTex->height[ 0 ] = newHeight;
+        platformTex->mipmapDepth[ 0 ] = newDepth;
+        platformTex->texels[ 0 ] = srcImage.copyPixelData();
+        platformTex->dataSizes[ 0 ] = newDataSize;
+
+        // Update generics.
+        platformTex->d3dFormat = getD3DFormatFromRasterType(newFormat);
+
+        this->rasterFormat = newFormat;
+    }
+}
+
+void NativeTexture::newDirect3D(void)
+{
+    if ( this->platform != 0 )
+        return;
+
+    // Create new platform data.
+    NativeTextureD3D *d3dtex = new NativeTextureD3D();
+
+    // Create the backlink.
+    d3dtex->parent = this;
+
+    this->platformData = d3dtex;
+    this->platform = PLATFORM_D3D9;
+}
+
 void NativeTexture::writeTGA(const char *path)
 {
     if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
@@ -237,9 +363,9 @@ void NativeTexture::writeTGA(const char *path)
         uint8 red, green, blue, alpha;
         browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, j, rasterFormat, red, green, blue, alpha);
 
-		writeUInt8(red, tga);
-		writeUInt8(green, tga);
 		writeUInt8(blue, tga);
+		writeUInt8(green, tga);
+		writeUInt8(red, tga);
 		writeUInt8(alpha, tga);
 	}
 	tga.close();

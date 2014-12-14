@@ -291,7 +291,7 @@ public:
         return dstDecrypt;
     }
 
-    inline arrayType* swizzle(uint32& dstEncryptedSize, const arrayType *srcToBeEncryptedData, uint32 imageWidth, uint32 imageHeight, uint32& outSwizzleWidth, uint32& outSwizzleHeight)
+    inline void calculateswizzleplane(uint32 imageWidth, uint32 imageHeight, uint32& swizzleWidthOut, uint32& swizzleHeightOut)
     {
         // The swizzled picture is interleaved.
         // The first and third tracks are taken by the left picture side.
@@ -342,6 +342,23 @@ public:
         {
             swizzleHeight *= 2;
         }
+
+        // Return to the runtime.
+        swizzleWidthOut = swizzleWidth;
+        swizzleHeightOut = swizzleHeight;
+    }
+
+    inline arrayType* swizzle(uint32& dstEncryptedSize, const arrayType *srcToBeEncryptedData, uint32 imageWidth, uint32 imageHeight, uint32& outSwizzleWidth, uint32& outSwizzleHeight)
+    {
+        // The swizzled picture is interleaved.
+        // The first and third tracks are taken by the left picture side.
+        // The second and fourth tracks are taken by the right side.
+        uint32 swizzle_interleave_width = imageWidth / 2;
+
+        // Get the swizzle plane size.
+        uint32 swizzleWidth, swizzleHeight;
+
+        calculateswizzleplane(imageWidth, imageHeight, swizzleWidth, swizzleHeight);
 
         // Turn the swizzle dimensions into an array size.
         uint32 textureArraySize = ( swizzleWidth * swizzleHeight );
@@ -1047,7 +1064,29 @@ struct ps2GSMemoryLayoutManager
         return ( pageIndex * 32 + blockIndex );
     }
 
-    inline bool allocateTexture(eMemoryLayoutType memLayoutType, const memoryLayoutProperties_t& layoutProps, uint32 texelWidth, uint32 texelHeight, uint32& texBasePointer, uint32& texMemSize, uint32& texBufferWidthOut)
+    inline static bool getTextureMemoryLayout(const NativeTexturePS2 *theTexture, eMemoryLayoutType& memLayoutOut)
+    {
+        eMemoryLayoutType memLayout;
+        {
+            ePaletteType paletteType = theTexture->paletteType;
+
+            if ( !getMemoryLayoutFromPaletteType( paletteType, memLayout ) )
+            {
+                eRasterFormat pixelFormatRaster = theTexture->parent->rasterFormat;
+
+                // If not from the palette, we get it from the pixel format.
+                if ( !getMemoryLayoutFromRasterFormat( pixelFormatRaster, memLayout ) )
+                {
+                    // We do not know how to handle this raster, so quit.
+                    return false;
+                }
+            }
+        }
+        memLayoutOut = memLayout;
+        return true;
+    }
+
+    inline bool allocateTexture(eMemoryLayoutType memLayoutType, const memoryLayoutProperties_t& layoutProps, uint32 texelWidth, uint32 texelHeight, uint32& texBasePointer, uint32& texMemSize, uint32& texOffX, uint32& texOffY, uint32& texBufferWidthOut)
     {
         // Scale up texel dimensions.
         uint32 alignedTexelWidth = ALIGN_SIZE( texelWidth, layoutProps.pixelWidthPerBlock );
@@ -1294,9 +1333,6 @@ struct ps2GSMemoryLayoutManager
             texMemSize = memSizeInBlocks;//( memSizeInBlocks * layoutProps.pixelWidthPerBlock ) / 64;
         }
 
-        // Give the texture buffer width to the runtime.
-        texBufferWidthOut = texBufferWidth;
-
         // Add our collision rectangles onto the pages we allocated.
         MemoryRectBase pageAllocArea(
             pageX * layoutProps.widthBlocksPerPage + blockOffsetX,
@@ -1304,6 +1340,27 @@ struct ps2GSMemoryLayoutManager
             texelBlockWidth,
             texelBlockHeight
         );
+
+        // Give the target coordinates to the runtime.
+        {
+            uint32 pixelOffX = 
+                pageAllocArea.x_slice.GetSliceStartPoint() * layoutProps.pixelWidthPerBlock;
+
+            uint32 pixelOffY =
+                pageAllocArea.y_slice.GetSliceStartPoint() * layoutProps.pixelHeightPerBlock;
+
+            // Scale the coordinates.
+            uint32 divisor = ( ( layoutProps.pixelWidthPerBlock * layoutProps.widthBlocksPerPage ) / 64 );
+
+            pixelOffX /= divisor;
+            pixelOffY /= divisor;
+
+            texOffX = pixelOffX % 0x100;
+            texOffY = pixelOffY % 0x100;
+        }
+
+        // Give the texture buffer width to the runtime.
+        texBufferWidthOut = texBufferWidth;
 
         for ( uint32 allocPageY = 0; allocPageY < texelPageHeight; allocPageY++ )
         {
@@ -1369,29 +1426,17 @@ struct ps2GSMemoryLayoutManager
     }
 };
 
-bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], uint32 maxMipmaps, eMemoryLayoutType& memLayoutTypeOut) const
+bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], ps2MipmapTransmissionData mipmapTransData[], uint32 maxMipmaps, eMemoryLayoutType& memLayoutTypeOut) const
 {
-    uint32 mainTexWidth = this->swizzleWidth[0];
-    uint32 mainTexHeight = this->swizzleHeight[0];
-    uint32 depth = this->mipmapDepth[0];
-
-    eRasterFormat pixelFormatRaster = parent->rasterFormat;
-    ePaletteType paletteType = this->paletteType;
-
-    uint32 mipmapCount = this->mipmapCount;
-
     // Try to get a valid memory model from the palette type.
     eMemoryLayoutType memLayout;
 
-    if ( !ps2GSMemoryLayoutManager::getMemoryLayoutFromPaletteType( paletteType, memLayout ) )
-    {
-        // If not from the palette, we get it from the pixel format.
-        if ( !ps2GSMemoryLayoutManager::getMemoryLayoutFromRasterFormat( pixelFormatRaster, memLayout ) )
-        {
-            // We do not know how to handle this raster, so quit.
-            return false;
-        }
-    }
+    bool hasMemLayout = ps2GSMemoryLayoutManager::getTextureMemoryLayout(this, memLayout);
+
+    if ( !hasMemLayout )
+        return false;
+
+    uint32 mipmapCount = this->mipmapCount;
 
     // Get format properties.
     ps2GSMemoryLayoutManager::memoryLayoutProperties_t layoutProps;
@@ -1401,7 +1446,7 @@ bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 
     // Perform the allocation.
     {
         // Create a new memory environment.
-        ps2GSMemoryLayoutManager gsMem;
+        ps2GSMemoryLayoutManager gsMem; 
 
         // Get page dimensions
         uint32 pixelWidthPerPage = ( layoutProps.widthBlocksPerPage * layoutProps.pixelWidthPerBlock );
@@ -1416,8 +1461,10 @@ bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 
             uint32 texBasePointer = 0;
             uint32 texBufferWidth = 0;
             uint32 texMemSize = 0;
+            uint32 texOffX = 0;
+            uint32 texOffY = 0;
 
-            bool allocationSuccess = gsMem.allocateTexture( memLayout, layoutProps, texelWidth, texelHeight, texBasePointer, texMemSize, texBufferWidth );
+            bool allocationSuccess = gsMem.allocateTexture( memLayout, layoutProps, texelWidth, texelHeight, texBasePointer, texMemSize, texOffX, texOffY, texBufferWidth );
 
             // If we fail to allocate any texture, we must terminate here.
             if ( !allocationSuccess )
@@ -1440,6 +1487,12 @@ bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 
 
             // Also store our texture buffer width.
             mipmapBufferWidth[ n ] = texBufferWidth;
+
+            // Store the target coordinates.
+            ps2MipmapTransmissionData& transData = mipmapTransData[ n ];
+
+            transData.destX = texOffX;
+            transData.destY = texOffY;
         }
 
         // Normalize all the remaining fields.
@@ -1448,6 +1501,11 @@ bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 
             mipmapBasePointer[ n ] = 0;
             mipmapMemorySize[ n ] = 0;
             mipmapBufferWidth[ n ] = 1;
+
+            ps2MipmapTransmissionData& transData = mipmapTransData[ n ];
+
+            transData.destX = 0;
+            transData.destY = 0;
         }
     }
 
@@ -1471,6 +1529,173 @@ bool NativeTexturePS2::allocateTextureMemory(uint32 mipmapBasePointer[], uint32 
 
     // Give the final memory layout to the runtime.
     memLayoutTypeOut = memLayout;
+
+    return true;
+}
+
+bool NativeTexturePS2::getDebugBitmap( Bitmap& bmpOut ) const
+{
+    // Try to get a valid memory model from the palette type.
+    eMemoryLayoutType memLayout;
+
+    bool hasMemLayout = ps2GSMemoryLayoutManager::getTextureMemoryLayout(this, memLayout);
+
+    if ( !hasMemLayout )
+        return false;
+
+    // Setup colors to use for the rectangles.
+    struct singleColorSourcePipeline : public Bitmap::sourceColorPipeline
+    {
+        double red, green, blue, alpha;
+
+        inline singleColorSourcePipeline( void )
+        {
+            this->red = 0;
+            this->green = 0;
+            this->blue = 0;
+            this->alpha = 1.0;
+        }
+
+        uint32 getWidth( void ) const
+        {
+            return 1;
+        }
+
+        uint32 getHeight( void ) const
+        {
+            return 1;
+        }
+
+        void fetchcolor( uint32 colorIndex, double& red, double& green, double& blue, double& alpha )
+        {
+            red = this->red;
+            green = this->green;
+            blue = this->blue;
+            alpha = this->alpha;
+        }
+    };
+
+    singleColorSourcePipeline colorSrcPipe;
+
+    uint32 mipmapCount = this->mipmapCount;
+
+    // Get format properties.
+    ps2GSMemoryLayoutManager::memoryLayoutProperties_t layoutProps;
+
+    ps2GSMemoryLayoutManager::getMemoryLayoutProperties( memLayout, layoutProps );
+
+    // Perform the allocation.
+    {
+        // Create a new memory environment.
+        ps2GSMemoryLayoutManager gsMem; 
+
+        // Get page dimensions
+        uint32 pixelWidthPerPage = ( layoutProps.widthBlocksPerPage * layoutProps.pixelWidthPerBlock );
+        uint32 pixelHeightPerPage = ( layoutProps.heightBlocksPerPage * layoutProps.pixelHeightPerBlock );
+
+        for ( uint32 n = 0; n < mipmapCount; n++ )
+        {
+            // Get the texel dimensions of this texture.
+            uint32 texelWidth = this->swizzleWidth[n];
+            uint32 texelHeight = this->swizzleHeight[n];
+
+            uint32 texBasePointer = 0;
+            uint32 texBufferWidth = 0;
+            uint32 texMemSize = 0;
+            uint32 texOffX = 0;
+            uint32 texOffY = 0;
+
+            bool allocationSuccess = gsMem.allocateTexture( memLayout, layoutProps, texelWidth, texelHeight, texBasePointer, texMemSize, texOffX, texOffY, texBufferWidth );
+
+            // If we fail to allocate any texture, we cannot draw it.
+            if ( allocationSuccess )
+            {
+                texelWidth /= 2;
+                texelHeight /= 2;
+
+                // Get the real width and height.
+
+                // Make sure the bitmap is large enough for our drawing.
+                uint32 reqWidth = texOffX + texelWidth;
+                uint32 reqHeight = texOffY + texelHeight;
+
+                uint32 curWidth, curHeight;
+
+                bmpOut.getSize(curWidth, curHeight);
+
+                bool needsResize = false;
+
+                if ( curWidth < reqWidth )
+                {
+                    curWidth = reqWidth;
+
+                    needsResize = true;
+                }
+
+                if ( curHeight < reqHeight )
+                {
+                    curHeight = reqHeight;
+
+                    needsResize = true;
+                }
+
+                if ( needsResize )
+                {
+                    bmpOut.setSize( curWidth, curHeight );
+                }
+
+                // Set special color depending on mipmap count.
+                if ( n == 0 )
+                {
+                    colorSrcPipe.red = 0.5666;
+                    colorSrcPipe.green = 0;
+                    colorSrcPipe.blue = 0;
+                }
+                else if ( n == 1 )
+                {
+                    colorSrcPipe.red = 0;
+                    colorSrcPipe.green = 0.5666;
+                    colorSrcPipe.blue = 0;
+                }
+                else if ( n == 2 )
+                {
+                    colorSrcPipe.red = 0;
+                    colorSrcPipe.green = 0;
+                    colorSrcPipe.blue = 1.0;
+                }
+                else if ( n == 3 )
+                {
+                    colorSrcPipe.red = 1.0;
+                    colorSrcPipe.green = 1.0;
+                    colorSrcPipe.blue = 0;
+                }
+                else if ( n == 4 )
+                {
+                    colorSrcPipe.red = 0;
+                    colorSrcPipe.green = 1.0;
+                    colorSrcPipe.blue = 1.0;
+                }
+                else if ( n == 5 )
+                {
+                    colorSrcPipe.red = 1.0;
+                    colorSrcPipe.green = 1.0;
+                    colorSrcPipe.blue = 1.0;
+                }
+                else if ( n == 6 )
+                {
+                    colorSrcPipe.red = 0.5;
+                    colorSrcPipe.green = 0.5;
+                    colorSrcPipe.blue = 0.5;
+                }
+
+                // Draw the rectangle.
+                bmpOut.draw(
+                    colorSrcPipe, texOffX, texOffY, texelWidth, texelHeight,
+                    Bitmap::SHADE_SRCALPHA, Bitmap::SHADE_INVSRCALPHA, Bitmap::BLEND_ADDITIVE
+                );
+            }
+        }
+    }
 
     return true;
 }

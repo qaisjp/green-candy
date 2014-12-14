@@ -195,7 +195,7 @@ public:
             SetChanged( false );
         }
 
-        inline bool FileSectorCompletion( CFile *srcFile, size_t completeTo, bool forceCompletion = true )
+        inline bool FileSectorCompletion( CFile *srcFile, size_t completeTo, CBufferedStreamWrap& host, bool forceCompletion = true )
         {
             bool hasChanged = false;
 
@@ -204,6 +204,13 @@ public:
             {
                 assert( (numberType)completeTo <= this->storageSize );
 
+                // Store the original file seek.
+                seekType_t origSeekPos = host.fileSeek.Tell();
+
+                // Seek to the correct position for filling the buffer.
+                host.fileSeek.Seek( host.bufOffset.offsetOfBufferOnFileSpace + this->actualFillCount );
+                host.fileSeek.Update();
+
                 unsigned long needToRead = (unsigned long)( completeTo - this->actualFillCount );
 
                 size_t haveReadCount = srcFile->Read(
@@ -211,6 +218,15 @@ public:
                     sizeof( bufType ),
                     needToRead
                 );
+
+                // Since we read some stuff, we need to advance the native seek pointer.
+                if ( haveReadCount != 0 )
+                {
+                    host.fileSeek.PredictNativeAdvance( haveReadCount );
+                }
+
+                // Restore file seek.
+                host.fileSeek.Seek( origSeekPos );
 
 				if ( forceCompletion )
 				{
@@ -432,15 +448,11 @@ private:
 
                 if ( host.IsSeekInsideBufferSpace_Clamped( allocateTo, localReadOffset ) )
                 {
-                    hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
-                        host.underlyingStream, localReadOffset, false
-                    );
+                    host.fileSeek.Update();
 
-                    if ( hasToRepeat )
-                    {
-                        // We cannot predict how much we actually read into the buffer, so invalidate the native seek ptr.
-                        host.fileSeek.InvalidateNativePtr();
-                    }
+                    hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
+                        host.underlyingStream, localReadOffset, host, false
+                    );
                 }
             }
             else if ( intResult == seekSlice_t::INTERSECT_UNKNOWN )
@@ -485,14 +497,8 @@ private:
                             // We should only do work if the buffer is not filled up to "localWriteOffset".
                             // This condition has to be checked by the "FileSectorCompletion" method.
                             hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
-                                host.underlyingStream, localReadOffset, false
+                                host.underlyingStream, localReadOffset, host, false
                             );
-
-                            if ( hasToRepeat )
-                            {
-                                // We cannot predict, so invalidate.
-                                host.fileSeek.InvalidateNativePtr();
-                            }
                         }
                     }
                 }
@@ -568,14 +574,8 @@ private:
                     // We should only do work if the buffer is not filled up to "localWriteOffset".
                     // This condition has to be checked by the "FileSectorCompletion" method.
                     hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
-                        host.underlyingStream, localWriteOffset
+                        host.underlyingStream, localWriteOffset, host
                     );
-
-                    if ( hasToRepeat )
-                    {
-                        // We cannot predict seek movement, so invalidate it.
-                        host.fileSeek.InvalidateNativePtr();
-                    }
 
                     // Allocate space to write things into for next pass.
                     bool maybeRepeat = AllocateBufferSize( localWriteOffset + (size_t)writeCount );
@@ -600,14 +600,8 @@ private:
                         // We should only do work if the buffer is not filled up to "localWriteOffset".
                         // This condition has to be checked by the "FileSectorCompletion" method.
                         hasToRepeat = host.internalIOBuffer.FileSectorCompletion(
-                            host.underlyingStream, localWriteOffset
+                            host.underlyingStream, localWriteOffset, host
                         );
-
-                        if ( hasToRepeat )
-                        {
-                            // We cannot predict the native underlying seek movement, so invalidate it.
-                            host.fileSeek.InvalidateNativePtr();
-                        }
 
                         // Allocate space to write things into for next pass.
                         bool maybeRepeat = AllocateBufferSize( localWriteOffset + (size_t)writeCount );

@@ -1,9 +1,7 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
-
-#undef min
-#undef max
 
 #pragma warning(disable: 4996)
 #endif //_WIN32

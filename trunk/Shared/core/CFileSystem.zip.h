@@ -12,23 +12,6 @@
 #ifndef _FILESYSTEM_ZIP_
 #define _FILESYSTEM_ZIP_
 
-// ZIP extension struct.
-struct zipExtension
-{
-    void                        Init            ( void );
-    void                        Shutdown        ( void );
-
-    CArchiveTranslator*         NewArchive      ( CFile& writeStream );
-    CArchiveTranslator*         OpenArchive     ( CFile& readWriteStream );
-
-    // Private extension methods.
-    CFileTranslator*            GetTempRoot     ( void );
-
-    // Extension members.
-    // ... for managing temporary files (OS dependent).
-    // See zipExtension::Init().
-    CFileTranslator*            sysTmp;
-    CFileTranslator*            sysTmpRoot;
-};
+//todo.
 
 #endif //_FILESYSTEM_ZIP_

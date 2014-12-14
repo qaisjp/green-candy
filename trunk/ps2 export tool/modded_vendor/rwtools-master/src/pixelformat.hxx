@@ -1,7 +1,10 @@
 namespace rw
 {
 
-static inline bool browsetexelcolor(const void *texelSource, ePaletteType paletteType, const void *paletteData, uint32 maxpalette, uint32 colorIndex, eRasterFormat rasterFormat, uint8& red, uint8& green, uint8& blue, uint8& alpha)
+static inline bool browsetexelcolor(
+    const void *texelSource, ePaletteType paletteType, const void *paletteData, uint32 maxpalette,
+    uint32 colorIndex, eRasterFormat rasterFormat,
+    uint8& red, uint8& green, uint8& blue, uint8& alpha)
 {
     typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
@@ -109,7 +112,7 @@ static inline bool browsetexelcolor(const void *texelSource, ePaletteType palett
     {
         pixel32_t *srcData = (pixel32_t*)realTexelSource;
 
-        srcData->getcolor(realColorIndex, blue, green, red, alpha);
+        srcData->getcolor(realColorIndex, red, green, blue, alpha);
 
         hasColor = true;
     }

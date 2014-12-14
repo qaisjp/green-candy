@@ -62,7 +62,7 @@ public:
 private:
     friend class CFileSystem;
 
-    void            _CreateDirTree                  ( const dirTree& tree );
+    bool            _CreateDirTree                  ( const dirTree& tree );
 
 #ifdef _WIN32
     HANDLE          m_rootHandle;

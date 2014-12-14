@@ -82,26 +82,65 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
         if ( isPrepared )
         {
             // Palettize the texture and convert it back into PS2 format.
-            //tex.convertToPalette( rw::RASTER_PAL4 );
+            //tex.convertToPalette( rw::PALETTE_4BIT );
             //tex.convertToPS2();
 
             if ( canOutputDebug )
             {
                 // Create a path to store the textures to.
-                std::string textureSaveName( fileNameItem );
-                textureSaveName += "_";
-                textureSaveName += tex.name;
-                textureSaveName += ".tga";
-
-                filePath absTexPath;
-
-                std::string browsePath = textureSaveName;
-
-                bool hasAbsTexPath = debugOutputRoot->GetFullPath( browsePath.c_str(), true, absTexPath );
-
-                if ( hasAbsTexPath )
+                std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
                 {
-                    SaveTexture( tex, absTexPath.c_str(), fileNameItem.c_str() );
+                    std::string textureSaveName( justFileName );
+                    textureSaveName += "_";
+                    textureSaveName += tex.name;
+                    textureSaveName += ".tga";
+
+                    filePath absTexPath;
+
+                    bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
+
+                    if ( hasAbsTexPath )
+                    {
+                        SaveTexture( tex, absTexPath.c_str(), fileNameItem.c_str() );
+                    }
+                }
+
+                if ( tex.platformData->getMipmapCount() > 1 )
+                {
+                    // Save a debug image that displays the allocation scheme.
+                    rw::Bitmap debugBitmap( 32, rw::RASTER_8888 );
+
+                    // Make sure we atleast have some content.
+                    debugBitmap.setSize( 10, 10 );
+
+                    bool hasDebugBitmap = tex.platformData->getDebugBitmap( debugBitmap );
+
+                    if ( hasDebugBitmap )
+                    {
+                        std::string texDebugSaveName( justFileName );
+                        texDebugSaveName += "_";
+                        texDebugSaveName += tex.name;
+                        texDebugSaveName += "_";
+                        texDebugSaveName += "debug.tga";
+
+                        filePath absTexPath;
+
+                        bool hasAbsTexPath = debugOutputRoot->GetFullPath( texDebugSaveName.c_str(), true, absTexPath );
+
+                        if ( hasAbsTexPath )
+                        {
+                            // Create a direct3D texture and store it as TGA.
+                            rw::NativeTexture newTex;
+                            
+                            newTex.newDirect3D();
+
+                            // Write image data.
+                            newTex.setImageData( debugBitmap );
+
+                            // Write the TGA.
+                            newTex.writeTGA( absTexPath.c_str() );
+                        }
+                    }
                 }
             }
         }
@@ -129,124 +168,136 @@ struct _discFileTraverse
 {
     CFileTranslator *discHandle;
     CFileTranslator *buildRoot;
+    CFileTranslator *debugRoot;
 };
 
 static void _discFileCallback( const filePath& discFilePathAbs, void *userdata )
 {
     _discFileTraverse *info = (_discFileTraverse*)userdata;
 
-    // Do special logic for certain files.
-    // Copy all files into the build root.
-    CFile *sourceStream = NULL;
-    {
-        sourceStream = info->discHandle->Open( discFilePathAbs.c_str(), "rb" );
-    }
+    // Preprocess the file.
+    // Create a destination file inside of the build root using the relative path from the source trans root.
+    filePath relPathFromRoot;
+    
+    bool hasTargetRelativePath = info->discHandle->GetRelativePathFromRoot( discFilePathAbs.c_str(), true, relPathFromRoot );
 
-    // Open the target stream.
-    CFile *targetStream = NULL;
+    if ( hasTargetRelativePath )
     {
-        // Create a destination file inside of the build root using the relative path from the source trans root.
-        filePath relPathFromRoot;
-        
-        bool hasRelativePath = info->discHandle->GetRelativePathFromRoot( discFilePathAbs.c_str(), true, relPathFromRoot );
+        bool hasPreprocessedFile = false;
 
-        if ( hasRelativePath )
+        SString fileName = FileSystem::GetFileNameItem( discFilePathAbs.c_str(), true, NULL );
+
+        SString extention;
+
+        bool hasExtention = SharedUtil::ExtractExtention( fileName, NULL, &extention );
+
+        if ( hasExtention )
         {
-            targetStream = info->buildRoot->Open( relPathFromRoot.c_str(), "wb" );
-        }
-    }
-
-    if ( targetStream && sourceStream )
-    {
-        // Allow to perform custom logic on the source and target streams.
-        bool hasCopiedFile = false;
-        {
-            SString fileName = FileSystem::GetFileNameItem( discFilePathAbs.c_str(), true, NULL );
-
-            SString extention;
-
-            bool hasExtension = SharedUtil::ExtractExtention( fileName, NULL, &extention );
-
-            if ( hasExtension )
+            if ( extention.CompareI( "IMG" ) == true )
             {
-                if ( extention.CompareI( "IMG" ) == true )
+                printf( "processing %s ...\n", discFilePathAbs.c_str() );
+
+                // If we have found an IMG archive, we perform the same stuff for files inside of it.
+                // We copy the files into a new IMG archive tho.
+                CArchiveTranslator *newIMGRoot = fileSystem->CreateIMGArchive( info->buildRoot, relPathFromRoot.c_str() );
+
+                if ( newIMGRoot )
                 {
-                    printf( "processing %s ...\n", discFilePathAbs.c_str() );
+                    CArchiveTranslator *srcIMGRoot = fileSystem->OpenIMGArchive( info->discHandle, relPathFromRoot.c_str() );
 
-                    // If we have found an IMG archive, we perform the same stuff for files inside of it.
-                    // We copy the files into a new IMG archive tho.
-                    CArchiveTranslator *newIMGRoot = fileSystem->CreateIMGArchive( *targetStream );
-
-                    if ( newIMGRoot )
+                    if ( srcIMGRoot )
                     {
-                        CArchiveTranslator *srcIMGRoot = fileSystem->OpenIMGArchive( *sourceStream );
+                        // Run into shit.
+                        _discFileTraverse traverse;
+                        traverse.discHandle = srcIMGRoot;
+                        traverse.buildRoot = newIMGRoot;
+                        traverse.debugRoot = info->debugRoot;
 
-                        if ( srcIMGRoot )
-                        {
-                            // Run into shit.
-                            _discFileTraverse traverse;
-                            traverse.discHandle = srcIMGRoot;
-                            traverse.buildRoot = newIMGRoot;
+                        srcIMGRoot->ScanDirectory( "@", "*", true, NULL, _discFileCallback, &traverse );
 
-                            srcIMGRoot->ScanDirectory( "@", "*", true, NULL, _discFileCallback, &traverse );
+                        printf( "writing... " );
 
-                            printf( "writing... " );
+                        newIMGRoot->Save();
 
-                            newIMGRoot->Save();
+                        printf( "done.\n" );
 
-                            printf( "done.\n" );
-
-                            hasCopiedFile = true;
-                            
-                            delete srcIMGRoot;
-                        }
-                        else
-                        {
-                            printf( "not an IMG archive.\n" );
-                        }
-
-                        delete newIMGRoot;
+                        hasPreprocessedFile = true;
+                        
+                        delete srcIMGRoot;
                     }
                     else
                     {
-                        printf( "failed to create new IMG archive for processing; defaulting to file-copy ...\n" );
+                        printf( "not an IMG archive.\n" );
                     }
+
+                    delete newIMGRoot;
                 }
-                else if ( extention.CompareI( "TXD" ) == true )
+                else
                 {
-                    printf( "optimizing texture container: %s ...", discFilePathAbs.c_str() );
-
-                    bool couldProcessTXD = ProcessTXDArchive( info->discHandle, sourceStream, targetStream, NULL );
-
-                    if ( couldProcessTXD )
-                    {
-                        hasCopiedFile = true;
-                    }
-
-                    printf( "OK\n" );
+                    printf( "failed to create new IMG archive for processing; defaulting to file-copy ...\n" );
                 }
             }
         }
 
-        // If we have not yet created the new copy, we default to simple stream swap.
-        if ( !hasCopiedFile && targetStream )
+        if ( !hasPreprocessedFile )
         {
-            // Make sure we copy from the beginning of the source stream.
-            sourceStream->Seek( 0, SEEK_SET );
-            
-            // Copy the stream contents.
-            FileSystem::StreamCopy( *sourceStream, *targetStream );
+            // Do special logic for certain files.
+            // Copy all files into the build root.
+            CFile *sourceStream = NULL;
+            {
+                sourceStream = info->discHandle->Open( discFilePathAbs.c_str(), "rb" );
+            }
+
+            // Open the target stream.
+            CFile *targetStream = NULL;
+            {
+                targetStream = info->buildRoot->Open( relPathFromRoot.c_str(), "wb" );
+            }
+
+            if ( targetStream && sourceStream )
+            {
+                // Allow to perform custom logic on the source and target streams.
+                bool hasCopiedFile = false;
+                {
+                    if ( hasExtention )
+                    {
+                        if ( extention.CompareI( "TXD" ) == true )
+                        {
+                            printf( "optimizing texture container: %s ...", discFilePathAbs.c_str() );
+
+                            bool couldProcessTXD = ProcessTXDArchive( info->discHandle, sourceStream, targetStream, info->debugRoot );
+
+                            if ( couldProcessTXD )
+                            {
+                                hasCopiedFile = true;
+                            }
+
+                            printf( "OK\n" );
+                        }
+                    }
+                }
+
+                // If we have not yet created the new copy, we default to simple stream swap.
+                if ( !hasCopiedFile && targetStream )
+                {
+                    // Make sure we copy from the beginning of the source stream.
+                    sourceStream->Seek( 0, SEEK_SET );
+                    
+                    // Copy the stream contents.
+                    FileSystem::StreamCopy( *sourceStream, *targetStream );
+                }
+            }
+
+            if ( targetStream )
+            {
+                delete targetStream;
+            }
+
+            if ( sourceStream )
+            {
+                delete sourceStream;
+            }
         }
-    }
-
-    if ( targetStream )
-    {
-        delete targetStream;
-    }
-
-    if ( sourceStream )
-    {
-        delete sourceStream;
     }
 }
 
@@ -259,8 +310,6 @@ inline uint8 randcolor( void )
 
 static void DebugFuncs( CFileTranslator *discHandle )
 {
-    return;
-
     // Debug a weird txd container...
     CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
 
@@ -321,17 +370,9 @@ static void DebugFuncs( CFileTranslator *discHandle )
                         newName += ".tga";
 
                         //tex.convertToFormat( rw::RASTER_8888 );
-                        if ( tex.platformData->getDepth() == 4 )
-                        {
-                            tex.convertToPalette( rw::PALETTE_8BIT );
-                        }
-                        else if ( tex.platformData->getDepth() == 8 )
+                        if ( tex.platformData->getDepth() == 8 )
                         {
                             tex.convertToPalette( rw::PALETTE_4BIT );
-                        }
-                        else
-                        {
-                            tex.convertToPalette( rw::PALETTE_8BIT );
                         }
 
                         tex.writeTGA(newName.c_str());
@@ -442,13 +483,14 @@ int main( int argc, char *argv[] )
         rw::rwInterface.SetFileInterface( &fInterface );
 
         // Open a handle to the GTA:SA disc and browse for the IMG files.
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa\\" );
 
         if ( discHandle )
         {
             // Debug some obscurities.
-            DebugFuncs( discHandle );
+            //DebugFuncs( discHandle );
 
             if ( true )
             {
@@ -462,6 +504,24 @@ int main( int argc, char *argv[] )
                     buildRoot = fsHandle->CreateTranslator( "BUILD_ROOT/" );
                 }
 
+                // Grab a debug root.
+                CFileTranslator *debugRoot = NULL;
+                {
+                    filePath debugRootPath;
+                    
+                    bool canGetDebugRootOut = fileRoot->GetFullPath( "debugout/", false, debugRootPath );
+
+                    if ( canGetDebugRootOut )
+                    {
+                        bool dirCreated = fileRoot->CreateDir( debugRootPath.c_str() );
+
+                        if ( dirCreated )
+                        {
+                            debugRoot = fileSystem->CreateTranslator( debugRootPath.c_str() );
+                        }
+                    }
+                }
+
                 if ( buildRoot )
                 {
                     // Iterate through every disc file and output it into the build directory.
@@ -469,11 +529,19 @@ int main( int argc, char *argv[] )
                     _discFileTraverse traverse;
                     traverse.discHandle = discHandle;
                     traverse.buildRoot = buildRoot;
+                    traverse.debugRoot = debugRoot;
 
                     discHandle->ScanDirectory( "@", "*", true, NULL, _discFileCallback, &traverse );
 
                     delete buildRoot;
                 }
+
+                if ( debugRoot )
+                {
+                    delete debugRoot;
+                }
+
+                rw::NativeTexture::DebugParameters();
             }
 
             delete discHandle;

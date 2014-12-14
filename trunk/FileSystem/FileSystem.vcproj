@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib"
+				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib;../Shared/"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -108,7 +108,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib"
+				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib;../Shared/"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -153,7 +153,15 @@
 			Name="Include"
 			>
 			<File
+				RelativePath="..\Shared\core\CFileSystem.common.filePath.h"
+				>
+			</File>
+			<File
 				RelativePath="..\Shared\core\CFileSystem.common.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\CFileSystem.common.stl.h"
 				>
 			</File>
 			<File
@@ -166,6 +174,10 @@
 			</File>
 			<File
 				RelativePath="..\Shared\core\fsinternal\CFileSystem.internal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.internal.repo.h"
 				>
 			</File>
 			<File
@@ -186,6 +198,10 @@
 			</File>
 			<File
 				RelativePath="..\Shared\core\CFileSystem.Utils.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.vfs.h"
 				>
 			</File>
 			<File
@@ -225,6 +241,38 @@
 				</File>
 			</Filter>
 		</Filter>
+		<Filter
+			Name="imgExtension"
+			>
+			<File
+				RelativePath="..\Shared\core\CFileSystem.img.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.img.translator.cpp"
+				>
+			</File>
+			<Filter
+				Name="Include"
+				>
+				<File
+					RelativePath="..\Shared\core\CFileSystem.img.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\core\fsinternal\CFileSystem.img.internal.h"
+					>
+				</File>
+			</Filter>
+		</Filter>
+		<Filter
+			Name="SDK"
+			>
+			<File
+				RelativePath="..\Shared\sdk\MemoryUtils.h"
+				>
+			</File>
+		</Filter>
 		<File
 			RelativePath="..\Shared\core\CFileSystem.cpp"
 			>
@@ -243,6 +291,10 @@
 		</File>
 		<File
 			RelativePath="..\Shared\core\fsinternal\CFileSystem.translator.system.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\Shared\core\fsinternal\CFileSystem.vfs.cpp"
 			>
 		</File>
 		<File
