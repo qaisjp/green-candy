@@ -16,16 +16,6 @@ struct _exportFileStruct
     CFileTranslator *archiveRoot;
 };
 
-static void SaveTexture( rw::NativeTexture& tex, const char *absPath, const char *txdName )
-{
-    if ( tex.platformData->getPaletteType() != rw::PALETTE_4BIT )
-    {
-        //tex.convertToFormat(rw::RASTER_8888);
-        tex.convertToPalette(rw::PALETTE_4BIT);
-        tex.writeTGA( absPath );
-    }
-}
-
 static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, CFileTranslator *debugOutputRoot )
 {
     bool hasProcessed = false;
@@ -73,7 +63,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
         if ( tex.platform == rw::PLATFORM_PS2 )
         {
-            //tex.convertFromPS2( 0x40 );
+            //tex.convertFromPS2();
 
             isPrepared = true;
         }
@@ -83,29 +73,34 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
         {
             // Palettize the texture and convert it back into PS2 format.
             //tex.convertToPalette( rw::PALETTE_4BIT );
+
+            std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
+
+#if 0
+            if ( canOutputDebug && tex.platformData->getDepth() == 32 )
+            {
+                // Create a path to store the textures to.
+                std::string textureSaveName( justFileName );
+                textureSaveName += "_";
+                textureSaveName += tex.name;
+                textureSaveName += ".tga";
+
+                filePath absTexPath;
+
+                bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
+
+                if ( hasAbsTexPath )
+                {
+                    tex.writeTGA( absTexPath.c_str() );
+                }
+            }
+#endif
+
             //tex.convertToPS2();
 
             if ( canOutputDebug )
             {
-                // Create a path to store the textures to.
-                std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
-                {
-                    std::string textureSaveName( justFileName );
-                    textureSaveName += "_";
-                    textureSaveName += tex.name;
-                    textureSaveName += ".tga";
-
-                    filePath absTexPath;
-
-                    bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
-
-                    if ( hasAbsTexPath )
-                    {
-                        SaveTexture( tex, absTexPath.c_str(), fileNameItem.c_str() );
-                    }
-                }
-
-                if ( tex.platformData->getMipmapCount() > 1 )
+                if ( tex.platformData->getMipmapCount() > 1 && tex.platformData->getDepth() == 8 )
                 {
                     // Save a debug image that displays the allocation scheme.
                     rw::Bitmap debugBitmap( 32, rw::RASTER_8888 );
@@ -170,6 +165,8 @@ struct _discFileTraverse
     CFileTranslator *buildRoot;
     CFileTranslator *debugRoot;
 };
+
+static const bool _doNormalCopy = false;
 
 static void _discFileCallback( const filePath& discFilePathAbs, void *userdata )
 {
@@ -277,14 +274,17 @@ static void _discFileCallback( const filePath& discFilePathAbs, void *userdata )
                     }
                 }
 
-                // If we have not yet created the new copy, we default to simple stream swap.
-                if ( !hasCopiedFile && targetStream )
+                if ( _doNormalCopy )
                 {
-                    // Make sure we copy from the beginning of the source stream.
-                    sourceStream->Seek( 0, SEEK_SET );
-                    
-                    // Copy the stream contents.
-                    FileSystem::StreamCopy( *sourceStream, *targetStream );
+                    // If we have not yet created the new copy, we default to simple stream swap.
+                    if ( !hasCopiedFile && targetStream )
+                    {
+                        // Make sure we copy from the beginning of the source stream.
+                        sourceStream->Seek( 0, SEEK_SET );
+                        
+                        // Copy the stream contents.
+                        FileSystem::StreamCopy( *sourceStream, *targetStream );
+                    }
                 }
             }
 
@@ -352,32 +352,35 @@ static void DebugFuncs( CFileTranslator *discHandle )
 
             if ( rwout.good() )
             {
-                // Convert from PS2, convert to 4bit palette and convert back to PS2.
-                for ( unsigned int n = 0; n < txd.texList.size(); n++ )
+                if ( true )
                 {
-                    rw::NativeTexture& tex = txd.texList.at( n );
-
-                    // WARNING: conversion does destroy some platform native data that
-                    // is embedded into the texture!
-                    // We need a way to retrieve the data and set it back after conversion.
-
-                    if ( tex.platform == rw::PLATFORM_PS2 )
+                    // Convert from PS2, convert to 4bit palette and convert back to PS2.
+                    for ( unsigned int n = 0; n < txd.texList.size(); n++ )
                     {
-                        tex.convertFromPS2( 0x40 );
+                        rw::NativeTexture& tex = txd.texList.at( n );
 
-                        // Write the texture somewhere.
-                        std::string newName = std::string( "txdout/" ) + tex.name;
-                        newName += ".tga";
+                        // WARNING: conversion does destroy some platform native data that
+                        // is embedded into the texture!
+                        // We need a way to retrieve the data and set it back after conversion.
 
-                        //tex.convertToFormat( rw::RASTER_8888 );
-                        if ( tex.platformData->getDepth() == 8 )
+                        if ( tex.platform == rw::PLATFORM_PS2 )
                         {
-                            tex.convertToPalette( rw::PALETTE_4BIT );
+                            tex.convertFromPS2();
+
+                            // Write the texture somewhere.
+                            std::string newName = std::string( "txdout/" ) + tex.name;
+                            newName += ".tga";
+
+                            //tex.convertToFormat( rw::RASTER_8888 );
+                            //if ( tex.platformData->getDepth() == 8 )
+                            {
+                                //tex.convertToPalette( rw::PALETTE_4BIT );
+                            }
+
+                            tex.writeTGA(newName.c_str());
+
+                            tex.convertToPS2();
                         }
-
-                        tex.writeTGA(newName.c_str());
-
-                        tex.convertToPS2();
                     }
                 }
 

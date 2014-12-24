@@ -202,7 +202,10 @@ struct textureMetaDataHeader
     uint32 paletteDataSize; // palette + header + unknowns
 
     uint32 combinedGPUDataSize;
-    uint32 skyMipmapVal;			// constant (sky mipmap val)
+
+    // constant (sky mipmap val)
+    // see http://www.gtamodding.com/wiki/Sky_Mipmap_Val_%28RW_Section%29
+    uint32 skyMipmapVal;
 };
 
 struct textureImageDataHeader
@@ -349,6 +352,46 @@ enum eMemoryLayoutType
     PSMZ16S = 58
 };
 
+enum eFormatEncodingType
+{
+    FORMAT_UNKNOWN,
+    FORMAT_IDTEX4,
+    FORMAT_IDTEX8,
+    FORMAT_IDTEX8_COMPRESSED,
+    FORMAT_TEX16,
+    FORMAT_TEX32
+};
+
+inline static bool getMemoryLayoutFromTexelFormat(eFormatEncodingType encodingType, eMemoryLayoutType& memLayout)
+{
+    eMemoryLayoutType theLayout;
+
+    if ( encodingType == FORMAT_IDTEX4 || encodingType == FORMAT_IDTEX8_COMPRESSED )
+    {
+        theLayout = PSMT4;
+    }
+    else if ( encodingType == FORMAT_IDTEX8 )
+    {
+        theLayout = PSMT8;
+    }
+    else if ( encodingType == FORMAT_TEX16 )
+    {
+        theLayout = PSMCT16S;
+    }
+    else if ( encodingType == FORMAT_TEX32 )
+    {
+        theLayout = PSMCT32;
+    }
+    else
+    {
+        return false;
+    }
+
+    memLayout = theLayout;
+
+    return true;
+}
+
 struct NativeTexturePS2 : public PlatformTexture
 {
     NativeTexturePS2( void )
@@ -360,7 +403,7 @@ struct NativeTexturePS2 : public PlatformTexture
         this->mipmapCount = 0;
         this->autoMipmaps = false;
         this->requiresHeaders = true;
-        this->alphaDistribution = 0;
+        this->hasSwizzle = false;
         this->skyMipMapVal = 4032;
 
         // Set default values for PS2 GS parameters.
@@ -379,6 +422,8 @@ struct NativeTexturePS2 : public PlatformTexture
 
         // And whatever that is.
         this->unknownFormatFlags = 0x04;
+
+        this->hasPalUnknowns = false;
     }
 
     void Delete( void )
@@ -447,8 +492,6 @@ struct NativeTexturePS2 : public PlatformTexture
 
             newTex->paletteSize = this->paletteSize;
             newTex->paletteType = this->paletteType;
-
-            newTex->palUnknowns = this->palUnknowns;
         }
 
         // Copy image texel information.
@@ -471,12 +514,12 @@ struct NativeTexturePS2 : public PlatformTexture
         newTex->mipmapCount = this->mipmapCount;
         
         // Copy PS2 data.
-        newTex->isSwizzled = this->isSwizzled;
+        newTex->swizzleEncodingType = this->swizzleEncodingType;
         newTex->swizzleWidth = this->swizzleWidth;
         newTex->swizzleHeight = this->swizzleHeight;
         newTex->autoMipmaps = this->autoMipmaps;
         newTex->requiresHeaders = this->requiresHeaders;
-        newTex->alphaDistribution = this->alphaDistribution;
+        newTex->hasSwizzle = this->hasSwizzle;
         newTex->skyMipMapVal = this->skyMipMapVal;
         newTex->gsParams = this->gsParams;
 
@@ -501,21 +544,19 @@ struct NativeTexturePS2 : public PlatformTexture
 
     ePaletteType paletteType;
 
+    ps2MipmapTransmissionData palUnknowns;
+    bool hasPalUnknowns;
+
     bool requiresHeaders;
+    bool hasSwizzle;
     bool autoMipmaps;
 
-    std::vector<bool> isSwizzled;
+    std::vector<eFormatEncodingType> swizzleEncodingType;
 	std::vector<uint32> swizzleWidth;
 	std::vector<uint32> swizzleHeight;
-	// bit 0: alpha values above (or equal to) the threshold
-	// bit 1: alpha values below the threshold
-	// both 0: no info
-	uint32 alphaDistribution;
     uint32 skyMipMapVal;
 
     uint8 unknownFormatFlags;
-
-    ps2MipmapTransmissionData palUnknowns;
 
     struct gsParams_t
     {
@@ -535,31 +576,89 @@ struct NativeTexturePS2 : public PlatformTexture
     };
     gsParams_t gsParams;
 
+    eFormatEncodingType getHardwareRequiredEncoding(uint32 version) const;
+
     bool swizzleEncryptPS2(uint32 mip);
 	bool swizzleDecryptPS2(uint32 mip);
 
     bool allocateTextureMemory(
         uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], ps2MipmapTransmissionData mipmapTransData[], uint32 maxMipmaps,
-        eMemoryLayoutType& memLayoutType
+        eMemoryLayoutType& pixelMemLayoutTypeOut,
+        uint32& clutBasePointer, uint32& clutMemSize, ps2MipmapTransmissionData& clutTransData
     ) const;
 
     uint32 calculateGPUDataSize(
         const uint32 mipmapBasePointer[], const uint32 mipmapMemorySize[], uint32 maxMipmaps,
         eMemoryLayoutType memLayoutType,
-        uint32 paletteDataSize
+        uint32 clutBasePointer, uint32 clutMemSize
     ) const;
 
     bool generatePS2GPUData(
+        uint32 gameVersion,
         ps2GSRegisters& gpuData,
         const uint32 mipmapBasePointer[], const uint32 mipmapBufferWidth[], const uint32 mipmapMemorySize[], uint32 maxMipmaps,
-        eMemoryLayoutType memLayoutType
+        eMemoryLayoutType memLayoutType,
+        uint32 clutBasePointer
     ) const;
 
     void getOptimalGSParameters(gsParams_t& paramsOut) const;
 
-    void PerformDebugChecks( void ) const;
+    void PerformDebugChecks(const textureMetaDataHeader& textureMeta) const;
 
     bool getDebugBitmap( Bitmap& bmpOut ) const;
 };
+
+inline eFormatEncodingType getFormatEncodingFromRasterFormat(eRasterFormat rasterFormat, ePaletteType paletteType)
+{
+    eFormatEncodingType encodingFormat = FORMAT_UNKNOWN;
+
+    if (paletteType == PALETTE_4BIT)
+    {
+        encodingFormat = FORMAT_IDTEX8_COMPRESSED;
+    }
+    else if (paletteType == PALETTE_8BIT)
+    {
+        encodingFormat = FORMAT_IDTEX8;
+    }
+    else if (rasterFormat == RASTER_LUM8)
+    {
+        encodingFormat = FORMAT_IDTEX8;
+    }
+    else if (rasterFormat == RASTER_1555 || rasterFormat == RASTER_565 || rasterFormat == RASTER_4444 ||
+             rasterFormat == RASTER_16 || rasterFormat == RASTER_555)
+    {
+        encodingFormat = FORMAT_TEX16;
+    }
+    else if (rasterFormat == RASTER_8888 || rasterFormat == RASTER_888 || rasterFormat == RASTER_32)
+    {
+        encodingFormat = FORMAT_TEX32;
+    }
+
+    return encodingFormat;
+}
+
+inline eFormatEncodingType getFormatEncodingFromMemoryLayout(eMemoryLayoutType memLayout)
+{
+    eFormatEncodingType encodingFormat = FORMAT_UNKNOWN;
+
+    if (memLayout == PSMT4)
+    {
+        encodingFormat = FORMAT_IDTEX8_COMPRESSED;
+    }
+    else if (memLayout == PSMT8)
+    {
+        encodingFormat = FORMAT_IDTEX8;
+    }
+    else if (memLayout == PSMCT16 || memLayout == PSMCT16S)
+    {
+        encodingFormat = FORMAT_TEX16;
+    }
+    else if (memLayout == PSMCT32)
+    {
+        encodingFormat = FORMAT_TEX32;
+    }
+
+    return encodingFormat;
+}
 
 }

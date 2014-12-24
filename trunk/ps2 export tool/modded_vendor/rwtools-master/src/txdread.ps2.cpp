@@ -12,6 +12,8 @@
 
 #include "pixelformat.hxx"
 
+#include "txdread.ps2gsman.hxx"
+
 namespace rw
 {
 
@@ -84,6 +86,7 @@ void NativeTexture::readPs2(std::istream &rw)
     readRasterFormatFlags( textureMeta.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, platformTex->autoMipmaps );
 
     platformTex->requiresHeaders = ( textureMeta.rasterFormat & 0x20000 ) != 0;
+    platformTex->hasSwizzle = ( textureMeta.rasterFormat & 0x10000 ) != 0;
 
     // Some really unknown format flags. We should debug this!
     platformTex->unknownFormatFlags = ( textureMeta.rasterFormat & 0xFF );
@@ -111,7 +114,7 @@ void NativeTexture::readPs2(std::istream &rw)
 	// 0x20000 means swizzling information is contained in the header
 	// the rest is the same as the generic raster format
 	bool hasHeader = platformTex->requiresHeaders;
-    bool hasSwizzle = (textureMeta.rasterFormat & 0x10000) != 0;
+    bool hasSwizzle = platformTex->hasSwizzle;
 
 /*
 	// only these are ever used (so alpha for all textures :/ )
@@ -134,25 +137,13 @@ void NativeTexture::readPs2(std::istream &rw)
 	READ_HEADER(CHUNK_STRUCT);
 
     // Decide about texture properties.
-    bool isPalettized = (platformTex->paletteType != PALETTE_NONE);
-    bool isSwizzled = false;
+    eFormatEncodingType imageEncodingType = platformTex->getHardwareRequiredEncoding(header.version);
 
-    if (hasHeader)
-    {
-        if (isPalettized)
-        {
-            isSwizzled = true;
-
-            assert(depth == 4 || depth == 8);
-        }
-    }
-    else
-    {
-		if (hasSwizzle)
-        {
-            isSwizzled = true;
-		}
-    }
+    // Get the format we should decode to.
+    eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(this->rasterFormat, platformTex->paletteType);
+    
+    assert(imageEncodingType != FORMAT_UNKNOWN);
+    assert(actualEncodingType != FORMAT_UNKNOWN);
 
     // Absolute maximum of mipmaps.
     const size_t maxMipmaps = 7;
@@ -194,28 +185,11 @@ void NativeTexture::readPs2(std::istream &rw)
 
             if ( validTex )
             {
-                bool requiresDoubling = false;
+                // TODO: we are not there yet... those swizzle dimms are not final it seems.
 
-                if (header.version == rw::GTA3_1 || header.version == rw::GTA3_2 ||
-                    header.version == rw::GTA3_3 || header.version == rw::GTA3_4)
+                if (imageEncodingType == FORMAT_TEX32 && actualEncodingType == FORMAT_IDTEX8_COMPRESSED)
                 {
-                    if (isSwizzled && textureMeta.depth == 8)
-                    {
-                        requiresDoubling = true;
-                    }
-                }
-                else
-                {
-                    if (isSwizzled)
-                    {
-                        requiresDoubling = true;
-                    }
-                }
-
-                if (requiresDoubling)
-                {
-                    vImgWidth *= 2;
-                    vImgHeight *= 2;
+                    vImgWidth /= 2;
                 }
 
 			    platformTex->swizzleWidth.push_back(vImgWidth);
@@ -232,10 +206,21 @@ void NativeTexture::readPs2(std::istream &rw)
         {
             uint32 texItems = ( texWidth * texHeight );
 
-			platformTex->swizzleWidth.push_back(texWidth);
-			platformTex->swizzleHeight.push_back(texHeight);
+            uint32 packedWidth, packedHeight;
 
-			texDataSize = texItems*depth/8;
+            bool gotPackedDimms =
+                ps2GSPixelEncodingFormats::getPackedFormatDimensions(
+                    actualEncodingType, imageEncodingType,
+                    texWidth, texHeight,
+                    packedWidth, packedHeight
+                );
+
+            assert( gotPackedDimms == true );
+
+			platformTex->swizzleWidth.push_back(packedWidth);
+			platformTex->swizzleHeight.push_back(packedHeight);
+
+			texDataSize = texItems * depth/8;
 		}
 
         if ( texDataSize == 0 )
@@ -245,7 +230,7 @@ void NativeTexture::readPs2(std::istream &rw)
         }
 
         platformTex->mipmapDepth.push_back( depth );
-        platformTex->isSwizzled.push_back(isSwizzled);
+        platformTex->swizzleEncodingType.push_back( imageEncodingType );
 
         // Store mipmap offsets (for debugging).
         if ( i < maxMipmaps )
@@ -284,7 +269,9 @@ void NativeTexture::readPs2(std::istream &rw)
 
 	/* Palette */
 	// vc dyn_trash.txd is weird here
-	if (isPalettized)
+    ps2MipmapTransmissionData palTransData;
+
+	if (platformTex->paletteType != PALETTE_NONE)
     {
         uint32 paletteColorComponents = 0;
         uint32 palTexDataSize = 0;
@@ -341,8 +328,8 @@ void NativeTexture::readPs2(std::istream &rw)
         {
             size_t paletteDataSize = palTexDataSize;
 
-            platformTex->palUnknowns.destX = gpuSize1;
-            platformTex->palUnknowns.destY = gpuSize2;
+            palTransData.destX = gpuSize1;
+            palTransData.destY = gpuSize2;
 
             platformTex->paletteSize = ( paletteColorComponents );
 		    platformTex->palette = new uint8[ paletteDataSize ];
@@ -361,9 +348,14 @@ void NativeTexture::readPs2(std::istream &rw)
 
     ps2MipmapTransmissionData mipmapTransData[ maxMipmaps ];
 
-    eMemoryLayoutType memLayoutType;
+    uint32 clutBasePointer;
+    uint32 clutMemSize;
+    ps2MipmapTransmissionData clutTransData;
 
-    bool hasAllocatedMemory = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, memLayoutType);
+    eMemoryLayoutType decodedMemLayoutType;
+
+    bool hasAllocatedMemory =
+        platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, decodedMemLayoutType, clutBasePointer, clutMemSize, clutTransData);
 
     // Could fail if no memory left.
     if ( !hasAllocatedMemory )
@@ -372,13 +364,13 @@ void NativeTexture::readPs2(std::istream &rw)
     }
 
     // Verify that our memory calculation routine is correct.
-    uint32 gpuMinMemory = platformTex->calculateGPUDataSize(mipmapBasePointer, mipmapMemorySize, maxMipmaps, memLayoutType, platformTex->paletteSize);
+    uint32 gpuMinMemory = platformTex->calculateGPUDataSize(mipmapBasePointer, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer, clutMemSize);
 
     if ( textureMeta.combinedGPUDataSize > gpuMinMemory )
     {
         // If this assertion is triggered, then a adjust the gpu size calculation algorithm
         // so it outputs a big enough number.
-        assert( 0 );
+        __asm nop
     }
 
     if ( textureMeta.combinedGPUDataSize != gpuMinMemory )
@@ -390,7 +382,7 @@ void NativeTexture::readPs2(std::istream &rw)
     // Verify that our GPU data calculation routine is correct.
     ps2GSRegisters gpuData;
     
-    bool isValidTexture = platformTex->generatePS2GPUData(gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
+    bool isValidTexture = platformTex->generatePS2GPUData(header.version, gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer);
 
     // If any of those assertions fail then either our is routine incomplete
     // or the input texture is invalid (created by wrong tool probably.)
@@ -412,29 +404,40 @@ void NativeTexture::readPs2(std::istream &rw)
         __asm nop
     }
 
-    if ( textureMeta.depth == 8 )
-    {
-        if ( platformTex->mipmapCount > 1 )
-        {
-            __asm nop
-        }
-    }
-
     // Verify transmission rectangle same-ness.
+    bool hasValidTransmissionRects = true;
+
     for ( uint32 n = 0; n < platformTex->mipmapCount; n++ )
     {
         const ps2MipmapTransmissionData& srcTransData = _origMipmapTransData[ n ];
         const ps2MipmapTransmissionData& dstTransData = mipmapTransData[ n ];
 
-        if ( srcTransData.destX != srcTransData.destX ||
-             srcTransData.destY != srcTransData.destY )
+        if ( srcTransData.destX != dstTransData.destX ||
+             srcTransData.destY != dstTransData.destY )
         {
-            __asm nop
+            hasValidTransmissionRects = false;
+            break;
         }
     }
 
+    if ( hasValidTransmissionRects == false )
+    {
+        __asm nop
+    }
+
+    // Verify palette transmission rectangle.
+    if ( clutTransData.destX != palTransData.destX ||
+         clutTransData.destY != palTransData.destY )
+    {
+        __asm nop
+    }
+
+    // Just for some visual debugging.
+    platformTex->palUnknowns = palTransData;
+    platformTex->hasPalUnknowns = true;
+
     // Weird debugging shit.
-    platformTex->PerformDebugChecks();
+    //platformTex->PerformDebugChecks(textureMeta);
 }
 
 /* convert from CLUT format used by the ps2 */
@@ -480,7 +483,7 @@ static void clut(uint8 *texels, uint32 width, uint32 height)
     unclut( texels, width, height );
 }
 
-void NativeTexture::convertFromPS2(uint32 aref)
+void NativeTexture::convertFromPS2(void)
 {
 	if (platform != PLATFORM_PS2)
 		return;
@@ -503,26 +506,23 @@ void NativeTexture::convertFromPS2(uint32 aref)
 
 	for (uint32 j = 0; j < platformTex->mipmapCount; j++)
     {
-		bool swizzled = (platformTex->isSwizzled[j]);
-
         uint32 depth = platformTex->mipmapDepth[j];
 
-		if (depth == 4)
+        // unswizzle the image data.
         {
-			if (swizzled)
-            {
-				platformTex->swizzleDecryptPS2(j);
-            }
-		}
-        else if (depth == 8)
-        {
-			if (swizzled)
-            {
-				platformTex->swizzleDecryptPS2(j);
-            }
+		    bool opSuccess = platformTex->swizzleDecryptPS2(j);
 
+            assert( opSuccess == true );
+        }
+
+		if (platformTex->paletteType == PALETTE_8BIT)
+        {
             uint8 *texels = (uint8*)platformTex->texels[j];
 			unclut(texels, platformTex->width[j], platformTex->height[j]);
+        }
+        else if (depth == 16)
+        {
+            // TODO: do we have to do anything?
         }
         else if (depth == 32)
         {
@@ -535,15 +535,16 @@ void NativeTexture::convertFromPS2(uint32 aref)
                 uint8 red, green, blue, alpha;
                 texelData->getcolor(i, red, green, blue, alpha);
 
-			    // swap R and B
 			    // fix alpha
-                texelData->setcolor(i, blue, green, red, (uint32)alpha * 0xFF / 0x80);
+                if (this->convertAlpha)
+                {
+                    alpha = (uint32)alpha * 0xFF / 0x80;
+                }
+
+			    // swap R and B
+                texelData->setcolor(i, red, green, blue, alpha);
 			}
 		}
-        else
-        {
-            assert( 0 );
-        }
 	}
 
 	if (platformTex->paletteType != PALETTE_NONE)
@@ -554,24 +555,21 @@ void NativeTexture::convertFromPS2(uint32 aref)
         {
             uint8 red, green, blue, alpha;
 
-            browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
+            if (this->convertAlpha)
             {
-			    if ((platformTex->alphaDistribution & 0x1) == 0 && alpha >= aref)
+                browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
                 {
-				    platformTex->alphaDistribution |= 0x1;
+                    if (this->convertAlpha)
+                    {
+			            uint32 newalpha = alpha * 0xff;
+
+			            newalpha /= 0x80;
+
+			            alpha = newalpha;
+                    }
                 }
-			    else if ((platformTex->alphaDistribution & 0x2) == 0 && alpha < aref)
-                {
-				    platformTex->alphaDistribution |= 0x2;
-                }
-
-			    uint32 newalpha = alpha * 0xff;
-
-			    newalpha /= 0x80;
-
-			    alpha = newalpha;
+                puttexelcolor(paletteTexelSource, i, this->rasterFormat, red, green, blue, alpha);
             }
-            puttexelcolor(paletteTexelSource, i, this->rasterFormat, blue, green, red, alpha);
 		}
 	}
 
@@ -633,37 +631,30 @@ void NativeTexture::convertToPS2( void )
         delete platformTex;
     }
 
+    // Initialize the swizzling state.
+    uint32 mipmapCount = ps2tex->mipmapCount;
+
+    ps2tex->swizzleWidth.resize( mipmapCount );
+    ps2tex->swizzleHeight.resize( mipmapCount );
+    ps2tex->swizzleEncodingType.resize( mipmapCount );
+
     // Crypt the texel data.
     for ( uint32 n = 0; n < ps2tex->mipmapCount; n++ )
     {
-        bool shouldSwizzle = ( true );  // todo: decide whether swizzling should be a thing.
-
         uint32 curWidth = ps2tex->width[n];
         uint32 curHeight = ps2tex->height[n];
         uint32 depth = ps2tex->mipmapDepth[n];
 
-        // Initialize the swizzling state.
-        ps2tex->isSwizzled.push_back( false );
-        ps2tex->swizzleWidth.push_back( 0 );
-        ps2tex->swizzleHeight.push_back( 0 );
-
-        if ( depth == 4 )
-        {
-            if ( shouldSwizzle )
-            {
-                ps2tex->swizzleEncryptPS2(n);
-            }
-        }
-        else if ( depth == 8 )
+        // Prepare the pixels.
+        if (ps2tex->paletteType == PALETTE_8BIT)
         {
             clut( (uint8*)ps2tex->texels[n], curWidth, curHeight );
-
-            if ( shouldSwizzle )
-            {
-                ps2tex->swizzleEncryptPS2(n);
-            }
         }
-        else if ( depth == 32 )
+        else if (depth == 16)
+        {
+            // TODO: do we have to do anything?
+        }
+        else if (depth == 32)
         {
             typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
@@ -674,14 +665,30 @@ void NativeTexture::convertToPS2( void )
                 uint8 red, green, blue, alpha;
                 texelData->getcolor(i, red, green, blue, alpha);
 
-			    // swap R and B
 			    // fix alpha
-                texelData->setcolor(i, blue, green, red, (uint32)alpha * 0x80 / 0xFF);
+                if (this->convertAlpha)
+                {
+                    alpha = (uint32)alpha * 0x80 / 0xFF;
+                }
+
+			    // swap R and B
+                texelData->setcolor(i, red, green, blue, alpha);
 			}
         }
-        else
+
+        // Initialize the swizzling state.
+        eFormatEncodingType internalFormat = 
+            getFormatEncodingFromRasterFormat(this->rasterFormat, ps2tex->paletteType);
+
+        ps2tex->swizzleEncodingType[n] = internalFormat;
+
+        assert(internalFormat != FORMAT_UNKNOWN);
+
+        // Perform swizzling.
         {
-            assert( 0 );
+            bool opSuccess = ps2tex->swizzleEncryptPS2(n);
+
+            assert( opSuccess == true );
         }
     }
 
@@ -693,23 +700,22 @@ void NativeTexture::convertToPS2( void )
         {
             uint8 red, green, blue, alpha;
 
-            browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
+            if (this->convertAlpha)
             {
-			    uint32 newalpha = alpha * 0x80;
+                browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
+                {
+                    if (this->convertAlpha)
+                    {
+			            uint32 newalpha = alpha * 0x80;
 
-			    newalpha /= 0xff;
+			            newalpha /= 0xff;
 
-			    alpha = newalpha;
+			            alpha = newalpha;
+                    }
+                }
+                puttexelcolor(paletteTexelSource, i, this->rasterFormat, red, green, blue, alpha);
             }
-            puttexelcolor(paletteTexelSource, i, this->rasterFormat, blue, green, red, alpha);
 		}
-
-        // Initialize palette unknowns.
-        ps2MipmapTransmissionData unkData;
-        unkData.destX = 0;
-        unkData.destY = 0;
-
-        ps2tex->palUnknowns = unkData;
 	}
 }
 

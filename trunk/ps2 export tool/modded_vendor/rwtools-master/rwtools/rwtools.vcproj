@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\txdread.ps2gsman.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\txdread.xbox.hxx"
 				>
 			</File>

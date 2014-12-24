@@ -126,6 +126,33 @@ struct Bitmap
         height = this->height;
     }
 
+    inline void enlargePlane( uint32 reqWidth, uint32 reqHeight )
+    {
+        bool needsResize = false;
+
+        uint32 curWidth = this->width;
+        uint32 curHeight = this->height;
+
+        if ( curWidth < reqWidth )
+        {
+            curWidth = reqWidth;
+
+            needsResize = true;
+        }
+
+        if ( curHeight < reqHeight )
+        {
+            curHeight = reqHeight;
+
+            needsResize = true;
+        }
+
+        if ( needsResize )
+        {
+            this->setSize( curWidth, curHeight );
+        }
+    }
+
     inline uint32 getDepth( void ) const
     {
         return this->depth;
@@ -159,14 +186,15 @@ struct Bitmap
     enum eBlendMode
     {
         BLEND_MODULATE,
-        BLEND_MODULATE_ADD,
         BLEND_ADDITIVE
     };
 
     enum eShadeMode
     {
         SHADE_SRCALPHA,
-        SHADE_INVSRCALPHA
+        SHADE_INVSRCALPHA,
+        SHADE_ZERO,
+        SHADE_ONE
     };
 
     struct sourceColorPipeline abstract
