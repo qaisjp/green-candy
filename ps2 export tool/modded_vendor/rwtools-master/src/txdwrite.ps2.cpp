@@ -358,7 +358,12 @@ void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
     paramsOut = params;
 }
 
-bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData, const uint32 mipmapBasePointer[], const uint32 mipmapBufferWidth[], const uint32 mipmapMemorySize[], uint32 maxMipmaps, eMemoryLayoutType memLayoutType) const
+bool NativeTexturePS2::generatePS2GPUData(
+    uint32 gameVersion,
+    ps2GSRegisters& gpuData,
+    const uint32 mipmapBasePointer[], const uint32 mipmapBufferWidth[], const uint32 mipmapMemorySize[], uint32 maxMipmaps, eMemoryLayoutType memLayoutType,
+    uint32 clutBasePointer
+) const
 {
     // This algorithm is guarranteed to produce correct values on identity-transformed PS2 GTA:SA textures.
     // There is no guarrantee that this works for modified textures!
@@ -371,7 +376,25 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData, const uint32 
 
     eRasterFormat pixelFormatRaster = parent->rasterFormat;
 
-    tex0.textureBasePointer = mipmapBasePointer[ 0 ];
+    // The base pointers are stored differently depending on game version.
+    uint32 finalTexBasePointer = 0;
+    uint32 finalClutBasePointer = 0;
+
+    if (gameVersion == rw::GTA3_1 || gameVersion == rw::GTA3_2 || gameVersion == rw::GTA3_3 || gameVersion == rw::GTA3_4)
+    {
+        // We actually preallocate the textures on the game engine GS memory.
+        // TODO: find out the TXD allocation order and fix this!
+        uint32 totalMemOffset = 0;
+
+        finalTexBasePointer = mipmapBasePointer[ 0 ] + totalMemOffset;
+        finalClutBasePointer = clutBasePointer + totalMemOffset;
+    }
+    else
+    {
+        finalTexBasePointer = mipmapBasePointer[ 0 ];
+    }
+
+    tex0.textureBasePointer = finalTexBasePointer;
     tex0.textureBufferWidth = mipmapBufferWidth[ 0 ];
     tex0.pixelStorageFormat = memLayoutType;
 
@@ -399,7 +422,7 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData, const uint32 
 
     tex0.texColorComponent = 1;     // with alpha
     tex0.texFunction = this->gsParams.textureFunction;
-    tex0.clutBufferBase = 0;
+    tex0.clutBufferBase = finalClutBasePointer;
 
     // Decide about clut pixel storage format.
     {
@@ -425,7 +448,7 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData, const uint32 
     tex0.clutMode = 0;  // CSM1
     tex0.clutEntryOffset = 0;
 
-    if ( depth == 4 || depth == 8 )
+    if ( this->paletteType != PALETTE_NONE )
     {
         tex0.clutLoadControl = 1;
     }
@@ -459,6 +482,8 @@ bool NativeTexturePS2::generatePS2GPUData(ps2GSRegisters& gpuData, const uint32 
     ps2GSRegisters::MIPTBP1_REG miptbp1;
     ps2GSRegisters::MIPTBP2_REG miptbp2;
 
+    // We want to fill out the entire fields of the registers.
+    // This is why we assume the max mipmaps should meet that standard.
     assert(maxMipmaps >= 7);
 
     // Store the sizes and widths in the registers.
@@ -524,6 +549,17 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
     // Write mask name.
     bytesWritten += writeStringSection(rw, this->maskName.c_str(), this->maskName.size());
 
+    // Prepare the image data (if not already prepared).
+     uint32 mipmapCount = platformTex->mipmapCount;
+
+    for ( uint32 n = 0; n < mipmapCount; n++ )
+    {
+        // Put the image data into the required format.
+        bool hasEncrypted = platformTex->swizzleEncryptPS2( n );
+
+        assert( hasEncrypted == true );
+    }
+
     // Write the texture data.
     {
         // Write the master header.
@@ -552,8 +588,6 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
                 paletteTexelMemory = platformTex->palette;
             }
         }
-
-        uint32 mipmapCount = platformTex->mipmapCount;
 
         // Calculate block sizes.
         size_t justTextureSize = 0;
@@ -585,7 +619,17 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         // Write the texture meta information.
         const size_t maxMipmaps = 7;
 
+        // Make sure all textures are in the required encoding format.
+        eFormatEncodingType requiredFormat = platformTex->getHardwareRequiredEncoding(header.version);
+
+        // Get the format we should decode to.
+        eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(this->rasterFormat, platformTex->paletteType);
+
+        assert( requiredFormat != FORMAT_UNKNOWN );
+        assert( actualEncodingType != FORMAT_UNKNOWN );
+
         ps2MipmapTransmissionData mipmapTransData[ maxMipmaps ];
+        ps2MipmapTransmissionData clutTransData;
         {
             SKIP_HEADER();
 
@@ -594,12 +638,15 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             uint32 mipmapBufferWidth[ maxMipmaps ];
             uint32 mipmapMemorySize[ maxMipmaps ];
 
-            eMemoryLayoutType memLayoutType;
+            uint32 clutBasePointer;
+            uint32 clutMemSize;
 
-            bool couldAllocate = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, memLayoutType);
+            eMemoryLayoutType decodedMemLayoutType;
+
+            bool couldAllocate = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, decodedMemLayoutType, clutBasePointer, clutMemSize, clutTransData);
 
             ps2GSRegisters gpuData;
-            bool isCompatible = platformTex->generatePS2GPUData(gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, memLayoutType);
+            bool isCompatible = platformTex->generatePS2GPUData(header.version, gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer);
 
             assert( isCompatible == true );
 
@@ -611,7 +658,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             {
                 formatFlags |= 0x20000;
             }
-            else if ( platformTex->isSwizzled[0] )
+            else if ( platformTex->hasSwizzle )
             {
                 formatFlags |= 0x10000;
             }
@@ -630,7 +677,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             metaHeader.rasterFormat = formatFlags;
             metaHeader.dataSize = justTextureSize;
             metaHeader.paletteDataSize = justPaletteSize;
-            metaHeader.combinedGPUDataSize = platformTex->calculateGPUDataSize(mipmapBasePointer, mipmapMemorySize, maxMipmaps, memLayoutType, palDataSize / 4);
+            metaHeader.combinedGPUDataSize = platformTex->calculateGPUDataSize(mipmapBasePointer, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer, clutMemSize);
             metaHeader.skyMipmapVal = platformTex->skyMipMapVal;
 
             rw.write((const char*)&metaHeader, sizeof(metaHeader));
@@ -648,39 +695,18 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             for ( uint32 n = 0; n < mipmapCount; n++ )
             {
                 // TODO: swizzle the image data (if required)
+                assert(platformTex->swizzleEncodingType[n] == requiredFormat);
 
                 uint32 curDataSize = platformTex->dataSizes[n];
 
                 if ( requiresHeaders )
                 {
-                    uint32 depth = platformTex->mipmapDepth[ n ];
-                    bool isSwizzled = platformTex->isSwizzled[ n ];
-
-                    bool requiresHalving = false;
-
-                    if (header.version == rw::GTA3_1 || header.version == rw::GTA3_2 ||
-                        header.version == rw::GTA3_3 || header.version == rw::GTA3_4)
-                    {
-                        if (isSwizzled && depth == 8)
-                        {
-                            requiresHalving = true;
-                        }
-                    }
-                    else
-                    {
-                        if (isSwizzled)
-                        {
-                            requiresHalving = true;
-                        }
-                    }
-
                     uint32 texWidth = platformTex->swizzleWidth[ n ];
                     uint32 texHeight = platformTex->swizzleHeight[ n ];
 
-                    if (requiresHalving)
+                    if (requiredFormat == FORMAT_TEX32 && actualEncodingType == FORMAT_IDTEX8_COMPRESSED)
                     {
-                        texWidth /= 2;
-                        texHeight /= 2;
+                        texWidth *= 2;
                     }
 
                     // Save the important stuff.
@@ -711,7 +737,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
                         rw,
                         palTexWidth, palTexHeight,
                         palDataSize,
-                        platformTex->palUnknowns.destX, platformTex->palUnknowns.destY
+                        clutTransData.destX, clutTransData.destY
                     );
 
                     bytesWritten += sizeof(textureImageDataHeader);

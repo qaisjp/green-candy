@@ -22,11 +22,14 @@ struct Texture
 	Texture(void);
 };
 
-union texFormatInfo
+// I do not know why I did this a union!
+// I must have been drunk or something.
+struct texFormatInfo
 {
     uint32 filterMode : 8;
     uint32 uAddressing : 4;
     uint32 vAddressing : 4;
+    //uint32 usesMipmaps : 1; // courtesy of DK22Pac
 };
 
 #include "renderware.txd.pixelformat.h"
@@ -171,6 +174,7 @@ struct NativeTexture
     uint8 vAddressing : 4;
 
 	bool hasAlpha;
+    bool convertAlpha;
 
     eRasterFormat rasterFormat;
 
@@ -191,7 +195,7 @@ struct NativeTexture
 
     void newDirect3D(void);
 
-	void convertFromPS2(uint32 aref);
+	void convertFromPS2(void);
     void convertToPS2(void);
 	void convertFromXbox(void);
 	void convertToFormat(eRasterFormat format);

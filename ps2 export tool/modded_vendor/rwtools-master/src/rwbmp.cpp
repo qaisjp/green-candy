@@ -114,6 +114,20 @@ static inline void getblendfactor(
         blendBlue = invAlpha;
         blendAlpha = invAlpha;
     }
+    else if ( shadeMode == Bitmap::SHADE_ONE )
+    {
+        blendRed = 1;
+        blendGreen = 1;
+        blendBlue = 1;
+        blendAlpha = 1;
+    }
+    else if ( shadeMode == Bitmap::SHADE_ZERO )
+    {
+        blendRed = 0;
+        blendGreen = 0;
+        blendBlue = 0;
+        blendAlpha = 0;
+    }
     else
     {
         blendRed = 1;
