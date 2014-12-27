@@ -102,7 +102,7 @@ eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(uint32 version
 
 bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
 {
-    NativeTexturePS2::GSTexture& gsTex = this->mipmaps[i];
+    NativeTexturePS2::GSMipmap& gsTex = this->mipmaps[i];
 
     // Determine the encoding formats so it can be stored into PS2 GS memory correctly.
     eFormatEncodingType currentEncoding = gsTex.swizzleEncodingType;
@@ -117,13 +117,14 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
     // Get picture meta information.
     uint32 realImageWidth = gsTex.width;
     uint32 realImageHeight = gsTex.height;
-    uint32 encryptedWidth = realImageWidth;
-    uint32 encryptedHeight = realImageHeight;
 
     if ( currentEncoding != encodeTo )
     {
         uint32 newDataSize;
         void *newtexels;
+
+        uint32 encryptedWidth;
+        uint32 encryptedHeight;
 
         newtexels =
             ps2GSPixelEncodingFormats::packImageData(
@@ -161,7 +162,7 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
 
 bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
 {
-    NativeTexturePS2::GSTexture& gsTex = this->mipmaps[i];
+    NativeTexturePS2::GSMipmap& gsTex = this->mipmaps[i];
 
     eFormatEncodingType currentEncoding = gsTex.swizzleEncodingType;
 
@@ -176,8 +177,6 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
     // Get picture meta information.
     uint32 realImageWidth = gsTex.width;
     uint32 realImageHeight = gsTex.height;
-    uint32 encryptedWidth = gsTex.swizzleWidth;
-    uint32 encryptedHeight = gsTex.swizzleHeight;
 
     if ( currentEncoding != decodeTo )
     {
@@ -188,7 +187,7 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
             ps2GSPixelEncodingFormats::unpackImageData(
                 currentEncoding, decodeTo,
                 gsTex.texels,
-                encryptedWidth, encryptedHeight,
+                gsTex.swizzleWidth, gsTex.swizzleHeight,
                 newDataSize,
                 realImageWidth, realImageHeight
             );

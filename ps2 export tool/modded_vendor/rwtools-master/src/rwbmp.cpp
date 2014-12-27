@@ -6,6 +6,16 @@
 namespace rw
 {
 
+static inline double unpackcolor( uint8 color )
+{
+    return ( (double)color / 255.0 );
+}
+
+static uint8 packcolor( double color )
+{
+    return (uint8)( color * 255.0 );
+}
+
 void Bitmap::setSize( uint32 width, uint32 height )
 {
     uint32 oldWidth = this->width;
@@ -28,10 +38,10 @@ void Bitmap::setSize( uint32 width, uint32 height )
             {
                 uint32 colorIndex = ( y * width + x );
 
-                uint8 srcRed = 0;
-                uint8 srcGreen = 0;
-                uint8 srcBlue = 0;
-                uint8 srcAlpha = 0;
+                uint8 srcRed = packcolor( this->bgRed );
+                uint8 srcGreen = packcolor( this->bgGreen );
+                uint8 srcBlue = packcolor( this->bgBlue );
+                uint8 srcAlpha = 255;
 
                 // Try to get a source color.
                 if ( oldTexels != NULL && x < oldWidth && y < oldHeight )
@@ -63,16 +73,6 @@ void Bitmap::setSize( uint32 width, uint32 height )
     this->width = width;
     this->height = height;
     this->dataSize = dataSize;
-}
-
-static inline double unpackcolor( uint8 color )
-{
-    return ( (double)color / 255.0 );
-}
-
-static uint8 packcolor( double color )
-{
-    return (uint8)( color * 255.0 );
 }
 
 static inline void fetchpackedcolor(

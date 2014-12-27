@@ -252,7 +252,7 @@ static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterForm
     return setColor;
 }
 
-static inline bool getrastermeta(uint32 rasterFormat, uint32 colorItemCount, uint32& dataSize, uint32& colorDepth)
+static inline bool getrastermeta(eRasterFormat rasterFormat, uint32 colorItemCount, uint32& dataSize, uint32& colorDepth)
 {
     bool validFormat = false;
 
@@ -261,23 +261,28 @@ static inline bool getrastermeta(uint32 rasterFormat, uint32 colorItemCount, uin
         rasterFormat == RASTER_4444)
     {
         dataSize = colorItemCount*sizeof(uint16);
-        colorDepth = 16;
 
         validFormat = true;
     }
-    else if (rasterFormat == RASTER_888)
-    {
-        dataSize = colorItemCount*3;
-        colorDepth = 24;
-
-        validFormat = true;
-    }
-    else if (rasterFormat == RASTER_8888)
+    else if (rasterFormat == RASTER_8888 || rasterFormat == RASTER_8888)
     {
         dataSize = colorItemCount*sizeof(uint32);
-        colorDepth = 32;
 
         validFormat = true;
+    }
+
+    if ( validFormat )
+    {
+        uint32 depth = Bitmap::getRasterFormatDepth( rasterFormat );
+
+        if ( depth == 0 )
+        {
+            validFormat = false;
+        }
+        else
+        {
+            colorDepth = depth;
+        }
     }
 
     return validFormat;
