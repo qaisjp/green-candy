@@ -7,407 +7,13 @@
 namespace rw
 {
 
-template <typename arrayType>
-struct swizzle_crypt
-{
-public:
-    // TODO: improve these parameters.
-    // TODO: rewrite this into a PS2 GS memory layout manager.
-    static const uint32 SWIZZLE_BLOCK_WIDTH = 2;     // pair amount
-    static const uint32 SWIZZLE_BLOCK_HEIGHT = 2;    // pair amount
-    static const uint32 SWIZZLE_MAGNITUDE = 2;
-    static const uint32 SWIZZLE_MIRROR_LENGTH =  ( SWIZZLE_BLOCK_WIDTH * 2 );
-    static const uint32 SWIZZLE_PATCH_LENGTH = 8;
-    static const uint32 SWIZZLE_ALIGNMENT_WIDTH = ( SWIZZLE_PATCH_LENGTH * SWIZZLE_MAGNITUDE );
-    static const uint32 SWIZZLE_ALIGNMENT_HEIGHT = ( SWIZZLE_PATCH_LENGTH * SWIZZLE_MAGNITUDE );
-
-    static inline uint32 ALIGN_TRANSFORM_FAST( uint32 num, uint32 alignByPowerOfTwo )
-    {
-        return ( num & ~(alignByPowerOfTwo-1) );
-    }
-
-    inline static void getswizzlecoord(uint32 x, uint32 y, uint32& swizzleX, uint32& swizzleY)
-    {
-        // =====================================================
-        // Algorithm pipeline:
-        // + IDTEX4 -> RGBA | (ON PS2 HARDWARE) | -> PSMCT32
-        // + IDTEX8 -> RGBA | (ON PS2 HARDWARE) | -> PSMCT32
-        // - RGBA -> IDTEX4
-        // - RGBA -> IDTEX8
-        // =====================================================
-        // for details, see http://mtz01-a.stanford.edu/resources/SonyPS2/pdf00005.pdf pages 172+
-
-        // Get a block coordinate; this is an index into the image array whose x and y coords are aligned.
-        uint32 block_location_yDim =
-            ALIGN_TRANSFORM_FAST( y, SWIZZLE_ALIGNMENT_HEIGHT );
-        uint32 block_location_xDim =
-            ALIGN_TRANSFORM_FAST( x, SWIZZLE_ALIGNMENT_WIDTH ) * SWIZZLE_BLOCK_HEIGHT;
-
-        // Create a swap pattern along the y axis based on 0011 1100 0011 1100 ...
-        uint32 swap_pattern = ( ( y + SWIZZLE_BLOCK_HEIGHT ) / ( 2 * SWIZZLE_BLOCK_HEIGHT ) ) % ( SWIZZLE_BLOCK_HEIGHT );
-        
-        // This decides whether to swap data with the neighboring block.
-        // 0044 4400 0044 4400 ...
-        uint32 swap_selector = swap_pattern * ( SWIZZLE_MIRROR_LENGTH );
-        
-        // Create a position (pattern) along the y axis based on 0101 2323 4545 6767 0101 ...
-        uint32 y_pos_pattern =
-            ( ALIGN_TRANSFORM_FAST( y, SWIZZLE_BLOCK_HEIGHT * 2 ) / SWIZZLE_BLOCK_HEIGHT ) + ( y % SWIZZLE_BLOCK_HEIGHT );
-        
-        uint32 ypos =
-            ( y_pos_pattern ) % ( SWIZZLE_PATCH_LENGTH );
-
-        // 0202 4646 8,10,8,10 12,14,12,14 0202 ...
-        ypos *= ( SWIZZLE_BLOCK_HEIGHT );
-        
-        // Dimensionalize the ypos parameters (into a texture array index).
-        uint32 column_location_yDim =
-            ( ypos );
-        // 0,4,8,12 16,20,24,28 0,4,8,12 ...
-        // 16,20,24,28 0,4,8,12 16,20,24,28 ...
-        uint32 column_location_xDim =
-            ( ( x + swap_selector ) % ( SWIZZLE_PATCH_LENGTH ) ) * ( SWIZZLE_MIRROR_LENGTH );
-
-        // Create a pattern of 0011 0011 0011 ...
-        uint32 byte_sum_y_pattern =
-            ( ( y / SWIZZLE_BLOCK_HEIGHT ) & 1 );
-            
-        // Create a pattern of 0000 0000 2222 2222 0000 0000 2222 ...
-        uint32 byte_sum_x_pattern =
-            ( ( x / ( SWIZZLE_BLOCK_WIDTH * 2 ) ) & 2 );
-        
-        // Set this new calculation as an extension on the x Axis.
-        uint32 byte_sum_xDim = ( byte_sum_y_pattern + byte_sum_x_pattern );
-
-        // Remember to use a block-font to read this.
-
-        // Effective end permutation (image coords 2 block coords):
-        //-------------------------------------------------------------------
-        //          rowmanip        first tuplet           second tuplet
-        //-------------------------------------------------------------------
-        // matrix: (1st->1st): |0,4,8,12 16,20,24,28| |2,6,10,14 18,22,26,30|
-        //         (2nd->3rd): |0,4,8,12 16,20,24,28| |2,6,10,14 18,22,26,30|
-        //         (3rd->1st): |17,21,25,29 1,5,9,13| |19,23,27,31 3,7,11,15|
-        //         (4th->3rd): |17,21,25,29 1,5,9,13| |19,23,27,31 3,7,11,15|
-        //
-        // matrix: (5th->5th): |16,20,24,28 0,4,8,12| |18,22,26,30 2,6,10,14|
-        //         (6th->7th): |16,20,24,28 0,4,8,12| |18,22,26,30 2,6,10,14|
-        //         (7th->5th): |1,5,9,13 17,21,25,29| |3,7,11,15 19,23,27,31|
-        //         (8th->7th): |1,5,9,13 17,21,25,29| |3,7,11,15 19,23,27,31|
-        // 
-        uint32 block_coord_yDim = ( column_location_yDim );
-        uint32 block_coord_xDim = ( column_location_xDim + byte_sum_xDim );
-
-        // Put everything together into a texture dimension access.
-        // This is in swizzle coordinates.
-        swizzleY = ( block_location_yDim + block_coord_yDim );
-        swizzleX = ( block_location_xDim + block_coord_xDim );
-    }
-
-    inline static bool getimagecoord(uint32 x, uint32 y, uint32& imgX, uint32& imgY)
-    {
-        // Reverse permutation (block coords 2 image coords tuples):
-        //-------------------------------------------------------------------
-        // entries in this matrix are tuples:
-        // - first entry: target x coord
-        // - second entry: target y row
-        //-------------------------------------------------------------------
-        // matrix: (1st row): (0,0),(4,2),(8,0),(12,2)
-        //                    (1,0),(5,2),(9,0),(13,2)
-        //                    (2,0),(6,2),(10,0),(14,2)
-        //                    (3,0),(7,2),(11,0),(15,2)
-        //                    (4,0),(0,2),(12,0),(8,2)
-        //                    (5,0),(1,2),(13,0),(9,2)
-        //                    (6,0),(2,2),(14,0),(10,2)
-        //                    (7,0),(3,2),(15,0),(11,2)
-        //
-        // matrix: (3rd row): (0,1),(4,3),(8,1),(12,3)
-        //                    (1,1),(5,3),(9,1),(13,3)
-        //                    (2,1),(6,3),(10,1),(14,3)
-        //                    (3,1),(7,3),(11,1),(15,3)
-        //                    (4,1),(0,3),(12,1),(8,3)
-        //                    (5,1),(1,3),(13,1),(9,3)
-        //                    (6,1),(2,3),(14,1),(10,3)
-        //                    (7,1),(3,3),(15,1),(11,3)
-        //
-        // matrix: (5th row): (4,4),(0,6),(12,4),(8,6)
-        //                    (5,4),(1,6),(13,4),(9,6)
-        //                    (6,4),(2,6),(14,4),(10,6)
-        //                    (7,4),(3,6),(15,4),(11,6)
-        //                    (0,4),(4,6),(8,4),(12,6)
-        //                    (1,4),(5,6),(9,4),(13,6)
-        //                    (2,4),(6,6),(10,4),(14,6)
-        //                    (3,4),(7,6),(11,4),(15,6)
-        //
-        // matrix: (7th row): (4,5),(0,7),(12,5),(8,7)
-        //                    (5,5),(1,7),(13,5),(9,7)
-        //                    (6,5),(2,7),(14,5),(10,7)
-        //                    (7,5),(3,7),(15,5),(11,7)
-        //                    (0,5),(4,7),(8,5),(12,7)
-        //                    (1,5),(5,7),(9,5),(13,7)
-        //                    (2,5),(6,7),(10,5),(14,7)
-        //                    (3,5),(7,7),(11,5),(15,7)
-        //-------------------------------------------------------------------
-        // this algorithm is undefined every two swizzle rows.
-        //
-        if ( y % 2 == 1 )
-            return false;
-
-        // Turn swizzle coordinates back into image coordinates.
-        uint32 swizzle_block_yDim = ALIGN_TRANSFORM_FAST( y, SWIZZLE_MIRROR_LENGTH );
-        uint32 swizzle_block_xDim = ALIGN_TRANSFORM_FAST( x, SWIZZLE_ALIGNMENT_WIDTH * SWIZZLE_BLOCK_HEIGHT );
-
-        uint32 swizzle_block_coord_yDim = ( y - swizzle_block_yDim );
-        uint32 swizzle_block_coord_xDim = ( x - swizzle_block_xDim );
-
-        uint32 matrix_rowindex = ( swizzle_block_coord_xDim / SWIZZLE_MIRROR_LENGTH );
-        uint32 matrix_colindex = ( swizzle_block_coord_xDim % SWIZZLE_MIRROR_LENGTH );
-
-        uint32 matrix_colbyrow = ( matrix_colindex * SWIZZLE_PATCH_LENGTH + matrix_rowindex );
-
-        //
-
-        uint32 imgblock_base_xDim =
-            ( SWIZZLE_PATCH_LENGTH * ( matrix_colindex / SWIZZLE_BLOCK_WIDTH ) );
-
-        uint32 imgblock_colpos_split =
-            ( matrix_colindex & 0x01 ) * SWIZZLE_MIRROR_LENGTH;
-
-        uint32 imgblock_sectormod =
-            ( ( y & 0x04 ) / 4 ) * SWIZZLE_MIRROR_LENGTH;
-
-        uint32 imgblock_xDim =
-            imgblock_base_xDim + ( matrix_colbyrow - imgblock_base_xDim - imgblock_colpos_split + imgblock_sectormod ) % ( SWIZZLE_PATCH_LENGTH );
-        uint32 imgblock_yDim =
-            ( matrix_colindex & 1 ) * 2 + ( swizzle_block_coord_yDim & 2 ) / 2;
-
-        // Rescale the block coordinates to image block bounds.
-        uint32 image_block_offX = swizzle_block_xDim / SWIZZLE_BLOCK_HEIGHT;
-        uint32 image_block_offY = swizzle_block_yDim;
-
-        // Output the target coordinate.
-        imgX = ( image_block_offX + imgblock_xDim );
-        imgY = ( image_block_offY + imgblock_yDim );
-        return true;
-    }
-
-    inline void process_unswizzle_image_section(
-        const arrayType *srcData, arrayType *dstDecrypt,
-        uint32 imgOffX, uint32 imgOffY, uint32 imgSectionWidth, uint32 imgSectionHeight, uint32 imgWidth,
-        uint32 swizzleOffX, uint32 swizzleOffY, uint32 swizzleWidth, uint32 swizzleHeight
-        )
-    {
-        for (uint32 y = 0; y < imgSectionHeight; y++)
-        {
-            for (uint32 x = 0; x < imgSectionWidth; x++)
-            {
-                // Get real image coordinates.
-                uint32 curX = x + imgOffX;
-                uint32 curY = y + imgOffY;
-
-                // Get the swap texture location.
-                uint32 swizzleX, swizzleY;
-                getswizzlecoord(x, y, swizzleX, swizzleY);
-
-                // Get real swizzle coords.
-                uint32 swizzleRealX = swizzleX + swizzleOffX;
-                uint32 swizzleRealY = swizzleY + swizzleOffY;
-
-                // Assert that the coordinates are still on our allocated plane.
-                // If not, then the texture is not a valid swizzle encrypted plane.
-                uint32 targetVal = 0;
-
-                if ( swizzleRealX < swizzleWidth && swizzleRealY < swizzleHeight )
-                {
-                    // Convert it to an array index.
-                    uint32 swizzle_index = PixelFormat::coord2index( swizzleRealX, swizzleRealY, swizzleWidth );
-
-                    // Swap the picture data.
-                    srcData->getvalue( swizzle_index, targetVal );
-                }
-
-                uint32 dest_index = PixelFormat::coord2index( curX, curY, imgWidth );
-
-                dstDecrypt->setvalue( dest_index, targetVal );
-            }
-        }
-    }
-
-    inline void process_swizzle_image_section(
-        const arrayType *srcToBeEncryptedData, arrayType *dstEncrypted,
-        uint32 imgOffX, uint32 imgOffY, uint32 imgSectionWidth, uint32 imgSectionHeight, uint32 imgWidth,
-        uint32 swizzleOffX, uint32 swizzleOffY, uint32 swizzleWidth, uint32 swizzleHeight
-        )
-    {
-        for (uint32 y = 0; y < imgSectionHeight; y++)
-        {
-            for (uint32 x = 0; x < imgSectionWidth; x++)
-            {
-                // Get the real image coordinates.
-                uint32 curX = x + imgOffX;
-                uint32 curY = y + imgOffY;
-
-                uint32 swizzleX, swizzleY;
-                getswizzlecoord(x, y, swizzleX, swizzleY);
-
-                // Get the real swizzle coords.
-                uint32 swizzleRealX = swizzleX + swizzleOffX;
-                uint32 swizzleRealY = swizzleY + swizzleOffY;
-
-                // Convert it to an array index.
-                uint32 swizzle_index = PixelFormat::coord2index(swizzleRealX, swizzleRealY, swizzleWidth);
-
-                // Swap the picture data.
-                uint32 dest_index = PixelFormat::coord2index( curX, curY, imgWidth );
-
-                uint32 swapWith;
-
-                srcToBeEncryptedData->getvalue( dest_index, swapWith );
-
-                dstEncrypted->setvalue( swizzle_index, swapWith );
-            }
-        }
-    }
-
-public:
-    inline arrayType* unswizzle(
-        uint32& dstDataSize,
-        const arrayType *srcData,
-        uint32 imageWidth, uint32 imageHeight,
-        uint32 swizzleWidth, uint32 swizzleHeight)
-    {
-        // The actual image is double the given size.
-        // This is because swizzle data is interleaved.
-        uint32 swizzle_interleave_width = imageWidth / 2;
-
-        uint32 dataCount = ( imageWidth * imageHeight );
-
-        arrayType *dstDecrypt = arrayType::allocate( dataCount );
-
-        // The swizzled image is interleaved.
-        // We need to process it twice.
-        process_unswizzle_image_section(
-            srcData, dstDecrypt,
-            0, 0, swizzle_interleave_width, imageHeight, imageWidth,
-            0, 0, swizzleWidth, swizzleHeight
-        );
-        process_unswizzle_image_section(
-            srcData, dstDecrypt,
-            swizzle_interleave_width, 0, swizzle_interleave_width, imageHeight, imageWidth,
-            0, 1, swizzleWidth, swizzleHeight
-        );
-
-        dstDataSize = arrayType::sizeitems( dataCount );
-
-        return dstDecrypt;
-    }
-
-    inline void calculateswizzleplane(uint32 imageWidth, uint32 imageHeight, uint32& swizzleWidthOut, uint32& swizzleHeightOut)
-    {
-        // The swizzled picture is interleaved.
-        // The first and third tracks are taken by the left picture side.
-        // The second and fourth tracks are taken by the right side.
-        uint32 swizzle_interleave_width = imageWidth / 2;
-
-        // Calculate the required infinite swizzle plane size.
-        uint32 swizzleMaxX = 1;
-        uint32 swizzleMaxY = 1;
-
-        for (uint32 y = 0; y < imageHeight; y++)
-        {
-            for (uint32 x = 0; x < swizzle_interleave_width; x++)
-            {
-                uint32 swizzleX, swizzleY;
-                getswizzlecoord(x, y, swizzleX, swizzleY);
-
-                // Get the maximum plane coords.
-                if ( swizzleMaxX < swizzleX )
-                {
-                    swizzleMaxX = swizzleX;
-                }
-
-                if ( swizzleMaxY < swizzleY )
-                {
-                    swizzleMaxY = swizzleY;
-                }
-            }
-        }
-
-        // Get the virtual plane size.
-        uint32 swizzleVirtualWidth = swizzleMaxX + 1;
-        uint32 swizzleVirtualHeight = swizzleMaxY + 1;
-
-        // Make sure we allow interleaving.
-        swizzleVirtualHeight += 1;
-
-        // Transform max coordinates into power-of-two swizzle coords.
-        uint32 swizzleWidth = 2;
-        uint32 swizzleHeight = 2;
-
-        while ( swizzleWidth < swizzleVirtualWidth )
-        {
-            swizzleWidth *= 2;
-        }
-
-        while ( swizzleHeight < swizzleVirtualHeight )
-        {
-            swizzleHeight *= 2;
-        }
-
-        // Return to the runtime.
-        swizzleWidthOut = swizzleWidth;
-        swizzleHeightOut = swizzleHeight;
-    }
-
-    inline arrayType* swizzle(uint32& dstEncryptedSize, const arrayType *srcToBeEncryptedData, uint32 imageWidth, uint32 imageHeight, uint32& outSwizzleWidth, uint32& outSwizzleHeight)
-    {
-        // The swizzled picture is interleaved.
-        // The first and third tracks are taken by the left picture side.
-        // The second and fourth tracks are taken by the right side.
-        uint32 swizzle_interleave_width = imageWidth / 2;
-
-        // Get the swizzle plane size.
-        uint32 swizzleWidth, swizzleHeight;
-
-        calculateswizzleplane(imageWidth, imageHeight, swizzleWidth, swizzleHeight);
-
-        // Turn the swizzle dimensions into an array size.
-        uint32 textureArraySize = ( swizzleWidth * swizzleHeight );
-
-        // Calculate a data size that is a multiple of 16.
-        uint32 reqDataCount = ALIGN_SIZE( textureArraySize, (uint32)16 );
-
-        // Generate the encrypted data.
-        arrayType *dstEncrypted = arrayType::allocate( reqDataCount );
-
-        process_swizzle_image_section(
-            srcToBeEncryptedData, dstEncrypted,
-            0, 0, swizzle_interleave_width, imageHeight, imageWidth,
-            0, 0, swizzleWidth, swizzleHeight
-        );
-        process_swizzle_image_section(
-            srcToBeEncryptedData, dstEncrypted,
-            swizzle_interleave_width, 0, swizzle_interleave_width, imageHeight, imageWidth,
-            0, 1, swizzleWidth, swizzleHeight
-        );
-
-        // Give the data size to the runtime.
-        dstEncryptedSize = arrayType::sizeitems( reqDataCount );
-
-        outSwizzleWidth = swizzleWidth;
-        outSwizzleHeight = swizzleHeight;
-
-        return dstEncrypted;
-    }
-};
-
 uint32 NativeTexturePS2::calculateGPUDataSize(
     const uint32 mipmapBasePointer[], const uint32 mipmapMemorySize[], uint32 mipmapMax,
     eMemoryLayoutType memLayoutType,
     uint32 clutBasePointer, uint32 clutMemSize
 ) const
 {
-    uint32 numMipMaps = this->mipmapCount;
+    uint32 numMipMaps = this->mipmaps.size();
 
     if ( numMipMaps == 0 )
         return 0;
@@ -496,8 +102,10 @@ eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(uint32 version
 
 bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
 {
+    NativeTexturePS2::GSTexture& gsTex = this->mipmaps[i];
+
     // Determine the encoding formats so it can be stored into PS2 GS memory correctly.
-    eFormatEncodingType currentEncoding = this->swizzleEncodingType[i];
+    eFormatEncodingType currentEncoding = gsTex.swizzleEncodingType;
 
     eFormatEncodingType encodeTo = this->getHardwareRequiredEncoding(rw::rwInterface.GetVersion());
 
@@ -507,8 +115,8 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
     bool operationSuccessful = false;
    
     // Get picture meta information.
-    uint32 realImageWidth = this->width[i];
-    uint32 realImageHeight = this->height[i];
+    uint32 realImageWidth = gsTex.width;
+    uint32 realImageHeight = gsTex.height;
     uint32 encryptedWidth = realImageWidth;
     uint32 encryptedHeight = realImageHeight;
 
@@ -520,7 +128,7 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
         newtexels =
             ps2GSPixelEncodingFormats::packImageData(
                 currentEncoding, encodeTo,
-                texels[i],
+                gsTex.texels,
                 realImageWidth, realImageHeight,
                 newDataSize, encryptedWidth, encryptedHeight
             );
@@ -532,12 +140,15 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
 
         if ( operationSuccessful )
         {
-            this->dataSizes[i] = newDataSize;
+            gsTex.dataSize = newDataSize;
 
-	        delete[] texels[i];
-	        texels[i] = newtexels;
+	        delete[] gsTex.texels;
+	        gsTex.texels = newtexels;
 
-            this->swizzleEncodingType[i] = encodeTo;
+            gsTex.swizzleEncodingType = encodeTo;
+
+            gsTex.swizzleWidth = encryptedWidth;
+            gsTex.swizzleHeight = encryptedHeight;
         }
     }
     else
@@ -545,18 +156,14 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
         operationSuccessful = true;
     }
 
-    if ( operationSuccessful )
-    {
-        this->swizzleWidth[i] = encryptedWidth;
-        this->swizzleHeight[i] = encryptedHeight;
-    }
-
     return operationSuccessful;
 }
 
 bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
 {
-    eFormatEncodingType currentEncoding = this->swizzleEncodingType[i];
+    NativeTexturePS2::GSTexture& gsTex = this->mipmaps[i];
+
+    eFormatEncodingType currentEncoding = gsTex.swizzleEncodingType;
 
     // Obtain the format that we should decode to.
     eFormatEncodingType decodeTo = getFormatEncodingFromRasterFormat(parent->rasterFormat, this->paletteType);
@@ -567,10 +174,10 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
     bool operationSuccessful = false;
 
     // Get picture meta information.
-    uint32 realImageWidth = this->width[i];
-    uint32 realImageHeight = this->height[i];
-    uint32 encryptedWidth = this->swizzleWidth[i];
-    uint32 encryptedHeight = this->swizzleHeight[i];
+    uint32 realImageWidth = gsTex.width;
+    uint32 realImageHeight = gsTex.height;
+    uint32 encryptedWidth = gsTex.swizzleWidth;
+    uint32 encryptedHeight = gsTex.swizzleHeight;
 
     if ( currentEncoding != decodeTo )
     {
@@ -580,7 +187,7 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
         newtexels =
             ps2GSPixelEncodingFormats::unpackImageData(
                 currentEncoding, decodeTo,
-                texels[i],
+                gsTex.texels,
                 encryptedWidth, encryptedHeight,
                 newDataSize,
                 realImageWidth, realImageHeight
@@ -593,12 +200,12 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
 
         if ( operationSuccessful )
         {
-            this->dataSizes[i] = newDataSize;
+            gsTex.dataSize = newDataSize;
 
-	        delete[] texels[i];
-	        texels[i] = newtexels;
+	        delete[] gsTex.texels;
+	        gsTex.texels = newtexels;
 
-            this->swizzleEncodingType[i] = decodeTo;
+            gsTex.swizzleEncodingType = decodeTo;
         }
     }
     else
@@ -945,18 +552,92 @@ struct ps2GSMemoryLayoutManager
         return ( pageIndex * 32 + blockIndex );
     }
 
+    struct memoryCollider
+    {
+        ps2GSMemoryLayoutManager *manager;
+
+        const memoryLayoutProperties_t& layoutProps;
+        eMemoryLayoutType memLayoutType;
+        uint32 blockWidth, blockHeight;
+        uint32 texelPageWidth, texelPageHeight;
+        uint32 pageMaxBlockWidth, pageMaxBlockHeight;
+
+        inline memoryCollider(
+            ps2GSMemoryLayoutManager *manager,
+            eMemoryLayoutType memLayoutType,
+            const memoryLayoutProperties_t& layoutProps,
+            uint32 blockWidth, uint32 blockHeight
+        ) : layoutProps( layoutProps )
+        {
+            this->manager = manager;
+
+            this->memLayoutType = memLayoutType;
+
+            this->blockWidth = blockWidth;
+            this->blockHeight = blockHeight;
+
+            // Get the width in pages.
+            this->pageMaxBlockWidth = ALIGN_SIZE( blockWidth, layoutProps.widthBlocksPerPage );
+
+            this->texelPageWidth = this->pageMaxBlockWidth / layoutProps.widthBlocksPerPage;
+
+            // Get the height in pages.
+            this->pageMaxBlockHeight = ALIGN_SIZE( blockHeight, layoutProps.heightBlocksPerPage );
+
+            this->texelPageHeight = this->pageMaxBlockHeight / layoutProps.heightBlocksPerPage;
+        }
+
+        inline bool testCollision(uint32 pageX, uint32 pageY, uint32 blockOffX, uint32 blockOffY)
+        {
+            // Construct a rectangle that matches our request.
+            MemoryRectBase actualRect(
+                pageX * layoutProps.widthBlocksPerPage + pageY * pageMaxBlockWidth + blockOffX,
+                blockOffY,
+                this->blockWidth,
+                this->blockHeight
+            );
+
+            bool hasFoundCollision = false;
+
+            for ( uint32 y = 0; y < this->texelPageHeight; y++ )
+            {
+                for ( uint32 x = 0; x < this->texelPageWidth; x++ )
+                {
+                    uint32 real_x = ( x + pageX );
+                    uint32 real_y = ( y + pageY );
+
+                    // Calculate the real index of this page.
+                    uint32 pageIndex = ( texelPageWidth * real_y + real_x );
+
+                    MemoryPage *thePage = manager->GetPage( pageIndex );
+
+                    // Collide our page rect with the contents of this page.
+                    VirtualMemoryPage *vmemLayout = thePage->GetVirtualMemoryLayout( memLayoutType );
+
+                    if ( vmemLayout )
+                    {
+                        bool isCollided = vmemLayout->IsColliding( &actualRect );
+
+                        if ( isCollided )
+                        {
+                            hasFoundCollision = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ( hasFoundCollision )
+                {
+                    break;
+                }
+            }
+
+            return hasFoundCollision;
+        }
+    };
+
     inline bool findAllocationRegion(eMemoryLayoutType memLayoutType, uint32 texelBlockWidth, uint32 texelBlockHeight, const memoryLayoutProperties_t& layoutProps, uint32& pageX_out, uint32& pageY_out, uint32& blockX_out, uint32& blockY_out)
     {
-        // Get the width in pages.
-        uint32 pageMaxBlockWidth = ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage );
-
-        uint32 texelPageWidth = pageMaxBlockWidth / layoutProps.widthBlocksPerPage;
-
-        // Get the height in pages.
-        uint32 pageMaxBlockHeight = ALIGN_SIZE( texelBlockHeight, layoutProps.heightBlocksPerPage );
-
-        uint32 texelPageHeight = pageMaxBlockHeight / layoutProps.heightBlocksPerPage;
-
         // Loop through all pages and try to find the correct placement for the new texture.
         uint32 pageX = 0;
         uint32 pageY = 0;
@@ -965,188 +646,107 @@ struct ps2GSMemoryLayoutManager
 
         bool validAllocation = false;
 
-        if ( texelPageWidth > 1 || texelPageHeight > 1 )
+        memoryCollider memCollide(
+            this, memLayoutType,
+            layoutProps,
+            texelBlockWidth, texelBlockHeight
+        );
+
+        uint32 layoutStartX = layoutProps.pageDimX.GetSliceStartPoint();
+        uint32 layoutStartY = layoutProps.pageDimY.GetSliceStartPoint();
+
+        while ( true )
         {
-            uint32 currentSideIter = 1;
+            bool allocationSuccessful = false;
 
-            while ( true )
+            // Try to allocate on the memory plane.
             {
-                bool isProperAllocation = false;
+                bool performBlockMovement = ( memCollide.texelPageWidth == 1 && memCollide.texelPageHeight == 1 );
 
-                // Go down lines until we found a suitable position in the buffer for this page.
+                bool canAllocateOnPage = true;
+
+                MemoryRectBase thisRect(
+                    layoutStartX,
+                    layoutStartY,
+                    texelBlockWidth,
+                    texelBlockHeight
+                );
+
+                // We have to assume that we cannot allocate on this page.
+                canAllocateOnPage = false;
+
+                while ( true )
                 {
-                    // The alloc area is a rectangle placed linearly.
-                    uint32 pageBlockOffX =
-                        pageX * layoutProps.widthBlocksPerPage;
-
-                    MemoryRectBase pageAllocArea(
-                        pageBlockOffX + pageY * pageMaxBlockWidth,
-                        0,
-                        texelBlockWidth,
-                        texelBlockHeight
-                    );
-
-                    bool hasFoundCollision = false;
-
-                    // Check from the (0,0) point of all pages.
-                    for ( uint32 y = 0; y < texelPageHeight; y++ )
+                    // Make sure we are not outside of the page dimensions.
+                    if ( performBlockMovement )
                     {
-                        for ( uint32 x = 0; x < texelPageWidth; x++ )
+                        memUnitSlice_t::eIntersectionResult x_result =
+                            thisRect.x_slice.intersectWith( layoutProps.pageDimX );
+
+                        if ( x_result != memUnitSlice_t::INTERSECT_INSIDE && x_result != memUnitSlice_t::INTERSECT_EQUAL )
                         {
-                            uint32 real_x = ( x + pageX );
-                            uint32 real_y = ( y + pageY );
-
-                            // Calculate the real index of this page.
-                            uint32 pageIndex = ( texelPageWidth * real_y + real_x );
-
-                            MemoryPage *thePage = this->GetPage( pageIndex );
-
-                            // Collide our page rect with the contents of this page.
-                            VirtualMemoryPage *vmemLayout = thePage->GetVirtualMemoryLayout( memLayoutType );
-
-                            if ( vmemLayout )
-                            {
-                                bool isCollided = vmemLayout->IsColliding( &pageAllocArea );
-
-                                if ( isCollided )
-                                {
-                                    hasFoundCollision = true;
-                                    break;
-                                }
-                            }
+                            // Advance to next line.
+                            thisRect.x_slice.SetSlicePosition( layoutStartX );
+                            thisRect.y_slice.OffsetSliceBy( 1 );
                         }
 
-                        if ( hasFoundCollision )
+                        memUnitSlice_t::eIntersectionResult y_result =
+                            thisRect.y_slice.intersectWith( layoutProps.pageDimY );
+
+                        if ( y_result != memUnitSlice_t::INTERSECT_INSIDE && y_result != memUnitSlice_t::INTERSECT_EQUAL )
                         {
+                            // This page is not it.
                             break;
                         }
                     }
 
-                    if ( !hasFoundCollision )
+                    bool foundFreeSpot = 
+                        ( memCollide.testCollision(pageX, pageY, thisRect.x_slice.GetSliceStartPoint(), thisRect.y_slice.GetSliceStartPoint()) == false );
+
+                    // If there are no conflicts on our page, we can allocate on it.
+                    if ( foundFreeSpot == true )
                     {
-                        // We appear to be okay. We can allocate in this area!
-                        isProperAllocation = true;
+                        blockOffsetX = thisRect.x_slice.GetSliceStartPoint();
+                        blockOffsetY = thisRect.y_slice.GetSliceStartPoint();
+
+                        canAllocateOnPage = true;
+                        break;
+                    }
+
+                    if ( performBlockMovement )
+                    {
+                        // We need to advance our position.
+                        thisRect.x_slice.OffsetSliceBy( 1 );
+                    }
+                    else
+                    {
+                        break;
                     }
                 }
-
-                // Check that we got to allocate anything.
-                if ( isProperAllocation )
+            
+                // If we can allocate on this page, then we succeeded!
+                if ( canAllocateOnPage == true )
                 {
-                    // Mark our region and return!
-                    validAllocation = true;
-                    break;
+                    allocationSuccessful = true;
                 }
+            }
+
+            // If the allocation has been successful, break.
+            if ( allocationSuccessful )
+            {
+                validAllocation = true;
+                break;
+            }
+
+            // We need to try from the next page.
+            pageX++;
+
+            // If the page is the limit, then restart and go to next line.
+            if ( pageX == memCollide.texelPageWidth )
+            {
+                pageX = 0;
 
                 pageY++;
-            }
-        }
-        else
-        {
-            uint32 layoutStartX = layoutProps.pageDimX.GetSliceStartPoint();
-            uint32 layoutStartY = layoutProps.pageDimY.GetSliceStartPoint();
-
-            while ( true )
-            {
-                bool allocationSuccessful = false;
-
-                // Try to allocate on the memory plane.
-                {
-                    uint32 pageIndex = ( pageY * texelPageWidth + pageX );
-
-                    // The current page.
-                    MemoryPage *currentPage = this->GetPage( pageIndex );
-
-                    VirtualMemoryPage *vmemLayout = currentPage->GetVirtualMemoryLayout( memLayoutType );
-
-                    bool canAllocateOnPage = true;
-
-                    if ( vmemLayout )
-                    {
-                        MemoryRectBase thisRect(
-                            layoutStartX,
-                            layoutStartY,
-                            texelBlockWidth,
-                            texelBlockHeight
-                        );
-
-                        // We have to assume that we cannot allocate on this page.
-                        canAllocateOnPage = false;
-
-                        while ( true )
-                        {
-                            // Make sure we are not outside of the page dimensions.
-                            {
-                                memUnitSlice_t::eIntersectionResult x_result =
-                                    thisRect.x_slice.intersectWith( layoutProps.pageDimX );
-
-                                if ( x_result != memUnitSlice_t::INTERSECT_INSIDE && x_result != memUnitSlice_t::INTERSECT_EQUAL )
-                                {
-                                    // Advance to next line.
-                                    thisRect.x_slice.SetSlicePosition( layoutStartX );
-                                    thisRect.y_slice.OffsetSliceBy( 1 );
-                                }
-
-                                memUnitSlice_t::eIntersectionResult y_result =
-                                    thisRect.y_slice.intersectWith( layoutProps.pageDimY );
-
-                                if ( y_result != memUnitSlice_t::INTERSECT_INSIDE && y_result != memUnitSlice_t::INTERSECT_EQUAL )
-                                {
-                                    // This page is not it.
-                                    break;
-                                }
-                            }
-
-                            uint32 pageBlockOffX =
-                                pageX * layoutProps.widthBlocksPerPage;
-
-                            MemoryRectBase actualRect(
-                                thisRect.x_slice.GetSliceStartPoint() + pageBlockOffX + pageY * pageMaxBlockWidth,
-                                thisRect.y_slice.GetSliceStartPoint(),
-                                texelBlockWidth,
-                                texelBlockHeight
-                            );
-
-                            bool foundFreeSpot = ( vmemLayout->IsColliding( &actualRect ) == false );
-
-                            // If there are no conflicts on our page, we can allocate on it.
-                            if ( foundFreeSpot == true )
-                            {
-                                blockOffsetX = thisRect.x_slice.GetSliceStartPoint();
-                                blockOffsetY = thisRect.y_slice.GetSliceStartPoint();
-
-                                canAllocateOnPage = true;
-                                break;
-                            }
-
-                            // We need to advance our position.
-                            thisRect.x_slice.OffsetSliceBy( 1 );
-                        }
-                    }
-                    
-                    // If we can allocate on this page, then we succeeded!
-                    if ( canAllocateOnPage == true )
-                    {
-                        allocationSuccessful = true;
-                    }
-                }
-
-                // If the allocation has been successful, break.
-                if ( allocationSuccessful )
-                {
-                    validAllocation = true;
-                    break;
-                }
-
-                // We need to try from the next page.
-                pageX++;
-
-                // If the page is the limit, then restart and go to next line.
-                if ( pageX == texelPageWidth )
-                {
-                    pageX = 0;
-
-                    pageY++;
-                }
             }
         }
 
@@ -1161,94 +761,47 @@ struct ps2GSMemoryLayoutManager
         return validAllocation;
     }
 
-    inline bool allocateTexture(eMemoryLayoutType memLayoutType, const memoryLayoutProperties_t& layoutProps, uint32 texelWidth, uint32 texelHeight, uint32& texBasePointer, uint32& texMemSize, uint32& texOffX, uint32& texOffY, uint32& texBufferWidthOut)
+    inline static uint32 calculateTextureMemSize(
+        const memoryLayoutProperties_t& layoutProps, 
+        uint32 texBasePointer, 
+        uint32 pageX, uint32 pageY, uint32 texelPageWidth,
+        uint32 blockOffsetX, uint32 blockOffsetY, uint32 blockWidth, uint32 blockHeight
+    )
     {
-        // Scale up texel dimensions.
-        uint32 alignedTexelWidth = ALIGN_SIZE( texelWidth, layoutProps.pixelWidthPerBlock );
-        uint32 alignedTexelHeight = ALIGN_SIZE( texelHeight, layoutProps.pixelHeightPerBlock );
+        uint32 texelBlockWidthOffset = ( blockWidth - 1 ) + blockOffsetX;
+        uint32 texelBlockHeightOffset = ( blockHeight - 1 ) + blockOffsetY;
 
-        // Get block dimensions.
-        uint32 texelBlockWidth = ( alignedTexelWidth / layoutProps.pixelWidthPerBlock );
-        uint32 texelBlockHeight = ( alignedTexelHeight / layoutProps.pixelHeightPerBlock );
+        uint32 finalPageX = pageX + texelBlockWidthOffset / layoutProps.widthBlocksPerPage;
+        uint32 finalPageY = pageY + texelBlockHeightOffset / layoutProps.heightBlocksPerPage;
 
-        // Get the width in pages.
-        uint32 pageMaxBlockWidth = ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage );
+        uint32 finalBlockOffsetX = texelBlockWidthOffset % layoutProps.widthBlocksPerPage;
+        uint32 finalBlockOffsetY = texelBlockHeightOffset % layoutProps.heightBlocksPerPage;
 
-        uint32 texelPageWidth = pageMaxBlockWidth / layoutProps.widthBlocksPerPage;
+        uint32 texEndOffset =
+            getTextureBasePointer(layoutProps, finalPageX, finalPageY, texelPageWidth, finalBlockOffsetX, finalBlockOffsetY);
 
-        // Get the height in pages.
-        uint32 pageMaxBlockHeight = ALIGN_SIZE( texelBlockHeight, layoutProps.heightBlocksPerPage );
+        return ( texEndOffset - texBasePointer ) + 1; //+1 because its a size
+    }
 
-        uint32 texelPageHeight = pageMaxBlockHeight / layoutProps.heightBlocksPerPage;
-
-        // Get the minimum required texture buffer width.
-        // It must be aligned to the page dimensions.
-        // This value should be atleast 2.
-        uint32 texBufferWidth = ( texelPageWidth * layoutProps.widthBlocksPerPage * layoutProps.pixelWidthPerBlock ) / 64;
-
-        // TODO: this is not the real buffer width yet.
-
-        // Loop through all pages and try to find the correct placement for the new texture.
-        uint32 pageX = 0;
-        uint32 pageY = 0;
-        uint32 blockOffsetX = 0;
-        uint32 blockOffsetY = 0;
-
-        bool validAllocation = 
-            findAllocationRegion(
-                memLayoutType, texelBlockWidth, texelBlockHeight,
-                layoutProps,
-                pageX, pageY, blockOffsetX, blockOffsetY
-            );
-
-        // This may trigger if we overshot memory capacity.
-        if ( validAllocation == false )
-            return false;
-
-        // Calculate the texture base pointer.
-        texBasePointer = getTextureBasePointer(layoutProps, pageX, pageY, texelPageWidth, blockOffsetX, blockOffsetY);
-
-        // Calculate the required memory size.
-        {
-            uint32 texelBlockWidthOffset = ( texelBlockWidth - 1 ) + blockOffsetX;
-            uint32 texelBlockHeightOffset = ( texelBlockHeight - 1 ) + blockOffsetY;
-
-            uint32 finalPageX = pageX + texelBlockWidthOffset / layoutProps.widthBlocksPerPage;
-            uint32 finalPageY = pageY + texelBlockHeightOffset / layoutProps.heightBlocksPerPage;
-
-            uint32 finalBlockOffsetX = texelBlockWidthOffset % layoutProps.widthBlocksPerPage;
-            uint32 finalBlockOffsetY = texelBlockHeightOffset % layoutProps.heightBlocksPerPage;
-
-            uint32 texEndOffset =
-                getTextureBasePointer(layoutProps, finalPageX, finalPageY, texelPageWidth, finalBlockOffsetX, finalBlockOffsetY);
-
-            uint32 memSizeInBlocks = ( ( texEndOffset + 1 ) - texBasePointer );
-
-            // Get the size that the GPU understands.
-            texMemSize = memSizeInBlocks;//( memSizeInBlocks * layoutProps.pixelWidthPerBlock ) / 64;
-        }
+    inline void addAllocationPresence(
+        const memoryLayoutProperties_t& layoutProps, eMemoryLayoutType memLayoutType,
+        uint32 pageX, uint32 pageY, uint32 pageWidth, uint32 pageHeight,
+        uint32 totalBlockOffX, uint32 totalBlockOffY, uint32 blockWidth, uint32 blockHeight
+    )
+    {
+        uint32 pageMaxBlockWidth = ( pageWidth * layoutProps.widthBlocksPerPage );
 
         // Add our collision rectangles onto the pages we allocated.
         MemoryRectBase pageAllocArea(
-            pageX * layoutProps.widthBlocksPerPage + blockOffsetX,
-            pageY * layoutProps.heightBlocksPerPage + blockOffsetY,
-            texelBlockWidth,
-            texelBlockHeight
+            totalBlockOffX,
+            totalBlockOffY,
+            blockWidth,
+            blockHeight
         );
 
-        // Give the target coordinates to the runtime.
-        // They are passed as block coordinates.
+        for ( uint32 allocPageY = 0; allocPageY < pageHeight; allocPageY++ )
         {
-            texOffX = pageAllocArea.x_slice.GetSliceStartPoint();
-            texOffY = pageAllocArea.y_slice.GetSliceStartPoint();
-        }
-
-        // Give the texture buffer width to the runtime.
-        texBufferWidthOut = texBufferWidth;
-
-        for ( uint32 allocPageY = 0; allocPageY < texelPageHeight; allocPageY++ )
-        {
-            for ( uint32 allocPageX = 0; allocPageX < texelPageWidth; allocPageX++ )
+            for ( uint32 allocPageX = 0; allocPageX < pageWidth; allocPageX++ )
             {
                 uint32 realPageX = ( allocPageX + pageX );
                 uint32 realPageY = ( allocPageY + pageY );
@@ -1276,7 +829,7 @@ struct ps2GSMemoryLayoutManager
                     uint32 blockLocalY =
                         subRectAllocZone.y_slice.GetSliceStartPoint() - pageBlockOffY;
 
-                    uint32 pageIndex = ( realPageY * texelPageWidth + realPageX );
+                    uint32 pageIndex = ( realPageY * pageWidth + realPageX );
 
                     MemoryPage *thePage = this->GetPage( pageIndex );
 
@@ -1305,6 +858,235 @@ struct ps2GSMemoryLayoutManager
                 }
             }
         }
+    }
+
+    inline static uint32 calculateTextureBufferWidth(
+        const memoryLayoutProperties_t& layoutProps,
+        uint32 texelWidth, uint32 texelHeight
+    )
+    {
+        // Scale up texel dimensions.
+        uint32 alignedTexelWidth = ALIGN_SIZE( texelWidth, layoutProps.pixelWidthPerBlock );
+
+        // Get block dimensions.
+        uint32 texelBlockWidth = ( alignedTexelWidth / layoutProps.pixelWidthPerBlock );
+
+        // Get the width in pages.
+        uint32 pageMaxBlockWidth = ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage );
+
+        // Get the minimum required texture buffer width.
+        // It must be aligned to the page dimensions.
+        uint32 texBufferWidth = ( pageMaxBlockWidth * layoutProps.pixelWidthPerBlock ) / 64;
+
+        return texBufferWidth;
+    }
+
+    inline bool allocateTexture(
+        eMemoryLayoutType memLayoutType, const memoryLayoutProperties_t& layoutProps,
+        uint32 texelWidth, uint32 texelHeight,
+        uint32& texBasePointerOut, uint32& texMemSize, uint32& texOffX, uint32& texOffY, uint32& texBufferWidthOut
+    )
+    {
+        // Scale up texel dimensions.
+        uint32 alignedTexelWidth = ALIGN_SIZE( texelWidth, layoutProps.pixelWidthPerBlock );
+        uint32 alignedTexelHeight = ALIGN_SIZE( texelHeight, layoutProps.pixelHeightPerBlock );
+
+        // Get block dimensions.
+        uint32 texelBlockWidth = ( alignedTexelWidth / layoutProps.pixelWidthPerBlock );
+        uint32 texelBlockHeight = ( alignedTexelHeight / layoutProps.pixelHeightPerBlock );
+
+        // Get the width in pages.
+        uint32 pageMaxBlockWidth = ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage );
+
+        uint32 texelPageWidth = pageMaxBlockWidth / layoutProps.widthBlocksPerPage;
+
+        // Get the height in pages.
+        uint32 pageMaxBlockHeight = ALIGN_SIZE( texelBlockHeight, layoutProps.heightBlocksPerPage );
+
+        uint32 texelPageHeight = pageMaxBlockHeight / layoutProps.heightBlocksPerPage;
+
+        // Get the minimum required texture buffer width.
+        // It must be aligned to the page dimensions.
+        uint32 texBufferWidth = calculateTextureBufferWidth(layoutProps, texelWidth, texelHeight);
+
+        // TODO: this is not the real buffer width yet.
+
+        // Loop through all pages and try to find the correct placement for the new texture.
+        uint32 pageX = 0;
+        uint32 pageY = 0;
+        uint32 blockOffsetX = 0;
+        uint32 blockOffsetY = 0;
+
+        bool validAllocation = 
+            findAllocationRegion(
+                memLayoutType, texelBlockWidth, texelBlockHeight,
+                layoutProps,
+                pageX, pageY, blockOffsetX, blockOffsetY
+            );
+
+        // This may trigger if we overshot memory capacity.
+        if ( validAllocation == false )
+            return false;
+
+        // Calculate the texture base pointer.
+        uint32 texBasePointer = getTextureBasePointer(layoutProps, pageX, pageY, texelPageWidth, blockOffsetX, blockOffsetY);
+
+        texBasePointerOut = texBasePointer;
+
+        // Calculate the required memory size.
+        texMemSize = calculateTextureMemSize(layoutProps, texBasePointer, pageX, pageY, texelPageWidth, blockOffsetX, blockOffsetY, texelBlockWidth, texelBlockHeight);
+
+        // Give the target coordinates to the runtime.
+        // They are passed as block coordinates.
+        uint32 totalBlockOffX = pageX * layoutProps.widthBlocksPerPage + blockOffsetX;
+        uint32 totalBlockOffY = pageY * layoutProps.heightBlocksPerPage + blockOffsetY;
+        {
+            texOffX = totalBlockOffX;
+            texOffY = totalBlockOffY;
+        }
+
+        // Give the texture buffer width to the runtime.
+        texBufferWidthOut = texBufferWidth;
+
+        // Make sure we cannot allocate on the regions that were allocated on.
+        addAllocationPresence(
+            layoutProps, memLayoutType,
+            pageX, pageY, texelPageWidth, texelPageHeight,
+            totalBlockOffX, totalBlockOffY, texelBlockWidth, texelBlockHeight
+        );
+
+        return true;
+    }
+
+    inline bool allocateCLUT(
+        eMemoryLayoutType memLayoutType, const memoryLayoutProperties_t& layoutProps,
+        uint32 clutWidth, uint32 clutHeight,
+        uint32& clutBasePointerOut, uint32& clutMemSize, uint32& clutOffX, uint32& clutOffY, uint32& clutBufferWidthOut,
+        uint32 mipmapCount
+    )
+    {
+        // Scale up texel dimensions.
+        uint32 alignedTexelWidth = ALIGN_SIZE( clutWidth, layoutProps.pixelWidthPerBlock );
+        uint32 alignedTexelHeight = ALIGN_SIZE( clutHeight, layoutProps.pixelHeightPerBlock );
+
+        // Get block dimensions.
+        uint32 texelBlockWidth = ( alignedTexelWidth / layoutProps.pixelWidthPerBlock );
+        uint32 texelBlockHeight = ( alignedTexelHeight / layoutProps.pixelHeightPerBlock );
+
+        // Get the width in pages.
+        uint32 pageMaxBlockWidth = ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage );
+
+        uint32 texelPageWidth = pageMaxBlockWidth / layoutProps.widthBlocksPerPage;
+
+        // Get the height in pages.
+        uint32 pageMaxBlockHeight = ALIGN_SIZE( texelBlockHeight, layoutProps.heightBlocksPerPage );
+
+        uint32 texelPageHeight = pageMaxBlockHeight / layoutProps.heightBlocksPerPage;
+
+        // Get the minimum required texture buffer width.
+        // It must be aligned to the page dimensions.
+        // This value should be atleast 2.
+        uint32 texBufferWidth = ( texelPageWidth * layoutProps.widthBlocksPerPage * layoutProps.pixelWidthPerBlock ) / 64;
+
+        // TODO: this is not the real buffer width yet.
+
+        // Try to allocate the CLUT at the bottom right of the last page on the first column.
+        uint32 pageX = 0;
+        uint32 pageY = 0;
+        uint32 blockOffsetX = 0;
+        uint32 blockOffsetY = 0;
+
+        bool validAllocation = false;
+        {
+            uint32 localPageX = 0;
+            uint32 localPageY = 0;
+            uint32 localBlockOffX = 0;
+            uint32 localBlockOffY = 0;
+
+            // We always allocate on the bottom right corner.
+            //if ( mipmapCount > 1 )
+            {
+                localBlockOffX = ( layoutProps.widthBlocksPerPage - texelBlockWidth );
+                localBlockOffY = ( layoutProps.heightBlocksPerPage - texelBlockHeight );
+            }
+
+            // Try to find the last free page.
+            {
+                memoryCollider memCollideFullPage(
+                    this, memLayoutType, layoutProps,
+                    layoutProps.widthBlocksPerPage, layoutProps.heightBlocksPerPage
+                );
+
+                while ( true )
+                {
+                    bool isPageFree = ( memCollideFullPage.testCollision( localPageX, localPageY, 0, 0 ) == false );
+
+                    if ( isPageFree )
+                    {
+                        break;
+                    }
+
+                    localPageY++;
+                }
+            }
+
+            if ( localPageY != 0 )
+            {
+                // Try to allocate on the occupied space.
+                memoryCollider clutCollider( this, memLayoutType, layoutProps, texelBlockWidth, texelBlockHeight );
+
+                bool hasSpotOnOccupiedSpace =
+                    ( clutCollider.testCollision(localPageX, localPageY - 1, localBlockOffX, localBlockOffY) == false );
+
+                if ( hasSpotOnOccupiedSpace )
+                {
+                    localPageY--;
+                }
+                else
+                {
+                    localBlockOffX = 0;
+                    localBlockOffY = 0;
+                }
+            }
+
+            pageX = localPageX;
+            pageY = localPageY;
+            blockOffsetX = localBlockOffX;
+            blockOffsetY = localBlockOffY;
+
+            validAllocation = true;
+        }
+
+        // This may trigger if we overshot memory capacity.
+        if ( validAllocation == false )
+            return false;
+
+        // Calculate the texture base pointer.
+        uint32 texBasePointer = getTextureBasePointer(layoutProps, pageX, pageY, texelPageWidth, blockOffsetX, blockOffsetY);
+
+        clutBasePointerOut = texBasePointer;
+
+        // Calculate the required memory size.
+        clutMemSize = calculateTextureMemSize(layoutProps, texBasePointer, pageX, pageY, texelPageWidth, blockOffsetX, blockOffsetY, texelBlockWidth, texelBlockHeight);
+
+        // Give the target coordinates to the runtime.
+        // They are passed as block coordinates.
+        uint32 totalBlockOffX = pageX * layoutProps.widthBlocksPerPage + blockOffsetX;
+        uint32 totalBlockOffY = pageY * layoutProps.heightBlocksPerPage + blockOffsetY;
+        {
+            clutOffX = totalBlockOffX;
+            clutOffY = totalBlockOffY;
+        }
+
+        // Give the texture buffer width to the runtime.
+        clutBufferWidthOut = texBufferWidth;
+
+        // Make sure we cannot allocate on the regions that were allocated on.
+        addAllocationPresence(
+            layoutProps, memLayoutType,
+            pageX, pageY, texelPageWidth, texelPageHeight,
+            totalBlockOffX, totalBlockOffY, texelBlockWidth, texelBlockHeight
+        );
 
         return true;
     }
@@ -1382,6 +1164,54 @@ struct singleMemLayoutGSAllocator
 
         return gotDecodedDimms;
     }
+
+    inline bool allocateCLUT(
+        uint32 encodedWidth, uint32 encodedHeight, uint32& clutBasePointerOut, uint32& clutBufferWidthOut, uint32& clutMemSizeOut, uint32& clutOffXOut, uint32& clutOffYOut,
+        uint32 mipmapCount
+    )
+    {
+        uint32 texelWidth, texelHeight;
+
+        bool gotDecodedDimms =
+            ps2GSPixelEncodingFormats::getPackedFormatDimensions(
+                encodingMemLayout, encodingPixelMemLayoutType, encodedWidth, encodedHeight,
+                texelWidth, texelHeight
+            );
+
+        uint32 clutBasePointer = 0;
+        uint32 clutBufferWidth = 0;
+        uint32 clutMemSize = 0;
+        uint32 clutOffX = 0;
+        uint32 clutOffY = 0;
+
+        if ( gotDecodedDimms )
+        {
+            if ( maxBuffHeight < texelHeight )
+            {
+                maxBuffHeight = texelHeight;
+            }
+
+            bool allocationSuccess = gsMem.allocateCLUT(
+                this->pixelMemLayoutType, this->layoutProps, texelWidth, texelHeight, clutBasePointer, clutMemSize, clutOffX, clutOffY, clutBufferWidth,
+                mipmapCount
+            );
+
+            // If we fail to allocate any texture, we must terminate here.
+            if ( !allocationSuccess )
+            {
+                return false;
+            }
+
+            // Write the results to the runtime.
+            clutBasePointerOut = clutBasePointer;
+            clutBufferWidthOut = clutBufferWidth;
+            clutMemSizeOut = clutMemSize;
+            clutOffXOut = clutOffX;
+            clutOffYOut = clutOffY;
+        }
+
+        return gotDecodedDimms;
+    }
 };
 
 bool NativeTexturePS2::allocateTextureMemory(
@@ -1391,7 +1221,7 @@ bool NativeTexturePS2::allocateTextureMemory(
 ) const
 {
     // Get the memory layout of the encoded texture.
-    eFormatEncodingType encodingMemLayout = this->swizzleEncodingType[ 0 ];
+    eFormatEncodingType encodingMemLayout = this->mipmaps[0].swizzleEncodingType;
 
     if ( encodingMemLayout == FORMAT_UNKNOWN )
         return false;
@@ -1423,20 +1253,31 @@ bool NativeTexturePS2::allocateTextureMemory(
 
     ps2GSMemoryLayoutManager::getMemoryLayoutProperties(encodedMemLayoutType, encodingMemLayout, encodedLayoutProps);
 
-    uint32 mipmapCount = this->mipmapCount;
+    uint32 mipmapCount = this->mipmaps.size();
 
     // Perform the allocation.
     {
         singleMemLayoutGSAllocator gsAlloc( encodingMemLayout, encodingPixelMemLayoutType, pixelMemLayoutType );
 
-        // Create a new memory environment.
-        ps2GSMemoryLayoutManager gsMem; 
+#if 0
+        // Calculate the required buffer width.
+        uint32 maxBufferWidth = 0;
 
         for ( uint32 n = 0; n < mipmapCount; n++ )
         {
+            uint32 
+
+            uint32 thisWidth = gsAlloc.gsMem.calculateTextureBufferWidt
+        }
+#endif
+
+        for ( uint32 n = 0; n < mipmapCount; n++ )
+        {
+            const NativeTexturePS2::GSTexture& gsTex = this->mipmaps[n];
+
             // Get the texel dimensions of this texture.
-            uint32 encodedWidth = this->swizzleWidth[n];
-            uint32 encodedHeight = this->swizzleHeight[n];
+            uint32 encodedWidth = gsTex.swizzleWidth;
+            uint32 encodedHeight = gsTex.swizzleHeight;
 
             uint32 texBasePointer;
             uint32 texMemSize;
@@ -1520,8 +1361,6 @@ bool NativeTexturePS2::allocateTextureMemory(
                 psmct32_height = 16;
             }
 
-            //assert(encodingMemLayout == FORMAT_TEX32);
-
             // Allocate it.
             uint32 _clutBasePointer;
             uint32 _clutMemSize;
@@ -1529,7 +1368,25 @@ bool NativeTexturePS2::allocateTextureMemory(
             uint32 clutOffX;
             uint32 clutOffY;
 
-            bool hasAllocatedCLUT = gsAlloc.allocateTexture(psmct32_width, psmct32_height, _clutBasePointer, clutBufferWidth, _clutMemSize, clutOffX, clutOffY);
+            bool hasAllocatedCLUT = false;
+
+#if 0
+            if (this->paletteType == PALETTE_4BIT)
+            {
+                hasAllocatedCLUT = gsAlloc.allocateTexture(
+                    psmct32_width, psmct32_height, _clutBasePointer, clutBufferWidth, _clutMemSize, clutOffX, clutOffY
+                );
+            }
+            else if (this->paletteType == PALETTE_8BIT)
+            {
+#endif
+                hasAllocatedCLUT = gsAlloc.allocateCLUT(
+                    psmct32_width, psmct32_height, _clutBasePointer, clutBufferWidth, _clutMemSize, clutOffX, clutOffY,
+                    mipmapCount
+                );
+#if 0
+            }
+#endif
 
             if ( hasAllocatedCLUT == false )
             {
@@ -1537,8 +1394,16 @@ bool NativeTexturePS2::allocateTextureMemory(
             }
 
             // Transform to final CLUT coords.
-            uint32 clutFinalOffX = clutOffX;
-            uint32 clutFinalOffY = clutOffY % gsAlloc.maxBuffHeight;
+            uint32 clutPixelOffX = ( clutOffX * encodedLayoutProps.pixelWidthPerBlock );
+            uint32 clutPixelOffY = ( clutOffY * encodedLayoutProps.pixelHeightPerBlock );
+
+            if (encodingMemLayout == FORMAT_TEX32 && encodingPixelMemLayoutType == FORMAT_IDTEX8_COMPRESSED)
+            {
+                clutPixelOffX *= 2;
+            }
+
+            uint32 clutFinalOffX = clutPixelOffX;
+            uint32 clutFinalOffY = clutPixelOffY % gsAlloc.maxBuffHeight;
 
             // Write to the runtime.
             clutBasePointer = _clutBasePointer;
@@ -1617,7 +1482,7 @@ bool NativeTexturePS2::getDebugBitmap( Bitmap& bmpOut ) const
     singleColorSourcePipeline colorSrcPipe;
 
     // Get the memory layout of the encoded texture.
-    eFormatEncodingType encodingMemLayout = this->swizzleEncodingType[ 0 ];
+    eFormatEncodingType encodingMemLayout = this->mipmaps[0].swizzleEncodingType;
 
     if ( encodingMemLayout == FORMAT_UNKNOWN )
         return false;
@@ -1649,7 +1514,7 @@ bool NativeTexturePS2::getDebugBitmap( Bitmap& bmpOut ) const
 
     ps2GSMemoryLayoutManager::getMemoryLayoutProperties(encodedMemLayoutType, encodingMemLayout, encodedLayoutProps);
 
-    uint32 mipmapCount = this->mipmapCount;
+    uint32 mipmapCount = this->mipmaps.size();
 
     // Perform the allocation.
     {
@@ -1657,9 +1522,11 @@ bool NativeTexturePS2::getDebugBitmap( Bitmap& bmpOut ) const
 
         for ( uint32 n = 0; n < mipmapCount; n++ )
         {
+            const NativeTexturePS2::GSTexture& gsTex = this->mipmaps[n];
+
             // Get the texel dimensions of this texture.
-            uint32 encodedWidth = this->swizzleWidth[n];
-            uint32 encodedHeight = this->swizzleHeight[n];
+            uint32 encodedWidth = gsTex.swizzleWidth;
+            uint32 encodedHeight = gsTex.swizzleHeight;
 
             uint32 texBasePointer;
             uint32 texMemSize;

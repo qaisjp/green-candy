@@ -488,7 +488,7 @@ int main( int argc, char *argv[] )
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\" );
 
         if ( discHandle )
         {
