@@ -99,10 +99,12 @@ inline bool BijectiveInclusion( numType val1, numType val2, numType inclusionReq
 
 void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
 {
+    const NativeTexturePS2::GSTexture& mainTex = this->mipmaps[0];
+
     // Calculate according to texture properties.
-    uint32 width = this->width[0];
-    uint32 height = this->height[0];
-    uint32 depth = this->mipmapDepth[0];
+    uint32 width = mainTex.width;
+    uint32 height = mainTex.height;
+    uint32 depth = mainTex.depth;
 
     bool hasMipmaps = this->autoMipmaps;
 
@@ -365,11 +367,13 @@ bool NativeTexturePS2::generatePS2GPUData(
     uint32 clutBasePointer
 ) const
 {
+    const NativeTexturePS2::GSTexture& mainTex = this->mipmaps[0];
+
     // This algorithm is guarranteed to produce correct values on identity-transformed PS2 GTA:SA textures.
     // There is no guarrantee that this works for modified textures!
-    uint32 width = this->width[0];
-    uint32 height = this->height[0];
-    uint32 depth = this->mipmapDepth[0];
+    uint32 width = mainTex.width;
+    uint32 height = mainTex.height;
+    uint32 depth = mainTex.depth;
 
     // Reconstruct GPU flags, kinda.
     rw::ps2GSRegisters::TEX0_REG tex0;
@@ -511,6 +515,81 @@ bool NativeTexturePS2::generatePS2GPUData(
     return true;
 }
 
+uint32 NativeTexturePS2::GSTexture::writeGIFPacket(
+    std::ostream& rw, bool requiresHeaders
+) const
+{
+    uint32 writeCount = 0;
+
+    uint32 curDataSize = this->dataSize;
+
+    if ( requiresHeaders )
+    {
+        // Write a register list and the image data header.
+
+        {
+            GIFtag regListTag;
+            regListTag.pad1 = 0;    // zero the pad, altho it may not be needed.
+            regListTag.regs = 0;    // zero the regs, altho it may not be needed.
+            regListTag.eop = false;
+            regListTag.pre = false;
+            regListTag.prim = 0;
+            regListTag.flg = 0;
+            regListTag.nreg = 1;
+            regListTag.setRegisterID(0, 0xE);
+
+            uint32 numRegs = this->storedRegs.size();
+
+            regListTag.nloop = numRegs;
+
+            // Write the tag.
+            rw.write((const char*)&regListTag, sizeof(regListTag));
+
+            writeCount += sizeof(regListTag);
+
+            for ( uint32 n = 0; n < numRegs; n++ )
+            {
+                const GSRegInfo& regInfo = this->storedRegs[ n ];
+
+                // Replace some registers that we need to update.
+                unsigned long long regContent = regInfo.content;
+
+                rw.write((const char*)&regContent, sizeof(regContent));
+
+                // The write the register ID.
+                unsigned long long regID = regInfo.regID;
+
+                rw.write((const char*)&regID, sizeof(regID));
+            }
+
+            writeCount += numRegs * ( sizeof(unsigned long long) * 2 );
+        }
+
+        // Now write the image data header.
+        {
+            GIFtag imgDataTag;
+            imgDataTag.pad1 = 0;
+            imgDataTag.regs = 0;
+            imgDataTag.eop = false;
+            imgDataTag.pre = false;
+            imgDataTag.prim = 0;
+            imgDataTag.flg = 2;
+            imgDataTag.nreg = 0;
+            imgDataTag.nloop = ( this->dataSize / ( sizeof(unsigned long long) * 2 ) );
+
+            rw.write((const char*)&imgDataTag, sizeof(imgDataTag));
+
+            writeCount += sizeof(imgDataTag);
+        }
+    }
+
+    rw.write((const char*)this->texels, curDataSize);
+
+    writeCount += curDataSize;
+
+    return writeCount;
+}
+
 uint32 NativeTexture::writePs2(std::ostream& rw)
 {
 	HeaderInfo header;
@@ -550,7 +629,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
     bytesWritten += writeStringSection(rw, this->maskName.c_str(), this->maskName.size());
 
     // Prepare the image data (if not already prepared).
-     uint32 mipmapCount = platformTex->mipmapCount;
+    uint32 mipmapCount = platformTex->mipmaps.size();
 
     for ( uint32 n = 0; n < mipmapCount; n++ )
     {
@@ -600,7 +679,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
                     justTextureSize += sizeof( textureImageDataHeader );
                 }
 
-                size_t dataSize = platformTex->dataSizes[ n ];
+                size_t dataSize = platformTex->mipmaps[n].dataSize;
 
                 justTextureSize += dataSize;
             }
@@ -650,8 +729,50 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
 
             assert( isCompatible == true );
 
+            // Update mipmap texture registers.
+            for ( uint32 n = 0; n < mipmapCount; n++ )
+            {
+                NativeTexturePS2::GSTexture& gsTex = platformTex->mipmaps[ n ];
+
+                {
+                    const ps2MipmapTransmissionData& transData = mipmapTransData[ n ];
+
+                    ps2GSRegisters::TRXPOS_REG trxpos;
+                    trxpos.ssax = 0;
+                    trxpos.ssay = 0;
+                    trxpos.dsax = transData.destX;
+                    trxpos.dsay = transData.destY;
+                    trxpos.dir = 0;
+
+                    gsTex.setGSRegister(0x51, trxpos.qword);
+                }
+
+                {
+                    uint32 texWidth = gsTex.swizzleWidth;
+                    uint32 texHeight = gsTex.swizzleHeight;
+
+                    if (gsTex.swizzleEncodingType == FORMAT_TEX32 && actualEncodingType == FORMAT_IDTEX8_COMPRESSED)
+                    {
+                        texWidth *= 2;
+                    }
+
+                    ps2GSRegisters::TRXREG_REG trxreg;
+                    trxreg.transmissionAreaHeight = texWidth;
+                    trxreg.transmissionAreaWidth = texHeight;
+
+                    gsTex.setGSRegister(0x52, trxreg.qword);
+                }
+
+                {
+                    ps2GSRegisters::TRXDIR_REG trxdir;
+                    trxdir.xdir = 0;
+
+                    gsTex.setGSRegister(0x53, trxdir.qword);
+                }
+            }
+
             // Create raster format flags.
-            uint32 formatFlags = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, platformTex->mipmapCount > 1, platformTex->autoMipmaps );
+            uint32 formatFlags = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, mipmapCount > 1, platformTex->autoMipmaps );
 
             // Apply special flags.
             if ( platformTex->requiresHeaders )
@@ -666,12 +787,14 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             // Apply unknown stuff.
             formatFlags |= platformTex->unknownFormatFlags;
 
+            const NativeTexturePS2::GSTexture& mainTex = platformTex->mipmaps[0];
+
             textureMetaDataHeader metaHeader;
             metaHeader.miptbp1 = gpuData.miptbp1;
             metaHeader.miptbp2 = gpuData.miptbp2;
-            metaHeader.width = platformTex->width[0];
-            metaHeader.height = platformTex->height[0];
-            metaHeader.depth = platformTex->mipmapDepth[0];
+            metaHeader.width = mainTex.width;
+            metaHeader.height = mainTex.height;
+            metaHeader.depth = mainTex.depth;
             metaHeader.tex0 = gpuData.tex0;
             metaHeader.tex1 = gpuData.tex1;
             metaHeader.rasterFormat = formatFlags;
@@ -694,38 +817,15 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
 
             for ( uint32 n = 0; n < mipmapCount; n++ )
             {
+                const NativeTexturePS2::GSTexture& gsTex = platformTex->mipmaps[n];
+
                 // TODO: swizzle the image data (if required)
-                assert(platformTex->swizzleEncodingType[n] == requiredFormat);
+                assert(gsTex.swizzleEncodingType == requiredFormat);
 
-                uint32 curDataSize = platformTex->dataSizes[n];
+                // Write the packet.
+                uint32 writeCount = gsTex.writeGIFPacket(rw, requiresHeaders);
 
-                if ( requiresHeaders )
-                {
-                    uint32 texWidth = platformTex->swizzleWidth[ n ];
-                    uint32 texHeight = platformTex->swizzleHeight[ n ];
-
-                    if (requiredFormat == FORMAT_TEX32 && actualEncodingType == FORMAT_IDTEX8_COMPRESSED)
-                    {
-                        texWidth *= 2;
-                    }
-
-                    // Save the important stuff.
-                    ps2MipmapTransmissionData& mipTransData = mipmapTransData[ n ];
-
-                    writeImageDataHeader(
-                        rw,
-                        texWidth,
-                        texHeight,
-                        curDataSize,
-                        mipTransData.destX, mipTransData.destY
-                    );
-
-                    bytesWritten += sizeof(textureImageDataHeader);
-                }
-
-                rw.write((const char*)platformTex->texels[n], curDataSize);
-
-                bytesWritten += curDataSize;
+                bytesWritten += writeCount;
             }
 
             // Write palette information.

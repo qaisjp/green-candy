@@ -17,6 +17,178 @@
 namespace rw
 {
 
+void verifyTexture( NativeTexturePS2::GSTexture& gsTex, eFormatEncodingType imageDecodeFormatType, ps2MipmapTransmissionData& transmissionOffset )
+{
+    // Debug register contents (only the important ones).
+    uint32 regCount = gsTex.storedRegs.size();
+
+    bool hasTRXPOS = false;
+    bool hasTRXREG = false;
+    bool hasTRXDIR = false;
+
+    for ( uint32 n = 0; n < regCount; n++ )
+    {
+        const NativeTexturePS2::GSTexture::GSRegInfo& regInfo = gsTex.storedRegs[ n ];
+
+        if ( regInfo.regID == 0x51 )
+        {
+            // TRXPOS
+            const ps2GSRegisters::TRXPOS_REG& trxpos = (const ps2GSRegisters::TRXPOS_REG&)regInfo.content;
+
+            assert(trxpos.ssax == 0);
+            assert(trxpos.ssay == 0);
+            assert(trxpos.dir == 0);
+
+            // Give the transmission settings to the runtime.
+            transmissionOffset.destX = trxpos.dsax;
+            transmissionOffset.destY = trxpos.dsay;
+
+            hasTRXPOS = true;
+        }
+        else if ( regInfo.regID == 0x52 )
+        {
+            // TRXREG
+            const ps2GSRegisters::TRXREG_REG& trxreg = (const ps2GSRegisters::TRXREG_REG&)regInfo.content;
+
+            // Convert this to swizzle width and height.
+            uint32 storedSwizzleWidth = trxreg.transmissionAreaWidth;
+            uint32 storedSwizzleHeight = trxreg.transmissionAreaHeight;
+
+            if (gsTex.swizzleEncodingType == FORMAT_TEX32 && imageDecodeFormatType == FORMAT_IDTEX8_COMPRESSED)
+            {
+                storedSwizzleWidth /= 2;
+            }
+
+            assert(storedSwizzleWidth == gsTex.swizzleWidth);
+            assert(storedSwizzleHeight == gsTex.swizzleHeight);
+
+            hasTRXREG = true;
+        }
+        else if ( regInfo.regID == 0x53 )
+        {
+            // TRXDIR
+            const ps2GSRegisters::TRXDIR_REG& trxdir = (const ps2GSRegisters::TRXDIR_REG&)regInfo.content;
+
+            // Textures have to be transferred to the GS memory.
+            assert(trxdir.xdir == 0);
+
+            hasTRXDIR = true;
+        }
+    }
+
+    // We kinda require all registers.
+    assert(hasTRXPOS == true);
+    assert(hasTRXREG == true);
+    assert(hasTRXDIR == true);
+}
+
+uint32 NativeTexturePS2::GSTexture::readGIFPacket(std::istream& rw, bool hasHeaders)
+{
+    // See https://www.dropbox.com/s/onjaprt82y81sj7/EE_Users_Manual.pdf page 151
+
+    uint32 readCount = 0;
+
+	if (hasHeaders)
+    {
+        // A GSTexture always consists of a register list and the image data.
+        {
+            GIFtag regListTag;
+            rw.read((char*)&regListTag, sizeof(regListTag));
+
+            assert(rw.gcount() == sizeof(regListTag));
+
+            readCount += sizeof(regListTag);
+
+            // If we have a register list, parse it.
+            if (regListTag.flg == 0)
+            {
+                assert(regListTag.eop == false);
+                assert(regListTag.pre == false);
+                assert(regListTag.prim == 0);
+                assert(regListTag.nreg == 1);
+                assert(regListTag.getRegisterID(0) == 0xE);
+
+                uint32 numRegs = regListTag.nloop;
+
+                // Preallocate the register space.
+                this->storedRegs.resize( numRegs );
+
+                for ( uint32 n = 0; n < numRegs; n++ )
+                {
+                    // Read the register content.
+                    unsigned long long regContent;
+                    rw.read((char*)&regContent, sizeof(regContent));
+
+                    assert(rw.gcount() == sizeof(regContent));
+                    
+                    // Read the register ID.
+                    struct regID_struct
+                    {
+                        unsigned long long regID : 8;
+                        unsigned long long pad1 : 56;
+                    };
+
+                    regID_struct regID;
+                    rw.read((char*)&regID, sizeof(regID_struct));
+
+                    assert(rw.gcount() == sizeof(regID_struct));
+
+                    // Put the register into the register storage.
+                    GSRegInfo& regInfo = this->storedRegs[ n ];
+
+                    regInfo.regID = regID.regID;
+                    regInfo.content = regContent;
+                }
+
+                readCount += numRegs * ( sizeof(unsigned long long) * 2 );
+            }
+            else
+            {
+                assert(regListTag.flg == 3);
+            }
+        }
+
+        // Read the image data GIFtag.
+        {
+            GIFtag imgDataTag;
+            rw.read((char*)&imgDataTag, sizeof(imgDataTag));
+
+            assert(rw.gcount() == sizeof(imgDataTag));
+
+            readCount += sizeof(imgDataTag);
+
+            // Verify that this is an image data tag.
+            assert(imgDataTag.eop == false);
+            assert(imgDataTag.pre == false);
+            assert(imgDataTag.prim == 0);
+            assert(imgDataTag.flg == 2);    // there has to be image data.
+            assert(imgDataTag.nreg == 0);
+
+            // Verify the image data size.
+            assert(imgDataTag.nloop == (this->dataSize / (sizeof(uint64) * 2)));
+        }
+	}
+
+    uint32 texDataSize = this->dataSize;
+
+    uint8 *texelData = NULL;
+
+    if ( texDataSize != 0 )
+    {
+        texelData = new uint8[texDataSize];
+
+        rw.read(reinterpret_cast <char *> (texelData), texDataSize);
+
+        assert(rw.gcount() == texDataSize);
+
+        readCount += texDataSize;
+    }
+
+    this->texels = texelData;
+
+    return readCount;
+}
+
 void NativeTexture::readPs2(std::istream &rw)
 {
 	HeaderInfo header;
@@ -76,8 +248,6 @@ void NativeTexture::readPs2(std::istream &rw)
     textureMetaDataHeader textureMeta;
     rw.read((char*)&textureMeta, sizeof(textureMetaDataHeader));
 
-	platformTex->width.push_back(textureMeta.width);
-	platformTex->height.push_back(textureMeta.height);
 	uint32 depth = textureMeta.depth;
 
     // Deconstruct the rasterFormat.
@@ -116,23 +286,12 @@ void NativeTexture::readPs2(std::istream &rw)
 	bool hasHeader = platformTex->requiresHeaders;
     bool hasSwizzle = platformTex->hasSwizzle;
 
-/*
-	// only these are ever used (so alpha for all textures :/ )
-	if ((rasterFormat == RASTER_1555) ||
-	    (rasterFormat == RASTER_4444) ||
-	    (rasterFormat == RASTER_8888))
-		hasAlpha = true;
-	else
-		hasAlpha = false;
-*/
 	hasAlpha = false;
 
-//	cout << " " << maskName;
 	if (maskName.size() != 0 || depth == 16)
     {
 		hasAlpha = true;
     }
-//	cout << " " << hasAlpha;
 
 	READ_HEADER(CHUNK_STRUCT);
 
@@ -148,124 +307,98 @@ void NativeTexture::readPs2(std::istream &rw)
     // Absolute maximum of mipmaps.
     const size_t maxMipmaps = 7;
 
+    // Reserve that much space for mipmaps.
+    platformTex->mipmaps.reserve( maxMipmaps );
+
     ps2MipmapTransmissionData _origMipmapTransData[ maxMipmaps ];
 
 	/* Pixels/Indices */
 	long end = rw.tellg();
 	end += (long)dataSize;
 	uint32 i = 0;
+
+    uint32 remainingImageData = dataSize;
+    
+    uint32 currentMipWidth = textureMeta.width;
+    uint32 currentMipHeight = textureMeta.height;
+
 	while (rw.tellg() < end)
     {
-        uint32 texWidth = 0;
-        uint32 texHeight = 0;
-
-	    // half dimensions if we have mipmaps
-	    if (i > 0)
+        if (i == maxMipmaps)
         {
-		    texWidth = platformTex->width[i-1] / 2;
-		    texHeight = platformTex->height[i-1] / 2;
-	    }
-        else
-        {
-            texWidth = textureMeta.width;
-            texHeight = textureMeta.height;
+            // We cannot have more than the maximum mipmaps.
+            break;
         }
 
-        uint32 texDataSize = 0;
-
-        uint32 mipOffX = 0;
-        uint32 mipOffY = 0;
-
-		if (hasHeader)
+        if (i > 0 && !hasMipmaps)
         {
-            uint32 vImgWidth, vImgHeight, vImgDataSize;
-            uint16 vImgSize1, vImgSize2;
-    
-            bool validTex = readImageDataHeader(rw, vImgWidth, vImgHeight, vImgDataSize, vImgSize1, vImgSize2);
+            break;
+        }
 
-            if ( validTex )
-            {
-                // TODO: we are not there yet... those swizzle dimms are not final it seems.
-
-                if (imageEncodingType == FORMAT_TEX32 && actualEncodingType == FORMAT_IDTEX8_COMPRESSED)
-                {
-                    vImgWidth /= 2;
-                }
-
-			    platformTex->swizzleWidth.push_back(vImgWidth);
-			    platformTex->swizzleHeight.push_back(vImgHeight);
-			    texDataSize = vImgDataSize;
-
-                mipOffX = vImgSize1;
-                mipOffY = vImgSize2;
-            }
-
-            // TODO: there is seemingly invalid data in some texture archives; figure out what to do with it...
-		}
-        else
+	    // half dimensions if we have mipmaps
+        if (i > 0)
         {
-            uint32 texItems = ( texWidth * texHeight );
+            currentMipWidth /= 2;
+            currentMipHeight /= 2;
+        }
 
+        // Create a new mipmap.
+        platformTex->mipmaps.resize( i + 1 );
+
+        NativeTexturePS2::GSTexture& newMipmap = platformTex->mipmaps[i];
+
+        newMipmap.width = currentMipWidth;
+        newMipmap.height = currentMipHeight;
+
+        // Calculate the encoded dimensions.
+        {
             uint32 packedWidth, packedHeight;
 
             bool gotPackedDimms =
                 ps2GSPixelEncodingFormats::getPackedFormatDimensions(
                     actualEncodingType, imageEncodingType,
-                    texWidth, texHeight,
+                    newMipmap.width, newMipmap.height,
                     packedWidth, packedHeight
                 );
 
             assert( gotPackedDimms == true );
 
-			platformTex->swizzleWidth.push_back(packedWidth);
-			platformTex->swizzleHeight.push_back(packedHeight);
-
-			texDataSize = texItems * depth/8;
-		}
-
-        if ( texDataSize == 0 )
-        {
-            rw.seekg(end, std::ios::beg);
-            break;
+		    newMipmap.swizzleWidth = packedWidth;
+		    newMipmap.swizzleHeight = packedHeight;
         }
 
-        platformTex->mipmapDepth.push_back( depth );
-        platformTex->swizzleEncodingType.push_back( imageEncodingType );
+        // General properties.
+        newMipmap.depth = depth;
+        newMipmap.swizzleEncodingType = imageEncodingType;
 
-        // Store mipmap offsets (for debugging).
-        if ( i < maxMipmaps )
+        // Calculate the texture data size.
         {
-            ps2MipmapTransmissionData& transData = _origMipmapTransData[ i ];
+            uint32 encodedTexItems = ( newMipmap.swizzleWidth * newMipmap.swizzleHeight );
 
-            transData.destX = mipOffX;
-            transData.destY = mipOffY;
+            uint32 encodingDepth = getFormatEncodingDepth(imageEncodingType);
+
+			newMipmap.dataSize = encodedTexItems * encodingDepth/8;
         }
 
-		platformTex->dataSizes.push_back(texDataSize);
+        // Read the GIF packet data.
+        uint32 readCount = newMipmap.readGIFPacket(rw, hasHeader);
 
-        uint8 *texelData = NULL;
+        remainingImageData -= readCount;
 
-        if ( texDataSize != 0 )
-        {
-            texelData = new uint8[texDataSize];
-
-		    rw.read(reinterpret_cast <char *> (texelData), texDataSize*sizeof(uint8));
-        }
-
-	    if (i > 0)
-        {
-            platformTex->width.push_back(texWidth);
-            platformTex->height.push_back(texHeight);
-        }
-
-        platformTex->texels.push_back(texelData);
+        // Verify this mipmap.
+        verifyTexture( newMipmap, actualEncodingType, _origMipmapTransData[i] );
 
 	    i++;
 	}
-	platformTex->mipmapCount = i;
 
     // Assume we have at least one texture.
-    assert( platformTex->mipmapCount > 0 );
+    assert( platformTex->mipmaps.size() > 0 );
+
+    if ( remainingImageData != 0 )
+    {
+        // Make sure we are past the image data.
+        rw.seekg( end, std::ios::beg );
+    }
 
 	/* Palette */
 	// vc dyn_trash.txd is weird here
@@ -405,31 +538,39 @@ void NativeTexture::readPs2(std::istream &rw)
     }
 
     // Verify transmission rectangle same-ness.
-    bool hasValidTransmissionRects = true;
-
-    for ( uint32 n = 0; n < platformTex->mipmapCount; n++ )
+    if (hasHeader)
     {
-        const ps2MipmapTransmissionData& srcTransData = _origMipmapTransData[ n ];
-        const ps2MipmapTransmissionData& dstTransData = mipmapTransData[ n ];
+        bool hasValidTransmissionRects = true;
 
-        if ( srcTransData.destX != dstTransData.destX ||
-             srcTransData.destY != dstTransData.destY )
+        uint32 mipmapCount = platformTex->mipmaps.size();
+
+        for ( uint32 n = 0; n < mipmapCount; n++ )
         {
-            hasValidTransmissionRects = false;
-            break;
+            const ps2MipmapTransmissionData& srcTransData = _origMipmapTransData[ n ];
+            const ps2MipmapTransmissionData& dstTransData = mipmapTransData[ n ];
+
+            if ( srcTransData.destX != dstTransData.destX ||
+                 srcTransData.destY != dstTransData.destY )
+            {
+                hasValidTransmissionRects = false;
+                break;
+            }
+        }
+
+        if ( hasValidTransmissionRects == false )
+        {
+            __asm nop
         }
     }
 
-    if ( hasValidTransmissionRects == false )
-    {
-        __asm nop
-    }
-
     // Verify palette transmission rectangle.
-    if ( clutTransData.destX != palTransData.destX ||
-         clutTransData.destY != palTransData.destY )
+    if (platformTex->paletteType != PALETTE_NONE)
     {
-        __asm nop
+        if ( clutTransData.destX != palTransData.destX ||
+             clutTransData.destY != palTransData.destY )
+        {
+            __asm nop
+        }
     }
 
     // Just for some visual debugging.
@@ -497,16 +638,23 @@ void NativeTexture::convertFromPS2(void)
     NativeTexturePS2 *platformTex = (NativeTexturePS2*)this->platformData;
 
     // Copy over general attributes.
-    d3dtex->width = platformTex->width;
-    d3dtex->height = platformTex->height;
-    d3dtex->mipmapCount = platformTex->mipmapCount;
-    d3dtex->mipmapDepth = platformTex->mipmapDepth;
+    uint32 mipmapCount = platformTex->mipmaps.size();
+
+    d3dtex->width.resize( mipmapCount );
+    d3dtex->height.resize( mipmapCount );
+    d3dtex->mipmapDepth.resize( mipmapCount );
+    d3dtex->dataSizes.resize( mipmapCount );
+
+    d3dtex->mipmapCount = mipmapCount;
 
     d3dtex->autoMipmaps = platformTex->autoMipmaps;
 
-	for (uint32 j = 0; j < platformTex->mipmapCount; j++)
+    // Copy mipmap data.
+	for (uint32 j = 0; j < mipmapCount; j++)
     {
-        uint32 depth = platformTex->mipmapDepth[j];
+        NativeTexturePS2::GSTexture& gsTex = platformTex->mipmaps[ j ];
+
+        uint32 depth = gsTex.depth;
 
         // unswizzle the image data.
         {
@@ -515,10 +663,11 @@ void NativeTexture::convertFromPS2(void)
             assert( opSuccess == true );
         }
 
+        // Now that the texture is in linear format, we can prepare it.
 		if (platformTex->paletteType == PALETTE_8BIT)
         {
-            uint8 *texels = (uint8*)platformTex->texels[j];
-			unclut(texels, platformTex->width[j], platformTex->height[j]);
+            uint8 *texels = (uint8*)gsTex.texels;
+			unclut(texels, gsTex.width, gsTex.height);
         }
         else if (depth == 16)
         {
@@ -528,9 +677,9 @@ void NativeTexture::convertFromPS2(void)
         {
             typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
-            pixel32_t *texelData = (pixel32_t*)platformTex->texels[j];
+            pixel32_t *texelData = (pixel32_t*)gsTex.texels;
 
-			for (uint32 i = 0; i < platformTex->height[j] * platformTex->width[j]; i++)
+			for (uint32 i = 0; i < gsTex.width * gsTex.height; i++)
             {
                 uint8 red, green, blue, alpha;
                 texelData->getcolor(i, red, green, blue, alpha);
@@ -545,6 +694,16 @@ void NativeTexture::convertFromPS2(void)
                 texelData->setcolor(i, red, green, blue, alpha);
 			}
 		}
+
+        // Move over the texture data to the D3D texture.
+        d3dtex->width[ j ] = gsTex.width;
+        d3dtex->height[ j ] = gsTex.height;
+        d3dtex->texels[ j ] = gsTex.texels;
+        d3dtex->dataSizes[ j ] = gsTex.dataSize;
+
+        // Zero out the GS texture.
+        gsTex.texels = NULL;
+        gsTex.dataSize = 0;
 	}
 
 	if (platformTex->paletteType != PALETTE_NONE)
@@ -574,8 +733,6 @@ void NativeTexture::convertFromPS2(void)
 	}
 
     // Copy over more advanced attributes.
-    d3dtex->texels = platformTex->texels;
-    d3dtex->dataSizes = platformTex->dataSizes;
     d3dtex->palette = platformTex->palette;
     d3dtex->paletteSize = platformTex->paletteSize;
     d3dtex->paletteType = platformTex->paletteType;
@@ -605,17 +762,30 @@ void NativeTexture::convertToPS2( void )
     {
         NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
-        // Copy over general attributes.
-        ps2tex->width = platformTex->width;
-        ps2tex->height = platformTex->height;
-        ps2tex->mipmapCount = platformTex->mipmapCount;
-        ps2tex->mipmapDepth = platformTex->mipmapDepth;
+        // Prepare mipmap data.
+        uint32 mipmapCount = platformTex->mipmapCount;
 
+        ps2tex->mipmaps.resize( mipmapCount );
+
+        for ( uint32 n = 0; n < mipmapCount; n++ )
+        {
+            // We create mipmap skeletons here.
+            // The actual conversion to PS2 encoding happens later.
+            NativeTexturePS2::GSTexture newMipmap;
+
+            newMipmap.width = platformTex->width[ n ];
+            newMipmap.height = platformTex->height[ n ];
+            newMipmap.depth = platformTex->mipmapDepth[ n ];
+            newMipmap.dataSize = platformTex->dataSizes[ n ];
+
+            // We just move over the image data.
+            newMipmap.texels = platformTex->texels[ n ];
+        }
+
+        // Copy over general attributes.
         ps2tex->autoMipmaps = platformTex->autoMipmaps;
 
         // Copy over more complex data.
-        ps2tex->dataSizes = platformTex->dataSizes;
-        ps2tex->texels = platformTex->texels;
         ps2tex->palette = platformTex->palette;
         ps2tex->paletteSize = platformTex->paletteSize;
         ps2tex->paletteType = platformTex->paletteType;
@@ -631,24 +801,21 @@ void NativeTexture::convertToPS2( void )
         delete platformTex;
     }
 
-    // Initialize the swizzling state.
-    uint32 mipmapCount = ps2tex->mipmapCount;
+    // Encode the image data.
+    uint32 mipmapCount = ps2tex->mipmaps.size();
 
-    ps2tex->swizzleWidth.resize( mipmapCount );
-    ps2tex->swizzleHeight.resize( mipmapCount );
-    ps2tex->swizzleEncodingType.resize( mipmapCount );
-
-    // Crypt the texel data.
-    for ( uint32 n = 0; n < ps2tex->mipmapCount; n++ )
+    for ( uint32 n = 0; n < mipmapCount; n++ )
     {
-        uint32 curWidth = ps2tex->width[n];
-        uint32 curHeight = ps2tex->height[n];
-        uint32 depth = ps2tex->mipmapDepth[n];
+        NativeTexturePS2::GSTexture& gsTex = ps2tex->mipmaps[n];
+
+        uint32 curWidth = gsTex.width;
+        uint32 curHeight = gsTex.height;
+        uint32 depth = gsTex.depth;
 
         // Prepare the pixels.
         if (ps2tex->paletteType == PALETTE_8BIT)
         {
-            clut( (uint8*)ps2tex->texels[n], curWidth, curHeight );
+            clut( (uint8*)gsTex.texels, curWidth, curHeight );
         }
         else if (depth == 16)
         {
@@ -658,7 +825,7 @@ void NativeTexture::convertToPS2( void )
         {
             typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
-            pixel32_t *texelData = (pixel32_t*)ps2tex->texels[n];
+            pixel32_t *texelData = (pixel32_t*)gsTex.texels;
 
 			for (uint32 i = 0; i < curWidth * curHeight; i++)
             {
@@ -680,7 +847,7 @@ void NativeTexture::convertToPS2( void )
         eFormatEncodingType internalFormat = 
             getFormatEncodingFromRasterFormat(this->rasterFormat, ps2tex->paletteType);
 
-        ps2tex->swizzleEncodingType[n] = internalFormat;
+        gsTex.swizzleEncodingType = internalFormat;
 
         assert(internalFormat != FORMAT_UNKNOWN);
 

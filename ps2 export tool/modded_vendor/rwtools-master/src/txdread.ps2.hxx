@@ -153,29 +153,69 @@ struct ps2GSRegisters
     {
         inline TRXPOS_REG( void )
         {
-            *(ps2reg_t*)this = 0L;
+            this->qword = 0L;
         }
 
-        ps2reg_t ssax : 11;
-        ps2reg_t pad1 : 5;
-        ps2reg_t ssay : 11;
-        ps2reg_t pad2 : 5;
-        ps2reg_t dsax : 11;
-        ps2reg_t pad3 : 5;
-        ps2reg_t dsay : 11;
-        ps2reg_t dir : 2;
+        union
+        {
+            struct
+            {
+                ps2reg_t ssax : 11;
+                ps2reg_t pad1 : 5;
+                ps2reg_t ssay : 11;
+                ps2reg_t pad2 : 5;
+                ps2reg_t dsax : 11;
+                ps2reg_t pad3 : 5;
+                ps2reg_t dsay : 11;
+                ps2reg_t dir : 2;
+            };
+            struct
+            {
+                ps2reg_t qword;
+            };
+        };
     };
 
     struct TRXREG_REG
     {
         inline TRXREG_REG( void )
         {
-            *(ps2reg_t*)this = 0L;
+            this->qword = 0L;
         }
 
-        ps2reg_t transmissionAreaWidth : 12;
-        ps2reg_t pad1 : 20;
-        ps2reg_t transmissionAreaHeight : 12;
+        union
+        {
+            struct
+            {
+                ps2reg_t transmissionAreaWidth : 12;
+                ps2reg_t pad1 : 20;
+                ps2reg_t transmissionAreaHeight : 12;
+            };
+            struct
+            {
+                ps2reg_t qword;
+            };
+        };
+    };
+
+    struct TRXDIR_REG
+    {
+        inline TRXDIR_REG( void )
+        {
+            this->qword = 0L;
+        }
+
+        union
+        {
+            struct
+            {
+                ps2reg_t xdir : 2;
+            };
+            struct
+            {
+                ps2reg_t qword;
+            };
+        };
     };
 
     TEX0_REG tex0;
@@ -392,6 +432,39 @@ inline static bool getMemoryLayoutFromTexelFormat(eFormatEncodingType encodingTy
     return true;
 }
 
+struct GIFtag
+{
+    unsigned long long nloop : 15;
+    unsigned long long eop : 1;
+    unsigned long long pad1 : 30;
+    unsigned long long pre : 1;
+    unsigned long long prim : 11;
+    unsigned long long flg : 2;
+    unsigned long long nreg : 4;
+    
+    unsigned long long regs;
+
+    uint32 getRegisterID(uint32 i) const
+    {
+        assert(i < 16);
+
+        unsigned long long shiftPos = i * 4;
+
+        return ( this->regs & ( 0xF << shiftPos ) ) >> shiftPos;
+    }
+
+    void setRegisterID(uint32 i, uint32 regContent)
+    {
+        assert(i < 16);
+
+        unsigned long long shiftPos = i * 4;
+
+        this->regs &= ~( 0xF << shiftPos );
+
+        this->regs |= regContent >> shiftPos;
+    }
+};
+
 struct NativeTexturePS2 : public PlatformTexture
 {
     NativeTexturePS2( void )
@@ -400,7 +473,6 @@ struct NativeTexturePS2 : public PlatformTexture
         this->palette = NULL;
         this->paletteSize = 0;
         this->paletteType = PALETTE_NONE;
-        this->mipmapCount = 0;
         this->autoMipmaps = false;
         this->requiresHeaders = true;
         this->hasSwizzle = false;
@@ -428,37 +500,34 @@ struct NativeTexturePS2 : public PlatformTexture
 
     void Delete( void )
     {
-        if ( this->palette )
+        if ( void *palette = this->palette )
         {
-	        delete[] palette;
-
-	        palette = NULL;
+            delete [] (uint8*)palette;
+            
+            this->palette = NULL;
         }
-	    for (uint32 i = 0; i < texels.size(); i++)
-        {
-		    delete[] texels[i];
-		    texels[i] = 0;
-	    }
+
+        delete this;
     }
 
     uint32 getWidth( void ) const
     {
-        return this->width[0];
+        return this->mipmaps[0].width;
     }
 
     uint32 getHeight( void ) const
     {
-        return this->height[0];
+        return this->mipmaps[0].height;
     }
 
     uint32 getDepth( void ) const
     {
-        return this->mipmapDepth[0];
+        return this->mipmaps[0].depth;
     }
 
     uint32 getMipmapCount( void ) const
     {
-        return this->mipmapCount;
+        return this->mipmaps.size();
     }
 
     ePaletteType getPaletteType( void ) const
@@ -469,12 +538,6 @@ struct NativeTexturePS2 : public PlatformTexture
     PlatformTexture* Clone( void ) const
     {
         NativeTexturePS2 *newTex = new NativeTexturePS2();
-
-        // Copy over attributes.
-        newTex->width = this->width;
-        newTex->height = this->height;
-        newTex->mipmapDepth = this->mipmapDepth;
-        newTex->dataSizes = this->dataSizes;
         
         // Copy palette information.
         {
@@ -495,28 +558,9 @@ struct NativeTexturePS2 : public PlatformTexture
         }
 
         // Copy image texel information.
-        {
-            size_t numTexels = this->texels.size();
-
-	        for (uint32 i = 0; i < numTexels; i++)
-            {
-		        uint32 dataSize = this->dataSizes[i];
-		        uint8 *newtexels = new uint8[dataSize];
-
-                const uint8 *srctexels = (const uint8*)this->texels[i];
-
-		        memcpy(newtexels, srctexels, dataSize);
-
-		        newTex->texels.push_back(newtexels);
-	        }
-        }
-
-        newTex->mipmapCount = this->mipmapCount;
+        newTex->mipmaps = this->mipmaps;
         
         // Copy PS2 data.
-        newTex->swizzleEncodingType = this->swizzleEncodingType;
-        newTex->swizzleWidth = this->swizzleWidth;
-        newTex->swizzleHeight = this->swizzleHeight;
         newTex->autoMipmaps = this->autoMipmaps;
         newTex->requiresHeaders = this->requiresHeaders;
         newTex->hasSwizzle = this->hasSwizzle;
@@ -531,16 +575,122 @@ struct NativeTexturePS2 : public PlatformTexture
     // Backlink to original texture container.
     const NativeTexture *parent;
 
-    uint32 mipmapCount;
+    struct GSTexture
+    {
+        inline GSTexture( void )
+        {
+            this->width = 0;
+            this->height = 0;
+            this->depth = 0;
+            this->dataSize = 0;
+            this->texels = NULL;
 
-	std::vector<uint32> width;	// store width & height
-	std::vector<uint32> height;	// for each mipmap
-    std::vector<uint32> mipmapDepth;
-	std::vector<uint32> dataSizes;
-	std::vector<void*> texels;	// holds either indices or color values
-					// (also per mipmap)
-	uint8 *palette;
-	uint32 paletteSize;
+            this->swizzleEncodingType = FORMAT_UNKNOWN;
+            this->swizzleWidth = 0;
+            this->swizzleHeight = 0;
+        }
+
+        inline ~GSTexture( void )
+        {
+            if ( void *texels = this->texels )
+            {
+                delete texels;
+
+                this->texels = NULL;
+            }
+        }
+
+        inline GSTexture( const GSTexture& right )
+        {
+            *this = right;
+        }
+
+        inline void operator = ( const GSTexture& right )
+        {
+            // Copy main texture properties.
+            this->width = right.width;
+            this->height = right.height;
+            this->depth = right.depth;
+            
+            // Copy over image data.
+            void *newTexels = NULL;
+
+            uint32 dataSize = right.dataSize;
+
+            if ( dataSize != 0 )
+            {
+                const void *srcTexels = right.texels;
+
+                newTexels = new uint8[ dataSize ];
+
+                memcpy( newTexels, srcTexels, dataSize );
+            }
+            this->texels = newTexels;
+            this->dataSize = dataSize;
+
+            // Copy over encoding properties.
+            this->swizzleEncodingType = right.swizzleEncodingType;
+            this->swizzleWidth = right.swizzleWidth;
+            this->swizzleHeight = right.swizzleHeight;
+        }
+
+        inline void setGSRegister(uint32 regID, unsigned long long regContent)
+        {
+            // Try to find an existing entry with this register.
+            uint32 numRegs = this->storedRegs.size();
+
+            bool hasReplacedReg = false;
+
+            for ( uint32 n = 0; n < numRegs; n++ )
+            {
+                GSRegInfo& regInfo = this->storedRegs[ n ];
+
+                if ( regInfo.regID == regID )
+                {
+                    regInfo.content = regContent;
+                    
+                    hasReplacedReg = true;
+                    break;
+                }
+            }
+
+            if ( !hasReplacedReg )
+            {
+                GSRegInfo newRegInfo;
+                newRegInfo.regID = regID;
+                newRegInfo.content = regContent;
+
+                this->storedRegs.push_back( newRegInfo );
+            }
+        }
+
+        uint32 readGIFPacket(std::istream& rw, bool hasHeaders);
+        uint32 writeGIFPacket(std::ostream& rw, bool requiresHeaders) const;
+
+        uint32 width, height;   // store width & height for each mipmap
+        uint32 depth;
+        uint32 dataSize;
+        void *texels;           // holds either indices or color values
+
+        eFormatEncodingType swizzleEncodingType;
+        uint32 swizzleWidth, swizzleHeight;
+
+        struct GSRegInfo
+        {
+            uint32 regID;
+            unsigned long long content;
+        };
+
+        typedef std::vector <GSRegInfo> regInfoList_t;
+
+        regInfoList_t storedRegs;
+    };
+
+    // mipmaps are GSTextures.
+    std::vector <GSTexture> mipmaps;
+
+    uint8 *palette;
+    uint32 paletteSize;
 
     ePaletteType paletteType;
 
@@ -551,9 +701,6 @@ struct NativeTexturePS2 : public PlatformTexture
     bool hasSwizzle;
     bool autoMipmaps;
 
-    std::vector<eFormatEncodingType> swizzleEncodingType;
-	std::vector<uint32> swizzleWidth;
-	std::vector<uint32> swizzleHeight;
     uint32 skyMipMapVal;
 
     uint8 unknownFormatFlags;
@@ -659,6 +806,30 @@ inline eFormatEncodingType getFormatEncodingFromMemoryLayout(eMemoryLayoutType m
     }
 
     return encodingFormat;
+}
+
+inline uint32 getFormatEncodingDepth(eFormatEncodingType encodingType)
+{
+    uint32 depth = 0;
+
+    if (encodingType == FORMAT_IDTEX4 || encodingType == FORMAT_IDTEX8_COMPRESSED)
+    {
+        depth = 4;
+    }
+    else if (encodingType == FORMAT_IDTEX8)
+    {
+        depth = 8;
+    }
+    else if (encodingType == FORMAT_TEX16)
+    {
+        depth = 16;
+    }
+    else if (encodingType == FORMAT_TEX32)
+    {
+        depth = 32;
+    }
+
+    return depth;
 }
 
 }

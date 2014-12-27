@@ -218,34 +218,6 @@ namespace ps2GSPixelEncodingFormats
         return true;
     }
 
-    inline static uint32 getEncodingFormatDepth(eFormatEncodingType encodingType)
-    {
-        uint32 depth = 0;
-
-        if (encodingType == FORMAT_IDTEX4)
-        {
-            depth = 4;
-        }
-        else if (encodingType == FORMAT_IDTEX8)
-        {
-            depth = 8;
-        }
-        else if (encodingType == FORMAT_IDTEX8_COMPRESSED)
-        {
-            depth = 4;
-        }   
-        else if (encodingType == FORMAT_TEX16)
-        {
-            depth = 16;
-        }
-        else if (encodingType == FORMAT_TEX32)
-        {
-            depth = 32;
-        }
-
-        return depth;
-    }
-
     inline static void permuteArray(
         const void *srcToBePermuted, uint32 srcWidth, uint32 srcHeight, uint32 srcDepth, uint32 srcColumnWidth, uint32 srcColumnHeight,
         void *dstTexels, uint32 dstWidth, uint32 dstHeight, uint32 dstDepth, uint32 dstColumnWidth, uint32 dstColumnHeight,
@@ -457,7 +429,7 @@ namespace ps2GSPixelEncodingFormats
 
         assert( gotPackedDimms == true );
 
-        uint32 packedDepth = getEncodingFormatDepth(packedFormat);
+        uint32 packedDepth = getFormatEncodingDepth(packedFormat);
 
         // Make sure the packed texture is a multiple of the column dimensions.
         assert((packedWidth % packedColumnWidth) == 0);
@@ -475,7 +447,7 @@ namespace ps2GSPixelEncodingFormats
 
         assert( gotRawDimms == true );
 
-        uint32 rawDepth = getEncodingFormatDepth(rawFormat);
+        uint32 rawDepth = getFormatEncodingDepth(rawFormat);
 
         // Calculate the size of the destination data.
         uint32 dstDataSize = ( dstWidth * dstHeight * rawDepth / 8 );
@@ -566,7 +538,7 @@ namespace ps2GSPixelEncodingFormats
             return false;
         }
 
-        uint32 rawDepth = getEncodingFormatDepth(rawFormat);
+        uint32 rawDepth = getFormatEncodingDepth(rawFormat);
 
         // Make sure the raw texture is a multiple of the column dimensions.
         uint32 expRawWidth = ALIGN_SIZE( rawWidth, rawColumnWidth );
@@ -587,7 +559,7 @@ namespace ps2GSPixelEncodingFormats
             return false;
         }
 
-        uint32 packedDepth = getEncodingFormatDepth(packedFormat);
+        uint32 packedDepth = getFormatEncodingDepth(packedFormat);
 
         // Get the dimensions of the packed format.
         // Since it has to have the same amount of columns, we multiply those column
@@ -642,6 +614,10 @@ namespace ps2GSPixelEncodingFormats
         }
         packedHeightOut = packedHeight;
 
+        // Make sure we align the packed coordinates.
+        packedWidthOut = ALIGN_SIZE( packedWidthOut, packedColumnWidth );
+        packedHeightOut = ALIGN_SIZE( packedHeightOut, packedColumnHeight );
+
         return true;
     }
 
@@ -663,7 +639,7 @@ namespace ps2GSPixelEncodingFormats
 
         assert( gotRawDimms == true );
 
-        uint32 rawDepth = getEncodingFormatDepth(rawFormat);
+        uint32 rawDepth = getFormatEncodingDepth(rawFormat);
 
         // Make sure the raw texture is a multiple of the column dimensions.
         uint32 expSrcWidth = ALIGN_SIZE( srcWidth, rawColumnWidth );
@@ -681,7 +657,7 @@ namespace ps2GSPixelEncodingFormats
 
         assert( gotPackedDimms == true );
 
-        uint32 packedDepth = getEncodingFormatDepth(packedFormat);
+        uint32 packedDepth = getFormatEncodingDepth(packedFormat);
 
         // Get permutation info.
         uint32 permWidth = 0;
