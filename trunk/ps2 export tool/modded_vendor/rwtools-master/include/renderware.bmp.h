@@ -9,6 +9,10 @@ struct Bitmap
         this->rasterFormat = RASTER_8888;
         this->texels = NULL;
         this->dataSize = 0;
+
+        this->bgRed = 0;
+        this->bgGreen = 0;
+        this->bgBlue = 0;
     }
 
     inline Bitmap( uint32 depth, eRasterFormat theFormat )
@@ -19,6 +23,10 @@ struct Bitmap
         this->rasterFormat = theFormat;
         this->texels = NULL;
         this->dataSize = 0;
+
+        this->bgRed = 0;
+        this->bgGreen = 0;
+        this->bgBlue = 0;
     }
 
     inline Bitmap( const Bitmap& right )
@@ -41,6 +49,10 @@ struct Bitmap
 
         this->texels = newTexels;
         this->dataSize = right.dataSize;
+
+        this->bgRed = right.bgRed;
+        this->bgGreen = right.bgGreen;
+        this->bgBlue = right.bgBlue;
     }
 
     inline ~Bitmap( void )
@@ -183,6 +195,20 @@ struct Bitmap
         return newPixels;
     }
 
+    inline void setBgColor( double red, double green, double blue )
+    {
+        this->bgRed = red;
+        this->bgGreen = green;
+        this->bgBlue = blue;
+    }
+
+    inline void getBgColor( double& red, double& green, double& blue ) const
+    {
+        red = this->bgRed;
+        green = this->bgGreen;
+        blue = this->bgBlue;
+    }
+
     enum eBlendMode
     {
         BLEND_MODULATE,
@@ -222,4 +248,6 @@ private:
     eRasterFormat rasterFormat;
     void *texels;
     uint32 dataSize;
+
+    double bgRed, bgGreen, bgBlue;
 };

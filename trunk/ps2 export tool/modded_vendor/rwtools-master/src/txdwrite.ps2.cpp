@@ -10,49 +10,6 @@
 namespace rw
 {
 
-inline void genpalettetexeldata(const void *paletteData, eRasterFormat rasterFormat, ePaletteType paletteType, uint32 itemCount, void*& texelData, uint32& texelDataSize, uint32& palWidth, uint32& palHeight)
-{
-    // Select a compatible texture size for our palette data.
-    uint32 texelWidth = 0;
-    uint32 texelHeight = 0;
-
-    if ( paletteType == PALETTE_4BIT )
-    {
-        texelWidth = 8;
-        texelHeight = 3;
-    }
-    else if ( paletteType == PALETTE_8BIT )
-    {
-        texelWidth = 16;
-        texelHeight = 16;
-    }
-    else
-    {
-        assert( 0 );
-    }
-
-    // Allocate texture memory.
-    uint32 texelItemCount = ( texelWidth * texelHeight );
-
-    size_t srcDataSize = ( itemCount * sizeof(PixelFormat::pixeldata32bit) );
-    size_t dstDataSize = ( texelItemCount * sizeof(PixelFormat::pixeldata32bit) );
-
-    void *newTexelData = new uint8[ dstDataSize ];
-
-    // Write the new memory.
-    memcpy(newTexelData, paletteData, srcDataSize);
-    
-    // Zero out the rest.
-    memset((char*)newTexelData + srcDataSize, 0, (dstDataSize - srcDataSize));
-
-    // Give parameters to the runtime.
-    texelData = newTexelData;
-    texelDataSize = dstDataSize;
-    
-    palWidth = texelWidth;
-    palHeight = texelHeight;
-}
-
 inline size_t writeStringSection( std::ostream& rw, const char *string, size_t strLen )
 {
     HeaderInfo header;
@@ -99,7 +56,7 @@ inline bool BijectiveInclusion( numType val1, numType val2, numType inclusionReq
 
 void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
 {
-    const NativeTexturePS2::GSTexture& mainTex = this->mipmaps[0];
+    const NativeTexturePS2::GSMipmap& mainTex = this->mipmaps[0];
 
     // Calculate according to texture properties.
     uint32 width = mainTex.width;
@@ -367,7 +324,7 @@ bool NativeTexturePS2::generatePS2GPUData(
     uint32 clutBasePointer
 ) const
 {
-    const NativeTexturePS2::GSTexture& mainTex = this->mipmaps[0];
+    const NativeTexturePS2::GSMipmap& mainTex = this->mipmaps[0];
 
     // This algorithm is guarranteed to produce correct values on identity-transformed PS2 GTA:SA textures.
     // There is no guarrantee that this works for modified textures!
@@ -387,8 +344,7 @@ bool NativeTexturePS2::generatePS2GPUData(
     if (gameVersion == rw::GTA3_1 || gameVersion == rw::GTA3_2 || gameVersion == rw::GTA3_3 || gameVersion == rw::GTA3_4)
     {
         // We actually preallocate the textures on the game engine GS memory.
-        // TODO: find out the TXD allocation order and fix this!
-        uint32 totalMemOffset = 0;
+        uint32 totalMemOffset = this->recommendedBufferBasePointer;
 
         finalTexBasePointer = mipmapBasePointer[ 0 ] + totalMemOffset;
         finalClutBasePointer = clutBasePointer + totalMemOffset;
@@ -556,8 +512,16 @@ uint32 NativeTexturePS2::GSTexture::writeGIFPacket(
 
                 rw.write((const char*)&regContent, sizeof(regContent));
 
-                // The write the register ID.
-                unsigned long long regID = regInfo.regID;
+                // Then write the register ID.
+                struct regID_struct
+                {
+                    unsigned long long regID : 8;
+                    unsigned long long pad1 : 56;
+                };
+
+                regID_struct regID;
+                regID.regID = regInfo.regID;
+                regID.pad1 = 0;
 
                 rw.write((const char*)&regID, sizeof(regID));
             }
@@ -588,6 +552,46 @@ uint32 NativeTexturePS2::GSTexture::writeGIFPacket(
     writeCount += curDataSize;
 
     return writeCount;
+}
+
+inline void updateTextureRegisters(NativeTexturePS2::GSTexture& gsTex, eFormatEncodingType imageDecodeFormatType, const ps2MipmapTransmissionData& transData)
+{
+    // TRXPOS
+    {
+        ps2GSRegisters::TRXPOS_REG trxpos;
+        trxpos.ssax = 0;
+        trxpos.ssay = 0;
+        trxpos.dsax = transData.destX;
+        trxpos.dsay = transData.destY;
+        trxpos.dir = 0;
+
+        gsTex.setGSRegister(GIF_REG_TRXPOS, trxpos.qword);
+    }
+
+    // TRXREG
+    {
+        uint32 texWidth = gsTex.swizzleWidth;
+        uint32 texHeight = gsTex.swizzleHeight;
+
+        if (gsTex.swizzleEncodingType == FORMAT_TEX32 && imageDecodeFormatType == FORMAT_IDTEX8_COMPRESSED)
+        {
+            texWidth *= 2;
+        }
+
+        ps2GSRegisters::TRXREG_REG trxreg;
+        trxreg.transmissionAreaHeight = texWidth;
+        trxreg.transmissionAreaWidth = texHeight;
+
+        gsTex.setGSRegister(GIF_REG_TRXREG, trxreg.qword);
+    }
+
+    // TRXDIR
+    {
+        ps2GSRegisters::TRXDIR_REG trxdir;
+        trxdir.xdir = 0;
+
+        gsTex.setGSRegister(GIF_REG_TRXDIR, trxdir.qword);
+    }
 }
 
 uint32 NativeTexture::writePs2(std::ostream& rw)
@@ -631,6 +635,8 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
     // Prepare the image data (if not already prepared).
     uint32 mipmapCount = platformTex->mipmaps.size();
 
+    assert( mipmapCount != 0 );
+
     for ( uint32 n = 0; n < mipmapCount; n++ )
     {
         // Put the image data into the required format.
@@ -647,56 +653,46 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         bool requiresHeaders = platformTex->requiresHeaders;
 
         // Prepare palette data.
-        uint32 palTexWidth, palTexHeight;
-        uint32 palDataSize = 0;
-        void *paletteTexelMemory = NULL;
-        bool hasAllocatedPaletteTexelMemory = false;
-
         if ( platformTex->paletteType != PALETTE_NONE )
         {
-            if ( requiresHeaders )
-            {
-                genpalettetexeldata(platformTex->palette, this->rasterFormat, platformTex->paletteType, platformTex->paletteSize, paletteTexelMemory, palDataSize, palTexWidth, palTexHeight);
+            uint32 reqPalWidth, reqPalHeight;
 
-                hasAllocatedPaletteTexelMemory = true;
-            }
-            else
+            getPaletteTextureDimensions(platformTex->paletteType, header.version, reqPalWidth, reqPalHeight);
+
+            // Update the texture.
+            NativeTexturePS2::GSTexture& palTex = platformTex->paletteTex;
+
+            void *palDataSource = palTex.texels;
+            uint32 palSize = ( palTex.swizzleWidth * palTex.swizzleHeight );
+            void *newPalTexels = NULL;
+            uint32 newPalSize;
+            uint32 newPalWidth, newPalHeight;
+
+            genpalettetexeldata(
+                header.version, palDataSource,
+                this->rasterFormat, platformTex->paletteType, palSize,
+                newPalTexels, newPalSize, newPalWidth, newPalHeight
+            );
+
+            if ( newPalTexels != palDataSource )
             {
-                // We do not have to create a texture; just dump palette colors.
-                palDataSize = ( platformTex->paletteSize * sizeof(PixelFormat::pixeldata32bit) );
-                paletteTexelMemory = platformTex->palette;
+                palTex.swizzleWidth = newPalWidth;
+                palTex.swizzleHeight = newPalHeight;
+                palTex.dataSize = newPalSize;
+                palTex.texels = newPalTexels;
+
+                delete [] palDataSource;
             }
         }
 
-        // Calculate block sizes.
+        // Block sizes.
         size_t justTextureSize = 0;
         size_t justPaletteSize = 0;
-        {
-            for ( uint32 n = 0; n < mipmapCount; n++ )
-            {
-                if ( requiresHeaders )
-                {
-                    justTextureSize += sizeof( textureImageDataHeader );
-                }
-
-                size_t dataSize = platformTex->mipmaps[n].dataSize;
-
-                justTextureSize += dataSize;
-            }
-
-            if ( platformTex->paletteType != PALETTE_NONE )
-            {
-                if ( requiresHeaders )
-                {
-                    justPaletteSize += sizeof( textureImageDataHeader );
-                }
-
-                justPaletteSize += palDataSize;
-            }
-        }
 
         // Write the texture meta information.
         const size_t maxMipmaps = 7;
+
+        assert( mipmapCount <= maxMipmaps );
 
         // Make sure all textures are in the required encoding format.
         eFormatEncodingType requiredFormat = platformTex->getHardwareRequiredEncoding(header.version);
@@ -706,9 +702,6 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
 
         assert( requiredFormat != FORMAT_UNKNOWN );
         assert( actualEncodingType != FORMAT_UNKNOWN );
-
-        ps2MipmapTransmissionData mipmapTransData[ maxMipmaps ];
-        ps2MipmapTransmissionData clutTransData;
         {
             SKIP_HEADER();
 
@@ -720,6 +713,9 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             uint32 clutBasePointer;
             uint32 clutMemSize;
 
+            ps2MipmapTransmissionData mipmapTransData[ maxMipmaps ];
+            ps2MipmapTransmissionData clutTransData;
+
             eMemoryLayoutType decodedMemLayoutType;
 
             bool couldAllocate = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, decodedMemLayoutType, clutBasePointer, clutMemSize, clutTransData);
@@ -729,45 +725,33 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
 
             assert( isCompatible == true );
 
-            // Update mipmap texture registers.
-            for ( uint32 n = 0; n < mipmapCount; n++ )
+            if ( requiresHeaders )
             {
-                NativeTexturePS2::GSTexture& gsTex = platformTex->mipmaps[ n ];
-
+                // Update mipmap texture registers.
+                for ( uint32 n = 0; n < mipmapCount; n++ )
                 {
-                    const ps2MipmapTransmissionData& transData = mipmapTransData[ n ];
+                    NativeTexturePS2::GSTexture& gsTex = platformTex->mipmaps[ n ];
 
-                    ps2GSRegisters::TRXPOS_REG trxpos;
-                    trxpos.ssax = 0;
-                    trxpos.ssay = 0;
-                    trxpos.dsax = transData.destX;
-                    trxpos.dsay = transData.destY;
-                    trxpos.dir = 0;
-
-                    gsTex.setGSRegister(0x51, trxpos.qword);
+                    updateTextureRegisters( gsTex, actualEncodingType, mipmapTransData[ n ] );
                 }
 
+                // Update CLUT registers.
+                if ( platformTex->paletteType != PALETTE_NONE )
                 {
-                    uint32 texWidth = gsTex.swizzleWidth;
-                    uint32 texHeight = gsTex.swizzleHeight;
+                    updateTextureRegisters( platformTex->paletteTex, platformTex->paletteTex.swizzleEncodingType, clutTransData );
+                }
+            }
 
-                    if (gsTex.swizzleEncodingType == FORMAT_TEX32 && actualEncodingType == FORMAT_IDTEX8_COMPRESSED)
-                    {
-                        texWidth *= 2;
-                    }
-
-                    ps2GSRegisters::TRXREG_REG trxreg;
-                    trxreg.transmissionAreaHeight = texWidth;
-                    trxreg.transmissionAreaWidth = texHeight;
-
-                    gsTex.setGSRegister(0x52, trxreg.qword);
+            // Now since each texture is properly updated, calculate the block sizes.
+            {
+                for ( uint32 n = 0; n < mipmapCount; n++ )
+                {
+                    justTextureSize += platformTex->mipmaps[n].getStreamSize( requiresHeaders );
                 }
 
+                if ( platformTex->paletteType != PALETTE_NONE )
                 {
-                    ps2GSRegisters::TRXDIR_REG trxdir;
-                    trxdir.xdir = 0;
-
-                    gsTex.setGSRegister(0x53, trxdir.qword);
+                    justPaletteSize += platformTex->paletteTex.getStreamSize( requiresHeaders );
                 }
             }
 
@@ -775,7 +759,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             uint32 formatFlags = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, mipmapCount > 1, platformTex->autoMipmaps );
 
             // Apply special flags.
-            if ( platformTex->requiresHeaders )
+            if ( requiresHeaders )
             {
                 formatFlags |= 0x20000;
             }
@@ -787,7 +771,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             // Apply unknown stuff.
             formatFlags |= platformTex->unknownFormatFlags;
 
-            const NativeTexturePS2::GSTexture& mainTex = platformTex->mipmaps[0];
+            const NativeTexturePS2::GSMipmap& mainTex = platformTex->mipmaps[0];
 
             textureMetaDataHeader metaHeader;
             metaHeader.miptbp1 = gpuData.miptbp1;
@@ -815,6 +799,8 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         {
             SKIP_HEADER();
 
+            uint32 combinedTexWriteCount = 0;
+
             for ( uint32 n = 0; n < mipmapCount; n++ )
             {
                 const NativeTexturePS2::GSTexture& gsTex = platformTex->mipmaps[n];
@@ -825,33 +811,24 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
                 // Write the packet.
                 uint32 writeCount = gsTex.writeGIFPacket(rw, requiresHeaders);
 
+                combinedTexWriteCount += writeCount;
+
                 bytesWritten += writeCount;
             }
+            assert( combinedTexWriteCount == justTextureSize );
+
+            uint32 combinedPaletteWriteCount = 0;
 
             // Write palette information.
             if ( platformTex->paletteType != PALETTE_NONE )
             {
-                if ( requiresHeaders )
-                {
-                    writeImageDataHeader(
-                        rw,
-                        palTexWidth, palTexHeight,
-                        palDataSize,
-                        clutTransData.destX, clutTransData.destY
-                    );
+                uint32 writeCount = platformTex->paletteTex.writeGIFPacket(rw, requiresHeaders);
 
-                    bytesWritten += sizeof(textureImageDataHeader);
-                }
+                combinedPaletteWriteCount += writeCount;
 
-                rw.write((const char*)paletteTexelMemory, palDataSize);
-
-                bytesWritten += palDataSize;
+                bytesWritten += writeCount;
             }
-
-            if ( hasAllocatedPaletteTexelMemory )
-            {
-                delete [] paletteTexelMemory;
-            }
+            assert( combinedPaletteWriteCount == justPaletteSize );
 
             WRITE_HEADER(CHUNK_STRUCT);
         }
