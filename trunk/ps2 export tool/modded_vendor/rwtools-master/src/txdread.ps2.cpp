@@ -671,6 +671,61 @@ static bool unclut(ePaletteType paletteType, NativeTexturePS2::GSTexture& clutTe
     return clut(paletteType, clutTex);
 }
 
+inline double clampcolor( double theColor )
+{
+    return std::min( 1.0, std::max( 0.0, theColor ) );
+}
+
+inline uint8 convertPCAlpha2PS2Alpha( uint8 pcAlpha )
+{
+    double pcAlphaDouble = clampcolor( (double)pcAlpha / 255.0 );
+
+    double ps2AlphaDouble = pcAlphaDouble * 128.0;
+
+    ps2AlphaDouble = floor( ps2AlphaDouble + 0.5 );
+
+    uint8 ps2Alpha = (uint8)( ps2AlphaDouble );
+
+    return ps2Alpha;
+}
+
+inline uint8 convertPS2Alpha2PCAlpha( uint8 ps2Alpha )
+{
+    double ps2AlphaDouble = clampcolor( (double)ps2Alpha / 128.0 );
+
+    double pcAlphaDouble = ps2AlphaDouble * 255.0;
+
+    pcAlphaDouble = floor( pcAlphaDouble + 0.495 );
+
+    uint8 pcAlpha = (uint8)( pcAlphaDouble );
+
+    return pcAlpha;
+}
+
+inline void getEffectivePaletteTextureDimensions(ePaletteType paletteType, uint32& palWidth_out, uint32& palHeight_out)
+{
+    uint32 palWidth = 0;
+    uint32 palHeight = 0;
+
+    if (paletteType == PALETTE_4BIT)
+    {
+        palWidth = 8;
+        palHeight = 2;
+    }
+    else if (paletteType == PALETTE_8BIT)
+    {
+        palWidth = 16;
+        palHeight = 16;
+    }
+    else
+    {
+        assert( 0 );
+    }
+
+    palWidth_out = palWidth;
+    palHeight_out = palHeight;
+}
+
 void NativeTexture::convertFromPS2(void)
 {
 	if (platform != PLATFORM_PS2)
@@ -728,9 +783,14 @@ void NativeTexture::convertFromPS2(void)
                 texelData->getcolor(i, red, green, blue, alpha);
 
 			    // fix alpha
-                if (this->convertAlpha)
                 {
-                    alpha = (uint32)alpha * 0xFF / 0x80;
+                    uint8 newAlpha = convertPS2Alpha2PCAlpha(alpha);
+
+#ifdef DEBUG_ALPHA_LEVELS
+                    assert(convertPCAlpha2PS2Alpha(newAlpha) == alpha);
+#endif //DEBUG_ALPHA_LEVELS
+
+                    alpha = newAlpha;
                 }
 
 			    // swap R and B
@@ -762,33 +822,34 @@ void NativeTexture::convertFromPS2(void)
 
         // Prepare the palette colors.
         void *paletteTexelSource = platformTex->paletteTex.texels;
-        
-        uint32 palItems = ( platformTex->paletteTex.swizzleWidth * platformTex->paletteTex.swizzleHeight );
-
-		for (uint32 i = 0; i < palItems; i++)
         {
-            uint8 red, green, blue, alpha;
+            uint32 realSwizzleWidth, realSwizzleHeight;
 
-            if (this->convertAlpha)
+            getEffectivePaletteTextureDimensions(platformTex->paletteType, realSwizzleWidth, realSwizzleHeight);
+            
+            uint32 palItems = ( realSwizzleWidth * realSwizzleHeight );
+
+		    for (uint32 i = 0; i < palItems; i++)
             {
+                uint8 red, green, blue, alpha;
+
                 browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
                 {
-                    if (this->convertAlpha)
-                    {
-			            uint32 newalpha = alpha * 0xff;
+	                uint8 newAlpha = convertPS2Alpha2PCAlpha(alpha);
 
-			            newalpha /= 0x80;
+#ifdef DEBUG_ALPHA_LEVELS
+                    assert(convertPCAlpha2PS2Alpha(newAlpha) == alpha);
+#endif //DEBUG_ALPHA_LEVELS
 
-			            alpha = newalpha;
-                    }
+                    alpha = newAlpha;
                 }
                 puttexelcolor(paletteTexelSource, i, this->rasterFormat, red, green, blue, alpha);
-            }
-		}
+		    }
+        }
 
         // Give the palette texels to the new texture.
         palTexels = paletteTexelSource;
-        palSize = palItems;
+        palSize = ( platformTex->paletteTex.swizzleWidth * platformTex->paletteTex.swizzleHeight );
 
         // Unset palette texels.
         platformTex->paletteTex.texels = NULL;
@@ -932,9 +993,14 @@ void NativeTexture::convertToPS2( void )
                 texelData->getcolor(i, red, green, blue, alpha);
 
 			    // fix alpha
-                if (this->convertAlpha)
                 {
-                    alpha = (uint32)alpha * 0x80 / 0xFF;
+                    uint8 newAlpha = convertPCAlpha2PS2Alpha(alpha);
+
+#ifdef DEBUG_ALPHA_LEVELS
+                    assert(convertPS2Alpha2PCAlpha(newAlpha) == alpha);
+#endif //DEBUG_ALPHA_LEVELS
+
+                    alpha = newAlpha;
                 }
 
 			    // swap R and B
@@ -972,32 +1038,38 @@ void NativeTexture::convertToPS2( void )
         // Prepare the palette texels.
         void *paletteTexelSource = ps2tex->paletteTex.texels;
 
-        uint32 palItemCount = ( ps2tex->paletteTex.swizzleWidth * ps2tex->paletteTex.swizzleHeight );
+        uint32 realSwizzleWidth, realSwizzleHeight;
+
+        getEffectivePaletteTextureDimensions(ps2tex->paletteType, realSwizzleWidth, realSwizzleHeight);
+
+        uint32 palItemCount = ( realSwizzleWidth * realSwizzleHeight );
 
 		for (uint32 i = 0; i < palItemCount; i++)
         {
             uint8 red, green, blue, alpha;
 
-            if (this->convertAlpha)
+            browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
             {
-                browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
+	            uint8 newAlpha = convertPCAlpha2PS2Alpha(alpha);
+
+#ifdef DEBUG_ALPHA_LEVELS
+                if (convertPS2Alpha2PCAlpha(newAlpha) != alpha)
                 {
-                    if (this->convertAlpha)
-                    {
-			            uint32 newalpha = alpha * 0x80;
-
-			            newalpha /= 0xff;
-
-			            alpha = newalpha;
-                    }
+                    __asm nop
                 }
-                puttexelcolor(paletteTexelSource, i, this->rasterFormat, red, green, blue, alpha);
+#endif //DEBUG_ALPHA_LEVELS
+
+                alpha = newAlpha;
             }
+            puttexelcolor(paletteTexelSource, i, this->rasterFormat, red, green, blue, alpha);
 		}
 
         // Now CLUT the palette.
         clut(ps2tex->paletteType, ps2tex->paletteTex);
 	}
+
+    // Generate valid gsParams for this texture, as we lost our original ones.
+    ps2tex->getOptimalGSParameters(ps2tex->gsParams);
 }
 
 };

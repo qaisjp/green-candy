@@ -377,8 +377,6 @@ NativeTexture::NativeTexture(void)
 : platform(0), name(""), maskName(""), filterFlags(0), uAddressing(1), vAddressing(1), rasterFormat(rw::RASTER_DEFAULT), hasAlpha(false)
 {
     this->platformData = NULL;
-
-    this->convertAlpha = true;
 }
 
 NativeTexture::NativeTexture(const NativeTexture &orig)
@@ -399,8 +397,6 @@ NativeTexture::NativeTexture(const NativeTexture &orig)
     }
 
     this->platformData = platformTex;
-
-    this->convertAlpha = orig.convertAlpha;
 }
 
 NativeTexture &NativeTexture::operator=(const NativeTexture &that)

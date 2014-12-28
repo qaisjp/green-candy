@@ -72,11 +72,11 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
         if ( isPrepared )
         {
             // Palettize the texture and convert it back into PS2 format.
-            //tex.convertToPalette( rw::PALETTE_4BIT );
+            tex.convertToPalette( rw::PALETTE_8BIT );
 
             std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
 
-            if ( canOutputDebug )
+            if ( false && canOutputDebug )
             {
                 if (tex.platformData->getDepth() == 4)
                 {
@@ -167,7 +167,7 @@ struct _discFileTraverse
     CFileTranslator *debugRoot;
 };
 
-static const bool _doNormalCopy = false;
+static const bool _doNormalCopy = true;
 
 static void _discFileCallback( const filePath& discFilePathAbs, void *userdata )
 {
@@ -313,6 +313,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
 {
     // Debug a weird txd container...
     CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
+    //CFile *txdChat = discHandle->Open( "MODELS/GENERIC.TXD", "rb" );
 
     if ( txdChat )
     {
@@ -337,6 +338,43 @@ static void DebugFuncs( CFileTranslator *discHandle )
             }
         }
 
+        // Test reading our own output.
+        rw::TextureDictionary txd_clone;
+        {
+            CFile *testOut = fileRoot->Open( "test.txd", "wb" );
+
+            if ( testOut )
+            {
+                FileSystem::fileStreamBuf outbuf( testOut );
+                std::ostream out_rw( &outbuf );
+
+                if ( out_rw.good() )
+                {
+                    txd.write(out_rw);
+                }
+
+                delete testOut;
+            }
+
+            // Try opening the test output.
+            CFile *testIn = fileRoot->Open( "test.txd", "rb" );
+
+            if ( testIn )
+            {
+                FileSystem::fileStreamBuf inbuf( testIn );
+                std::istream in_rw( &inbuf );
+
+                if ( in_rw.good() )
+                {
+                    txd_clone.read( in_rw );
+                }
+
+                __asm nop
+            }
+        }
+
+        rw::TextureDictionary& use_txd = txd_clone;
+
         const filePath& txdName = txdChat->GetPath();
 
         std::string nameItem = FileSystem::GetFileNameItem( txdName.c_str(), true, NULL );
@@ -356,9 +394,14 @@ static void DebugFuncs( CFileTranslator *discHandle )
                 if ( true )
                 {
                     // Convert from PS2, convert to 4bit palette and convert back to PS2.
-                    for ( unsigned int n = 0; n < txd.texList.size(); n++ )
+                    for ( unsigned int n = 0; n < use_txd.texList.size(); n++ )
                     {
-                        rw::NativeTexture& tex = txd.texList.at( n );
+                        rw::NativeTexture& tex = use_txd.texList.at( n );
+
+                        if ( tex.name == "carpback" )
+                        {
+                            __asm nop
+                        }
 
                         // WARNING: conversion does destroy some platform native data that
                         // is embedded into the texture!
@@ -375,7 +418,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
                             //tex.convertToFormat( rw::RASTER_8888 );
                             //if ( tex.platformData->getDepth() == 8 )
                             {
-                                //tex.convertToPalette( rw::PALETTE_4BIT );
+                                tex.convertToPalette( rw::PALETTE_8BIT );
                             }
 
                             tex.writeTGA(newName.c_str());
@@ -385,7 +428,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
                     }
                 }
 
-                txd.write(rwout);
+                use_txd.write(rwout);
 
                 // Check how much we have actually written.
                 fsOffsetNumber_t curWritePos = targetStream->TellNative();
@@ -489,7 +532,7 @@ int main( int argc, char *argv[] )
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa\\" );
 
         if ( discHandle )
         {
