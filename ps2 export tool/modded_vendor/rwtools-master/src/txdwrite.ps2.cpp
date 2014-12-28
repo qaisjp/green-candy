@@ -77,6 +77,9 @@ void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
     params.lodParamL = 0;
     params.lodParamK = 0;
 
+    params.gsTEX1Unknown1 = 0;
+    params.gsTEX1Unknown2 = 0;
+
     if ( depth == 4 || depth == 8 )
     {
         if ( !hasMipmaps )
@@ -579,8 +582,8 @@ inline void updateTextureRegisters(NativeTexturePS2::GSTexture& gsTex, eFormatEn
         }
 
         ps2GSRegisters::TRXREG_REG trxreg;
-        trxreg.transmissionAreaHeight = texWidth;
-        trxreg.transmissionAreaWidth = texHeight;
+        trxreg.transmissionAreaWidth = texWidth;
+        trxreg.transmissionAreaHeight = texHeight;
 
         gsTex.setGSRegister(GIF_REG_TRXREG, trxreg.qword);
     }
@@ -617,6 +620,8 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         formatInfo.filterMode = this->filterFlags;
         formatInfo.uAddressing = this->uAddressing;
         formatInfo.vAddressing = this->vAddressing;
+        
+        formatInfo.pad1 = 0;
 
         rw.write((char*)&formatInfo, sizeof(formatInfo));
 

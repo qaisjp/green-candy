@@ -29,7 +29,7 @@ struct texFormatInfo
     uint32 filterMode : 8;
     uint32 uAddressing : 4;
     uint32 vAddressing : 4;
-    //uint32 usesMipmaps : 1; // courtesy of DK22Pac
+    uint32 pad1 : 16;
 };
 
 #include "renderware.txd.pixelformat.h"
@@ -174,7 +174,6 @@ struct NativeTexture
     uint8 vAddressing : 4;
 
 	bool hasAlpha;
-    bool convertAlpha;
 
     eRasterFormat rasterFormat;
 
