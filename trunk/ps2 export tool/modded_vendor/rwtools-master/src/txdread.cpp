@@ -378,7 +378,7 @@ NativeTexture::NativeTexture(void)
 {
     this->platformData = NULL;
 
-    this->convertAlpha = false;
+    this->convertAlpha = true;
 }
 
 NativeTexture::NativeTexture(const NativeTexture &orig)

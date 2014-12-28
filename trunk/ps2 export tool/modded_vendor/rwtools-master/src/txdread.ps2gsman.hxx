@@ -278,8 +278,10 @@ namespace ps2GSPixelEncodingFormats
         uint32 packedTransformedColumnWidth = ( permProcessColumnWidth * permutationStride ) / permHoriSplit;
         uint32 packedTransformedColumnHeight = ( permProcessColumnHeight );
 
+        colsWidth *= permHoriSplit;
+
         // Get the stride through the packed data in raw format.
-        uint32 packedTransformedStride = ( packedTargetWidth * permutationStride ) / permHoriSplit;
+        uint32 packedTransformedStride = ( packedTargetWidth * permutationStride );
 
         // Permute the pixels.
         for ( uint32 colY = 0; colY < colsHeight; colY++ )
@@ -362,6 +364,14 @@ namespace ps2GSPixelEncodingFormats
 
                                 srcData->getvalue(srcArrayIndex, srcVal);
                             }
+                            else if (permItemDepth == 16)
+                            {
+                                srcVal = *( (unsigned short*)srcToBePermuted + srcArrayIndex );
+                            }
+                            else if (permItemDepth == 32)
+                            {
+                                srcVal = *( (unsigned int*)srcToBePermuted + srcArrayIndex );
+                            }
                             else
                             {
                                 assert(0);
@@ -379,6 +389,14 @@ namespace ps2GSPixelEncodingFormats
                                 PixelFormat::palette8bit *dstData = (PixelFormat::palette8bit*)dstTexels;
 
                                 dstData->setvalue(targetArrayIndex, srcVal);
+                            }
+                            else if (permItemDepth == 16)
+                            {
+                                *( (unsigned short*)dstTexels + targetArrayIndex ) = srcVal;
+                            }
+                            else if (permItemDepth == 32)
+                            {
+                                *( (unsigned int*)dstTexels + targetArrayIndex ) = srcVal;
                             }
                             else
                             {
