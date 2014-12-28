@@ -610,14 +610,65 @@ void NativeTexture::readPs2(std::istream &rw)
 }
 
 /* convert from CLUT format used by the ps2 */
-static bool clut(NativeTexturePS2::GSTexture& clutTex)
+const static uint32 _clut_permute_psmct32[] =
 {
-    return false;
+    0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f
+};
+
+static bool clut(ePaletteType paletteType, NativeTexturePS2::GSTexture& clutTex)
+{
+    const uint32 *permuteData = NULL;
+    uint32 permuteWidth, permuteHeight;
+    uint32 itemDepth;
+
+    if (paletteType == PALETTE_8BIT)
+    {
+        permuteData = _clut_permute_psmct32;
+
+        permuteWidth = 16;
+        permuteHeight = 2;
+
+        itemDepth = getFormatEncodingDepth(clutTex.swizzleEncodingType);
+    }
+
+    if (permuteData != NULL)
+    {
+        // Create a new permutation destination.
+        void *dstTexels = new uint8[ clutTex.dataSize ];
+        void *srcTexels = clutTex.texels;
+
+        uint32 clutWidth = clutTex.swizzleWidth;
+        uint32 clutHeight = clutTex.swizzleHeight;
+
+        uint32 alignedClutWidth = ALIGN_SIZE( clutWidth, permuteWidth );
+        uint32 alignedClutHeight = ALIGN_SIZE( clutHeight, permuteHeight );
+
+        uint32 colsWidth = ( alignedClutWidth / permuteWidth );
+        uint32 colsHeight = ( alignedClutHeight / permuteHeight );
+
+        // Perform the permutation.
+        ps2GSPixelEncodingFormats::permuteArray(
+            srcTexels, clutTex.swizzleWidth, clutTex.swizzleHeight, itemDepth, permuteWidth, permuteHeight,
+            dstTexels, clutTex.swizzleWidth, clutTex.swizzleHeight, itemDepth, permuteWidth, permuteHeight,
+            colsWidth, colsHeight,
+            permuteData, permuteData, permuteWidth, permuteHeight, 1, 1,
+            false
+        );
+
+        // Save the new texels.
+        clutTex.texels = dstTexels;
+
+        // Delete the old texels.
+        delete [] srcTexels;
+    }
+
+    return true;
 }
 
-static bool unclut(NativeTexturePS2::GSTexture& clutTex)
+static bool unclut(ePaletteType paletteType, NativeTexturePS2::GSTexture& clutTex)
 {
-    return false;
+    return clut(paletteType, clutTex);
 }
 
 void NativeTexture::convertFromPS2(void)
@@ -640,6 +691,7 @@ void NativeTexture::convertFromPS2(void)
     d3dtex->height.resize( mipmapCount );
     d3dtex->mipmapDepth.resize( mipmapCount );
     d3dtex->dataSizes.resize( mipmapCount );
+    d3dtex->texels.resize( mipmapCount );
 
     d3dtex->mipmapCount = mipmapCount;
 
@@ -689,6 +741,7 @@ void NativeTexture::convertFromPS2(void)
         // Move over the texture data to the D3D texture.
         d3dtex->width[ j ] = gsTex.width;
         d3dtex->height[ j ] = gsTex.height;
+        d3dtex->mipmapDepth[ j ] = gsTex.depth;
         d3dtex->texels[ j ] = gsTex.texels;
         d3dtex->dataSizes[ j ] = gsTex.dataSize;
 
@@ -703,7 +756,7 @@ void NativeTexture::convertFromPS2(void)
 	if (platformTex->paletteType != PALETTE_NONE)
     {
         // unCLUT the palette.
-        bool unclutSuccess = unclut(platformTex->paletteTex);
+        bool unclutSuccess = unclut(platformTex->paletteType, platformTex->paletteTex);
 
         assert(unclutSuccess == true);
 
@@ -802,6 +855,7 @@ void NativeTexture::convertToPS2( void )
         ps2tex->autoMipmaps = platformTex->autoMipmaps;
 
         // Move over the palette texels.
+        if (platformTex->paletteType != PALETTE_NONE)
         {
             // Generate a palette texture.
             void *palTexelData = platformTex->palette;
@@ -896,6 +950,15 @@ void NativeTexture::convertToPS2( void )
 
         assert(internalFormat != FORMAT_UNKNOWN);
 
+        // We need to store dimensions into the texture of the current encoding.
+        eFormatEncodingType requiredEncoding = ps2tex->getHardwareRequiredEncoding(rw::rwInterface.GetVersion());
+
+        ps2GSPixelEncodingFormats::getPackedFormatDimensions(
+            internalFormat, requiredEncoding,
+            gsTex.width, gsTex.height,
+            gsTex.swizzleWidth, gsTex.swizzleHeight
+        );
+        
         // Perform swizzling.
         {
             bool opSuccess = ps2tex->swizzleEncryptPS2(n);
@@ -933,7 +996,7 @@ void NativeTexture::convertToPS2( void )
 		}
 
         // Now CLUT the palette.
-        clut(ps2tex->paletteTex);
+        clut(ps2tex->paletteType, ps2tex->paletteTex);
 	}
 }
 

@@ -63,7 +63,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
         if ( tex.platform == rw::PLATFORM_PS2 )
         {
-            //tex.convertFromPS2();
+            tex.convertFromPS2();
 
             isPrepared = true;
         }
@@ -76,29 +76,30 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
             std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
 
-#if 0
-            if ( canOutputDebug && tex.platformData->getDepth() == 32 )
+            if ( canOutputDebug )
             {
-                // Create a path to store the textures to.
-                std::string textureSaveName( justFileName );
-                textureSaveName += "_";
-                textureSaveName += tex.name;
-                textureSaveName += ".tga";
-
-                filePath absTexPath;
-
-                bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
-
-                if ( hasAbsTexPath )
+                if (tex.platformData->getDepth() == 4)
                 {
-                    tex.writeTGA( absTexPath.c_str() );
+                    // Create a path to store the textures to.
+                    std::string textureSaveName( justFileName );
+                    textureSaveName += "_";
+                    textureSaveName += tex.name;
+                    textureSaveName += ".tga";
+
+                    filePath absTexPath;
+
+                    bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
+
+                    if ( hasAbsTexPath )
+                    {
+                        tex.writeTGA( absTexPath.c_str() );
+                    }
                 }
             }
-#endif
 
-            //tex.convertToPS2();
+            tex.convertToPS2();
 
-            if ( canOutputDebug )
+            if ( false && canOutputDebug )
             {
                 if ( tex.platformData->getMipmapCount() > 1 && tex.platformData->getDepth() == 8 )
                 {
