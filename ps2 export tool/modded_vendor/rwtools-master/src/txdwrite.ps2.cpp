@@ -84,7 +84,6 @@ void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
     {
         if ( !hasMipmaps )
         {
-            // TODO: equivalent in auto-mipmap version.
             if ( depth == 4 && (
                     width < 0x80 || height < 0x80
                  ) && (
@@ -773,8 +772,8 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
                 formatFlags |= 0x10000;
             }
 
-            // Apply unknown stuff.
-            formatFlags |= platformTex->unknownFormatFlags;
+            // Apply the raster type.
+            formatFlags |= platformTex->rasterType;
 
             const NativeTexturePS2::GSMipmap& mainTex = platformTex->mipmaps[0];
 

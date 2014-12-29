@@ -300,8 +300,8 @@ void NativeTexture::readPs2(std::istream &rw)
     platformTex->requiresHeaders = ( textureMeta.rasterFormat & 0x20000 ) != 0;
     platformTex->hasSwizzle = ( textureMeta.rasterFormat & 0x10000 ) != 0;
 
-    // Some really unknown format flags. We should debug this!
-    platformTex->unknownFormatFlags = ( textureMeta.rasterFormat & 0xFF );
+    // Store the raster type.
+    platformTex->rasterType = ( textureMeta.rasterFormat & 0xFF );
 
     // Store unique parameters from the texture registers.
     platformTex->gsParams.maxMIPLevel = textureMeta.tex1.maximumMIPLevel;
@@ -450,6 +450,7 @@ void NativeTexture::readPs2(std::istream &rw)
 	/* Palette */
 	// vc dyn_trash.txd is weird here
     ps2MipmapTransmissionData palTransData;
+    bool hasPalTransData = false;
 
     long remainingPaletteData = textureMeta.paletteDataSize;
 
@@ -482,6 +483,11 @@ void NativeTexture::readPs2(std::istream &rw)
         }
 
         remainingPaletteData -= readCount;
+
+        if (hasHeader)
+        {
+            hasPalTransData = true;
+        }
 	}
 
     if ( remainingPaletteData > 0 )
@@ -592,7 +598,7 @@ void NativeTexture::readPs2(std::istream &rw)
     }
 
     // Verify palette transmission rectangle.
-    if (platformTex->paletteType != PALETTE_NONE)
+    if (platformTex->paletteType != PALETTE_NONE && hasPalTransData)
     {
         if ( clutTransData.destX != palTransData.destX ||
              clutTransData.destY != palTransData.destY )
@@ -600,13 +606,6 @@ void NativeTexture::readPs2(std::istream &rw)
             __asm nop
         }
     }
-
-    // Just for some visual debugging.
-    platformTex->palUnknowns = palTransData;
-    platformTex->hasPalUnknowns = true;
-
-    // Weird debugging shit.
-    //platformTex->PerformDebugChecks(textureMeta);
 }
 
 /* convert from CLUT format used by the ps2 */
@@ -668,6 +667,7 @@ static bool clut(ePaletteType paletteType, NativeTexturePS2::GSTexture& clutTex)
 
 static bool unclut(ePaletteType paletteType, NativeTexturePS2::GSTexture& clutTex)
 {
+    // Since CLUT is a bijective algorithm, we can do that.
     return clut(paletteType, clutTex);
 }
 
@@ -751,6 +751,7 @@ void NativeTexture::convertFromPS2(void)
     d3dtex->mipmapCount = mipmapCount;
 
     d3dtex->autoMipmaps = platformTex->autoMipmaps;
+    d3dtex->rasterType = platformTex->rasterType;
 
     // Copy mipmap data.
 	for (uint32 j = 0; j < mipmapCount; j++)
@@ -914,6 +915,7 @@ void NativeTexture::convertToPS2( void )
 
         // Copy over general attributes.
         ps2tex->autoMipmaps = platformTex->autoMipmaps;
+        ps2tex->rasterType = platformTex->rasterType;
 
         // Move over the palette texels.
         if (platformTex->paletteType != PALETTE_NONE)

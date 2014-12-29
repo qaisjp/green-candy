@@ -72,7 +72,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
         if ( isPrepared )
         {
             // Palettize the texture and convert it back into PS2 format.
-            tex.convertToPalette( rw::PALETTE_8BIT );
+            //tex.convertToPalette( rw::PALETTE_8BIT );
 
             std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
 
@@ -99,9 +99,9 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
             tex.convertToPS2();
 
-            if ( false && canOutputDebug )
+            if ( canOutputDebug )
             {
-                if ( tex.platformData->getMipmapCount() > 1 && tex.platformData->getDepth() == 8 )
+                if ( tex.platformData->getMipmapCount() > 1 )
                 {
                     // Save a debug image that displays the allocation scheme.
                     rw::Bitmap debugBitmap( 32, rw::RASTER_8888 );
@@ -167,7 +167,7 @@ struct _discFileTraverse
     CFileTranslator *debugRoot;
 };
 
-static const bool _doNormalCopy = true;
+static const bool _doNormalCopy = false;
 
 static void _discFileCallback( const filePath& discFilePathAbs, void *userdata )
 {
@@ -532,7 +532,7 @@ int main( int argc, char *argv[] )
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\" );
 
         if ( discHandle )
         {
