@@ -460,10 +460,8 @@ struct NativeTexturePS2 : public PlatformTexture
         gsParams.gsTEX1Unknown1 = 0;
         gsParams.gsTEX1Unknown2 = 0;
 
-        // And whatever that is.
-        this->unknownFormatFlags = 0x04;
-
-        this->hasPalUnknowns = false;
+        // Texture raster by default.
+        this->rasterType = 4;
     }
 
     void Delete( void )
@@ -515,7 +513,7 @@ struct NativeTexturePS2 : public PlatformTexture
         newTex->gsParams = this->gsParams;
         newTex->recommendedBufferBasePointer = this->recommendedBufferBasePointer;
 
-        newTex->unknownFormatFlags = this->unknownFormatFlags;
+        newTex->rasterType = this->rasterType;
 
         return newTex;
     }
@@ -695,16 +693,13 @@ struct NativeTexturePS2 : public PlatformTexture
 
     uint32 recommendedBufferBasePointer;
 
-    ps2MipmapTransmissionData palUnknowns;
-    bool hasPalUnknowns;
-
     bool requiresHeaders;
     bool hasSwizzle;
     bool autoMipmaps;
 
     uint32 skyMipMapVal;
 
-    uint8 unknownFormatFlags;
+    uint8 rasterType;
 
     struct gsParams_t
     {
@@ -729,6 +724,15 @@ struct NativeTexturePS2 : public PlatformTexture
     bool swizzleEncryptPS2(uint32 mip);
 	bool swizzleDecryptPS2(uint32 mip);
 
+private:
+    bool allocateTextureMemoryNative(
+        uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], ps2MipmapTransmissionData mipmapTransData[], uint32 maxMipmaps,
+        eMemoryLayoutType& pixelMemLayoutTypeOut,
+        uint32& clutBasePointer, uint32& clutMemSize, ps2MipmapTransmissionData& clutTransData,
+        uint32& maxBuffHeight
+    ) const;
+
+public:
     bool allocateTextureMemory(
         uint32 mipmapBasePointer[], uint32 mipmapBufferWidth[], uint32 mipmapMemorySize[], ps2MipmapTransmissionData mipmapTransData[], uint32 maxMipmaps,
         eMemoryLayoutType& pixelMemLayoutTypeOut,
