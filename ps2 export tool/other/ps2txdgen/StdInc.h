@@ -5,6 +5,15 @@
 #define NOMINMAX
 #include <windows.h>
 
+// Gay quats
+typedef struct quat_s
+{
+	double w;
+	double x;
+	double y;
+	double z;
+} quat_t;
+
 #pragma warning(disable: 4996)
 
 //#define USE_HEAP_DEBUGGING
@@ -17,5 +26,12 @@
 #include <core/CFileSystem.h>
 
 #include <dirtools.h>
+
+// Include libraries.
+#include "syntax.h"
+#include "csv.h"
+#include "ide.h"
+#include "ipl.h"
+#include "ini.h"
 
 #endif //_MAIN_

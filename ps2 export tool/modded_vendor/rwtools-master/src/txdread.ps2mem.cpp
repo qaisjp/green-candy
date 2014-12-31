@@ -569,12 +569,14 @@ struct ps2GSMemoryLayoutManager
         uint32 blockWidth, blockHeight;
         uint32 texelPageWidth, texelPageHeight;
         uint32 pageMaxBlockWidth, pageMaxBlockHeight;
+        uint32 allocPageWidth;
 
         inline memoryCollider(
             ps2GSMemoryLayoutManager *manager,
             eMemoryLayoutType memLayoutType,
             const memoryLayoutProperties_t& layoutProps,
-            uint32 blockWidth, uint32 blockHeight
+            uint32 blockWidth, uint32 blockHeight,
+            uint32 allocPageWidth
         ) : layoutProps( layoutProps )
         {
             this->manager = manager;
@@ -583,6 +585,8 @@ struct ps2GSMemoryLayoutManager
 
             this->blockWidth = blockWidth;
             this->blockHeight = blockHeight;
+
+            this->allocPageWidth = allocPageWidth;
 
             // Get the width in pages.
             this->pageMaxBlockWidth = ALIGN_SIZE( blockWidth, layoutProps.widthBlocksPerPage );
@@ -599,7 +603,7 @@ struct ps2GSMemoryLayoutManager
         {
             // Construct a rectangle that matches our request.
             MemoryRectBase actualRect(
-                pageX * layoutProps.widthBlocksPerPage + pageY * this->pageMaxBlockWidth + blockOffX,
+                pageX * layoutProps.widthBlocksPerPage + pageY * ( this->allocPageWidth * layoutProps.widthBlocksPerPage ) + blockOffX,
                 blockOffY,
                 this->blockWidth,
                 this->blockHeight
@@ -615,7 +619,7 @@ struct ps2GSMemoryLayoutManager
                     uint32 real_y = ( y + pageY );
 
                     // Calculate the real index of this page.
-                    uint32 pageIndex = ( this->texelPageWidth * real_y + real_x );
+                    uint32 pageIndex = ( this->allocPageWidth * real_y + real_x );
 
                     MemoryPage *thePage = manager->GetPage( pageIndex );
 
@@ -664,7 +668,8 @@ struct ps2GSMemoryLayoutManager
         memoryCollider memCollide(
             this, memLayoutType,
             layoutProps,
-            texelBlockWidth, texelBlockHeight
+            texelBlockWidth, texelBlockHeight,
+            bufferPageWidth
         );
 
         uint32 layoutStartX = layoutProps.pageDimX.GetSliceStartPoint();
@@ -918,6 +923,23 @@ struct ps2GSMemoryLayoutManager
         uint32 texelBlockWidth = ( alignedTexelWidth / layoutProps.pixelWidthPerBlock );
         uint32 texelBlockHeight = ( alignedTexelHeight / layoutProps.pixelHeightPerBlock );
 
+        // Get the minimum required texture buffer width.
+        // It must be aligned to the page dimensions.
+        uint32 texBufferWidth = ( ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage ) * layoutProps.pixelWidthPerBlock ) / 64;
+
+        // Do some hacks.
+        if ( memLayoutType == PSMT8 )
+        {
+            if ( texelBlockWidth > layoutProps.widthBlocksPerPage )
+            {
+                if ( texelBlockHeight == layoutProps.heightBlocksPerPage / 2 )
+                {
+                    texelBlockWidth /= 2;
+                    texelBlockHeight *= 2;
+                }
+            }
+        }
+
         // Get the width in pages.
         uint32 pageMaxBlockWidth = ALIGN_SIZE( texelBlockWidth, layoutProps.widthBlocksPerPage );
 
@@ -927,10 +949,6 @@ struct ps2GSMemoryLayoutManager
         uint32 pageMaxBlockHeight = ALIGN_SIZE( texelBlockHeight, layoutProps.heightBlocksPerPage );
 
         uint32 texelPageHeight = pageMaxBlockHeight / layoutProps.heightBlocksPerPage;
-
-        // Get the minimum required texture buffer width.
-        // It must be aligned to the page dimensions.
-        uint32 texBufferWidth = ( pageMaxBlockWidth * layoutProps.pixelWidthPerBlock ) / 64;
 
         // TODO: this is not the real buffer width yet.
 
@@ -1027,6 +1045,8 @@ struct ps2GSMemoryLayoutManager
 
         bool validAllocation = false;
         {
+            uint32 pageStride = texelPageWidth;
+
             uint32 localPageX = 0;
             uint32 localPageY = 0;
             uint32 localBlockOffX = 0;
@@ -1040,12 +1060,12 @@ struct ps2GSMemoryLayoutManager
             }
 
             // Try to find the last free page.
+            memoryCollider memCollideFullPage(
+                this, memLayoutType, layoutProps,
+                layoutProps.widthBlocksPerPage, layoutProps.heightBlocksPerPage,
+                pageStride
+            );
             {
-                memoryCollider memCollideFullPage(
-                    this, memLayoutType, layoutProps,
-                    layoutProps.widthBlocksPerPage, layoutProps.heightBlocksPerPage
-                );
-
                 while ( true )
                 {
                     bool isPageFree = ( memCollideFullPage.testCollision( localPageX, localPageY, 0, 0 ) == false );
@@ -1062,29 +1082,46 @@ struct ps2GSMemoryLayoutManager
             if ( localPageY != 0 )
             {
                 // Try to allocate on the occupied space.
-                memoryCollider clutCollider( this, memLayoutType, layoutProps, texelBlockWidth, texelBlockHeight );
+                memoryCollider clutCollider( this, memLayoutType, layoutProps, texelBlockWidth, texelBlockHeight, pageStride );
 
                 bool hasSpotOnOccupiedSpace =
                     ( clutCollider.testCollision(localPageX, localPageY - 1, localBlockOffX, localBlockOffY) == false );
 
+                bool needsReset = true;
+
                 if ( hasSpotOnOccupiedSpace )
                 {
-                    localPageY--;
+                    // Check that there is nothing on the right.
+                    bool canLocatePrevPage = true;
+
+                    if ( bufferAllocPageWidth > 1 )
+                    {
+                        bool isOnRight = memCollideFullPage.testCollision(localPageX + 1, localPageY - 1, 0, 0);
+
+                        if (isOnRight)
+                        {
+                            canLocatePrevPage = false;
+
+                            localPageY--;
+                        }
+                    }
+
+                    if ( canLocatePrevPage )
+                    {
+                        needsReset = false;
+
+                        localPageY--;
+                    }
                 }
-                else
+                
+                if ( needsReset )
                 {
                     localBlockOffX = 0;
                     localBlockOffY = 0;
                 }
-
-                if ( texelPageWidth != bufferAllocPageWidth )
-                {
-                    if ( localBlockOffX != 0 || localBlockOffY != 0 )
-                    {
-                        __asm nop
-                    }
-                }
             }
+
+            // Linearize the page coords.
 
             pageX = localPageX;
             pageY = localPageY;
@@ -1474,17 +1511,14 @@ bool NativeTexturePS2::allocateTextureMemoryNative(
             }
 
             uint32 clutFinalOffX = clutPixelOffX;
-            uint32 clutFinalOffY = clutPixelOffY % gsAlloc.maxBuffHeight;
+            uint32 clutFinalOffY = clutPixelOffY;
 
             // Write to the runtime.
             clutBasePointer = _clutBasePointer;
             clutMemSize = _clutMemSize;
 
-            if (this->paletteType == PALETTE_8BIT)
-            {
-                clutTransData.destX = clutFinalOffX;
-                clutTransData.destY = clutFinalOffY;
-            }
+            clutTransData.destX = clutFinalOffX;
+            clutTransData.destY = clutFinalOffY;
         }
 
         maxBuffHeightOut = gsAlloc.maxBuffHeight;

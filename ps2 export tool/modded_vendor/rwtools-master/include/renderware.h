@@ -242,6 +242,29 @@ struct Frame
 #include "renderware.dff.h"
 #include "renderware.file.h"
 
+// Warning manager interface.
+struct WarningManagerInterface abstract
+{
+    virtual void OnWarning( const std::string& message ) = 0;
+};
+
+struct RwException
+{
+    inline RwException( const std::string& msg )
+    {
+        this->message = msg;
+    }
+
+    std::string message;
+};
+
+// Palettization configuration.
+enum ePaletteRuntimeType
+{
+    PALRUNTIME_NATIVE,      // use the palettizer that is embedded into rwtools
+    PALRUNTIME_PNGQUANT     // use the libimagequant vendor
+};
+
 struct Interface
 {
     Interface( void );
@@ -256,10 +279,21 @@ struct Interface
     void                SetFileInterface        ( FileInterface *fileIntf );
     FileInterface*      GetFileInterface        ( void );
 
+    void                SetWarningManager       ( WarningManagerInterface *warningMan );
+
+    void                PushWarning             ( const std::string& message );
+
+    void                SetPaletteRuntime       ( ePaletteRuntimeType palRunType );
+    ePaletteRuntimeType GetPaletteRuntime       ( void ) const;
+
 private:
     uint32 version;     // version of the output files (III, VC, SA)
 
     FileInterface *customFileInterface;
+
+    WarningManagerInterface *warningManager;
+
+    ePaletteRuntimeType palRuntimeType;
 };
 
 // Global RenderWare interface.

@@ -343,7 +343,8 @@ bool NativeTexturePS2::generatePS2GPUData(
     uint32 finalTexBasePointer = 0;
     uint32 finalClutBasePointer = 0;
 
-    if (gameVersion == rw::GTA3_1 || gameVersion == rw::GTA3_2 || gameVersion == rw::GTA3_3 || gameVersion == rw::GTA3_4)
+    if (gameVersion == rw::GTA3_1 || gameVersion == rw::GTA3_2 || gameVersion == rw::GTA3_3 || gameVersion == rw::GTA3_4 ||
+        gameVersion == rw::VCPS2)
     {
         // We actually preallocate the textures on the game engine GS memory.
         uint32 totalMemOffset = this->recommendedBufferBasePointer;
@@ -390,7 +391,8 @@ bool NativeTexturePS2::generatePS2GPUData(
     {
         uint32 gsPixelFormat = 0;
 
-        if ( pixelFormatRaster == rw::RASTER_8888 )
+        if ( pixelFormatRaster == rw::RASTER_8888 ||
+             pixelFormatRaster == rw::RASTER_888 )
         {
             gsPixelFormat = 0;  // PSMCT32
         }
@@ -639,7 +641,10 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
     // Prepare the image data (if not already prepared).
     uint32 mipmapCount = platformTex->mipmaps.size();
 
-    assert( mipmapCount != 0 );
+    if ( mipmapCount == 0 )
+    {
+        throw RwException( "empty texture" );
+    }
 
     for ( uint32 n = 0; n < mipmapCount; n++ )
     {
@@ -696,7 +701,10 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         // Write the texture meta information.
         const size_t maxMipmaps = 7;
 
-        assert( mipmapCount <= maxMipmaps );
+        if ( mipmapCount > maxMipmaps )
+        {
+            throw RwException( "too many mipmaps" );
+        }
 
         // Make sure all textures are in the required encoding format.
         eFormatEncodingType requiredFormat = platformTex->getHardwareRequiredEncoding(header.version);
@@ -704,8 +712,15 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         // Get the format we should decode to.
         eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(this->rasterFormat, platformTex->paletteType);
 
-        assert( requiredFormat != FORMAT_UNKNOWN );
-        assert( actualEncodingType != FORMAT_UNKNOWN );
+        if ( requiredFormat == FORMAT_UNKNOWN )
+        {
+            throw RwException( "unknown swizzle encoding of PS2 texture" );
+        }
+        if ( actualEncodingType == FORMAT_UNKNOWN )
+        {
+            throw RwException( "unknown image data encoding of PS2 texture" );
+        }
+
         {
             SKIP_HEADER();
 
@@ -727,7 +742,10 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             ps2GSRegisters gpuData;
             bool isCompatible = platformTex->generatePS2GPUData(header.version, gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer);
 
-            assert( isCompatible == true );
+            if ( isCompatible == false )
+            {
+                throw RwException( "incompatible PS2 texture format" );
+            }
 
             if ( requiresHeaders )
             {
@@ -843,9 +861,9 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
     }
     bytesWritten += writtenBytesReturn;
 
-	// Extension
-	{
-		SKIP_HEADER();
+    // Extension
+    {
+	    SKIP_HEADER();
 
         // Write the sky mipmap extension.
         {
@@ -855,9 +873,9 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         }
         bytesWritten += writtenBytesReturn;
 
-		WRITE_HEADER(CHUNK_EXTENSION);
-	}
-	bytesWritten += writtenBytesReturn;
+	    WRITE_HEADER(CHUNK_EXTENSION);
+    }
+    bytesWritten += writtenBytesReturn;
 
     WRITE_HEADER(CHUNK_TEXTURENATIVE);
 
