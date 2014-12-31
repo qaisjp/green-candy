@@ -25,6 +25,8 @@ extern void operator delete[]( void *ptr ) throw();
 
 #pragma warning(pop)
 
+#pragma warning(disable: 4996)
+
 template <typename keyType, typename valueType>
 struct uniqueMap_t
 {

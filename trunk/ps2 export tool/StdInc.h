@@ -16,4 +16,6 @@
 #include <core/CFileSystemInterface.h>
 #include <core/CFileSystem.h>
 
+#include <dirtools.h>
+
 #endif //_MAIN_

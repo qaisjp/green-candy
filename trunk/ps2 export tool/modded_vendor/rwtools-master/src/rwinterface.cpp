@@ -10,6 +10,11 @@ Interface::Interface( void )
 
     // Setup standard members.
     this->customFileInterface = NULL;
+
+    this->warningManager = NULL;
+
+    // Only use the native toolchain.
+    this->palRuntimeType = PALRUNTIME_NATIVE;
 }
 
 Interface::~Interface( void )
@@ -30,6 +35,29 @@ void Interface::BeginDebug( void )
 void Interface::ProcessDebug( void )
 {
     rw::NativeTexture::DebugParameters();
+}
+
+void Interface::SetWarningManager( WarningManagerInterface *warningMan )
+{
+    this->warningManager = warningMan;
+}
+
+void Interface::PushWarning( const std::string& message )
+{
+    if ( WarningManagerInterface *warningMan = this->warningManager )
+    {
+        warningMan->OnWarning( message );
+    }
+}
+
+void Interface::SetPaletteRuntime( ePaletteRuntimeType palRunType )
+{
+    this->palRuntimeType = palRunType;
+}
+
+ePaletteRuntimeType Interface::GetPaletteRuntime( void ) const
+{
+    return this->palRuntimeType;
 }
 
 // Main interface of the engine.

@@ -604,3 +604,31 @@ void DbgHeap_Shutdown( void )
     _win32_shutdownHeap();
 #endif
 }
+
+// Alternative entry point.
+extern "C"
+{
+extern int mainCRTStartup( void );
+}
+
+extern "C" int APIENTRY _DebugInit( void )
+{
+    DbgHeap_Init();
+
+#if 0
+    DbgTraceStackSpace stackSpace;  // reserved memory; must be always allocated.
+
+    DbgTrace_Init( stackSpace );
+
+    // Set up memory debugging routines.
+    DbgHeap_SetMemoryAllocationWatch( _DbgHeap_MemAllocWatch );
+#endif
+
+    int ret = mainCRTStartup();
+
+#if 0
+    DbgTrace_Shutdown();
+#endif
+    DbgHeap_Shutdown();
+    return ret;
+}

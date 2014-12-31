@@ -11,6 +11,8 @@
 
 #include "txdread.d3d.hxx"
 
+#include <libimagequant.h>
+
 namespace rw
 {
 
@@ -150,6 +152,49 @@ struct palettizer
     };
 
     template <typename criteriaType>
+    inline bool findmostsimilarpixel(const criteriaType& parser, typename criteriaType::result_t& theResult, uint32 first, uint32& second)
+    {
+        size_t numTexels = texelElimData.size();
+
+        uint32 smallest;
+        typename criteriaType::result_t smallestResult;
+        bool hasSmallest = false;
+
+        {
+            const texel_t& firstComparand = texelElimData.at( first );
+
+            for (size_t i = 0; i < numTexels; i++)
+            {
+                if (i != first)
+                {
+                    const texel_t& secondComparand = texelElimData.at( i );
+
+                    typename criteriaType::result_t thisResult = parser.getCriteria(firstComparand, secondComparand);
+
+                    if (!hasSmallest || parser.isSmaller(thisResult, smallestResult))
+                    {
+                        smallest = i;
+                        smallestResult = thisResult;
+
+                        if (!hasSmallest)
+                        {
+                            hasSmallest = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (hasSmallest)
+        {
+            second = smallest;
+            theResult = smallestResult;
+        }
+
+        return hasSmallest;
+    }
+
+    template <typename criteriaType>
     inline bool findpixelundercriteria(const criteriaType& parser, typename criteriaType::result_t& theResult, uint32& first, uint32& second)
     {
         size_t numTexels = texelElimData.size();
@@ -232,6 +277,11 @@ struct palettizer
             double angleDiff;
             double distance;
             double alphaDist;
+
+            inline double getCriterion( void ) const
+            {
+                return ( distance + alphaDist * 10 );
+            }
         };
 
         struct vec4_t
@@ -569,9 +619,7 @@ struct palettizer
         inline bool isSmaller(result_t first, result_t second) const
         {
             return
-                first.angleDiff < second.angleDiff &&
-                first.distance < second.distance &&
-                first.alphaDist < second.alphaDist;
+                first.getCriterion() < second.getCriterion();
         }
     };
 
@@ -619,93 +667,6 @@ struct palettizer
 
     colordiffCriteria crit;
 
-    inline void linearreduce(void)
-    {
-        uint32 first_diff, second_diff;
-        colordiffCriteria::result_t colorDiff;
-
-        bool foundPixel = findpixelundercriteria(crit, colorDiff, first_diff, second_diff);
-
-        assert(foundPixel == true);
-
-        bool isCloseEnough =
-            colorDiff.angleDiff < colordiffCriteria::deg2rad(1.5) &&
-            colorDiff.distance < 0.05 &&
-            colorDiff.alphaDist < 0.1;
-
-        if (isCloseEnough)
-        {
-            // Delete the texel that is used the least.
-            const texel_t& firstTexel = texelElimData.at( first_diff );
-            const texel_t& secondTexel = texelElimData.at( second_diff );
-
-            if ( firstTexel.usageCount < secondTexel.usageCount )
-            {
-                texelElimData[first_diff] = texelElimData.back();
-                texelElimData.pop_back();
-            }
-            else
-            {
-                texelElimData[second_diff] = texelElimData.back();
-                texelElimData.pop_back();
-            }
-        }
-        else
-        {
-            // Generate a color between the color that is close to both colors.
-            // Then remove both colors, preferring the new one.
-            texel_t newTexel;
-            {
-                const texel_t& firstTexel = texelElimData.at( first_diff );
-                const texel_t& secondTexel = texelElimData.at( second_diff );
-
-                double hue1, saturation1, brightness1,
-                       hue2, saturation2, brightness2;
-
-                double firstAlpha = color2double(firstTexel.alpha);
-                double secondAlpha = color2double(secondTexel.alpha);
-
-                double overallNormalWeight = ( firstAlpha + secondAlpha ) / 2;
-
-                double firstWeight = firstAlpha / overallNormalWeight;
-                double secondWeight = secondAlpha / overallNormalWeight;
-
-                double overallUsageCount = ( (double)firstTexel.usageCount + (double)secondTexel.usageCount ) / 2.0;
-
-                double firstAlphaWeight = (double)firstTexel.usageCount / overallUsageCount;
-                double secondAlphaWeight = ( 2 - firstAlphaWeight );
-                
-                colordiffCriteria::RGB2HSV(firstTexel, hue1, saturation1, brightness1);
-                colordiffCriteria::RGB2HSV(secondTexel, hue2, saturation2, brightness2);
-
-                // Calculate the middle color based on HSVA.
-                double hueMiddle =
-                    colordiffCriteria::normalizeangle(
-                        hue1 + colordiffCriteria::anglediff(hue2, hue1) / 2
-                    );
-
-                double saturationMiddle = weightedmiddle(saturation1, saturation2, firstWeight, secondWeight);
-                double brightnessMiddle = weightedmiddle(saturation1, saturation2, firstWeight, secondWeight);
-
-                // Get the new RGB value.
-                colordiffCriteria::HSV2RGB(hueMiddle, saturationMiddle, brightnessMiddle, newTexel);
-
-                // Alpha is calculated conventionally.
-                newTexel.alpha = colormiddle(firstTexel.alpha, secondTexel.alpha, firstAlphaWeight, secondAlphaWeight);
-
-                if ( first_diff == texelElimData.size() - 1 )
-                {
-                    first_diff = second_diff;
-                }
-                texelElimData[second_diff] = texelElimData.back();
-                texelElimData.pop_back();
-                texelElimData[first_diff] = texelElimData.back();
-                texelElimData.pop_back();
-            }
-            texelElimData.push_back(newTexel);
-        }
-    }
-
     inline void feedcolor(uint8 red, uint8 green, uint8 blue, uint8 alpha)
     {
         // Try to find an already existing color that is same as the given one.
@@ -729,8 +690,8 @@ struct palettizer
                 colordiffCriteria::result_t criterion = crit.getCriteria(compTexel, theTexel);
 
                 isTheTexel =
-                    ( criterion.angleDiff < colordiffCriteria::deg2rad(1.75) &&
-                      criterion.distance < 0.125 &&
+                    ( criterion.angleDiff < colordiffCriteria::deg2rad(2.75) &&
+                      criterion.distance < 0.15 &&
                       criterion.alphaDist < 0.075 );
             }
 
@@ -746,13 +707,6 @@ struct palettizer
 
         if ( !texelExists )
         {
-            // If there are too many colors...
-            // limit them.
-            if ( texelElimData.size() >= maxtexellinearelimination )
-            {
-                constructpalette( maxtexellinearelimination );
-            }
-
             theTexel.usageCount++;
 
             // If the texel was not found, eliminate ourselves.
@@ -765,27 +719,147 @@ struct palettizer
         return ( left.usageCount > right.usageCount );
     }
 
+    struct similarPixels_t
+    {
+        const colordiffCriteria *crit;
+
+        uint32 first_index;
+        uint32 second_index;
+
+        colordiffCriteria::result_t theResult;
+
+        inline bool operator < ( const similarPixels_t& right ) const
+        {
+            return crit->isSmaller( theResult, right.theResult );
+        }
+
+        inline bool operator == ( const similarPixels_t& right ) const
+        {
+            return ( this->first_index == right.first_index && this->second_index == right.second_index ||
+                     this->first_index == right.second_index && this->second_index == right.first_index );
+        }
+    };
+
     inline void constructpalette(uint32 maxentries)
     {
-        // Pick the best colors fhat should represent the picture.
-        // First remove the colors that have been used the least.
-#if 0
-        std::sort( texelElimData.begin(), texelElimData.end(), sortByUsageCount );
-
-        uint32 complexityLimit = std::max(maxentries, (uint32)1000);
-
-        while ( texelElimData.size() >= complexityLimit )
+        // Construct similarity lists of texels while the amount of texels is too big.
+        while ( texelElimData.size() > maxentries )
         {
-            texelElimData.pop_back();
-        }
-#endif
+            uint32 numTexels = texelElimData.size();
 
-        // If there are too many colors...
-        while ( texelElimData.size() >= maxentries )
-        {
-            // Reduce the amount of unique colors.
-            // This is a very slow algorithm, so make sure it gets never called!
-            linearreduce();
+            typedef std::vector <similarPixels_t> simList_t;
+
+            simList_t similarities;
+
+            similarities.reserve( numTexels );
+
+            for ( uint32 n = 0; n < numTexels; n++ )
+            {
+                uint32 smallest;
+                colordiffCriteria::result_t smallest_result;
+
+                bool hasFound = findmostsimilarpixel(crit, smallest_result, n, smallest);
+
+                assert( hasFound == true );
+
+                // Store it.
+                similarPixels_t sim;
+                sim.first_index = n;
+                sim.second_index = smallest;
+                sim.theResult = smallest_result;
+                sim.crit = &crit;
+
+                // Make sure this is not already in the list.
+                if ( std::find( similarities.begin(), similarities.end(), sim ) == similarities.end() )
+                {
+                    similarities.push_back( sim );
+                }
+            }
+
+            // Sort the list so that the most similar pixels come first.
+            std::sort( similarities.begin(), similarities.end() );
+
+            // Merge the colors to create a new color list.
+            std::vector <texel_t> newColors;
+
+            for ( simList_t::const_iterator iter = similarities.begin(); iter != similarities.end(); iter++ )
+            {
+                const similarPixels_t& sim = *iter;
+
+                const colordiffCriteria::result_t& colorDiff = sim.theResult;
+
+                uint32 first_diff = sim.first_index;
+                uint32 second_diff = sim.second_index;
+
+                bool isCloseEnough =
+                    colorDiff.angleDiff < colordiffCriteria::deg2rad(1.5) &&
+                    colorDiff.distance < 0.05 &&
+                    colorDiff.alphaDist < 0.1;
+
+                if (isCloseEnough)
+                {
+                    // Delete the texel that is used the least.
+                    const texel_t& firstTexel = texelElimData.at( first_diff );
+                    const texel_t& secondTexel = texelElimData.at( second_diff );
+
+                    if ( firstTexel.usageCount < secondTexel.usageCount )
+                    {
+                        newColors.push_back( secondTexel );
+                    }
+                    else
+                    {
+                        newColors.push_back( firstTexel );
+                    }
+                }
+                else
+                {
+                    // Generate a color between the color that is close to both colors.
+                    // Then remove both colors, preferring the new one.
+                    texel_t newTexel;
+                    {
+                        const texel_t& firstTexel = texelElimData.at( first_diff );
+                        const texel_t& secondTexel = texelElimData.at( second_diff );
+
+                        double hue1, saturation1, brightness1,
+                               hue2, saturation2, brightness2;
+
+                        double firstAlpha = color2double(firstTexel.alpha);
+                        double secondAlpha = color2double(secondTexel.alpha);
+
+                        double overallNormalWeight = ( firstAlpha + secondAlpha ) / 2;
+
+                        double firstWeight = firstAlpha / overallNormalWeight;
+                        double secondWeight = secondAlpha / overallNormalWeight;
+
+                        double overallUsageCount = ( (double)firstTexel.usageCount + (double)secondTexel.usageCount ) / 2.0;
+
+                        double firstAlphaWeight = (double)firstTexel.usageCount / overallUsageCount;
+                        double secondAlphaWeight = ( 2 - firstAlphaWeight );
+                        
+                        colordiffCriteria::RGB2HSV(firstTexel, hue1, saturation1, brightness1);
+                        colordiffCriteria::RGB2HSV(secondTexel, hue2, saturation2, brightness2);
+
+                        // Calculate the middle color based on HSVA.
+                        double hueMiddle =
+                            colordiffCriteria::normalizeangle(
+                                hue1 + colordiffCriteria::anglediff(hue2, hue1) / 2
+                            );
+
+                        double saturationMiddle = weightedmiddle(saturation1, saturation2, firstWeight, secondWeight);
+                        double brightnessMiddle = weightedmiddle(saturation1, saturation2, firstWeight, secondWeight);
+
+                        // Get the new RGB value.
+                        colordiffCriteria::HSV2RGB(hueMiddle, saturationMiddle, brightnessMiddle, newTexel);
+
+                        // Alpha is calculated conventionally.
+                        newTexel.alpha = colormiddle(firstTexel.alpha, secondTexel.alpha, firstAlphaWeight, secondAlphaWeight);
+                    }
+                    newColors.push_back(newTexel);
+                }
+            }
+
+            // Replace the colors.
+            texelElimData = newColors;
         }
     }
 
@@ -854,6 +928,46 @@ struct palettizer
     }
 };
 
+struct _fetch_texel_libquant_traverse
+{
+    NativeTextureD3D *platformTex;
+
+    uint32 mipIndex;
+};
+
+static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int width, void *user_info)
+{
+    _fetch_texel_libquant_traverse *info = (_fetch_texel_libquant_traverse*)user_info;
+
+    NativeTextureD3D *platformTex = info->platformTex;
+
+    // Fetch the color row.
+    void *texelSource = platformTex->texels[ info->mipIndex ];
+
+    eRasterFormat rasterFormat = platformTex->parent->rasterFormat;
+    ePaletteType paletteType = platformTex->paletteType;
+
+    void *palColors = platformTex->palette;
+    uint32 palColorCount = platformTex->paletteSize;
+
+    for (int n = 0; n < width; n++)
+    {
+        uint32 colorIndex = PixelFormat::coord2index(n, row_index, width);
+
+        // Fetch the color.
+        uint8 r, g, b, a;
+
+        browsetexelcolor(texelSource, paletteType, palColors, palColorCount, colorIndex, rasterFormat, r, g, b, a);
+
+        // Store the color.
+        liq_color& outColor = row_out[ n ];
+        outColor.r = r;
+        outColor.g = g;
+        outColor.b = b;
+        outColor.a = a;
+    }
+}
+
 // Custom algorithm for palettizing image data.
 void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 {
@@ -877,6 +991,10 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
     if (paletteType == convPaletteFormat)
         return;
 
+    void *srcPaletteData = platformTex->palette;
+    uint32 srcPaletteCount = platformTex->paletteSize;
+
+    // Get palette maximums.
     uint32 maxPaletteEntries = 0;
     uint8 newDepth = 0;
 
@@ -891,132 +1009,326 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
         newDepth = 4;
     }
 
+    // This value has the raster type of the result palette.
+    eRasterFormat resultRasterFormat = this->rasterFormat;
+
     // Do the palettization.
     {
-        palettizer conv;
-
-        void *paletteData = platformTex->palette;
-        uint32 maxpalette = platformTex->paletteSize;
-
         uint32 mipmapCount = platformTex->mipmapCount;
 
-        // Linear eliminate unique texels.
-        // Use only the first texture.
-        if ( mipmapCount > 0 )
+        // Decide what palette system to use.
+        ePaletteRuntimeType useRuntime = rw::rwInterface.GetPaletteRuntime();
+
+        if (useRuntime == PALRUNTIME_NATIVE)
         {
-            uint32 srcWidth = platformTex->width[0];
-            uint32 srcHeight = platformTex->height[0];
-            void *texelSource = platformTex->texels[0];
+            palettizer conv;
 
-            // First define properties to use for linear elimination.
-            for (uint32 y = 0; y < srcHeight; y++)
+            // Linear eliminate unique texels.
+            // Use only the first texture.
+            if ( mipmapCount > 0 )
             {
-                for (uint32 x = 0; x < srcWidth; x++)
+                uint32 srcWidth = platformTex->width[0];
+                uint32 srcHeight = platformTex->height[0];
+                void *texelSource = platformTex->texels[0];
+
+#if 0
+                // First define properties to use for linear elimination.
+                for (uint32 y = 0; y < srcHeight; y++)
                 {
-                    uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
-
-                    uint8 red, green, blue, alpha;
-                    bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
-
-                    if ( hasColor )
+                    for (uint32 x = 0; x < srcWidth; x++)
                     {
-                        conv.characterize(red, green, blue, alpha);
+                        uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
+
+                        uint8 red, green, blue, alpha;
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
+
+                        if ( hasColor )
+                        {
+                            conv.characterize(red, green, blue, alpha);
+                        }
+                    }
+                }
+
+                // Prepare the linear elimination.
+                conv.after_characterize();
+#endif
+
+                // Linear eliminate.
+                for (uint32 y = 0; y < srcHeight; y++)
+                {
+                    for (uint32 x = 0; x < srcWidth; x++)
+                    {
+                        uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
+
+                        uint8 red, green, blue, alpha;
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, red, green, blue, alpha);
+
+                        if ( hasColor )
+                        {
+                            conv.feedcolor(red, green, blue, alpha);
+                        }
                     }
                 }
             }
 
-            // Prepare the linear elimination.
-            conv.after_characterize();
+            // Construct a palette out of the remaining colors.
+            conv.constructpalette(maxPaletteEntries);
 
-            // Linear eliminate.
-            for (uint32 y = 0; y < srcHeight; y++)
+            // Point each color from the original texture to the palette.
+            for (uint32 n = 0; n < mipmapCount; n++)
             {
-                for (uint32 x = 0; x < srcWidth; x++)
-                {
-                    uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
+                // Create palette index memory for each mipmap.
+                uint32 srcWidth = platformTex->width[n];
+                uint32 srcHeight = platformTex->height[n];
+                void *texelSource = platformTex->texels[n];
 
-                    uint8 red, green, blue, alpha;
-                    bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
+                uint32 itemCount = ( srcWidth * srcHeight );
+                
+                uint32 dataSize = 0;
+                void *newTexelData = NULL;
 
-                    if ( hasColor )
-                    {
-                        conv.feedcolor(red, green, blue, alpha);
-                    }
-                }
-            }
-        }
-
-        // Construct a palette out of the remaining colors.
-        conv.constructpalette(maxPaletteEntries);
-
-        // Point each color from the original texture to the palette.
-        for (uint32 n = 0; n < mipmapCount; n++)
-        {
-            // Create palette index memory for each mipmap.
-            uint32 srcWidth = platformTex->width[n];
-            uint32 srcHeight = platformTex->height[n];
-            void *texelSource = platformTex->texels[n];
-
-            uint32 itemCount = ( srcWidth * srcHeight );
-            
-            uint32 dataSize = 0;
-            void *newTexelData = NULL;
-
-            // Allocate appropriate memory.
-            if (convPaletteFormat == PALETTE_4BIT)
-            {
-                dataSize = PixelFormat::palette4bit::sizeitems( itemCount );
-            }
-            else if (convPaletteFormat == PALETTE_8BIT)
-            {
-                dataSize = PixelFormat::palette8bit::sizeitems( itemCount );
-            }
-
-            newTexelData = new uint8[ dataSize ];
-
-            for ( uint32 colorIndex = 0; colorIndex < itemCount; colorIndex++ )
-            {
-                // Browse each texel of the original image and link it to a palette entry.
-                uint8 red, green, blue, alpha;
-                browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
-
-                uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
-
-                // Store it in the palette data.
+                // Allocate appropriate memory.
                 if (convPaletteFormat == PALETTE_4BIT)
                 {
-                    ( (PixelFormat::palette4bit*)newTexelData )->setvalue(colorIndex, paletteIndex);
+                    dataSize = PixelFormat::palette4bit::sizeitems( itemCount );
                 }
                 else if (convPaletteFormat == PALETTE_8BIT)
                 {
-                    ( (PixelFormat::palette8bit*)newTexelData )->setvalue(colorIndex, paletteIndex);
+                    dataSize = PixelFormat::palette8bit::sizeitems( itemCount );
+                }
+
+                newTexelData = new uint8[ dataSize ];
+
+                for ( uint32 colorIndex = 0; colorIndex < itemCount; colorIndex++ )
+                {
+                    // Browse each texel of the original image and link it to a palette entry.
+                    uint8 red, green, blue, alpha;
+                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, red, green, blue, alpha);
+
+                    uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
+
+                    assert( paletteIndex < maxPaletteEntries );
+
+                    // Store it in the palette data.
+                    if (convPaletteFormat == PALETTE_4BIT)
+                    {
+                        ( (PixelFormat::palette4bit*)newTexelData )->setvalue(colorIndex, paletteIndex);
+                    }
+                    else if (convPaletteFormat == PALETTE_8BIT)
+                    {
+                        ( (PixelFormat::palette8bit*)newTexelData )->setvalue(colorIndex, paletteIndex);
+                    }
+                }
+
+                // Replace texture data.
+                if ( texelSource )
+                {
+                    delete [] texelSource;
+                }
+
+                platformTex->texels[n] = newTexelData;
+
+                platformTex->dataSizes[n] = dataSize;
+                platformTex->mipmapDepth[n] = newDepth;
+            }
+
+            // Delete the old palette data (if available).
+            if (srcPaletteData != NULL)
+            {
+                delete [] srcPaletteData;
+            }
+
+            // Store the new palette texels.
+            platformTex->palette = (uint8*)conv.makepalette();
+            platformTex->paletteSize = conv.texelElimData.size();
+        }
+        else if (useRuntime == PALRUNTIME_PNGQUANT)
+        {
+            // libimagequant is a linux piece of shit.
+            // I want to provide an option for you, anyway.
+            // Meh. Why do Linux people and their great minds make it so hard for linux people :(
+            // I really like them.
+            liq_attr *quant_attr = liq_attr_create();
+
+            assert( quant_attr != NULL );
+
+            liq_set_max_colors(quant_attr, maxPaletteEntries);
+
+            _fetch_texel_libquant_traverse main_traverse;
+
+            main_traverse.platformTex = platformTex;
+            main_traverse.mipIndex = 0;
+
+            liq_image *quant_image = liq_image_create_custom(
+                quant_attr, _fetch_image_data_libquant, &main_traverse,
+                platformTex->width[0], platformTex->height[0],
+                1.0
+            );
+
+            assert( quant_image != NULL );
+
+            // Quant it!
+            liq_result *quant_result = liq_quantize_image(quant_attr, quant_image);
+
+            if (quant_result != NULL)
+            {
+                // Get the palette and remap all mipmaps.
+                for (uint32 n = 0; n < mipmapCount; n++)
+                {
+                    uint32 mipWidth = platformTex->width[n];
+                    uint32 mipHeight = platformTex->height[n];
+
+                    uint32 palItemCount = ( mipWidth * mipHeight );
+
+                    unsigned char *newPalItems = new unsigned char[ palItemCount ];
+
+                    assert( newPalItems != NULL );
+
+                    liq_image *srcImage = NULL;
+                    bool newImage = false;
+
+                    _fetch_texel_libquant_traverse thisTraverse;
+
+                    if ( n == 0 )
+                    {
+                        srcImage = quant_image;
+                    }
+                    else
+                    {
+                        // Create a new image.
+                        thisTraverse.platformTex = platformTex;
+                        thisTraverse.mipIndex = n;
+
+                        srcImage = liq_image_create_custom(
+                            quant_attr, _fetch_image_data_libquant, &thisTraverse,
+                            mipWidth, mipHeight,
+                            1.0
+                        );
+
+                        newImage = true;
+                    }
+
+                    // Map it.
+                    liq_write_remapped_image( quant_result, srcImage, newPalItems, palItemCount );
+
+                    // Delete image (if newly allocated)
+                    if (newImage)
+                    {
+                        liq_image_destroy( srcImage );
+                    }
+
+                    // Update the texels.
+                    delete [] platformTex->texels[ n ];
+
+                    bool hasUsedArray = false;
+
+                    {
+                        uint32 dataSize = 0;
+                        void *newTexelArray = NULL;
+
+                        if (convPaletteFormat == PALETTE_4BIT)
+                        {
+                            dataSize = PixelFormat::palette4bit::sizeitems( palItemCount );
+                        }
+                        else if (convPaletteFormat == PALETTE_8BIT)
+                        {
+                            dataSize = palItemCount;
+
+                            newTexelArray = newPalItems;
+
+                            hasUsedArray = true;
+                        }
+
+                        if ( !hasUsedArray )
+                        {
+                            newTexelArray = new uint8[ dataSize ];
+
+                            // Copy over the items.
+                            for ( uint32 n = 0; n < palItemCount; n++ )
+                            {
+                                uint32 resVal = newPalItems[ n ];
+
+                                if (convPaletteFormat == PALETTE_4BIT)
+                                {
+                                    ( (PixelFormat::palette4bit*)newTexelArray )->setvalue(n, resVal);
+                                }
+                                else if (convPaletteFormat == PALETTE_8BIT)
+                                {
+                                    ( (PixelFormat::palette8bit*)newTexelArray)->setvalue(n, resVal);
+                                }
+                            }
+                        }
+
+                        // Set the texels.
+                        platformTex->texels[ n ] = newTexelArray;
+                        platformTex->dataSizes[ n ] = dataSize;
+
+                        platformTex->mipmapDepth[ n ] = newDepth;
+                    }
+
+                    if ( !hasUsedArray )
+                    {
+                        delete [] newPalItems;
+                    }
+                }
+
+                // Delete the old palette data.
+                if (void *srcPalData = platformTex->palette)
+                {
+                    delete [] srcPalData;
+                }
+
+                // Update the texture palette data.
+                {
+                    const liq_palette *palData = liq_get_palette(quant_result);
+
+                    uint32 newPalItemCount = palData->count;
+
+                    PixelFormat::pixeldata32bit *newPalArray = new PixelFormat::pixeldata32bit[ newPalItemCount ];
+
+                    for ( unsigned int n = 0; n < palData->count; n++ )
+                    {
+                        PixelFormat::pixeldata32bit& outColor = newPalArray[ n ];
+
+                        const liq_color& srcColor = palData->entries[ n ];
+
+                        outColor.red = srcColor.r;
+                        outColor.green = srcColor.g;
+                        outColor.blue = srcColor.b;
+                        outColor.alpha = srcColor.a;
+                    }
+
+                    // Update texture properties.
+                    platformTex->palette = (uint8*)newPalArray;
+                    platformTex->paletteSize = newPalItemCount;
                 }
             }
-
-            // Replace texture data.
-            if ( texelSource )
+            else
             {
-                delete [] texelSource;
+                assert( 0 );
             }
 
-            platformTex->texels[n] = newTexelData;
+            // Release resources.
+            liq_image_destroy( quant_image );
 
-            platformTex->dataSizes[n] = dataSize;
-            platformTex->mipmapDepth[n] = newDepth;
+            liq_attr_destroy( quant_attr );
+
+            liq_result_destroy( quant_result );
         }
-
-        // Replace the palette data.
-        if (paletteData)
+        else
         {
-            delete [] paletteData;
+            assert( 0 );
         }
 
-        platformTex->palette = (uint8*)conv.makepalette();
-        platformTex->paletteSize = conv.texelElimData.size();
+        // TODO: support more raster formats than RGBA 32bit.
+        resultRasterFormat = RASTER_8888;
     }
 
     // Notify the raster about its new format.
     platformTex->paletteType = convPaletteFormat;
+
+    // Update the raster type.
+    this->rasterFormat = resultRasterFormat;
 }
 
 };

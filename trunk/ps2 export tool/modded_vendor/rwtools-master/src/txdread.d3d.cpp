@@ -10,8 +10,10 @@ void NativeTexture::readD3d(std::istream &rw)
 	HeaderInfo header;
 
 	READ_HEADER(CHUNK_STRUCT);
-	uint32 end = rw.tellg();
-	end += header.length;
+	
+    long texNativeStructOff = rw.tellg();
+
+    uint32 texNativeStructSize = header.length;
 
 	uint32 platform = readUInt32(rw);
 	// improve error handling
@@ -68,7 +70,7 @@ void NativeTexture::readD3d(std::istream &rw)
     rw.read((char*)&dimInfo, sizeof(dimInfo));
 
 	uint32 depth = dimInfo.depth;
-	platformTex->mipmapCount = dimInfo.mipmapCount;
+	uint32 maybeMipmapCount = dimInfo.mipmapCount;
 
     assert( dimInfo.rasterType == 4 );  // TODO
 
@@ -173,59 +175,80 @@ void NativeTexture::readD3d(std::istream &rw)
 		rw.read(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
 	}
 
-    uint32 mipmapCount = platformTex->mipmapCount;
+    uint32 currentMipWidth = dimInfo.width;
+    uint32 currentMipHeight = dimInfo.height;
 
-	for (uint32 i = 0; i < mipmapCount; i++)
+    uint32 mipmapCount = 0;
+
+	for (uint32 i = 0; i < maybeMipmapCount; i++)
     {
-        uint32 texWidth, texHeight;
-
 		if (i > 0)
         {
-            texWidth = platformTex->width[i-1] / 2;
-            texHeight = platformTex->height[i-1] / 2;
+            currentMipWidth /= 2;
+            currentMipHeight /= 2;
         }
-        else
+
+        if (currentMipWidth == 0 || currentMipHeight == 0)
         {
-            texWidth = dimInfo.width;
-            texHeight = dimInfo.height;
+            break;
         }
+
+        uint32 texWidth = currentMipWidth;
+        uint32 texHeight = currentMipHeight;
 
         // Process dimensions.
         {
-			platformTex->width.push_back( texWidth );
-			platformTex->height.push_back( texHeight );
-
 			// DXT compression works on 4x4 blocks,
 			// no smaller values allowed
 			if (platformTex->dxtCompression)
             {
 				if (texWidth < 4 && texWidth != 0)
                 {
-					platformTex->width[i] = 4;
+					texWidth = 4;
                 }
 				if (texHeight < 4 && texHeight != 0)
                 {
-					platformTex->height[i] = 4;
+					texHeight = 4;
                 }
 			}
         }
 
-        platformTex->mipmapDepth.push_back( depth );
-
 		uint32 texDataSize = readUInt32(rw);
 
-		// There is no way to predict, when the size is going to be zero
-		if (texDataSize == 0)
+        if ( texDataSize == 0 )
         {
-			platformTex->width[i] = platformTex->height[i] = 0;
+            break;
         }
-
-		platformTex->dataSizes.push_back(texDataSize);
 
         uint8 *texelData = new uint8[texDataSize];
 
-		platformTex->texels.push_back(texelData);
 		rw.read(reinterpret_cast <char *> (texelData), texDataSize*sizeof(uint8));
+
+        // Store mipmap properties.
+		platformTex->width.push_back( texWidth );
+		platformTex->height.push_back( texHeight );
+
+        platformTex->mipmapDepth.push_back( depth );
+
+		platformTex->dataSizes.push_back(texDataSize);
+
+        // Store the image data pointer.
+		platformTex->texels.push_back(texelData);
+
+        mipmapCount++;
+    }
+    assert( mipmapCount != 0 );
+
+    platformTex->mipmapCount = mipmapCount;
+
+    // Make sure we go to the end of the texture native struct.
+    {
+        uint32 curStructOffset = rw.tellg() - texNativeStructOff;
+
+        if ( curStructOffset != texNativeStructSize )
+        {
+            rw.seekg( texNativeStructOff + texNativeStructSize, std::ios::beg );
+        }
     }
 }
 
