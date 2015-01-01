@@ -38,13 +38,17 @@ uint32 TextureDictionary::write(ostream &rw)
     {
         NativeTexture& tex = texList[i];
 	    if (tex.platform == PLATFORM_D3D8 ||
-	        tex.platform == PLATFORM_D3D9) {
+	        tex.platform == PLATFORM_D3D9)
+        {
 		    bytesWritten += tex.writeD3d(rw);
-        } else if (tex.platform == PLATFORM_PS2) {
+        }
+        else if (tex.platform == PLATFORM_PS2)
+        {
             bytesWritten += tex.writePs2(rw);
-	    } else {
-		    cerr << "can't write platform " <<
-			    texList[i].platform << endl;
+	    }
+        else
+        {
+            throw RwException( "can't write platform" );
 	    }
 	}
 

@@ -65,7 +65,7 @@ void NativeTexture::readXbox(std::istream &rw)
 
     readRasterFormatFlags( metaInfo.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, autoMipmaps );
 
-	this->hasAlpha = ( metaInfo.hasAlpha != 0 );
+	platformTex->hasAlpha = ( metaInfo.hasAlpha != 0 );
 
 	uint32 depth = metaInfo.depth;
 	platformTex->mipmapCount = metaInfo.mipmapCount;
@@ -225,7 +225,7 @@ void NativeTexture::convertFromXbox(void)
     {
 		targetCompression = 1;
 
-		if (hasAlpha)
+		if (platformTex->hasAlpha)
         {
 			this->rasterFormat = RASTER_1555;
         }
@@ -250,6 +250,8 @@ void NativeTexture::convertFromXbox(void)
     d3dTex->dataSizes = platformTex->dataSizes;
 
     d3dTex->dxtCompression = targetCompression;
+
+    d3dTex->hasAlpha = platformTex->hasAlpha;
 
     // Backlink and put our texture as new platform data.
     d3dTex->parent = this;

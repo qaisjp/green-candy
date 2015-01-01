@@ -73,6 +73,7 @@ struct NativeTextureD3D : public PlatformTexture
         this->d3dFormat = D3DFMT_A8R8G8B8;
         this->dxtCompression = 0;
         this->rasterType = 4;
+        this->hasAlpha = true;
     }
 
     void Delete( void )
@@ -162,6 +163,7 @@ struct NativeTextureD3D : public PlatformTexture
         newTex->d3dFormat = this->d3dFormat;
         newTex->dxtCompression = this->dxtCompression;
         newTex->rasterType = this->rasterType;
+        newTex->hasAlpha = this->hasAlpha;
 
         return newTex;
     }
@@ -190,10 +192,16 @@ struct NativeTextureD3D : public PlatformTexture
     uint32 dxtCompression;
     uint32 rasterType;
 
+    bool hasAlpha;
+
 	void decompressDxt(void);
 	void decompressDxt1(void);
 	void decompressDxt3(void);
 	void decompressDxt4(void);
+
+    // Check whether this texture has alpha.
+    // Use this to update/calculate the alpha flag when required.
+    bool doesHaveAlpha(void) const;
 };
 
 #pragma pack(1)
