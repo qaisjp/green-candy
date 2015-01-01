@@ -277,6 +277,8 @@ void NativeTexture::readPs2(std::istream &rw)
     // Give the texture link to our native data.
     this->platformData = platformTex;
 
+    uint32 engineWarningLevel = rw::rwInterface.GetWarningLevel();
+
     // Attempt to read the texture.
     try
     {
@@ -616,19 +618,31 @@ void NativeTexture::readPs2(std::istream &rw)
 
         if ( gpuData.tex0 != textureMeta.tex0 )
         {
-            rw::rwInterface.PushWarning( "texture " + this->name + " has invalid TEX0 register" );
+            if ( engineWarningLevel >= 3 )
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has invalid TEX0 register" );
+            }
         }
         if ( gpuData.tex1 != textureMeta.tex1 )
         {
-            rw::rwInterface.PushWarning( "texture " + this->name + " has invalid TEX1 register" );
+            if ( engineWarningLevel >= 2 )
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has invalid TEX1 register" );
+            }
         }
         if ( gpuData.miptbp1 != textureMeta.miptbp1 )
         {
-            rw::rwInterface.PushWarning( "texture " + this->name + " has invalid MIPTBP1 register" );
+            if ( engineWarningLevel >= 1 )
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has invalid MIPTBP1 register" );
+            }
         }
         if ( gpuData.miptbp2 != textureMeta.miptbp2 )
         {
-            rw::rwInterface.PushWarning( "texture " + this->name + " has invalid MIPTBP2 register" );
+            if ( engineWarningLevel >= 1 )
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has invalid MIPTBP2 register" );
+            }
         }
 
         // Verify transmission rectangle same-ness.

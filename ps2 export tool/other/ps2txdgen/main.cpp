@@ -472,6 +472,12 @@ bool ApplicationMain( void )
                     c_palRuntimeType = rw::PALRUNTIME_PNGQUANT;
                 }
             }
+
+            // Warning level.
+            if ( mainEntry->Find( "warningLevel" ) )
+            {
+                rw::rwInterface.SetWarningLevel( mainEntry->GetInt( "warningLevel" ) );
+            }
         }
 
         // Kill the configuration.
@@ -546,6 +552,9 @@ bool ApplicationMain( void )
     std::cout
         << "* palRuntimeType: " << strPalRuntimeType << std::endl;
 
+    std::cout
+        << "* warningLevel: " << rw::rwInterface.GetWarningLevel() << std::endl;
+
     // Finish with a newline.
     std::cout << std::endl;
 
@@ -577,6 +586,8 @@ bool ApplicationMain( void )
             catch( termination_request& )
             {
                 // OK.
+                std::cout
+                    << "terminated application" << std::endl;
             }
         }
         else
