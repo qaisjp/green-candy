@@ -333,22 +333,27 @@ static void DebugFuncs( CFileTranslator *discHandle )
                         // is embedded into the texture!
                         // We need a way to retrieve the data and set it back after conversion.
 
-                        if ( tex.platform == rw::PLATFORM_PS2 )
+                        uint32 origPlatform = tex.platform;
+
+                        if ( origPlatform == rw::PLATFORM_PS2 )
                         {
                             tex.convertFromPS2();
+                        }
 
-                            // Write the texture somewhere.
-                            std::string newName = std::string( "txdout/" ) + tex.name;
-                            newName += ".tga";
+                        // Write the texture somewhere.
+                        std::string newName = std::string( "txdout/" ) + tex.name;
+                        newName += ".tga";
 
-                            //tex.convertToFormat( rw::RASTER_8888 );
-                            //if ( tex.platformData->getDepth() == 8 )
-                            {
-                                tex.convertToPalette( rw::PALETTE_8BIT );
-                            }
+                        //tex.convertToFormat( rw::RASTER_8888 );
+                        //if ( tex.platformData->getDepth() == 8 )
+                        {
+                            tex.convertToPalette( rw::PALETTE_8BIT );
+                        }
 
-                            tex.writeTGA(newName.c_str());
+                        tex.writeTGA(newName.c_str());
 
+                        if ( origPlatform == rw::PLATFORM_PS2 )
+                        {
                             tex.convertToPS2();
                         }
                     }
@@ -459,15 +464,15 @@ int main( int argc, char *argv[] )
 
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
-        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa\\" );
 
         if ( discHandle )
         {
             // Debug some obscurities.
-            //DebugFuncs( discHandle );
+            DebugFuncs( discHandle );
 
-            if ( true )
+            if ( false )
             {
                 // Create the build directory and get a link to it.
                 bool dirCreationSuccess = fileRoot->CreateDir( "BUILD_ROOT/" );

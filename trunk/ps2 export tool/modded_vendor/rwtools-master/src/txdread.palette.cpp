@@ -863,23 +863,25 @@ struct palettizer
         }
     }
 
-    inline PixelFormat::pixeldata32bit* makepalette(void)
+    inline void* makepalette(eRasterFormat rasterFormat, eColorOrdering colorOrder)
     {
-        // Allocate a container for the palette.
-        PixelFormat::pixeldata32bit *paletteData = new PixelFormat::pixeldata32bit[ texelElimData.size() ];
+        uint32 palDepth = Bitmap::getRasterFormatDepth(rasterFormat);
 
-        size_t n = 0;
+        uint32 palItemCount = texelElimData.size();
+
+        // TODO: actually use a common routine for calculating the data size, since this is pretty unsafe.
+        uint32 palDataSize = palItemCount * palDepth / 8;
+
+        // Allocate a container for the palette.
+        void *paletteData = new uint8[ palDataSize ];
+
+        uint32 n = 0;
 
         for ( texelContainer_t::const_iterator iter = texelElimData.begin(); iter != texelElimData.end(); iter++ )
         {
             const texel_t& curTexel = *iter;
 
-            PixelFormat::pixeldata32bit& paletteItem = paletteData[n++];
-
-            paletteItem.red = curTexel.red;
-            paletteItem.green = curTexel.green;
-            paletteItem.blue = curTexel.blue;
-            paletteItem.alpha = curTexel.alpha;
+            puttexelcolor(paletteData, n++, rasterFormat, colorOrder, curTexel.red, curTexel.green, curTexel.blue, curTexel.alpha);
         }
 
         return paletteData;
@@ -993,6 +995,8 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
     if (paletteType == convPaletteFormat)
         return;
 
+    eColorOrdering colorOrder = platformTex->colorOrdering;
+
     void *srcPaletteData = platformTex->palette;
     uint32 srcPaletteCount = platformTex->paletteSize;
 
@@ -1011,9 +1015,6 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
         newDepth = 4;
     }
 
-    // This value has the raster type of the result palette.
-    eRasterFormat resultRasterFormat = this->rasterFormat;
-
     // Do the palettization.
     {
         uint32 mipmapCount = platformTex->mipmapCount;
@@ -1024,8 +1025,6 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
         if (useRuntime == PALRUNTIME_NATIVE)
         {
             palettizer conv;
-
-            eColorOrdering colorOrder = platformTex->colorOrdering;
 
             // Linear eliminate unique texels.
             // Use only the first texture.
@@ -1143,15 +1142,11 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
             }
 
             // Store the new palette texels.
-            platformTex->palette = (uint8*)conv.makepalette();
+            platformTex->palette = conv.makepalette(rasterFormat, colorOrder);
             platformTex->paletteSize = conv.texelElimData.size();
         }
         else if (useRuntime == PALRUNTIME_PNGQUANT)
         {
-            // libimagequant is a linux piece of shit.
-            // I want to provide an option for you, anyway.
-            // Meh. Why do Linux people and their great minds make it so hard for linux people :(
-            // I really like them.
             liq_attr *quant_attr = liq_attr_create();
 
             assert( quant_attr != NULL );
@@ -1288,22 +1283,21 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
                     uint32 newPalItemCount = palData->count;
 
-                    PixelFormat::pixeldata32bit *newPalArray = new PixelFormat::pixeldata32bit[ newPalItemCount ];
+                    uint32 palDepth = Bitmap::getRasterFormatDepth(rasterFormat);
+
+                    uint32 palDataSize = newPalItemCount * palDepth / 8;
+
+                    void *newPalArray = new uint8[ palDataSize ];
 
                     for ( unsigned int n = 0; n < palData->count; n++ )
                     {
-                        PixelFormat::pixeldata32bit& outColor = newPalArray[ n ];
-
                         const liq_color& srcColor = palData->entries[ n ];
 
-                        outColor.red = srcColor.r;
-                        outColor.green = srcColor.g;
-                        outColor.blue = srcColor.b;
-                        outColor.alpha = srcColor.a;
+                        puttexelcolor(newPalArray, n, rasterFormat, colorOrder, srcColor.r, srcColor.g, srcColor.b, srcColor.a);
                     }
 
                     // Update texture properties.
-                    platformTex->palette = (uint8*)newPalArray;
+                    platformTex->palette = newPalArray;
                     platformTex->paletteSize = newPalItemCount;
                 }
             }
@@ -1323,16 +1317,10 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
         {
             assert( 0 );
         }
-
-        // TODO: support more raster formats than RGBA 32bit.
-        resultRasterFormat = RASTER_8888;
     }
 
     // Notify the raster about its new format.
     platformTex->paletteType = convPaletteFormat;
-
-    // Update the raster type.
-    this->rasterFormat = resultRasterFormat;
 
     // Since we changed the colors, update the alpha flag.
     platformTex->hasAlpha = platformTex->doesHaveAlpha();
