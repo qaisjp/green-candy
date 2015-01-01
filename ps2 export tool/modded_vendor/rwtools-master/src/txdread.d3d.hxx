@@ -74,6 +74,7 @@ struct NativeTextureD3D : public PlatformTexture
         this->dxtCompression = 0;
         this->rasterType = 4;
         this->hasAlpha = true;
+        this->colorOrdering = COLOR_BGRA;
     }
 
     void Delete( void )
@@ -164,6 +165,7 @@ struct NativeTextureD3D : public PlatformTexture
         newTex->dxtCompression = this->dxtCompression;
         newTex->rasterType = this->rasterType;
         newTex->hasAlpha = this->hasAlpha;
+        newTex->colorOrdering = this->colorOrdering;
 
         return newTex;
     }
@@ -193,6 +195,8 @@ struct NativeTextureD3D : public PlatformTexture
     uint32 rasterType;
 
     bool hasAlpha;
+
+    eColorOrdering colorOrdering;
 
 	void decompressDxt(void);
 	void decompressDxt1(void);

@@ -61,6 +61,12 @@ enum ePaletteType
     PALETTE_8BIT
 };
 
+enum eColorOrdering
+{
+    COLOR_RGBA,
+    COLOR_BGRA
+};
+
 // utility to calculate palette item count.
 inline uint32 getPaletteItemCount( ePaletteType paletteType )
 {

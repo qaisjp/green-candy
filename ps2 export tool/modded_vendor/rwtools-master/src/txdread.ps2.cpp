@@ -396,6 +396,9 @@ void NativeTexture::readPs2(std::istream &rw)
 
         ps2MipmapTransmissionData _origMipmapTransData[ maxMipmaps ];
 
+        // TODO: are PS2 rasters always RGBA?
+        // If not, adjust the color order parameter!
+
 	    /* Pixels/Indices */
 	    long end = rw.tellg();
 	    end += (long)dataSize;
@@ -810,6 +813,35 @@ inline void getEffectivePaletteTextureDimensions(ePaletteType paletteType, uint3
     palHeight_out = palHeight;
 }
 
+inline void convertTexelsFromPS2(
+    void *texelSource, uint32 texelCount, eRasterFormat rasterFormat,
+    eColorOrdering ps2ColorOrder, eColorOrdering d3dColorOrder, bool fixAlpha
+)
+{
+    if ( fixAlpha || ps2ColorOrder != d3dColorOrder )
+    {
+	    for (uint32 i = 0; i < texelCount; i++)
+        {
+            uint8 red, green, blue, alpha;
+            browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, i, rasterFormat, ps2ColorOrder, red, green, blue, alpha);
+
+	        // fix alpha
+            if (fixAlpha)
+            {
+                uint8 newAlpha = convertPS2Alpha2PCAlpha(alpha);
+
+#ifdef DEBUG_ALPHA_LEVELS
+                assert(convertPCAlpha2PS2Alpha(newAlpha) == alpha);
+#endif //DEBUG_ALPHA_LEVELS
+
+                alpha = newAlpha;
+            }
+
+            puttexelcolor(texelSource, i, rasterFormat, d3dColorOrder, red, green, blue, alpha);
+	    }
+    }
+}
+
 void NativeTexture::convertFromPS2(void)
 {
 	if (platform != PLATFORM_PS2)
@@ -840,6 +872,12 @@ void NativeTexture::convertFromPS2(void)
     d3dtex->hasAlpha = platformTex->hasAlpha;
 
     // Copy mipmap data.
+    eRasterFormat rasterFormat = this->rasterFormat;
+    ePaletteType paletteType = platformTex->paletteType;
+
+    eColorOrdering ps2ColorOrder = platformTex->colorOrdering;
+    eColorOrdering d3dColorOrder = d3dtex->colorOrdering;
+
 	for (uint32 j = 0; j < mipmapCount; j++)
     {
         NativeTexturePS2::GSMipmap& gsTex = platformTex->mipmaps[ j ];
@@ -857,42 +895,33 @@ void NativeTexture::convertFromPS2(void)
         }
 
         // Now that the texture is in linear format, we can prepare it.
+        bool fixAlpha = false;
+
 		if (depth == 16)
         {
             // TODO: do we have to do anything?
         }
         else if (depth == 32)
         {
-            typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
-
-            pixel32_t *texelData = (pixel32_t*)gsTex.texels;
-
-			for (uint32 i = 0; i < gsTex.width * gsTex.height; i++)
-            {
-                uint8 red, green, blue, alpha;
-                texelData->getcolor(i, red, green, blue, alpha);
-
-			    // fix alpha
-                {
-                    uint8 newAlpha = convertPS2Alpha2PCAlpha(alpha);
-
-#ifdef DEBUG_ALPHA_LEVELS
-                    assert(convertPCAlpha2PS2Alpha(newAlpha) == alpha);
-#endif //DEBUG_ALPHA_LEVELS
-
-                    alpha = newAlpha;
-                }
-
-			    // swap R and B
-                texelData->setcolor(i, red, green, blue, alpha);
-			}
+            fixAlpha = true;
 		}
 
+        // Prepare colors.
+        uint32 mipWidth = gsTex.width;
+        uint32 mipHeight = gsTex.height;
+
+        void *texelData = gsTex.texels;
+
+        if (paletteType == PALETTE_NONE)
+        {
+            convertTexelsFromPS2(texelData, mipWidth * mipHeight, rasterFormat, ps2ColorOrder, d3dColorOrder, fixAlpha);
+        }
+
         // Move over the texture data to the D3D texture.
-        d3dtex->width[ j ] = gsTex.width;
-        d3dtex->height[ j ] = gsTex.height;
+        d3dtex->width[ j ] = mipWidth;
+        d3dtex->height[ j ] = mipHeight;
         d3dtex->mipmapDepth[ j ] = gsTex.depth;
-        d3dtex->texels[ j ] = gsTex.texels;
+        d3dtex->texels[ j ] = texelData;
         d3dtex->dataSizes[ j ] = gsTex.dataSize;
 
         // Zero out the GS texture.
@@ -903,10 +932,10 @@ void NativeTexture::convertFromPS2(void)
     void *palTexels = NULL;
     uint32 palSize = 0;
 
-	if (platformTex->paletteType != PALETTE_NONE)
+	if (paletteType != PALETTE_NONE)
     {
         // unCLUT the palette.
-        bool unclutSuccess = unclut(platformTex->paletteType, platformTex->paletteTex);
+        bool unclutSuccess = unclut(paletteType, platformTex->paletteTex);
 
         assert(unclutSuccess == true);
 
@@ -915,26 +944,9 @@ void NativeTexture::convertFromPS2(void)
         {
             uint32 realSwizzleWidth, realSwizzleHeight;
 
-            getEffectivePaletteTextureDimensions(platformTex->paletteType, realSwizzleWidth, realSwizzleHeight);
+            getEffectivePaletteTextureDimensions(paletteType, realSwizzleWidth, realSwizzleHeight);
             
-            uint32 palItems = ( realSwizzleWidth * realSwizzleHeight );
-
-		    for (uint32 i = 0; i < palItems; i++)
-            {
-                uint8 red, green, blue, alpha;
-
-                browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
-                {
-	                uint8 newAlpha = convertPS2Alpha2PCAlpha(alpha);
-
-#ifdef DEBUG_ALPHA_LEVELS
-                    assert(convertPCAlpha2PS2Alpha(newAlpha) == alpha);
-#endif //DEBUG_ALPHA_LEVELS
-
-                    alpha = newAlpha;
-                }
-                puttexelcolor(paletteTexelSource, i, this->rasterFormat, red, green, blue, alpha);
-		    }
+            convertTexelsFromPS2(paletteTexelSource, realSwizzleWidth * realSwizzleHeight, rasterFormat, ps2ColorOrder, d3dColorOrder, true);
         }
 
         // Give the palette texels to the new texture.
@@ -962,6 +974,35 @@ void NativeTexture::convertFromPS2(void)
     delete platformTex;
 }
 
+inline void convertTexelsToPS2(
+    void *texelData, uint32 texelCount, eRasterFormat rasterFormat,
+    eColorOrdering d3dColorOrder, eColorOrdering ps2ColorOrder,
+    bool fixAlpha
+)
+{
+    if ( fixAlpha || d3dColorOrder != ps2ColorOrder )
+    {
+		for (uint32 i = 0; i < texelCount; i++)
+        {
+            uint8 red, green, blue, alpha;
+            browsetexelcolor(texelData, PALETTE_NONE, NULL, 0, i, rasterFormat, d3dColorOrder, red, green, blue, alpha);
+
+		    // fix alpha
+            {
+                uint8 newAlpha = convertPCAlpha2PS2Alpha(alpha);
+
+#ifdef DEBUG_ALPHA_LEVELS
+                assert(convertPS2Alpha2PCAlpha(newAlpha) == alpha);
+#endif //DEBUG_ALPHA_LEVELS
+
+                alpha = newAlpha;
+            }
+
+            puttexelcolor(texelData, i, rasterFormat, ps2ColorOrder, red, green, blue, alpha);
+		}
+    }
+}
+
 void NativeTexture::convertToPS2( void )
 {
     if ( platform != PLATFORM_D3D8 && platform != PLATFORM_D3D9 )
@@ -986,6 +1027,8 @@ void NativeTexture::convertToPS2( void )
         }
 
         // Prepare mipmap data.
+        eColorOrdering d3dColorOrder = platformTex->colorOrdering;
+        eColorOrdering ps2ColorOrder = ps2tex->colorOrdering;
         {
             uint32 mipmapCount = platformTex->mipmapCount;
 
@@ -999,13 +1042,37 @@ void NativeTexture::convertToPS2( void )
                 // The actual conversion to PS2 encoding happens later.
                 NativeTexturePS2::GSMipmap& newMipmap = ps2tex->mipmaps[ n ];
 
-                newMipmap.width = platformTex->width[ n ];
-                newMipmap.height = platformTex->height[ n ];
-                newMipmap.depth = platformTex->mipmapDepth[ n ];
-                newMipmap.dataSize = platformTex->dataSizes[ n ];
+                uint32 mipWidth = platformTex->width[ n ];
+                uint32 mipHeight = platformTex->height[ n ];
+                uint32 mipDepth = platformTex->mipmapDepth[ n ];
+                uint32 dataSize = platformTex->dataSizes[ n ];
 
-                // We just move over the image data.
-                newMipmap.texels = platformTex->texels[ n ];
+                void *texelData = platformTex->texels[ n ];
+
+                // We need to convert the texels before storing them in the PS2 texture.
+                bool fixAlpha = false;
+
+                if (mipDepth == 16)
+                {
+                    // TODO: do we have to do anything?
+                }
+                else if (mipDepth == 32)
+                {
+                    fixAlpha = true;
+                }
+
+                // Convert the texels.
+                if (platformTex->paletteType == PALETTE_NONE)
+                {
+                    convertTexelsToPS2(texelData, mipWidth * mipHeight, this->rasterFormat, d3dColorOrder, ps2ColorOrder, fixAlpha);
+                }
+
+                newMipmap.width = mipWidth;
+                newMipmap.height = mipHeight;
+                newMipmap.depth = mipDepth;
+                newMipmap.dataSize = dataSize;
+
+                newMipmap.texels = texelData;
             }
 
             // For all the texels that we dont require, delete them.
@@ -1024,10 +1091,13 @@ void NativeTexture::convertToPS2( void )
         // Move over the palette texels.
         if (platformTex->paletteType != PALETTE_NONE)
         {
-            // Generate a palette texture.
+            // Prepare the palette texels.
             void *palTexelData = platformTex->palette;
             uint32 palSize = platformTex->paletteSize;
 
+            convertTexelsToPS2(palTexelData, palSize, this->rasterFormat, d3dColorOrder, ps2ColorOrder, true);
+
+            // Generate a palette texture.
             void *newPalTexelData;
             uint32 newPalSize;
 
@@ -1078,42 +1148,6 @@ void NativeTexture::convertToPS2( void )
     {
         NativeTexturePS2::GSMipmap& gsTex = ps2tex->mipmaps[n];
 
-        uint32 curWidth = gsTex.width;
-        uint32 curHeight = gsTex.height;
-        uint32 depth = gsTex.depth;
-
-        // Prepare the pixels.
-        if (depth == 16)
-        {
-            // TODO: do we have to do anything?
-        }
-        else if (depth == 32)
-        {
-            typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
-
-            pixel32_t *texelData = (pixel32_t*)gsTex.texels;
-
-			for (uint32 i = 0; i < curWidth * curHeight; i++)
-            {
-                uint8 red, green, blue, alpha;
-                texelData->getcolor(i, red, green, blue, alpha);
-
-			    // fix alpha
-                {
-                    uint8 newAlpha = convertPCAlpha2PS2Alpha(alpha);
-
-#ifdef DEBUG_ALPHA_LEVELS
-                    assert(convertPS2Alpha2PCAlpha(newAlpha) == alpha);
-#endif //DEBUG_ALPHA_LEVELS
-
-                    alpha = newAlpha;
-                }
-
-			    // swap R and B
-                texelData->setcolor(i, red, green, blue, alpha);
-			}
-        }
-
         // Initialize the swizzling state.
         eFormatEncodingType internalFormat = 
             getFormatEncodingFromRasterFormat(this->rasterFormat, ps2tex->paletteType);
@@ -1144,35 +1178,6 @@ void NativeTexture::convertToPS2( void )
 
 	if (ps2tex->paletteType != PALETTE_NONE)
     {
-        // Prepare the palette texels.
-        void *paletteTexelSource = ps2tex->paletteTex.texels;
-
-        uint32 realSwizzleWidth, realSwizzleHeight;
-
-        getEffectivePaletteTextureDimensions(ps2tex->paletteType, realSwizzleWidth, realSwizzleHeight);
-
-        uint32 palItemCount = ( realSwizzleWidth * realSwizzleHeight );
-
-		for (uint32 i = 0; i < palItemCount; i++)
-        {
-            uint8 red, green, blue, alpha;
-
-            browsetexelcolor(paletteTexelSource, PALETTE_NONE, NULL, 0, i, this->rasterFormat, red, green, blue, alpha);
-            {
-	            uint8 newAlpha = convertPCAlpha2PS2Alpha(alpha);
-
-#ifdef DEBUG_ALPHA_LEVELS
-                if (convertPS2Alpha2PCAlpha(newAlpha) != alpha)
-                {
-                    __asm nop
-                }
-#endif //DEBUG_ALPHA_LEVELS
-
-                alpha = newAlpha;
-            }
-            puttexelcolor(paletteTexelSource, i, this->rasterFormat, red, green, blue, alpha);
-		}
-
         // Now CLUT the palette.
         clut(ps2tex->paletteType, ps2tex->paletteTex);
 	}

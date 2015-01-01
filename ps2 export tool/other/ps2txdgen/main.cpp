@@ -268,79 +268,6 @@ struct _discFileSentry
     }
 };
 
-inline bool obtainAbsolutePath( const char *path, CFileTranslator*& transOut )
-{
-    bool hasTranslator = false;
-    
-    bool newTranslator = false;
-    CFileTranslator *translator = NULL;
-    filePath thePath;
-
-    if ( fileRoot->GetFullPath( path, true, thePath ) )
-    {
-        translator = fileRoot;
-
-        hasTranslator = true;
-    }
-
-    if ( !hasTranslator )
-    {
-        if ( *path != 0 && *(path+1) == ':' && *(path+2) == '/' )
-        {
-            char diskRootDesc[4];
-            memcpy( diskRootDesc, path, 3 );
-
-            diskRootDesc[3] = '\0';
-
-            CFileTranslator *diskTranslator = fileSystem->CreateTranslator( diskRootDesc );
-
-            if ( diskTranslator )
-            {
-                bool canResolve = diskTranslator->GetFullPath( path, true, thePath );
-
-                if ( canResolve )
-                {
-                    newTranslator = true;
-                    translator = diskTranslator;
-
-                    hasTranslator = true;
-                }
-
-                if ( !hasTranslator )
-                {
-                    delete diskTranslator;
-                }
-            }
-        }
-    }
-
-    bool success = false;
-
-    if ( hasTranslator )
-    {
-        bool createPath = translator->CreateDir( thePath.c_str() );
-
-        if ( createPath )
-        {
-            CFileTranslator *actualRoot = fileSystem->CreateTranslator( thePath.c_str() );
-
-            if ( actualRoot )
-            {
-                success = true;
-
-                transOut = actualRoot;
-            }
-        }
-
-        if ( newTranslator )
-        {
-            delete translator;
-        }
-    }
-
-    return success;
-}
-
 static bool _has_terminated = false;
 
 void _term_handler( int msg )
@@ -563,8 +490,8 @@ bool ApplicationMain( void )
         CFileTranslator *absGameRootTranslator = NULL;
         CFileTranslator *absOutputRootTranslator = NULL;
 
-        bool hasGameRoot = obtainAbsolutePath( c_gameRoot.c_str(), absGameRootTranslator );
-        bool hasOutputRoot = obtainAbsolutePath( c_outputRoot.c_str(), absOutputRootTranslator );
+        bool hasGameRoot = obtainAbsolutePath( c_gameRoot.c_str(), absGameRootTranslator, false );
+        bool hasOutputRoot = obtainAbsolutePath( c_outputRoot.c_str(), absOutputRootTranslator, true );
 
         if ( hasGameRoot && hasOutputRoot )
         {
@@ -588,6 +515,8 @@ bool ApplicationMain( void )
                 // OK.
                 std::cout
                     << "terminated application" << std::endl;
+
+                successful = false;
             }
         }
         else

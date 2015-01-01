@@ -591,6 +591,7 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
     // Otherwise there is no point in going through the pixels.
     eRasterFormat rasterFormat = parent->rasterFormat;
     ePaletteType paletteType = this->paletteType;
+    eColorOrdering colorOrder = this->colorOrdering;
 
     if (rasterFormat == RASTER_1555 || rasterFormat == RASTER_4444 || rasterFormat == RASTER_8888)
     {
@@ -606,7 +607,7 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
             {
                 uint8 r, g, b, a;
 
-                browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, r, g, b, a);
+                browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, r, g, b, a);
 
                 if (a != 255)
                 {
@@ -630,7 +631,7 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
             {
                 uint8 r, g, b, a;
 
-                browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, r, g, b, a);
+                browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, r, g, b, a);
 
                 if (a != 255)
                 {

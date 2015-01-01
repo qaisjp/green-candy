@@ -10,6 +10,8 @@ struct Bitmap
         this->texels = NULL;
         this->dataSize = 0;
 
+        this->colorOrder = COLOR_RGBA;
+
         this->bgRed = 0;
         this->bgGreen = 0;
         this->bgBlue = 0;
@@ -23,6 +25,8 @@ struct Bitmap
         this->rasterFormat = theFormat;
         this->texels = NULL;
         this->dataSize = 0;
+
+        this->colorOrder = COLOR_RGBA;
 
         this->bgRed = 0;
         this->bgGreen = 0;
@@ -49,6 +53,8 @@ struct Bitmap
 
         this->texels = newTexels;
         this->dataSize = right.dataSize;
+
+        this->colorOrder = right.colorOrder;
 
         this->bgRed = right.bgRed;
         this->bgGreen = right.bgGreen;
@@ -96,7 +102,7 @@ struct Bitmap
         return ( imageItemCount * depth / 8 );
     }
 
-    inline void setImageData( void *theTexels, eRasterFormat theFormat, uint32 depth, uint32 width, uint32 height, uint32 dataSize )
+    inline void setImageData( void *theTexels, eRasterFormat theFormat, eColorOrdering colorOrder, uint32 depth, uint32 width, uint32 height, uint32 dataSize )
     {
         this->width = width;
         this->height = height;
@@ -121,13 +127,15 @@ struct Bitmap
             this->texels = newTexels;
         }
         this->dataSize = dataSize;
+
+        this->colorOrder = colorOrder;
     }
 
-    inline void setImageData( void *theTexels, eRasterFormat theFormat, uint32 depth, uint32 width, uint32 height )
+    inline void setImageData( void *theTexels, eRasterFormat theFormat, eColorOrdering colorOrder, uint32 depth, uint32 width, uint32 height )
     {
         uint32 dataSize = getRasterImageDataSize( width, height, depth );
 
-        setImageData( theTexels, theFormat, depth, width, height, dataSize );
+        setImageData( theTexels, theFormat, colorOrder, depth, width, height, dataSize );
     }
 
     void setSize( uint32 width, uint32 height );
@@ -173,6 +181,11 @@ struct Bitmap
     inline eRasterFormat getFormat( void ) const
     {
         return this->rasterFormat;
+    }
+
+    inline eColorOrdering getColorOrder( void ) const
+    {
+        return this->colorOrder;
     }
 
     inline uint32 getDataSize( void ) const
@@ -248,6 +261,8 @@ private:
     eRasterFormat rasterFormat;
     void *texels;
     uint32 dataSize;
+
+    eColorOrdering colorOrder;
 
     double bgRed, bgGreen, bgBlue;
 };

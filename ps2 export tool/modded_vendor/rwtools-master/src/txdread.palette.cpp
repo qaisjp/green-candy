@@ -947,6 +947,8 @@ static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int w
     eRasterFormat rasterFormat = platformTex->parent->rasterFormat;
     ePaletteType paletteType = platformTex->paletteType;
 
+    eColorOrdering colorOrder = platformTex->colorOrdering;
+
     void *palColors = platformTex->palette;
     uint32 palColorCount = platformTex->paletteSize;
 
@@ -957,7 +959,7 @@ static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int w
         // Fetch the color.
         uint8 r, g, b, a;
 
-        browsetexelcolor(texelSource, paletteType, palColors, palColorCount, colorIndex, rasterFormat, r, g, b, a);
+        browsetexelcolor(texelSource, paletteType, palColors, palColorCount, colorIndex, rasterFormat, colorOrder, r, g, b, a);
 
         // Store the color.
         liq_color& outColor = row_out[ n ];
@@ -1023,6 +1025,8 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
         {
             palettizer conv;
 
+            eColorOrdering colorOrder = platformTex->colorOrdering;
+
             // Linear eliminate unique texels.
             // Use only the first texture.
             if ( mipmapCount > 0 )
@@ -1061,7 +1065,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                         uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
 
                         uint8 red, green, blue, alpha;
-                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, red, green, blue, alpha);
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, red, green, blue, alpha);
 
                         if ( hasColor )
                         {
@@ -1103,7 +1107,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 {
                     // Browse each texel of the original image and link it to a palette entry.
                     uint8 red, green, blue, alpha;
-                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, red, green, blue, alpha);
+                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, red, green, blue, alpha);
 
                     uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
 

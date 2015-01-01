@@ -124,6 +124,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
 
     eRasterFormat rasterFormat = this->rasterFormat;
     ePaletteType paletteType = platformTex->paletteType;
+    eColorOrdering colorOrder = platformTex->colorOrdering;
     uint32 mipmapCount = platformTex->mipmapCount;
 
     bool isPaletteRaster = ( paletteType != PALETTE_NONE );
@@ -160,7 +161,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
 
                         // Grab the color values.
                         uint8 red, green, blue, alpha;
-                        bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, red, green, blue, alpha);
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, colorOrder, red, green, blue, alpha);
 
                         if ( !hasColor )
                         {
@@ -171,7 +172,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
                         }
 
                         // Write the color data.
-                        puttexelcolor(newtexels, colorIndex, newFormat, red, green, blue, alpha);
+                        puttexelcolor(newtexels, colorIndex, newFormat, colorOrder, red, green, blue, alpha);
                     }
                 }
 
@@ -222,6 +223,7 @@ Bitmap NativeTexture::getBitmap(void) const
             uint32 depth = platformTex->mipmapDepth[ 0 ];
             uint32 dataSize = platformTex->dataSizes[ 0 ];
             eRasterFormat theFormat = this->rasterFormat;
+            eColorOrdering theOrder = platformTex->colorOrdering;
             
             // Get the color data.
             bool hasAllocatedNewPixelData = false;
@@ -243,7 +245,7 @@ Bitmap NativeTexture::getBitmap(void) const
             {
                 // Set the data into the bitmap.
                 resultBitmap.setImageData(
-                    pixelData, theFormat, depth, width, height, dataSize
+                    pixelData, theFormat, theOrder, depth, width, height, dataSize
                 );
 
                 if ( hasAllocatedNewPixelData )
@@ -374,11 +376,12 @@ void NativeTexture::writeTGA(const char *path)
     uint32 maxpalette = platformTex->paletteSize;
     eRasterFormat rasterFormat = this->rasterFormat;
     ePaletteType paletteType = platformTex->paletteType;
+    eColorOrdering colorOrder = platformTex->colorOrdering;
 
 	for (uint32 j = 0; j < width*height; j++)
     {
         uint8 red, green, blue, alpha;
-        browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, j, rasterFormat, red, green, blue, alpha);
+        browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, j, rasterFormat, colorOrder, red, green, blue, alpha);
 
 		writeUInt8(blue, tga);
 		writeUInt8(green, tga);

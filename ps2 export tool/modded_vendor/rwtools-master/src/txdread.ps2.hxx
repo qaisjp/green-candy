@@ -464,6 +464,7 @@ struct NativeTexturePS2 : public PlatformTexture
         this->rasterType = 4;
 
         this->hasAlpha = true;
+        this->colorOrdering = COLOR_RGBA;
     }
 
     void Delete( void )
@@ -518,6 +519,7 @@ struct NativeTexturePS2 : public PlatformTexture
         newTex->rasterType = this->rasterType;
 
         newTex->hasAlpha = this->hasAlpha;
+        newTex->colorOrdering = this->colorOrdering;
 
         return newTex;
     }
@@ -706,6 +708,8 @@ struct NativeTexturePS2 : public PlatformTexture
     uint32 skyMipMapVal;
 
     uint8 rasterType;
+
+    eColorOrdering colorOrdering;
 
     struct gsParams_t
     {

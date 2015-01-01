@@ -3,7 +3,7 @@ namespace rw
 
 static inline bool browsetexelcolor(
     const void *texelSource, ePaletteType paletteType, const void *paletteData, uint32 maxpalette,
-    uint32 colorIndex, eRasterFormat rasterFormat,
+    uint32 colorIndex, eRasterFormat rasterFormat, eColorOrdering colorOrder,
     uint8& red, uint8& green, uint8& blue, uint8& alpha)
 {
     typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
@@ -55,7 +55,18 @@ static inline bool browsetexelcolor(
 
         pixel1555_t *srcData = (pixel1555_t*)realTexelSource;
 
-        srcData->getcolor(realColorIndex, red, green, blue, alpha);
+        if ( colorOrder == COLOR_RGBA )
+        {
+            srcData->getcolor(realColorIndex, red, green, blue, alpha);
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            srcData->getcolor(realColorIndex, blue, green, red, alpha );
+        }
+        else
+        {
+            assert( 0 );
+        }
 
         // Scale the color values.
         red *= 0xFF / 0x1F;
@@ -76,10 +87,29 @@ static inline bool browsetexelcolor(
 
         pixel_t *srcData = ( (pixel_t*)realTexelSource + realColorIndex );
 
+        uint32 finred, fingreen, finblue;
+
+        if ( colorOrder == COLOR_RGBA )
+        {
+            finred = srcData->red;
+            fingreen = srcData->green;
+            finblue = srcData->blue;
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            finred = srcData->blue;
+            fingreen = srcData->green;
+            finblue = srcData->red;
+        }
+        else
+        {
+            assert( 0 );
+        }
+
         // Scale the color values.
-        red = srcData->red * 0xFF / 0x1F;
-        green = srcData->green * 0xFF / 0x3F;
-        blue = srcData->blue * 0xFF / 0x1F;
+        red = finred * 0xFF / 0x1F;
+        green = fingreen * 0xFF / 0x3F;
+        blue = finblue * 0xFF / 0x1F;
         alpha = 0xFF;
 
         hasColor = true;
@@ -98,7 +128,18 @@ static inline bool browsetexelcolor(
 
         pixel4444_t *srcData = (pixel4444_t*)realTexelSource;
 
-        srcData->getcolor(realColorIndex, red, green, blue, alpha);
+        if ( colorOrder == COLOR_RGBA )
+        {
+            srcData->getcolor(realColorIndex, red, green, blue, alpha);
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            srcData->getcolor(realColorIndex, blue, green, red, alpha);
+        }
+        else
+        {
+            assert( 0 );
+        }
 
         // Scale the color values.
         red *= 0xFF / 0xF;
@@ -112,7 +153,18 @@ static inline bool browsetexelcolor(
     {
         pixel32_t *srcData = (pixel32_t*)realTexelSource;
 
-        srcData->getcolor(realColorIndex, red, green, blue, alpha);
+        if ( colorOrder == COLOR_RGBA )
+        {
+            srcData->getcolor(realColorIndex, red, green, blue, alpha);
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            srcData->getcolor(realColorIndex, blue, green, red, alpha);
+        }
+        else
+        {
+            assert( 0 );
+        }
 
         hasColor = true;
     }
@@ -129,9 +181,23 @@ static inline bool browsetexelcolor(
         pixel_t *srcData = ( (pixel_t*)realTexelSource + realColorIndex );
 
         // Get the color values.
-        red = srcData->red;
-        green = srcData->green;
-        blue = srcData->blue;
+        if ( colorOrder == COLOR_RGBA )
+        {
+            red = srcData->red;
+            green = srcData->green;
+            blue = srcData->blue;
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            red = srcData->blue;
+            green = srcData->green;
+            blue = srcData->red;
+        }
+        else
+        {
+            assert( 0 );
+        }
+
         alpha = 0xFF;
 
         hasColor = true;
@@ -145,7 +211,11 @@ static inline uint8 scalecolor(uint8 color, uint32 curMax, uint32 newMax)
     return (uint8)( (double)color / (double)curMax * (double)newMax );
 }
 
-static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterFormat rasterFormat, uint8 red, uint8 green, uint8 blue, uint8 alpha)
+static inline bool puttexelcolor(
+    void *texelDest,
+    uint32 colorIndex, eRasterFormat rasterFormat, eColorOrdering colorOrder,
+    uint8 red, uint8 green, uint8 blue, uint8 alpha
+)
 {
     typedef PixelFormat::texeltemplate <PixelFormat::pixeldata32bit> pixel32_t;
 
@@ -171,7 +241,18 @@ static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterForm
         uint8 blueScaled =      scalecolor(blue, 255, 31);
         uint8 alphaScaled =     ( alpha != 0 ) ? ( 1 ) : ( 0 );
 
-        dstData->setcolor(colorIndex, redScaled, greenScaled, blueScaled, alphaScaled);
+        if ( colorOrder == COLOR_RGBA )
+        {
+            dstData->setcolor(colorIndex, redScaled, greenScaled, blueScaled, alphaScaled);
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            dstData->setcolor(colorIndex, blueScaled, greenScaled, redScaled, alphaScaled);
+        }
+        else
+        {
+            assert( 0 );
+        }
 
         setColor = true;
     }
@@ -191,9 +272,18 @@ static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterForm
         uint8 greenScaled =     scalecolor(green, 255, 63);
         uint8 blueScaled =      scalecolor(blue, 255, 31);
 
-        dstData->red = redScaled;
-        dstData->green = greenScaled;
-        dstData->blue = blueScaled;
+        if ( colorOrder == COLOR_RGBA )
+        {
+            dstData->red = redScaled;
+            dstData->green = greenScaled;
+            dstData->blue = blueScaled;
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            dstData->red = blueScaled;
+            dstData->green = greenScaled;
+            dstData->blue = redScaled;
+        }
 
         setColor = true;
     }
@@ -217,7 +307,18 @@ static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterForm
         uint8 blueScaled =      scalecolor(blue, 255, 15);
         uint8 alphaScaled =     scalecolor(alpha, 255, 15);
 
-        dstData->setcolor(colorIndex, redScaled, greenScaled, blueScaled, alphaScaled);
+        if ( colorOrder == COLOR_RGBA )
+        {
+            dstData->setcolor(colorIndex, redScaled, greenScaled, blueScaled, alphaScaled);
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            dstData->setcolor(colorIndex, blueScaled, greenScaled, redScaled, alphaScaled);
+        }
+        else
+        {
+            assert( 0 );
+        }
 
         setColor = true;
     }
@@ -225,7 +326,18 @@ static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterForm
     {
         pixel32_t *dstData = (pixel32_t*)texelDest;
 
-        dstData->setcolor(colorIndex, red, green, blue, alpha);
+        if ( colorOrder == COLOR_RGBA )
+        {
+            dstData->setcolor(colorIndex, red, green, blue, alpha);
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            dstData->setcolor(colorIndex, blue, green, red, alpha);
+        }
+        else
+        {
+            assert( 0 );
+        }
 
         setColor = true;
     }
@@ -242,9 +354,22 @@ static inline bool puttexelcolor(void *texelDest, uint32 colorIndex, eRasterForm
         pixel_t *dstData = ( (pixel_t*)texelDest + colorIndex );
 
         // Put the color values.
-        dstData->red = red;
-        dstData->green = green;
-        dstData->blue = blue;
+        if ( colorOrder == COLOR_RGBA )
+        {
+            dstData->red = red;
+            dstData->green = green;
+            dstData->blue = blue;
+        }
+        else if ( colorOrder == COLOR_BGRA )
+        {
+            dstData->red = blue;
+            dstData->green = green;
+            dstData->blue = red;
+        }
+        else
+        {
+            assert( 0 );
+        }
 
         setColor = true;
     }

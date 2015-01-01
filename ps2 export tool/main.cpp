@@ -60,11 +60,17 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
             isPrepared = true;
         }
+        else if ( tex.platform == rw::PLATFORM_D3D9 ||
+                  tex.platform == rw::PLATFORM_D3D8 )
+        {
+            isPrepared = true;
+        }
 
         // If the texture is prepared, do whatever.
         if ( isPrepared )
         {
             // Palettize the texture and convert it back into PS2 format.
+#if 0
             if (tex.platformData->getPaletteType() == rw::PALETTE_8BIT)
             {
                 tex.convertToPalette( rw::PALETTE_4BIT );
@@ -73,24 +79,30 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
             {
                 tex.convertToPalette( rw::PALETTE_8BIT );
             }
+#endif
 
             std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
 
             if ( canOutputDebug )
             {
-                // Create a path to store the textures to.
-                std::string textureSaveName( justFileName );
-                textureSaveName += "_";
-                textureSaveName += tex.name;
-                textureSaveName += ".tga";
+                uint32 depth = tex.platformData->getDepth();
 
-                filePath absTexPath;
-
-                bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
-
-                if ( hasAbsTexPath )
+                //if ( depth == 32 || depth == 16 )
                 {
-                    tex.writeTGA( absTexPath.c_str() );
+                    // Create a path to store the textures to.
+                    std::string textureSaveName( justFileName );
+                    textureSaveName += "_";
+                    textureSaveName += tex.name;
+                    textureSaveName += ".tga";
+
+                    filePath absTexPath;
+
+                    bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
+
+                    if ( hasAbsTexPath )
+                    {
+                        tex.writeTGA( absTexPath.c_str() );
+                    }
                 }
             }
 
