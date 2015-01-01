@@ -7,7 +7,15 @@
 #include <iostream>
 #include <streambuf>
 
+#include <signal.h>
+
 static CFileSystem *fsHandle = NULL;
+
+static bool _please_terminate = false;
+
+struct termination_request
+{
+};
 
 enum eTargetPlatform
 {
@@ -15,6 +23,7 @@ enum eTargetPlatform
     PLATFORM_PS2,
     PLATFORM_XBOX
 };
+
 
 struct RwWarningBuffer : public rw::WarningManagerInterface
 {
@@ -172,6 +181,12 @@ struct _discFileSentry
         bool isInArchive
     )
     {
+        // If we are asked to terminate, just do it.
+        if ( _please_terminate )
+        {
+            throw termination_request();
+        }
+
         // Decide whether we need a copy.
         bool requiresCopy = false;
 
@@ -326,8 +341,24 @@ inline bool obtainAbsolutePath( const char *path, CFileTranslator*& transOut )
     return success;
 }
 
-int main( int argc, char *argv[] )
+static bool _has_terminated = false;
+
+void _term_handler( int msg )
 {
+    // Please terminate :(
+    _please_terminate = true;
+
+    while ( !_has_terminated )
+    {
+        Sleep( 10000 );
+    }
+}
+
+bool ApplicationMain( void )
+{
+    signal( SIGTERM, _term_handler );
+    signal( SIGBREAK, _term_handler );
+
     std::cout <<
         "RenderWare TXD generator tool by The_GTA. Compiled on " __DATE__ "\n" \
         "Use this tool at your own risk!\n\n" \
@@ -337,7 +368,7 @@ int main( int argc, char *argv[] )
 
     // Initialize environments.
     fsHandle = CFileSystem::Create();
-
+    
     // By default, we create San Andreas files.
     rw::rwInterface.SetVersion( rw::SA );
 
@@ -528,18 +559,25 @@ int main( int argc, char *argv[] )
 
         if ( hasGameRoot && hasOutputRoot )
         {
-            // File roots are prepared.
-            // We can start processing files.
-            gtaFileProcessor <_discFileSentry> fileProc;
+            try
+            {
+                // File roots are prepared.
+                // We can start processing files.
+                gtaFileProcessor <_discFileSentry> fileProc;
 
-            _discFileSentry sentry;
-            sentry.targetPlatform = c_targetPlatform;
-            sentry.doCompress = compressTextures;
+                _discFileSentry sentry;
+                sentry.targetPlatform = c_targetPlatform;
+                sentry.doCompress = compressTextures;
 
-            fileProc.process( &sentry, absGameRootTranslator, absOutputRootTranslator );
+                fileProc.process( &sentry, absGameRootTranslator, absOutputRootTranslator );
 
-            // Output any warnings.
-            _warningMan.Purge();
+                // Output any warnings.
+                _warningMan.Purge();
+            }
+            catch( termination_request& )
+            {
+                // OK.
+            }
         }
         else
         {
@@ -573,5 +611,16 @@ int main( int argc, char *argv[] )
 
     CFileSystem::Destroy( fsHandle );
 
-    return ( successful ) ? ( 0 ) : ( -1 );
+    return successful;
+}
+
+int main( int argc, char *argv[] )
+{
+    bool success = true;
+
+    success = ApplicationMain();
+
+    _has_terminated = true;
+
+    return ( success ) ? 0 : -1;
 }

@@ -609,6 +609,7 @@ void DbgHeap_Shutdown( void )
 extern "C"
 {
 extern int mainCRTStartup( void );
+extern int WinMainCRTStartup( void );
 }
 
 extern "C" int APIENTRY _DebugInit( void )
@@ -632,3 +633,29 @@ extern "C" int APIENTRY _DebugInit( void )
     DbgHeap_Shutdown();
     return ret;
 }
+
+#if 0
+
+extern "C" int APIENTRY _Win32DebugInit( void )
+{
+    DbgHeap_Init();
+
+#if 0
+    DbgTraceStackSpace stackSpace;  // reserved memory; must be always allocated.
+
+    DbgTrace_Init( stackSpace );
+
+    // Set up memory debugging routines.
+    DbgHeap_SetMemoryAllocationWatch( _DbgHeap_MemAllocWatch );
+#endif
+
+    int ret = WinMainCRTStartup();
+
+#if 0
+    DbgTrace_Shutdown();
+#endif
+    DbgHeap_Shutdown();
+    return ret;
+}
+
+#endif
