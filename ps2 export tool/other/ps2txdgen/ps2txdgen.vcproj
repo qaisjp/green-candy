@@ -62,6 +62,7 @@
 				OutputFile="$(ProjectDir)..\..\output\txdgen_d.exe"
 				AdditionalLibraryDirectories="&quot;../../modded_vendor/rwtools-master/output/&quot;;../../../FileSystem/lib/"
 				GenerateDebugInformation="true"
+				SubSystem="1"
 				EntryPointSymbol="_DebugInit"
 				TargetMachine="1"
 			/>
@@ -135,6 +136,7 @@
 				OutputFile="$(ProjectDir)..\..\output\txdgen.exe"
 				AdditionalLibraryDirectories="&quot;../../modded_vendor/rwtools-master/output/&quot;;../../../FileSystem/lib/"
 				GenerateDebugInformation="true"
+				SubSystem="1"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				EntryPointSymbol="_DebugInit"
