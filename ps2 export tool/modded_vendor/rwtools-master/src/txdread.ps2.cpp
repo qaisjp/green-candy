@@ -362,11 +362,11 @@ void NativeTexture::readPs2(std::istream &rw)
 	    bool hasHeader = platformTex->requiresHeaders;
         bool hasSwizzle = platformTex->hasSwizzle;
 
-	    hasAlpha = false;
+	    platformTex->hasAlpha = false;
 
 	    if (maskName.size() != 0 || depth == 16)
         {
-		    hasAlpha = true;
+		    platformTex->hasAlpha = true;
         }
 
 	    READ_HEADER(CHUNK_STRUCT);
@@ -823,6 +823,8 @@ void NativeTexture::convertFromPS2(void)
     d3dtex->autoMipmaps = platformTex->autoMipmaps;
     d3dtex->rasterType = platformTex->rasterType;
 
+    d3dtex->hasAlpha = platformTex->hasAlpha;
+
     // Copy mipmap data.
 	for (uint32 j = 0; j < mipmapCount; j++)
     {
@@ -1002,6 +1004,8 @@ void NativeTexture::convertToPS2( void )
         // Copy over general attributes.
         ps2tex->autoMipmaps = platformTex->autoMipmaps;
         ps2tex->rasterType = platformTex->rasterType;
+
+        ps2tex->hasAlpha = platformTex->hasAlpha;
 
         // Move over the palette texels.
         if (platformTex->paletteType != PALETTE_NONE)

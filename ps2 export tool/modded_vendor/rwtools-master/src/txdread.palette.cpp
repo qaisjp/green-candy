@@ -1329,6 +1329,9 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
     // Update the raster type.
     this->rasterFormat = resultRasterFormat;
+
+    // Since we changed the colors, update the alpha flag.
+    platformTex->hasAlpha = platformTex->doesHaveAlpha();
 }
 
 };

@@ -11,6 +11,7 @@ struct NativeTextureXBOX : public PlatformTexture
         this->paletteType = PALETTE_NONE;
         this->mipmapCount = 0;
         this->dxtCompression = 0;
+        this->hasAlpha = false;
     }
 
     void Delete( void )
@@ -102,6 +103,7 @@ struct NativeTextureXBOX : public PlatformTexture
 
         newTex->mipmapCount = this->mipmapCount;
         newTex->dxtCompression = this->dxtCompression;
+        newTex->hasAlpha = this->hasAlpha;
 
         return newTex;
     }
@@ -121,6 +123,8 @@ struct NativeTextureXBOX : public PlatformTexture
 	uint32 paletteSize;
 
     ePaletteType paletteType;
+
+    bool hasAlpha;
 
 	// PC/XBOX
 	uint32 dxtCompression;

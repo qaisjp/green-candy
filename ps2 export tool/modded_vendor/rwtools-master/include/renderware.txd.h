@@ -173,8 +173,6 @@ struct NativeTexture
     uint8 uAddressing : 4;
     uint8 vAddressing : 4;
 
-	bool hasAlpha;
-
     eRasterFormat rasterFormat;
 
     // Platform texture type.

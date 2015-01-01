@@ -462,6 +462,8 @@ struct NativeTexturePS2 : public PlatformTexture
 
         // Texture raster by default.
         this->rasterType = 4;
+
+        this->hasAlpha = true;
     }
 
     void Delete( void )
@@ -514,6 +516,8 @@ struct NativeTexturePS2 : public PlatformTexture
         newTex->recommendedBufferBasePointer = this->recommendedBufferBasePointer;
 
         newTex->rasterType = this->rasterType;
+
+        newTex->hasAlpha = this->hasAlpha;
 
         return newTex;
     }
@@ -696,6 +700,8 @@ struct NativeTexturePS2 : public PlatformTexture
     bool requiresHeaders;
     bool hasSwizzle;
     bool autoMipmaps;
+
+    bool hasAlpha;
 
     uint32 skyMipMapVal;
 

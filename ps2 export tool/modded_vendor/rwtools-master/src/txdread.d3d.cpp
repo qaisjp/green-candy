@@ -2,6 +2,8 @@
 
 #include "txdread.d3d.hxx"
 
+#include "pixelformat.hxx"
+
 namespace rw
 {
 
@@ -48,7 +50,7 @@ void NativeTexture::readD3d(std::istream &rw)
 
 	readRasterFormatFlags( metaHeader.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, platformTex->autoMipmaps );
 
-	hasAlpha = false;
+	platformTex->hasAlpha = false;
 
 	if ( platform == PLATFORM_D3D9 )
     {
@@ -61,7 +63,7 @@ void NativeTexture::readD3d(std::istream &rw)
     }
 	else
     {
-		hasAlpha = ( readUInt32(rw) != 0 );
+		platformTex->hasAlpha = ( readUInt32(rw) != 0 );
 
         // Set d3dFormat later.
     }
@@ -82,7 +84,7 @@ void NativeTexture::readD3d(std::istream &rw)
         textureContentInfoStruct contentInfo;
         rw.read((char*)&contentInfo, sizeof(contentInfo));
 
-		this->hasAlpha = contentInfo.hasAlpha;
+		platformTex->hasAlpha = contentInfo.hasAlpha;
         platformTex->isCubeTexture = contentInfo.isCubeTexture;
         platformTex->autoMipmaps = contentInfo.autoMipMaps;
 
@@ -167,12 +169,21 @@ void NativeTexture::readD3d(std::istream &rw)
 
 	if (platformTex->paletteType != PALETTE_NONE)
     {
-		platformTex->paletteSize = getPaletteItemCount( platformTex->paletteType );
+        uint32 reqPalItemCount = getPaletteItemCount( platformTex->paletteType );
 
-        size_t paletteDataSize = platformTex->paletteSize * sizeof(uint32);
+        uint32 palDepth = Bitmap::getRasterFormatDepth( this->rasterFormat );
 
-		platformTex->palette = new uint8[paletteDataSize];
-		rw.read(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
+        assert( palDepth != 0 );
+
+        size_t paletteDataSize = reqPalItemCount * palDepth / 8;
+
+        void *palData = new uint8[paletteDataSize];
+
+		rw.read(reinterpret_cast <char *> (palData), paletteDataSize);
+
+        // Store the palette.
+        platformTex->palette = (uint8*)palData;
+        platformTex->paletteSize = reqPalItemCount;
 	}
 
     uint32 currentMipWidth = dimInfo.width;
@@ -222,7 +233,7 @@ void NativeTexture::readD3d(std::istream &rw)
 
         uint8 *texelData = new uint8[texDataSize];
 
-		rw.read(reinterpret_cast <char *> (texelData), texDataSize*sizeof(uint8));
+		rw.read(reinterpret_cast <char *> (texelData), texDataSize);
 
         // Store mipmap properties.
 		platformTex->width.push_back( texWidth );
@@ -570,6 +581,67 @@ void NativeTextureD3D::decompressDxt(void)
     {
         std::cout << "dxt" << dxtCompression << " not supported\n";
     }
+}
+
+bool NativeTextureD3D::doesHaveAlpha(void) const
+{
+    bool hasAlpha = false;
+
+    // Decide whether we even can have alpha.
+    // Otherwise there is no point in going through the pixels.
+    eRasterFormat rasterFormat = parent->rasterFormat;
+    ePaletteType paletteType = this->paletteType;
+
+    if (rasterFormat == RASTER_1555 || rasterFormat == RASTER_4444 || rasterFormat == RASTER_8888)
+    {
+        // Alright, the raster can have alpha.
+        // If we are palettized, we can just check the palette colors.
+        if (paletteType != PALETTE_NONE)
+        {
+            uint32 palItemCount = this->paletteSize;
+
+            void *palColorSource = this->palette;
+
+            for (uint32 n = 0; n < palItemCount; n++)
+            {
+                uint8 r, g, b, a;
+
+                browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, r, g, b, a);
+
+                if (a != 255)
+                {
+                    hasAlpha = true;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // We have to process the entire image. Oh boy.
+            // For that, we decide based on the main raster only.
+            void *texelSource = this->texels[ 0 ];
+
+            uint32 mipWidth = this->width[ 0 ];
+            uint32 mipHeight = this->height[ 0 ];
+
+            uint32 imageItemCount = ( mipWidth * mipHeight );
+
+            for (uint32 n = 0; n < imageItemCount; n++)
+            {
+                uint8 r, g, b, a;
+
+                browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, r, g, b, a);
+
+                if (a != 255)
+                {
+                    hasAlpha = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    return hasAlpha;
 }
 
 };

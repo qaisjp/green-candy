@@ -44,7 +44,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 
 		if (platform == PLATFORM_D3D8)
         {
-			bytesWritten += writeUInt32(this->hasAlpha, rw);
+			bytesWritten += writeUInt32(platformTex->hasAlpha, rw);
 		}
         else
         {
@@ -69,7 +69,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 		else
         {
             textureContentInfoStruct contentInfo;
-            contentInfo.hasAlpha = this->hasAlpha;
+            contentInfo.hasAlpha = platformTex->hasAlpha;
             contentInfo.isCubeTexture = platformTex->isCubeTexture;
             contentInfo.autoMipMaps = platformTex->autoMipmaps;
             contentInfo.isCompressed = ( platformTex->dxtCompression != 0 );
@@ -82,10 +82,40 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 		/* Palette */
 		if (platformTex->paletteType != PALETTE_NONE)
         {
-            uint32 paletteDataSize = platformTex->paletteSize * sizeof(uint32);
+            // Make sure we write as much data as the system expects.
+            uint32 reqPalCount = getPaletteItemCount(platformTex->paletteType);
+
+            uint32 palItemCount = platformTex->paletteSize;
+
+            uint32 actualPalItemWriteCount = std::min( palItemCount, reqPalCount );
+
+            // Get the real data size of the palette.
+            uint32 palRasterDepth = Bitmap::getRasterFormatDepth(this->rasterFormat);
+
+            uint32 paletteDataSize = actualPalItemWriteCount * palRasterDepth / 8;
 
 			rw.write(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
-			bytesWritten += paletteDataSize;
+
+            uint32 palByteWriteCount = paletteDataSize;
+    
+            // Write the remainder, if required.
+            if (actualPalItemWriteCount < reqPalCount)
+            {
+                uint32 leftCount = ( reqPalCount - actualPalItemWriteCount );
+
+                uint32 leftDataSize = ( leftCount * palRasterDepth / 8 );
+
+                for ( uint32 n = 0; n < leftDataSize; n++ )
+                {
+                    writeUInt8(0, rw);
+                }
+
+                palByteWriteCount += leftDataSize;
+            }
+
+            assert( palByteWriteCount * 8 / palRasterDepth == reqPalCount );
+
+            bytesWritten += palByteWriteCount;
 		}
 
 		/* Texels */

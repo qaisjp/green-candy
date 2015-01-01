@@ -47,15 +47,24 @@ void TextureDictionary::read(istream &rw)
 		texList[i].platform = readUInt32(rw);
 		rw.seekg(-0x10, ios::cur);
 
-		if (texList[i].platform == PLATFORM_XBOX){
+		if (texList[i].platform == PLATFORM_XBOX)
+        {
 			texList[i].readXbox(rw);
-		} else if (texList[i].platform == PLATFORM_D3D8 ||
-		           texList[i].platform == PLATFORM_D3D9) {
+		}
+        else if (texList[i].platform == PLATFORM_D3D8 ||
+		         texList[i].platform == PLATFORM_D3D9)
+        {
 			texList[i].readD3d(rw);
-		} else if (texList[i].platform == PLATFORM_PS2FOURCC) {
+		}
+        else if (texList[i].platform == PLATFORM_PS2FOURCC)
+        {
 			texList[i].platform = PLATFORM_PS2;
 			texList[i].readPs2(rw);
 		}
+        else
+        {
+            throw RwException( "unknown platform" );
+        }
 
 		READ_HEADER(CHUNK_EXTENSION);
 		uint32 end = header.length;
@@ -190,6 +199,9 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
 		    
             platformTex->paletteType = PALETTE_NONE;
 	    }
+
+        // Since we most likely changed colors, recalculate the alpha flag.
+        platformTex->hasAlpha = platformTex->doesHaveAlpha();
     }
 }
 
@@ -301,6 +313,9 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
         platformTex->d3dFormat = getD3DFormatFromRasterType(newFormat);
 
         this->rasterFormat = newFormat;
+
+        // We need to update the alpha flag.
+        platformTex->hasAlpha = platformTex->doesHaveAlpha();
     }
 }
 
@@ -374,7 +389,7 @@ void NativeTexture::writeTGA(const char *path)
 }
 
 NativeTexture::NativeTexture(void)
-: platform(0), name(""), maskName(""), filterFlags(0), uAddressing(1), vAddressing(1), rasterFormat(rw::RASTER_DEFAULT), hasAlpha(false)
+: platform(0), name(""), maskName(""), filterFlags(0), uAddressing(1), vAddressing(1), rasterFormat(rw::RASTER_DEFAULT)
 {
     this->platformData = NULL;
 }
@@ -386,8 +401,7 @@ NativeTexture::NativeTexture(const NativeTexture &orig)
   filterFlags(orig.filterFlags),
   uAddressing(orig.uAddressing),
   vAddressing(orig.vAddressing),
-  rasterFormat(orig.rasterFormat),
-  hasAlpha(orig.hasAlpha)
+  rasterFormat(orig.rasterFormat)
 {
 	PlatformTexture *platformTex = NULL;
 
@@ -410,8 +424,6 @@ NativeTexture &NativeTexture::operator=(const NativeTexture &that)
         uAddressing = that.uAddressing;
         vAddressing = that.vAddressing;
 		rasterFormat = that.rasterFormat;
-
-		hasAlpha = that.hasAlpha;
 
 	    PlatformTexture *platformTex = NULL;
 
