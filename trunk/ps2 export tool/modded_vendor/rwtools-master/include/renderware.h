@@ -280,6 +280,8 @@ struct Interface
     FileInterface*      GetFileInterface        ( void );
 
     void                SetWarningManager       ( WarningManagerInterface *warningMan );
+    void                SetWarningLevel         ( int level );
+    int                 GetWarningLevel         ( void ) const;
 
     void                PushWarning             ( const std::string& message );
 
@@ -294,6 +296,8 @@ private:
     WarningManagerInterface *warningManager;
 
     ePaletteRuntimeType palRuntimeType;
+    
+    int warningLevel;
 };
 
 // Global RenderWare interface.

@@ -12,6 +12,7 @@ Interface::Interface( void )
     this->customFileInterface = NULL;
 
     this->warningManager = NULL;
+    this->warningLevel = 3;
 
     // Only use the native toolchain.
     this->palRuntimeType = PALRUNTIME_NATIVE;
@@ -42,11 +43,24 @@ void Interface::SetWarningManager( WarningManagerInterface *warningMan )
     this->warningManager = warningMan;
 }
 
+void Interface::SetWarningLevel( int level )
+{
+    this->warningLevel = level;
+}
+
+int Interface::GetWarningLevel( void ) const
+{
+    return this->warningLevel;
+}
+
 void Interface::PushWarning( const std::string& message )
 {
-    if ( WarningManagerInterface *warningMan = this->warningManager )
+    if ( this->warningLevel > 0 )
     {
-        warningMan->OnWarning( message );
+        if ( WarningManagerInterface *warningMan = this->warningManager )
+        {
+            warningMan->OnWarning( message );
+        }
     }
 }
 
