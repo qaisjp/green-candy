@@ -867,8 +867,11 @@ inline void genpalettetexeldata(
     // Calculate the data size.
     uint32 palDepth = Bitmap::getRasterFormatDepth(rasterFormat);
 
-    uint32 srcDataSize = itemCount * palDepth / 8;
-    uint32 dstDataSize = texelItemCount * palDepth / 8;
+    assert( itemCount != 0 );
+    assert( texelItemCount != 0 );
+
+    uint32 srcDataSize = getRasterDataSize( itemCount, palDepth );
+    uint32 dstDataSize = getRasterDataSize( texelItemCount, palDepth );
 
     assert( srcDataSize != 0 );
     assert( dstDataSize != 0 );

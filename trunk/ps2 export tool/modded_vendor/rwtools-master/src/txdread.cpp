@@ -188,7 +188,18 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
         this->rasterFormat = newFormat;
 
         // Make sure we update the d3dFormat.
-        platformTex->d3dFormat = getD3DFormatFromRasterType( newFormat );
+        {
+            D3DFORMAT newD3DFormat;
+
+            bool hasD3DFormat = getD3DFormatFromRasterType( newFormat, colorOrder, newD3DFormat );
+
+            if ( hasD3DFormat )
+            {
+                platformTex->d3dFormat = newD3DFormat;
+            }
+
+            platformTex->hasD3DFormat = hasD3DFormat;
+        }
 
         // Delete unnecessary palette data.
 	    if (isPaletteRaster)
@@ -301,6 +312,7 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
         uint32 newWidth, newHeight;
         uint32 newDepth = srcImage.getDepth();
         eRasterFormat newFormat = srcImage.getFormat();
+        eColorOrdering newColorOrdering = srcImage.getColorOrder();
         uint32 newDataSize = srcImage.getDataSize();
 
         srcImage.getSize( newWidth, newHeight );
@@ -311,8 +323,20 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
         platformTex->texels[ 0 ] = srcImage.copyPixelData();
         platformTex->dataSizes[ 0 ] = newDataSize;
 
+        platformTex->colorOrdering = newColorOrdering;
+
         // Update generics.
-        platformTex->d3dFormat = getD3DFormatFromRasterType(newFormat);
+        {
+            D3DFORMAT newD3DFormat;
+
+            bool hasD3DFormat = getD3DFormatFromRasterType(newFormat, newColorOrdering, newD3DFormat);
+
+            if (hasD3DFormat)
+            {
+                platformTex->d3dFormat = newD3DFormat;
+            }
+            platformTex->hasD3DFormat = hasD3DFormat;
+        }
 
         this->rasterFormat = newFormat;
 

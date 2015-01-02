@@ -78,12 +78,18 @@ void NativeTexture::readXbox(std::istream &rw)
 
 	if (platformTex->paletteType != PALETTE_NONE)
     {
-		platformTex->paletteSize = getPaletteItemCount( platformTex->paletteType );
+        uint32 palItemCount = getPaletteItemCount( platformTex->paletteType );
 
-        uint32 paletteDataSize = platformTex->paletteSize * sizeof(uint32);
+        uint32 palDepth = Bitmap::getRasterFormatDepth( this->rasterFormat );
 
-		platformTex->palette = new uint8[paletteDataSize];
-		rw.read(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
+        uint32 paletteDataSize = getRasterDataSize( palItemCount, palDepth );
+
+		void *palData = new uint8[ paletteDataSize ];
+		rw.read(reinterpret_cast <char *> (palData), paletteDataSize);
+
+        // Write the parameters.
+        platformTex->palette = palData;
+		platformTex->paletteSize = palItemCount;
 	}
 
 	for (uint32 i = 0; i < platformTex->mipmapCount; i++)

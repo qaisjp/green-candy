@@ -7,6 +7,34 @@
 namespace rw
 {
 
+inline uint32 getCompressionFromD3DFormat( D3DFORMAT d3dFormat )
+{
+    uint32 compressionIndex = 0;
+
+    if ( d3dFormat == D3DFMT_DXT1 )
+    {
+        compressionIndex = 1;
+    }
+    else if ( d3dFormat == D3DFMT_DXT2 )
+    {
+        compressionIndex = 2;
+    }
+    else if ( d3dFormat == D3DFMT_DXT3 )
+    {
+        compressionIndex = 3;
+    }
+    else if ( d3dFormat == D3DFMT_DXT4 )
+    {
+        compressionIndex = 4;
+    }
+    else if ( d3dFormat == D3DFMT_DXT5 )
+    {
+        compressionIndex = 5;
+    }
+
+    return compressionIndex;
+}
+
 void NativeTexture::readD3d(std::istream &rw)
 {
 	HeaderInfo header;
@@ -18,248 +46,441 @@ void NativeTexture::readD3d(std::istream &rw)
     uint32 texNativeStructSize = header.length;
 
 	uint32 platform = readUInt32(rw);
-	// improve error handling
+
 	if (platform != PLATFORM_D3D8 && platform != PLATFORM_D3D9)
-		return;
+    {
+        throw RwException( "invalid platform type in Direct3D texture reading" );
+    }
 
     // Create the Direct3D texture container.
     NativeTextureD3D *platformTex = new NativeTextureD3D();
 
-    //same as above.
     if ( !platformTex )
-        return;
+    {
+        throw RwException( "failed to allocate memory for Direct3D platform texture reading" );
+    }
 
     // Store the backlink.
     platformTex->parent = this;
 
     this->platformData = platformTex;
 
-    textureMetaHeaderStructGeneric metaHeader;
-    rw.read((char*)&metaHeader, sizeof(metaHeader));
-
-	this->filterFlags = metaHeader.texFormat.filterMode;
-    this->uAddressing = metaHeader.texFormat.uAddressing;
-    this->vAddressing = metaHeader.texFormat.vAddressing;
-
-    // Read the texture names.
-    this->name = metaHeader.name;
-    this->maskName = metaHeader.maskName;
-
-    // Deconstruct the format flags.
-    bool hasMipmaps = false;    // TODO: actually use this flag.
-
-	readRasterFormatFlags( metaHeader.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, platformTex->autoMipmaps );
-
-	platformTex->hasAlpha = false;
-
-	if ( platform == PLATFORM_D3D9 )
+    // Attempt to read the texture.
+    try
     {
-        D3DFORMAT d3dFormat;
+        textureMetaHeaderStructGeneric metaHeader;
+        rw.read((char*)&metaHeader, sizeof(metaHeader));
 
-		rw.read((char*)&d3dFormat, sizeof(d3dFormat));
+	    this->filterFlags = metaHeader.texFormat.filterMode;
+        this->uAddressing = metaHeader.texFormat.uAddressing;
+        this->vAddressing = metaHeader.texFormat.vAddressing;
 
-        // Alpha is not decided here.
-        platformTex->d3dFormat = d3dFormat;
-    }
-	else
-    {
-		platformTex->hasAlpha = ( readUInt32(rw) != 0 );
-
-        // Set d3dFormat later.
-    }
-
-    textureMetaHeaderStructDimInfo dimInfo;
-    rw.read((char*)&dimInfo, sizeof(dimInfo));
-
-	uint32 depth = dimInfo.depth;
-	uint32 maybeMipmapCount = dimInfo.mipmapCount;
-
-    assert( dimInfo.rasterType == 4 );  // TODO
-
-    platformTex->rasterType = dimInfo.rasterType;
-
-	if ( platform == PLATFORM_D3D9 )
-    {
-        // Here we decide about alpha.
-        textureContentInfoStruct contentInfo;
-        rw.read((char*)&contentInfo, sizeof(contentInfo));
-
-		platformTex->hasAlpha = contentInfo.hasAlpha;
-        platformTex->isCubeTexture = contentInfo.isCubeTexture;
-        platformTex->autoMipmaps = contentInfo.autoMipMaps;
-
-		if ( contentInfo.isCompressed )
+        // Read the texture names.
         {
-			// Detect FOUR-CC versions for compression method.
-            if ( platformTex->d3dFormat == D3DFMT_DXT1 )
-            {
-                platformTex->dxtCompression = 1;
-            }
-            else if ( platformTex->d3dFormat == D3DFMT_DXT2 )
-            {
-                platformTex->dxtCompression = 2;
-            }
-            else if ( platformTex->d3dFormat == D3DFMT_DXT3 )
-            {
-                platformTex->dxtCompression = 3;
-            }
-            else if ( platformTex->d3dFormat == D3DFMT_DXT4 )
-            {
-                platformTex->dxtCompression = 4;
-            }
-            else if ( platformTex->d3dFormat == D3DFMT_DXT5 )
-            {
-                platformTex->dxtCompression = 5;
-            }
-            else
-            {
-                assert( 0 );
-            }
+            char tmpbuf[ sizeof( metaHeader.name ) + 1 ];
+
+            // Make sure the name buffer is zero terminted.
+            tmpbuf[ sizeof( metaHeader.name ) ] = '\0';
+
+            // Move over the texture name.
+            memcpy( tmpbuf, metaHeader.name, sizeof( metaHeader.name ) );
+
+            this->name = tmpbuf;
+
+            // Move over the texture mask name.
+            memcpy( tmpbuf, metaHeader.maskName, sizeof( metaHeader.maskName ) );
+
+            this->maskName = tmpbuf;
         }
-		else
+
+        // Deconstruct the format flags.
+        bool hasMipmaps = false;    // TODO: actually use this flag.
+
+	    readRasterFormatFlags( metaHeader.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, platformTex->autoMipmaps );
+
+	    platformTex->hasAlpha = false;
+
+	    if ( platform == PLATFORM_D3D9 )
         {
-			platformTex->dxtCompression = 0;
+            D3DFORMAT d3dFormat;
+
+		    rw.read((char*)&d3dFormat, sizeof(d3dFormat));
+
+            // Alpha is not decided here.
+            platformTex->d3dFormat = d3dFormat;
         }
-    }
-    else
-    {
-        uint32 dxtInfo = readUInt8(rw);
-
-        platformTex->dxtCompression = dxtInfo;
-
-        // Auto-decide the Direct3D format.
-        D3DFORMAT d3dFormat = D3DFMT_A8R8G8B8;
-
-        if ( dxtInfo != 0 )
+	    else
         {
-            if ( dxtInfo == 1 )
+		    platformTex->hasAlpha = ( readUInt32(rw) != 0 );
+
+            // Set d3dFormat later.
+        }
+
+        textureMetaHeaderStructDimInfo dimInfo;
+        rw.read((char*)&dimInfo, sizeof(dimInfo));
+
+	    uint32 depth = dimInfo.depth;
+	    uint32 maybeMipmapCount = dimInfo.mipmapCount;
+
+        assert( dimInfo.rasterType == 4 );  // TODO
+
+        platformTex->rasterType = dimInfo.rasterType;
+
+	    if ( platform == PLATFORM_D3D9 )
+        {
+            // Here we decide about alpha.
+            textureContentInfoStruct contentInfo;
+            rw.read((char*)&contentInfo, sizeof(contentInfo));
+
+		    platformTex->hasAlpha = contentInfo.hasAlpha;
+            platformTex->isCubeTexture = contentInfo.isCubeTexture;
+            platformTex->autoMipmaps = contentInfo.autoMipMaps;
+
+		    if ( contentInfo.isCompressed )
             {
-                d3dFormat = D3DFMT_DXT1;
+			    // Detect FOUR-CC versions for compression method.
+                uint32 dxtCompression = getCompressionFromD3DFormat(platformTex->d3dFormat);
+
+                if ( dxtCompression == 0 )
+                {
+                    throw RwException( "invalid Direct3D texture compression format" );
+                }
+
+                platformTex->dxtCompression = dxtCompression;
             }
-            else if ( dxtInfo == 2 )
+		    else
             {
-                d3dFormat = D3DFMT_DXT2;
-            }
-            else if ( dxtInfo == 3 )
-            {
-                d3dFormat = D3DFMT_DXT3;
-            }
-            else if ( dxtInfo == 4 )
-            {
-                d3dFormat = D3DFMT_DXT4;
-            }
-            else if ( dxtInfo == 5 )
-            {
-                d3dFormat = D3DFMT_DXT5;
-            }
-            else
-            {
-                assert( 0 );
+			    platformTex->dxtCompression = 0;
             }
         }
         else
         {
-            eRasterFormat paletteRasterType = this->rasterFormat;
+            uint32 dxtInfo = readUInt8(rw);
 
-            d3dFormat = getD3DFormatFromRasterType( paletteRasterType );
-        }
+            platformTex->dxtCompression = dxtInfo;
 
-        platformTex->d3dFormat = d3dFormat;
-    }
+            // Auto-decide the Direct3D format.
+            D3DFORMAT d3dFormat = D3DFMT_A8R8G8B8;
 
-	if (platformTex->paletteType != PALETTE_NONE)
-    {
-        uint32 reqPalItemCount = getPaletteItemCount( platformTex->paletteType );
-
-        uint32 palDepth = Bitmap::getRasterFormatDepth( this->rasterFormat );
-
-        assert( palDepth != 0 );
-
-        size_t paletteDataSize = reqPalItemCount * palDepth / 8;
-
-        void *palData = new uint8[paletteDataSize];
-
-		rw.read(reinterpret_cast <char *> (palData), paletteDataSize);
-
-        // Store the palette.
-        platformTex->palette = (uint8*)palData;
-        platformTex->paletteSize = reqPalItemCount;
-	}
-
-    uint32 currentMipWidth = dimInfo.width;
-    uint32 currentMipHeight = dimInfo.height;
-
-    uint32 mipmapCount = 0;
-
-	for (uint32 i = 0; i < maybeMipmapCount; i++)
-    {
-		if (i > 0)
-        {
-            currentMipWidth /= 2;
-            currentMipHeight /= 2;
-        }
-
-        if (currentMipWidth == 0 || currentMipHeight == 0)
-        {
-            break;
-        }
-
-        uint32 texWidth = currentMipWidth;
-        uint32 texHeight = currentMipHeight;
-
-        // Process dimensions.
-        {
-			// DXT compression works on 4x4 blocks,
-			// no smaller values allowed
-			if (platformTex->dxtCompression)
+            if ( dxtInfo != 0 )
             {
-				if (texWidth < 4 && texWidth != 0)
+                if ( dxtInfo == 1 )
                 {
-					texWidth = 4;
+                    d3dFormat = D3DFMT_DXT1;
                 }
-				if (texHeight < 4 && texHeight != 0)
+                else if ( dxtInfo == 2 )
                 {
-					texHeight = 4;
+                    d3dFormat = D3DFMT_DXT2;
                 }
-			}
+                else if ( dxtInfo == 3 )
+                {
+                    d3dFormat = D3DFMT_DXT3;
+                }
+                else if ( dxtInfo == 4 )
+                {
+                    d3dFormat = D3DFMT_DXT4;
+                }
+                else if ( dxtInfo == 5 )
+                {
+                    d3dFormat = D3DFMT_DXT5;
+                }
+                else
+                {
+                    throw RwException( "invalid Direct3D texture compression format" );
+                }
+            }
+            else
+            {
+                eRasterFormat paletteRasterType = this->rasterFormat;
+
+                bool hasFormat = getD3DFormatFromRasterType( paletteRasterType, COLOR_BGRA, d3dFormat );
+
+                if ( !hasFormat )
+                {
+                    throw RwException( "could not determine D3DFORMAT for texture " + this->name );
+                }
+            }
+
+            platformTex->d3dFormat = d3dFormat;
         }
 
-		uint32 texDataSize = readUInt32(rw);
-
-        if ( texDataSize == 0 )
+        // Verify raster properties and attempt to fix broken textures.
+        // Broken textures travel with mods like San Andreas Retextured.
+        // - Verify compression.
+        D3DFORMAT d3dFormat = platformTex->d3dFormat;
         {
-            break;
+            uint32 actualCompression = getCompressionFromD3DFormat( d3dFormat );
+
+            if (actualCompression != platformTex->dxtCompression)
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has invalid compression parameters (ignoring)" );
+
+                platformTex->dxtCompression = actualCompression;
+            }
+        }
+        // - Verify raster format.
+        {
+            bool isValidFormat = false;
+
+            eColorOrdering colorOrder;
+            eRasterFormat d3dRasterFormat;
+
+            if (d3dFormat == D3DFMT_A8R8G8B8)
+            {
+                d3dRasterFormat = RASTER_8888;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_X8R8G8B8)
+            {
+                d3dRasterFormat = RASTER_888;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_R5G6B5)
+            {
+                d3dRasterFormat = RASTER_565;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_X1R5G5B5)
+            {
+                d3dRasterFormat = RASTER_555;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_A1R5G5B5)
+            {
+                d3dRasterFormat = RASTER_1555;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_A4R4G4B4)
+            {
+                d3dRasterFormat = RASTER_4444;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_A8B8G8R8)
+            {
+                d3dRasterFormat = RASTER_8888;
+
+                colorOrder = COLOR_RGBA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_X8B8G8R8)
+            {
+                d3dRasterFormat = RASTER_888;
+
+                colorOrder = COLOR_RGBA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_DXT1)
+            {
+                if (platformTex->hasAlpha)
+                {
+                    d3dRasterFormat = RASTER_1555;
+                }
+                else
+                {
+                    d3dRasterFormat = RASTER_565;
+                }
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_DXT2 || d3dFormat == D3DFMT_DXT3)
+            {
+                d3dRasterFormat = RASTER_4444;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_DXT4 || d3dRasterFormat == D3DFMT_DXT5)
+            {
+                d3dRasterFormat = RASTER_4444;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+
+            if ( isValidFormat == false )
+            {
+                throw RwException( "invalid D3DFORMAT in texture " + this->name );
+            }
+
+            eRasterFormat rasterFormat = this->rasterFormat;
+
+            if ( rasterFormat != d3dRasterFormat )
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has an invalid raster format (ignoring)" );
+
+                // Fix it.
+                this->rasterFormat = d3dRasterFormat;
+            }
+
+            // Store the color ordering.
+            platformTex->colorOrdering = colorOrder;
+
+            // When reading a texture native, we must have a D3DFORMAT.
+            platformTex->hasD3DFormat = true;
+        }
+        // - Verify depth.
+        {
+            uint32 texDepth = 0;
+
+            if (platformTex->paletteType == PALETTE_4BIT)
+            {
+                texDepth = 4;
+            }
+            else if (platformTex->paletteType == PALETTE_8BIT)
+            {
+                texDepth = 8;
+            }
+            else
+            {
+                texDepth = Bitmap::getRasterFormatDepth(this->rasterFormat);
+            }
+
+            if (texDepth != depth)
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has an invalid depth (ignoring)" );
+
+                // Fix it.
+                depth = texDepth;
+            }
         }
 
-        uint8 *texelData = new uint8[texDataSize];
+	    if (platformTex->paletteType != PALETTE_NONE)
+        {
+            uint32 reqPalItemCount = getPaletteItemCount( platformTex->paletteType );
 
-		rw.read(reinterpret_cast <char *> (texelData), texDataSize);
+            uint32 palDepth = Bitmap::getRasterFormatDepth( this->rasterFormat );
 
-        // Store mipmap properties.
-		platformTex->width.push_back( texWidth );
-		platformTex->height.push_back( texHeight );
+            assert( palDepth != 0 );
 
-        platformTex->mipmapDepth.push_back( depth );
+            size_t paletteDataSize = getRasterDataSize( reqPalItemCount, palDepth );
 
-		platformTex->dataSizes.push_back(texDataSize);
+            void *palData = new uint8[paletteDataSize];
 
-        // Store the image data pointer.
-		platformTex->texels.push_back(texelData);
+		    rw.read(reinterpret_cast <char *> (palData), paletteDataSize);
 
-        mipmapCount++;
+            // Store the palette.
+            platformTex->palette = (uint8*)palData;
+            platformTex->paletteSize = reqPalItemCount;
+	    }
+
+        uint32 currentMipWidth = dimInfo.width;
+        uint32 currentMipHeight = dimInfo.height;
+
+        uint32 mipmapCount = 0;
+
+	    for (uint32 i = 0; i < maybeMipmapCount; i++)
+        {
+		    if (i > 0)
+            {
+                currentMipWidth /= 2;
+                currentMipHeight /= 2;
+            }
+
+            if (currentMipWidth == 0 || currentMipHeight == 0)
+            {
+                break;
+            }
+
+            uint32 texWidth = currentMipWidth;
+            uint32 texHeight = currentMipHeight;
+
+            // Process dimensions.
+            {
+			    // DXT compression works on 4x4 blocks,
+			    // no smaller values allowed
+			    if (platformTex->dxtCompression != 0)
+                {
+				    if (texWidth < 4 && texWidth != 0)
+                    {
+					    texWidth = 4;
+                    }
+				    if (texHeight < 4 && texHeight != 0)
+                    {
+					    texHeight = 4;
+                    }
+			    }
+            }
+
+		    uint32 texDataSize = readUInt32(rw);
+
+            // Verify the data size.
+            {
+                // TODO.
+            }
+
+            if ( texDataSize == 0 )
+            {
+                break;
+            }
+
+            uint8 *texelData = new uint8[texDataSize];
+
+		    rw.read(reinterpret_cast <char *> (texelData), texDataSize);
+
+            // Store mipmap properties.
+		    platformTex->width.push_back( texWidth );
+		    platformTex->height.push_back( texHeight );
+
+            platformTex->mipmapDepth.push_back( depth );
+
+		    platformTex->dataSizes.push_back(texDataSize);
+
+            // Store the image data pointer.
+		    platformTex->texels.push_back(texelData);
+
+            mipmapCount++;
+        }
+        
+        if ( mipmapCount == 0 )
+        {
+            throw RwException( "empty texture" );
+        }
+
+        platformTex->mipmapCount = mipmapCount;
+
+        // Make sure we go to the end of the texture native struct.
+        {
+            uint32 curStructOffset = rw.tellg() - texNativeStructOff;
+
+            if ( curStructOffset != texNativeStructSize )
+            {
+                rw.seekg( texNativeStructOff + texNativeStructSize, std::ios::beg );
+            }
+        }
     }
-    assert( mipmapCount != 0 );
-
-    platformTex->mipmapCount = mipmapCount;
-
-    // Make sure we go to the end of the texture native struct.
+    catch( ... )
     {
-        uint32 curStructOffset = rw.tellg() - texNativeStructOff;
+        // Destroy the temporary data.
+        platformTex->Delete();
 
-        if ( curStructOffset != texNativeStructSize )
-        {
-            rw.seekg( texNativeStructOff + texNativeStructSize, std::ios::beg );
-        }
+        // Unlink.
+        this->platformData = NULL;
+
+        throw;
     }
 }
 
@@ -579,7 +800,7 @@ void NativeTextureD3D::decompressDxt(void)
 	}
     else
     {
-        std::cout << "dxt" << dxtCompression << " not supported\n";
+        throw RwException( "unsupported DXT compression; cannot decompress" );
     }
 }
 

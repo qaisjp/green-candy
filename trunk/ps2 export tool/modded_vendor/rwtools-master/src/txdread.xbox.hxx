@@ -119,7 +119,7 @@ struct NativeTextureXBOX : public PlatformTexture
 	std::vector<uint32> dataSizes;
 	std::vector<void*> texels;	// holds either indices or color values
 					// (also per mipmap)
-	uint8 *palette;
+	void *palette;
 	uint32 paletteSize;
 
     ePaletteType paletteType;

@@ -314,6 +314,10 @@ bool ApplicationMain( void )
 
     rw::ePaletteRuntimeType c_palRuntimeType = rw::PALRUNTIME_NATIVE;
 
+    bool c_reconstructIMGArchives = true;
+
+    bool c_fixIncompatibleRasters = true;
+
     if ( configFile )
     {
         if ( CINI::Entry *mainEntry = configFile->GetEntry( "Main" ) )
@@ -405,6 +409,18 @@ bool ApplicationMain( void )
             {
                 rw::rwInterface.SetWarningLevel( mainEntry->GetInt( "warningLevel" ) );
             }
+
+            // Reconstruct IMG Archives.
+            if ( mainEntry->Find( "reconstructIMGArchives" ) )
+            {
+                c_reconstructIMGArchives = mainEntry->GetBool( "reconstructIMGArchives" );
+            }
+
+            // Fix incompatible rasters.
+            if ( mainEntry->Find( "fixIncompatibleRasters" ) )
+            {
+                c_fixIncompatibleRasters = mainEntry->GetBool( "fixIncompatibleRasters" );
+            }
         }
 
         // Kill the configuration.
@@ -413,6 +429,8 @@ bool ApplicationMain( void )
 
     // Set some configuration.
     rw::rwInterface.SetPaletteRuntime( c_palRuntimeType );
+
+    rw::rwInterface.SetFixIncompatibleRasters( c_fixIncompatibleRasters );
 
     // Output some debug info.
     std::cout
@@ -482,6 +500,9 @@ bool ApplicationMain( void )
     std::cout
         << "* warningLevel: " << rw::rwInterface.GetWarningLevel() << std::endl;
 
+    std::cout
+        << "* reconstructIMGArchives: " << c_reconstructIMGArchives << std::endl;
+
     // Finish with a newline.
     std::cout << std::endl;
 
@@ -500,6 +521,8 @@ bool ApplicationMain( void )
                 // File roots are prepared.
                 // We can start processing files.
                 gtaFileProcessor <_discFileSentry> fileProc;
+
+                fileProc.setArchiveReconstruction( c_reconstructIMGArchives );
 
                 _discFileSentry sentry;
                 sentry.targetPlatform = c_targetPlatform;

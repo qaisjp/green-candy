@@ -3,60 +3,84 @@
 namespace rw
 {
 
-inline D3DFORMAT getD3DFormatFromRasterType(eRasterFormat paletteRasterType)
+inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, eColorOrdering colorOrder, D3DFORMAT& d3dFormat)
 {
-    D3DFORMAT d3dFormat = D3DFMT_A8R8G8B8;
+    bool hasFormat = false;
 
     if ( paletteRasterType == RASTER_1555 )
     {
-        d3dFormat = D3DFMT_A1R5G5B5;
+        if (colorOrder == COLOR_BGRA)
+        {
+            d3dFormat = D3DFMT_A1R5G5B5;
+
+            hasFormat = true;
+        }
     }
     else if ( paletteRasterType == RASTER_565 )
     {
-        d3dFormat = D3DFMT_R5G6B5;
+        if (colorOrder == COLOR_BGRA)
+        {
+            d3dFormat = D3DFMT_R5G6B5;
+
+            hasFormat = true;
+        }
     }
     else if ( paletteRasterType == RASTER_4444 )
     {
-        d3dFormat = D3DFMT_A4R4G4B4;
+        if (colorOrder == COLOR_BGRA)
+        {
+            d3dFormat = D3DFMT_A4R4G4B4;
+
+            hasFormat = true;
+        }
     }
     else if ( paletteRasterType == RASTER_LUM8 )
     {
         d3dFormat = D3DFMT_L8;
+
+        hasFormat = true;
     }
     else if ( paletteRasterType == RASTER_8888 )
     {
-        d3dFormat = D3DFMT_A8R8G8B8;
+        if (colorOrder == COLOR_BGRA)
+        {
+            d3dFormat = D3DFMT_A8R8G8B8;
+
+            hasFormat = true;
+        }
+        else if (colorOrder == COLOR_RGBA)
+        {
+            d3dFormat = D3DFMT_A8B8G8R8;
+
+            hasFormat = true;
+        }
     }
     else if ( paletteRasterType == RASTER_888 )
     {
-        d3dFormat = D3DFMT_X8R8G8B8;
-    }
-    else if ( paletteRasterType == RASTER_16 )
-    {
-        // not sure.
-        d3dFormat = D3DFMT_L16;
-    }
-    else if ( paletteRasterType == RASTER_24 )
-    {
-        // not sure.
-        d3dFormat = D3DFMT_R8G8B8;
-    }
-    else if ( paletteRasterType == RASTER_32 )
-    {
-        // not sure.
-        d3dFormat = D3DFMT_X8R8G8B8;
+        if (colorOrder == COLOR_BGRA)
+        {
+            d3dFormat = D3DFMT_X8R8G8B8;
+
+            hasFormat = true;
+        }
+        else if (colorOrder == COLOR_RGBA)
+        {
+            d3dFormat = D3DFMT_X8B8G8R8;
+
+            hasFormat = true;
+        }
     }
     else if ( paletteRasterType == RASTER_555 )
     {
-        d3dFormat = D3DFMT_X1R5G5B5;
-    }
-    else
-    {
-        // unknown format.
-        assert( 0 );
+        if (colorOrder == COLOR_BGRA)
+        {
+            d3dFormat = D3DFMT_X1R5G5B5;
+
+            hasFormat = true;
+        }
     }
 
-    return d3dFormat;
+    return hasFormat;
 }
 
 struct NativeTextureD3D : public PlatformTexture
@@ -71,6 +95,7 @@ struct NativeTextureD3D : public PlatformTexture
         this->isCubeTexture = false;
         this->autoMipmaps = false;
         this->d3dFormat = D3DFMT_A8R8G8B8;
+        this->hasD3DFormat = true;
         this->dxtCompression = 0;
         this->rasterType = 4;
         this->hasAlpha = true;
@@ -162,6 +187,7 @@ struct NativeTextureD3D : public PlatformTexture
         newTex->isCubeTexture = this->isCubeTexture;
         newTex->autoMipmaps = this->autoMipmaps;
         newTex->d3dFormat = this->d3dFormat;
+        newTex->hasD3DFormat = this->hasD3DFormat;
         newTex->dxtCompression = this->dxtCompression;
         newTex->rasterType = this->rasterType;
         newTex->hasAlpha = this->hasAlpha;
@@ -193,6 +219,8 @@ struct NativeTextureD3D : public PlatformTexture
     D3DFORMAT d3dFormat;
     uint32 dxtCompression;
     uint32 rasterType;
+
+    bool hasD3DFormat;
 
     bool hasAlpha;
 

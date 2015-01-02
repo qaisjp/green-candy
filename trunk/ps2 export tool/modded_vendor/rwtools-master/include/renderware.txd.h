@@ -54,6 +54,24 @@ enum eRasterFormat
     RASTER_555
 };
 
+inline bool isValidRasterFormat(eRasterFormat rasterFormat)
+{
+    bool isValidRaster = false;
+
+    if (rasterFormat == RASTER_1555 ||
+        rasterFormat == RASTER_565 ||
+        rasterFormat == RASTER_4444 ||
+        rasterFormat == RASTER_LUM8 ||
+        rasterFormat == RASTER_8888 ||
+        rasterFormat == RASTER_888 ||
+        rasterFormat == RASTER_555)
+    {
+        isValidRaster = true;
+    }
+
+    return isValidRaster;
+}
+
 enum ePaletteType
 {
     PALETTE_NONE,
