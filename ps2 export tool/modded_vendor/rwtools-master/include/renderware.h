@@ -288,6 +288,9 @@ struct Interface
     void                SetPaletteRuntime       ( ePaletteRuntimeType palRunType );
     ePaletteRuntimeType GetPaletteRuntime       ( void ) const;
 
+    void                SetFixIncompatibleRasters   ( bool doFix );
+    bool                GetFixIncompatibleRasters   ( void ) const;
+
 private:
     uint32 version;     // version of the output files (III, VC, SA)
 
@@ -298,6 +301,8 @@ private:
     ePaletteRuntimeType palRuntimeType;
     
     int warningLevel;
+
+    bool fixIncompatibleRasters;
 };
 
 // Global RenderWare interface.

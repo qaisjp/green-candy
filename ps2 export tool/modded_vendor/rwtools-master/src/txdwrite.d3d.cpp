@@ -19,6 +19,12 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 
     NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
+    // Make sure the texture has some qualities before it can even be written.
+    if ( !platformTex->hasD3DFormat )
+    {
+        throw RwException( "texture " + this->name + " has no representation in Direct3D" );
+    }
+
     // Texture Native.
 	SKIP_HEADER();
 
@@ -92,7 +98,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
             // Get the real data size of the palette.
             uint32 palRasterDepth = Bitmap::getRasterFormatDepth(this->rasterFormat);
 
-            uint32 paletteDataSize = actualPalItemWriteCount * palRasterDepth / 8;
+            uint32 paletteDataSize = getRasterDataSize( actualPalItemWriteCount, palRasterDepth );
 
 			rw.write(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
 
@@ -103,7 +109,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
             {
                 uint32 leftCount = ( reqPalCount - actualPalItemWriteCount );
 
-                uint32 leftDataSize = ( leftCount * palRasterDepth / 8 );
+                uint32 leftDataSize = getRasterDataSize( leftCount, palRasterDepth );
 
                 for ( uint32 n = 0; n < leftDataSize; n++ )
                 {

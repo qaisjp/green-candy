@@ -609,6 +609,12 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
 
     NativeTexturePS2 *platformTex = (NativeTexturePS2*)this->platformData;
 
+    // Check some parameters before doing _anything_.
+    if ( platformTex->colorOrdering != COLOR_RGBA )
+    {
+        throw RwException( "color ordering must be RGBA for PS2 texture" );
+    }
+
     // Texture Native.
     SKIP_HEADER();
 

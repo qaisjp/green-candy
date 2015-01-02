@@ -869,8 +869,7 @@ struct palettizer
 
         uint32 palItemCount = texelElimData.size();
 
-        // TODO: actually use a common routine for calculating the data size, since this is pretty unsafe.
-        uint32 palDataSize = palItemCount * palDepth / 8;
+        uint32 palDataSize = getRasterDataSize( palItemCount, palDepth );
 
         // Allocate a container for the palette.
         void *paletteData = new uint8[ palDataSize ];
@@ -1285,11 +1284,11 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
                     uint32 palDepth = Bitmap::getRasterFormatDepth(rasterFormat);
 
-                    uint32 palDataSize = newPalItemCount * palDepth / 8;
+                    uint32 palDataSize = getRasterDataSize( newPalItemCount, palDepth );
 
                     void *newPalArray = new uint8[ palDataSize ];
 
-                    for ( unsigned int n = 0; n < palData->count; n++ )
+                    for ( unsigned int n = 0; n < newPalItemCount; n++ )
                     {
                         const liq_color& srcColor = palData->entries[ n ];
 

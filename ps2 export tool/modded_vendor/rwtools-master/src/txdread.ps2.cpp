@@ -326,6 +326,37 @@ void NativeTexture::readPs2(std::istream &rw)
 
         readRasterFormatFlags( textureMeta.rasterFormat, this->rasterFormat, platformTex->paletteType, hasMipmaps, platformTex->autoMipmaps );
 
+        // Verify the raster format.
+        eRasterFormat rasterFormat = this->rasterFormat;
+
+        if ( !isValidRasterFormat( rasterFormat ) )
+        {
+            throw RwException( "invalid raster format in PS2 texture" );
+        }
+
+        // Verify the texture depth.
+        {
+            uint32 texDepth = 0;
+
+            if (platformTex->paletteType == PALETTE_4BIT)
+            {
+                texDepth = 4;
+            }
+            else if (platformTex->paletteType == PALETTE_8BIT)
+            {
+                texDepth = 8;
+            }
+            else
+            {
+                texDepth = Bitmap::getRasterFormatDepth(rasterFormat);
+            }
+
+            if (texDepth != depth)
+            {
+                throw RwException( "texture " + this->name + " has an invalid depth" );
+            }
+        }
+
         platformTex->requiresHeaders = ( textureMeta.rasterFormat & 0x20000 ) != 0;
         platformTex->hasSwizzle = ( textureMeta.rasterFormat & 0x10000 ) != 0;
 
@@ -377,7 +408,7 @@ void NativeTexture::readPs2(std::istream &rw)
         eFormatEncodingType imageEncodingType = platformTex->getHardwareRequiredEncoding(header.version);
 
         // Get the format we should decode to.
-        eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(this->rasterFormat, platformTex->paletteType);
+        eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(rasterFormat, platformTex->paletteType);
         
         if (imageEncodingType == FORMAT_UNKNOWN)
         {
@@ -515,7 +546,7 @@ void NativeTexture::readPs2(std::istream &rw)
 
             // Decide about encoding type.
             // Only a limited amount of types are truly supported.
-            palTex.swizzleEncodingType = getFormatEncodingFromRasterFormat(this->rasterFormat, PALETTE_NONE);
+            palTex.swizzleEncodingType = getFormatEncodingFromRasterFormat(rasterFormat, PALETTE_NONE);
 
             if (palTex.swizzleEncodingType != FORMAT_TEX32 && palTex.swizzleEncodingType != FORMAT_TEX16)
             {
@@ -963,6 +994,9 @@ void NativeTexture::convertFromPS2(void)
     d3dtex->paletteSize = palSize;
     d3dtex->paletteType = platformTex->paletteType;
 
+    // Actually, since there is no alpha flag in PS2 textures, we should recalculate the alpha flag here.
+    d3dtex->hasAlpha = d3dtex->doesHaveAlpha();
+
     // Set the backlink.
     d3dtex->parent = this;
 
@@ -975,7 +1009,7 @@ void NativeTexture::convertFromPS2(void)
 }
 
 inline void convertTexelsToPS2(
-    void *texelData, uint32 texelCount, eRasterFormat rasterFormat,
+    const void *texelData, void *dstTexelData, uint32 texelCount, eRasterFormat srcRasterFormat, eRasterFormat dstRasterFormat,
     eColorOrdering d3dColorOrder, eColorOrdering ps2ColorOrder,
     bool fixAlpha
 )
@@ -985,7 +1019,7 @@ inline void convertTexelsToPS2(
 		for (uint32 i = 0; i < texelCount; i++)
         {
             uint8 red, green, blue, alpha;
-            browsetexelcolor(texelData, PALETTE_NONE, NULL, 0, i, rasterFormat, d3dColorOrder, red, green, blue, alpha);
+            browsetexelcolor(texelData, PALETTE_NONE, NULL, 0, i, srcRasterFormat, d3dColorOrder, red, green, blue, alpha);
 
 		    // fix alpha
             {
@@ -998,7 +1032,7 @@ inline void convertTexelsToPS2(
                 alpha = newAlpha;
             }
 
-            puttexelcolor(texelData, i, rasterFormat, ps2ColorOrder, red, green, blue, alpha);
+            puttexelcolor(dstTexelData, i, dstRasterFormat, ps2ColorOrder, red, green, blue, alpha);
 		}
     }
 }
@@ -1024,6 +1058,21 @@ void NativeTexture::convertToPS2( void )
         if ( platformTex->dxtCompression )
         {
             platformTex->decompressDxt();
+        }
+
+        // The PlayStation 2 does NOT support all raster formats.
+        // We need to avoid giving it raster formats that are prone to crashes, like RASTER_888.
+        eRasterFormat srcRasterFormat = this->rasterFormat;
+        eRasterFormat targetRasterFormat = srcRasterFormat;
+
+        // Only fix if the user wants us to.
+        if (rw::rwInterface.GetFixIncompatibleRasters())
+        {
+            if (targetRasterFormat == RASTER_888)
+            {
+                // Since this raster takes the same memory space as RASTER_8888, we can silently convert it.
+                targetRasterFormat = RASTER_8888;
+            }
         }
 
         // Prepare mipmap data.
@@ -1064,7 +1113,7 @@ void NativeTexture::convertToPS2( void )
                 // Convert the texels.
                 if (platformTex->paletteType == PALETTE_NONE)
                 {
-                    convertTexelsToPS2(texelData, mipWidth * mipHeight, this->rasterFormat, d3dColorOrder, ps2ColorOrder, fixAlpha);
+                    convertTexelsToPS2(texelData, texelData, mipWidth * mipHeight, srcRasterFormat, targetRasterFormat, d3dColorOrder, ps2ColorOrder, fixAlpha);
                 }
 
                 newMipmap.width = mipWidth;
@@ -1095,7 +1144,7 @@ void NativeTexture::convertToPS2( void )
             void *palTexelData = platformTex->palette;
             uint32 palSize = platformTex->paletteSize;
 
-            convertTexelsToPS2(palTexelData, palSize, this->rasterFormat, d3dColorOrder, ps2ColorOrder, true);
+            convertTexelsToPS2(palTexelData, palTexelData, palSize, srcRasterFormat, targetRasterFormat, d3dColorOrder, ps2ColorOrder, true);
 
             // Generate a palette texture.
             void *newPalTexelData;
@@ -1128,6 +1177,12 @@ void NativeTexture::convertToPS2( void )
             // Zero out the palette data at the source texture.
             platformTex->palette = NULL;
             platformTex->paletteSize = 0;
+        }
+
+        // Finally, update the raster format.
+        if (srcRasterFormat != targetRasterFormat)
+        {
+            this->rasterFormat = targetRasterFormat;
         }
 
         // Store the backlink.

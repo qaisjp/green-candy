@@ -468,7 +468,7 @@ namespace ps2GSPixelEncodingFormats
         uint32 rawDepth = getFormatEncodingDepth(rawFormat);
 
         // Calculate the size of the destination data.
-        uint32 dstDataSize = ( dstWidth * dstHeight * rawDepth / 8 );
+        uint32 dstDataSize = getRasterDataSize( dstWidth * dstHeight, rawDepth );
 
         if ( dstDataSize == 0 )
             return NULL;
@@ -698,7 +698,7 @@ namespace ps2GSPixelEncodingFormats
         uint32 packedHeight = ( rawHeightColumnCount * packedColumnHeight );
 
         // Calculate the size of the destination data.
-        uint32 dstDataSize = ( packedWidth * packedHeight * packedDepth / 8 );
+        uint32 dstDataSize = getRasterDataSize( packedWidth * packedHeight, packedDepth );
 
         if ( dstDataSize == 0 )
             return NULL;

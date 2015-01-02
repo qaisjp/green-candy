@@ -74,6 +74,16 @@ ePaletteRuntimeType Interface::GetPaletteRuntime( void ) const
     return this->palRuntimeType;
 }
 
+void Interface::SetFixIncompatibleRasters( bool doFix )
+{
+    this->fixIncompatibleRasters = doFix;
+}
+
+bool Interface::GetFixIncompatibleRasters( void ) const
+{
+    return this->fixIncompatibleRasters;
+}
+
 // Main interface of the engine.
 Interface rwInterface;
 

@@ -1,3 +1,8 @@
+inline uint32 getRasterDataSize( uint32 itemCount, uint32 depth )
+{
+    return ALIGN_SIZE( itemCount * depth, 8u ) / 8u;
+}
+
 // Bitmap software rendering includes.
 struct Bitmap
 {
@@ -97,9 +102,8 @@ struct Bitmap
     inline static uint32 getRasterImageDataSize( uint32 width, uint32 height, uint32 depth )
     {
         uint32 imageItemCount = ( width * height );
-        uint32 bitsPerPixel = depth;
 
-        return ( imageItemCount * depth / 8 );
+        return getRasterDataSize( imageItemCount, depth );
     }
 
     inline void setImageData( void *theTexels, eRasterFormat theFormat, eColorOrdering colorOrder, uint32 depth, uint32 width, uint32 height, uint32 dataSize )
