@@ -297,6 +297,9 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
             }
             platformTex->paletteType = PALETTE_NONE;
             platformTex->paletteSize = 0;
+
+            // Since we have no more mipmaps, we also dont have automatically generated mipmaps.
+            platformTex->autoMipmaps = false;
         }
 
         // Resize mipmap containers.
@@ -358,6 +361,23 @@ void NativeTexture::newDirect3D(void)
 
     this->platformData = d3dtex;
     this->platform = PLATFORM_D3D9;
+}
+
+void NativeTexture::optimizeForLowEnd(void)
+{
+    if (this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9)
+        return;
+
+    NativeTextureD3D *d3dtex = (NativeTextureD3D*)this->platformData;
+
+    // Textures that should run on low end hardware should not be too HD.
+    // This routine takes the PlayStation 2 as reference hardware.
+
+    // TODO.
+    if (d3dtex->paletteType == PALETTE_NONE)
+    {
+        this->convertToPalette( PALETTE_8BIT );
+    }
 }
 
 void NativeTexture::writeTGA(const char *path)

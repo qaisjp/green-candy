@@ -115,10 +115,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 // Palettize the texture to save space.
                 if ( doCompress )
                 {
-                    if (tex.platformData->getPaletteType() == rw::PALETTE_NONE)
-                    {
-                        tex.convertToPalette( rw::PALETTE_8BIT );
-                    }
+                    tex.optimizeForLowEnd();
                 }
 
                 // Convert it into the target platform.
