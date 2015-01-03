@@ -253,6 +253,9 @@ class filePath
                     *( this->stringData + n ) = '\0';
                 }
 
+                // Zero terminate.
+                *( this->stringData + strSize ) = '\0';
+
                 this->stringLength = strSize;
             }
         }

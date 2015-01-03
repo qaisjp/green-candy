@@ -669,7 +669,7 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
         file *theFile = *iter;
 
         // Position the file onto the archive.
-        theFile->metaData.blockOffset = genOut.currentBlockCount;
+        uint32 newBlockOffset = genOut.currentBlockCount;
 
         // Get the block count of this file entry.
         unsigned long blockCount = 0;
@@ -706,8 +706,9 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
             blockCount = theFile->metaData.resourceSize;
         }
 
-        // Update the resource size.
+        // Update the resource properties.
         theFile->metaData.resourceSize = blockCount;
+        theFile->metaData.blockOffset = newBlockOffset;
 
         // Update the generated block count.
         genOut.currentBlockCount += blockCount;
@@ -794,16 +795,29 @@ void CIMGArchiveTranslator::WriteFiles( CFile *targetStream, directory& baseDir 
     }
 }
 
+struct generalHeader
+{
+    fsUInt_t checksum;
+    fsUInt_t numberOfEntries;
+};
+
+inline unsigned long getDataBlockCount( size_t dataSize )
+{
+    return ALIGN_SIZE <unsigned long> ( dataSize, IMG_BLOCK_SIZE ) / IMG_BLOCK_SIZE;
+}
+
 void CIMGArchiveTranslator::Save( void )
 {
     // We can only work if the underlying stream is writeable.
-    if ( !m_contentFile->IsWriteable() )
+    if ( !m_contentFile->IsWriteable() || !m_registryFile->IsWriteable() )
         return;
 
-    CFile *targetStream = m_contentFile;
+    CFile *targetStream = this->m_contentFile;
+    CFile *registryStream = this->m_registryFile;
+
+    eIMGArchiveVersion imgVersion = this->m_version;
 
     // Write things depending on version.
-    if ( m_version == IMG_VERSION_2 )
     {
         // Generate header meta information.
         headerGenPresence headerGenMetaData;
@@ -813,10 +827,26 @@ void CIMGArchiveTranslator::Save( void )
 
         // Generate the archive structure for files in this archive.
         archiveGenPresence genMetaData;
-        genMetaData.currentBlockCount =
-            ALIGN_SIZE <unsigned long> (
-                sizeof(resourceFileHeader) * headerGenMetaData.numOfFiles, IMG_BLOCK_SIZE   // we need enough space for the file headers.
-            ) / IMG_BLOCK_SIZE;
+        genMetaData.currentBlockCount = 0;
+
+        // If we are version two, then we prepend the file headers before the content blocks.
+        // Take that into account.
+        if ( targetStream == registryStream )
+        {
+            size_t headerSize = 0;
+
+            if (imgVersion == IMG_VERSION_2)
+            {
+                // First, there is a general header.
+                headerSize += sizeof( generalHeader );
+            }
+
+            // Now come the file entries.
+            headerSize += sizeof(resourceFileHeader) * headerGenMetaData.numOfFiles;
+
+            // Add this block count to the allocation.
+            genMetaData.currentBlockCount += getDataBlockCount( headerSize );
+        }
        
         GenerateArchiveStructure( m_virtualFS.GetRootDir(), genMetaData );
 
@@ -830,21 +860,19 @@ void CIMGArchiveTranslator::Save( void )
             targetStream->SeekNative( 0, SEEK_SET );
         }
 
-        struct generalHeader
+        // We only write a header in version two archives.
+        if ( imgVersion == IMG_VERSION_2 )
         {
-            fsUInt_t checksum;
-            fsUInt_t numberOfEntries;
-        };
+            // Write the main header of the archive.
+            generalHeader mainHeader;
+            mainHeader.checksum = '2REV';
+            mainHeader.numberOfEntries = headerGenMetaData.numOfFiles;
 
-        // Write the main header of the archive.
-        generalHeader mainHeader;
-        mainHeader.checksum = '2REV';
-        mainHeader.numberOfEntries = headerGenMetaData.numOfFiles;
-
-        targetStream->WriteStruct( mainHeader );
+            targetStream->WriteStruct( mainHeader );
+        }
 
         // Write all file headers.
-        WriteFileHeaders( targetStream, m_virtualFS.GetRootDir() );
+        WriteFileHeaders( registryStream, m_virtualFS.GetRootDir() );
 
         // Now write all the files.
         WriteFiles( targetStream, m_virtualFS.GetRootDir() );

@@ -222,6 +222,9 @@ struct NativeTexture
 	void convertToFormat(eRasterFormat format);
     void convertToPalette(ePaletteType paletteFormat);
 
+    // Optimization routines.
+    void optimizeForLowEnd(void);
+
 	NativeTexture(void);
 	NativeTexture(const NativeTexture &orig);
 	NativeTexture &operator=(const NativeTexture &that);
