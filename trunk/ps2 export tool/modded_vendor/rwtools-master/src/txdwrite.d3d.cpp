@@ -38,8 +38,40 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         metaHeader.texFormat.uAddressing = this->uAddressing;
         metaHeader.texFormat.vAddressing = this->vAddressing;
 
-        strncpy( metaHeader.name, this->name.c_str(), 32 );
-        strncpy( metaHeader.maskName, this->maskName.c_str(), 32 );
+        // Correctly write the name strings (for safety).
+        // Even though we can read those name fields with zero-termination safety,
+        // the engines are not guarranteed to do so.
+        // Also, print a warning if the name is changed this way.
+        {
+            size_t nameLen = this->name.size();
+
+            if (nameLen >= sizeof(metaHeader.name))
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has been written using truncated name" );
+
+                nameLen = sizeof(metaHeader.name) - 1;
+            }
+
+            memcpy( metaHeader.name, this->name.c_str(), nameLen );
+
+            // Pad with zeroes (which will also zero-terminate).
+            memset( metaHeader.name + nameLen, 0, sizeof(metaHeader.name) - nameLen );
+        }
+        {
+            size_t maskNameLen = this->maskName.size();
+
+            if (maskNameLen >= sizeof(metaHeader.maskName))
+            {
+                rw::rwInterface.PushWarning( "texture " + this->maskName + " has been written using truncated mask name" );
+
+                maskNameLen = sizeof(metaHeader.maskName) - 1;
+            }
+
+            memcpy( metaHeader.maskName, this->maskName.c_str(), maskNameLen );
+
+            // Pad with zeroes.
+            memset( metaHeader.maskName + maskNameLen, 0, sizeof(metaHeader.maskName) - maskNameLen );
+        }
 
         // Construct raster flags.
         metaHeader.rasterFormat = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, platformTex->mipmapCount > 1, platformTex->autoMipmaps );

@@ -227,9 +227,7 @@ struct NativeTextureD3D : public PlatformTexture
     eColorOrdering colorOrdering;
 
 	void decompressDxt(void);
-	void decompressDxt1(void);
-	void decompressDxt3(void);
-	void decompressDxt4(void);
+	bool decompressDxtNative(uint32 dxtType);
 
     // Check whether this texture has alpha.
     // Use this to update/calculate the alpha flag when required.

@@ -214,6 +214,10 @@ struct NativeTexture
     Bitmap getBitmap(void) const;
     void setImageData(const Bitmap& srcImage);
 
+    void resize(uint32 width, uint32 height);
+
+    void getSize(uint32& width, uint32& height) const;
+
     void newDirect3D(void);
 
 	void convertFromPS2(void);
@@ -223,7 +227,7 @@ struct NativeTexture
     void convertToPalette(ePaletteType paletteFormat);
 
     // Optimization routines.
-    void optimizeForLowEnd(void);
+    void optimizeForLowEnd(float quality);
 
 	NativeTexture(void);
 	NativeTexture(const NativeTexture &orig);

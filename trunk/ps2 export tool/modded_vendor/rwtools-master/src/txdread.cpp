@@ -226,6 +226,12 @@ Bitmap NativeTexture::getBitmap(void) const
     {
         NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
+        // If the texture is compressed, we must decompress it.
+        if ( platformTex->dxtCompression )
+        {
+            platformTex->decompressDxt();
+        }
+
         // If it has any mipmap at all.
         if ( platformTex->mipmapCount > 0 )
         {
@@ -245,7 +251,30 @@ Bitmap NativeTexture::getBitmap(void) const
             {
                 hasAllocatedNewPixelData = true;
 
-                
+                uint32 rasterFormatDepth = Bitmap::getRasterFormatDepth(theFormat);
+
+                uint32 texelCount = ( width * height );
+
+                uint32 newDataSize = getRasterDataSize(texelCount, rasterFormatDepth);
+
+                pixelData = new uint8[ newDataSize ];
+
+                // Unpack the texels.
+                void *texelSource = platformTex->texels[ 0 ];
+                void *palData = platformTex->palette;
+                uint32 palSize = platformTex->paletteSize;
+
+                for ( uint32 n = 0; n < texelCount; n++ )
+                {
+                    uint8 r, g, b, a;
+                    browsetexelcolor(texelSource, platformTex->paletteType, palData, palSize, n, theFormat, theOrder, r, g, b, a);
+
+                    puttexelcolor(pixelData, n, theFormat, theOrder, r, g, b, a);
+                }
+
+                // Update bitmap parameters.
+                depth = rasterFormatDepth;
+                dataSize = newDataSize;
             }
             else
             {
@@ -261,7 +290,7 @@ Bitmap NativeTexture::getBitmap(void) const
 
                 if ( hasAllocatedNewPixelData )
                 {
-                    delete pixelData;
+                    delete [] pixelData;
                 }
             }
         }
@@ -348,6 +377,30 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
     }
 }
 
+void NativeTexture::resize(uint32 width, uint32 height)
+{
+    Bitmap mainBitmap = this->getBitmap();
+
+    Bitmap targetBitmap( mainBitmap.getDepth(), mainBitmap.getFormat(), mainBitmap.getColorOrder() );
+
+    targetBitmap.setSize(width, height);
+
+    targetBitmap.drawBitmap(
+        mainBitmap, 0, 0, width, height,
+        Bitmap::SHADE_ZERO, Bitmap::SHADE_ONE, Bitmap::BLEND_ADDITIVE
+    );
+
+    this->setImageData( targetBitmap );
+}
+
+void NativeTexture::getSize(uint32& width, uint32& height) const
+{
+    PlatformTexture *platformTex = this->platformData;
+
+    width = platformTex->getWidth();
+    height = platformTex->getHeight();
+}
+
 void NativeTexture::newDirect3D(void)
 {
     if ( this->platform != 0 )
@@ -363,7 +416,7 @@ void NativeTexture::newDirect3D(void)
     this->platform = PLATFORM_D3D9;
 }
 
-void NativeTexture::optimizeForLowEnd(void)
+void NativeTexture::optimizeForLowEnd(float quality)
 {
     if (this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9)
         return;
@@ -373,10 +426,80 @@ void NativeTexture::optimizeForLowEnd(void)
     // Textures that should run on low end hardware should not be too HD.
     // This routine takes the PlayStation 2 as reference hardware.
 
-    // TODO.
-    if (d3dtex->paletteType == PALETTE_NONE)
+    const uint32 maxTexWidth = 256;
+    const uint32 maxTexHeight = 256;
+
+    while ( true )
     {
-        this->convertToPalette( PALETTE_8BIT );
+        // Get properties of this texture first.
+        uint32 texWidth, texHeight;
+
+        texWidth = d3dtex->getWidth();
+        texHeight = d3dtex->getHeight();
+
+        // Optimize this texture.
+        bool hasTakenStep = false;
+
+        if ( !hasTakenStep && quality < 1.0f )
+        {
+            // We first must make sure that the texture is not unnecessaringly huge.
+            if ( texWidth > maxTexWidth || texHeight > maxTexHeight )
+            {
+                // Half the texture size until we are at a suitable size.
+                uint32 targetWidth = texWidth;
+                uint32 targetHeight = texHeight;
+
+                do
+                {
+                    targetWidth /= 2;
+                    targetHeight /= 2;
+                }
+                while ( targetWidth > maxTexWidth || targetHeight > maxTexHeight );
+
+                // The texture dimensions are too wide.
+                // We half the texture in size.
+                this->resize( targetWidth, targetHeight );
+
+                hasTakenStep = true;
+            }
+        }
+        
+        if ( !hasTakenStep )
+        {
+            // We should decrease the texture size by palettization.
+            if (d3dtex->paletteType == PALETTE_NONE)
+            {
+                ePaletteType targetPalette = ( quality > 0.0f ) ? ( PALETTE_8BIT ) : ( PALETTE_4BIT );
+
+                if (d3dtex->hasAlpha == false)
+                {
+                    // 4bit palette is only feasible for non-alpha textures (at higher quality settings).
+                    // Otherwise counting the colors is too complicated.
+                    
+                    // TODO: still allow 8bit textures.
+                    targetPalette = PALETTE_4BIT;
+                }
+
+                // The texture should be palettized for good measure.
+                this->convertToPalette( targetPalette );
+
+                // TODO: decide whether 4bit or 8bit palette.
+
+                hasTakenStep = true;
+            }
+        }
+
+        if ( !hasTakenStep )
+        {
+            // The texture dimension is important for renderer performance. That is why we need to scale the texture according
+            // to quality settings aswell.
+
+        }
+    
+        if ( !hasTakenStep )
+        {
+            break;
+        }
     }
 }
 

@@ -265,7 +265,6 @@ void NativeTexture::readPs2(std::istream &rw)
     // Allocate a platform type texture.
     NativeTexturePS2 *platformTex = new NativeTexturePS2();
 
-    // same as above.
     if ( platformTex == NULL )
     {
         throw RwException( "failed to allocate memory for PS2 texture creation" );
@@ -928,11 +927,9 @@ void NativeTexture::convertFromPS2(void)
         // Now that the texture is in linear format, we can prepare it.
         bool fixAlpha = false;
 
-		if (depth == 16)
-        {
-            // TODO: do we have to do anything?
-        }
-        else if (depth == 32)
+        // TODO: do we have to fix alpha for 16bit raster depths?
+
+		if (rasterFormat == RASTER_8888)
         {
             fixAlpha = true;
 		}
@@ -1101,11 +1098,9 @@ void NativeTexture::convertToPS2( void )
                 // We need to convert the texels before storing them in the PS2 texture.
                 bool fixAlpha = false;
 
-                if (mipDepth == 16)
-                {
-                    // TODO: do we have to do anything?
-                }
-                else if (mipDepth == 32)
+                // TODO: do we have to fix alpha for 16bit rasters?
+
+                if (targetRasterFormat == RASTER_8888)
                 {
                     fixAlpha = true;
                 }

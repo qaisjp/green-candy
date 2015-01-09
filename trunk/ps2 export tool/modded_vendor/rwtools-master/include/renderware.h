@@ -265,6 +265,13 @@ enum ePaletteRuntimeType
     PALRUNTIME_PNGQUANT     // use the libimagequant vendor
 };
 
+// DXT compression configuration.
+enum eDXTCompressionMethod
+{
+    DXTRUNTIME_NATIVE,      // prefer our own logic
+    DXTRUNTIME_SQUISH       // prefer squish
+};
+
 struct Interface
 {
     Interface( void );
@@ -283,13 +290,22 @@ struct Interface
     void                SetWarningLevel         ( int level );
     int                 GetWarningLevel         ( void ) const;
 
+    void                SetIgnoreSecureWarnings ( bool doIgnore );
+    bool                GetIgnoreSecureWarnings ( void ) const;
+
     void                PushWarning             ( const std::string& message );
 
     void                SetPaletteRuntime       ( ePaletteRuntimeType palRunType );
     ePaletteRuntimeType GetPaletteRuntime       ( void ) const;
 
+    void                    SetDXTRuntime       ( eDXTCompressionMethod dxtRunType );
+    eDXTCompressionMethod   GetDXTRuntime       ( void ) const;
+
     void                SetFixIncompatibleRasters   ( bool doFix );
     bool                GetFixIncompatibleRasters   ( void ) const;
+
+    void                SetDXTPackedDecompression   ( bool packedDecompress );
+    bool                GetDXTPackedDecompression   ( void ) const;
 
 private:
     uint32 version;     // version of the output files (III, VC, SA)
@@ -299,10 +315,13 @@ private:
     WarningManagerInterface *warningManager;
 
     ePaletteRuntimeType palRuntimeType;
+    eDXTCompressionMethod dxtRuntimeType;
     
     int warningLevel;
+    bool ignoreSecureWarnings;
 
     bool fixIncompatibleRasters;
+    bool dxtPackedDecompression;
 };
 
 // Global RenderWare interface.

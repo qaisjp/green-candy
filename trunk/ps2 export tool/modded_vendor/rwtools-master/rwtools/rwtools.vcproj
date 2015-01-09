@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/"
+				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -60,9 +60,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libimagequant_d.lib"
+				AdditionalDependencies="libimagequant_d.lib squishd.lib"
 				OutputFile="$(OutDir)\rwtools_d.lib"
-				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib"
+				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib;&quot;..\..\..\vendor\squish-1.11\lib\vs9&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -110,7 +110,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/"
+				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -129,9 +129,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libimagequant.lib"
+				AdditionalDependencies="libimagequant.lib squish.lib"
 				OutputFile="$(OutDir)\rwtools.lib"
-				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib"
+				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib;&quot;..\..\..\vendor\squish-1.11\lib\vs9&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -271,6 +271,10 @@
 		</File>
 		<File
 			RelativePath="..\src\txdread.d3d.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdread.d3d.dxt.cpp"
 			>
 		</File>
 		<File
