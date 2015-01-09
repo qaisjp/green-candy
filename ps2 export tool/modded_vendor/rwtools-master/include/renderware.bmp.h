@@ -22,7 +22,7 @@ struct Bitmap
         this->bgBlue = 0;
     }
 
-    inline Bitmap( uint32 depth, eRasterFormat theFormat )
+    inline Bitmap( uint32 depth, eRasterFormat theFormat, eColorOrdering colorOrder )
     {
         this->width = 0;
         this->height = 0;
@@ -31,7 +31,7 @@ struct Bitmap
         this->texels = NULL;
         this->dataSize = 0;
 
-        this->colorOrder = COLOR_RGBA;
+        this->colorOrder = colorOrder;
 
         this->bgRed = 0;
         this->bgGreen = 0;

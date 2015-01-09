@@ -113,7 +113,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 if ( tex.platformData->getMipmapCount() > 1 )
                 {
                     // Save a debug image that displays the allocation scheme.
-                    rw::Bitmap debugBitmap( 32, rw::RASTER_8888 );
+                    rw::Bitmap debugBitmap( 32, rw::RASTER_8888, rw::COLOR_RGBA );
 
                     // Make sure we atleast have some content.
                     debugBitmap.setSize( 10, 10 );
@@ -324,11 +324,6 @@ static void DebugFuncs( CFileTranslator *discHandle )
                     {
                         rw::NativeTexture& tex = use_txd.texList.at( n );
 
-                        if ( tex.name == "carpback" )
-                        {
-                            __asm nop
-                        }
-
                         // WARNING: conversion does destroy some platform native data that
                         // is embedded into the texture!
                         // We need a way to retrieve the data and set it back after conversion.
@@ -462,6 +457,8 @@ int main( int argc, char *argv[] )
 
         rw::rwInterface.SetPaletteRuntime( rw::PALRUNTIME_PNGQUANT );
 
+        rw::rwInterface.SetDXTRuntime( rw::DXTRUNTIME_SQUISH );
+
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
@@ -470,9 +467,9 @@ int main( int argc, char *argv[] )
         if ( discHandle )
         {
             // Debug some obscurities.
-            DebugFuncs( discHandle );
+            //DebugFuncs( discHandle );
 
-            if ( false )
+            if ( true )
             {
                 // Create the build directory and get a link to it.
                 bool dirCreationSuccess = fileRoot->CreateDir( "BUILD_ROOT/" );

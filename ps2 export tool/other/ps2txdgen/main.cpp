@@ -56,7 +56,7 @@ struct RwWarningBuffer : public rw::WarningManagerInterface
 
 static RwWarningBuffer _warningMan;
 
-static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, eTargetPlatform targetPlatform, bool doCompress, std::string& errMsg )
+static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, eTargetPlatform targetPlatform, bool doCompress, float compressionQuality, std::string& errMsg )
 {
     bool hasProcessed = false;
 
@@ -115,7 +115,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 // Palettize the texture to save space.
                 if ( doCompress )
                 {
-                    tex.optimizeForLowEnd();
+                    tex.optimizeForLowEnd( compressionQuality );
                 }
 
                 // Convert it into the target platform.
@@ -171,6 +171,7 @@ struct _discFileSentry
 {
     eTargetPlatform targetPlatform;
     bool doCompress;
+    float compressionQuality;
 
     inline bool OnSingletonFile(
         CFileTranslator *sourceRoot, CFileTranslator *buildRoot, const filePath& relPathFromRoot,
@@ -213,7 +214,7 @@ struct _discFileSentry
 
                     std::string errorMessage;
 
-                    bool couldProcessTXD = ProcessTXDArchive( sourceRoot, sourceStream, targetStream, this->targetPlatform, this->doCompress, errorMessage );
+                    bool couldProcessTXD = ProcessTXDArchive( sourceRoot, sourceStream, targetStream, this->targetPlatform, this->doCompress, this->compressionQuality, errorMessage );
 
                     if ( couldProcessTXD )
                     {
@@ -311,9 +312,14 @@ bool ApplicationMain( void )
 
     rw::ePaletteRuntimeType c_palRuntimeType = rw::PALRUNTIME_NATIVE;
 
+    rw::eDXTCompressionMethod c_dxtRuntimeType = rw::DXTRUNTIME_NATIVE;
+
     bool c_reconstructIMGArchives = true;
 
     bool c_fixIncompatibleRasters = true;
+    bool c_dxtPackedDecompression = false;
+
+    float c_compressionQuality = 0.5f;
 
     if ( configFile )
     {
@@ -356,13 +362,17 @@ bool ApplicationMain( void )
             {
                 if ( stricmp( targetVersion, "SA" ) == 0 ||
                      stricmp( targetVersion, "SanAndreas" ) == 0 ||
-                     stricmp( targetVersion, "San Andreas" ) == 0 )
+                     stricmp( targetVersion, "San Andreas" ) == 0 ||
+                     stricmp( targetVersion, "GTA SA" ) == 0 ||
+                     stricmp( targetVersion, "GTASA" ) == 0 )
                 {
                     rw::rwInterface.SetVersion( rw::SA );
                 }
                 else if ( stricmp( targetVersion, "VC" ) == 0 ||
                           stricmp( targetVersion, "ViceCity" ) == 0 ||
-                          stricmp( targetVersion, "Vice City" ) == 0 )
+                          stricmp( targetVersion, "Vice City" ) == 0 ||
+                          stricmp( targetVersion, "GTA VC" ) == 0 ||
+                          stricmp( targetVersion, "GTAVC" ) == 0 )
                 {
                     if ( c_targetPlatform == PLATFORM_PS2 )
                     {
@@ -388,6 +398,12 @@ bool ApplicationMain( void )
                 compressTextures = mainEntry->GetBool( "compressTextures" );
             }
 
+            // Compression quality.
+            if ( mainEntry->Find( "compressionQuality" ) )
+            {
+                c_compressionQuality = (float)mainEntry->GetFloat( "compressionQuality", 0.0 );
+            }
+
             // Palette runtime type.
             if ( const char *palRuntimeType = mainEntry->Get( "palRuntimeType" ) )
             {
@@ -401,10 +417,32 @@ bool ApplicationMain( void )
                 }
             }
 
+            // DXT compression method.
+            if ( const char *dxtCompressionMethod = mainEntry->Get( "dxtRuntimeType" ) )
+            {
+                if ( stricmp( dxtCompressionMethod, "native" ) == 0 )
+                {
+                    c_dxtRuntimeType = rw::DXTRUNTIME_NATIVE;
+                }
+                else if ( stricmp( dxtCompressionMethod, "squish" ) == 0 ||
+                          stricmp( dxtCompressionMethod, "libsquish" ) == 0 )
+                {
+                    c_dxtRuntimeType = rw::DXTRUNTIME_SQUISH;
+                }
+            }
+
             // Warning level.
             if ( mainEntry->Find( "warningLevel" ) )
             {
                 rw::rwInterface.SetWarningLevel( mainEntry->GetInt( "warningLevel" ) );
+            }
+
+            // Ignore secure warnings.
+            if ( mainEntry->Find( "ignoreSecureWarnings" ) )
+            {
+                bool doIgnore = mainEntry->GetBool( "ignoreSecureWarnings" );
+
+                rw::rwInterface.SetIgnoreSecureWarnings( doIgnore );
             }
 
             // Reconstruct IMG Archives.
@@ -418,6 +456,12 @@ bool ApplicationMain( void )
             {
                 c_fixIncompatibleRasters = mainEntry->GetBool( "fixIncompatibleRasters" );
             }
+
+            // DXT packed decompression.
+            if ( mainEntry->Find( "dxtPackedDecompression" ) )
+            {
+                c_dxtPackedDecompression = mainEntry->GetBool( "dxtPackedDecompression" );
+            }
         }
 
         // Kill the configuration.
@@ -426,6 +470,7 @@ bool ApplicationMain( void )
 
     // Set some configuration.
     rw::rwInterface.SetPaletteRuntime( c_palRuntimeType );
+    rw::rwInterface.SetDXTRuntime( c_dxtRuntimeType );
 
     rw::rwInterface.SetFixIncompatibleRasters( c_fixIncompatibleRasters );
 
@@ -480,6 +525,12 @@ bool ApplicationMain( void )
     std::cout
         << "* targetPlatform: " << strTargetPlatform << std::endl;
 
+    std::cout
+        << "* compressTextures: " << ( compressTextures ? "true" : "false" ) << std::endl;
+
+    std::cout
+        << "* compressionQuality: " << ( c_compressionQuality ) << std::endl;
+
     const char *strPalRuntimeType = "unknown";
 
     if ( c_palRuntimeType == rw::PALRUNTIME_NATIVE )
@@ -494,11 +545,34 @@ bool ApplicationMain( void )
     std::cout
         << "* palRuntimeType: " << strPalRuntimeType << std::endl;
 
+    const char *strDXTRuntimeType = "unknown";
+
+    if ( c_dxtRuntimeType == rw::DXTRUNTIME_NATIVE )
+    {
+        strDXTRuntimeType = "native";
+    }
+    else if ( c_dxtRuntimeType == rw::DXTRUNTIME_SQUISH )
+    {
+        strDXTRuntimeType = "squish";
+    }
+
+    std::cout
+        << "* dxtRuntimeType: " << strDXTRuntimeType << std::endl;
+
     std::cout
         << "* warningLevel: " << rw::rwInterface.GetWarningLevel() << std::endl;
 
     std::cout
-        << "* reconstructIMGArchives: " << c_reconstructIMGArchives << std::endl;
+        << "* ignoreSecureWarnings: " << ( rw::rwInterface.GetIgnoreSecureWarnings() ? "true" : "false" ) << std::endl;
+
+    std::cout
+        << "* reconstructIMGArchives: " << ( c_reconstructIMGArchives ? "true" : "false" ) << std::endl;
+
+    std::cout
+        << "* fixIncompatibleRasters: " << ( c_fixIncompatibleRasters ? "true" : "false" ) << std::endl;
+
+    std::cout
+        << "* dxtPackedDecompression: " << ( c_dxtPackedDecompression ? "true" : "false" ) << std::endl;
 
     // Finish with a newline.
     std::cout << std::endl;
@@ -524,6 +598,7 @@ bool ApplicationMain( void )
                 _discFileSentry sentry;
                 sentry.targetPlatform = c_targetPlatform;
                 sentry.doCompress = compressTextures;
+                sentry.compressionQuality = c_compressionQuality;
 
                 fileProc.process( &sentry, absGameRootTranslator, absOutputRootTranslator );
 
