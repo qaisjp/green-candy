@@ -526,16 +526,18 @@ bool NativeTextureD3D::decompressDxtNative(uint32 dxtType)
 
 void NativeTextureD3D::decompressDxt(void)
 {
-	if (dxtCompression == 0)
+    uint32 dxtType = this->dxtCompression;
+
+	if (dxtType == 0)
 		return;
 
-    if (dxtCompression == 1 ||
-        //dxtCompression == 2 ||
-        dxtCompression == 3 ||
-        dxtCompression == 4 ||
-        dxtCompression == 5)
+    if (dxtType == 1 ||
+        //dxtType == 2 ||
+        dxtType == 3 ||
+        dxtType == 4 ||
+        dxtType == 5)
     {
-        bool success = decompressDxtNative( dxtCompression );
+        bool success = decompressDxtNative( dxtType );
 
         assert( success == true );
     }
