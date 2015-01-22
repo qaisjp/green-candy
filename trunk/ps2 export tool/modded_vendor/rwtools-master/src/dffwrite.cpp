@@ -13,10 +13,10 @@ namespace rw {
 
 uint32 Clump::write(ostream &rw)
 {
-    uint32 version = rw::rwInterface.GetVersion();
+    LibraryVersion version = rw::rwInterface.GetVersion();
 
 	HeaderInfo header;
-    header.version = version;
+    header.setVersion( version );
 	uint32 writtenBytesReturn;
 
 	/*
@@ -31,8 +31,9 @@ uint32 Clump::write(ostream &rw)
 	{
 		SKIP_HEADER();
 		bytesWritten += writeUInt32(atomicList.size(), rw);
-		if (version != GTA3_1 && version != GTA3_2 &&
-		    version != GTA3_3 && version != GTA3_4) {
+
+        if (version.rwLibMinor != 0 && version.rwLibMinor != 2)
+        {
 			bytesWritten += writeUInt32(0, rw);
 			bytesWritten += writeUInt32(0, rw);
 		}
@@ -105,7 +106,7 @@ uint32 Clump::write(ostream &rw)
 uint32 Atomic::write(ostream &rw)
 {
 	HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( rw::rwInterface.GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Atomic
@@ -193,7 +194,7 @@ uint32 Frame::writeStruct(ostream &rw)
 uint32 Frame::writeExtension(ostream &rw)
 {
     HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( rw::rwInterface.GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Extension
@@ -239,8 +240,10 @@ uint32 Frame::writeExtension(ostream &rw)
 
 uint32 Geometry::write(ostream &rw)
 {
+    LibraryVersion version = rw::rwInterface.GetVersion();
+
     HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( version );
 	uint32 writtenBytesReturn;
 
 	// Geometry
@@ -269,9 +272,8 @@ uint32 Geometry::write(ostream &rw)
 		/* morph targets are always just 1 */
 		bytesWritten += writeUInt32(1, rw);
 
-		if (header.version == GTA3_1 || header.version == GTA3_2 ||
-		    header.version == GTA3_3 || header.version == GTA3_4 ||
-		    header.version == VCPS2) {
+		if (version.rwLibMinor == 0 || version.rwLibMinor == 1 || version.rwLibMinor == 3)
+        {
 			bytesWritten += writeFloat32(1.0f, rw);
 			bytesWritten += writeFloat32(1.0f, rw);
 			bytesWritten += writeFloat32(1.0f, rw);
@@ -445,7 +447,7 @@ uint32 Geometry::write(ostream &rw)
 uint32 Geometry::writeMeshExtension(ostream &rw)
 {
     HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( rw::rwInterface.GetVersion() );
 	uint32 writtenBytesReturn;
 
 	SKIP_HEADER();
@@ -518,7 +520,7 @@ uint32 Geometry::writeMeshExtension(ostream &rw)
 uint32 Material::write(ostream &rw)
 {
     HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( rw::rwInterface.GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Material
@@ -698,7 +700,7 @@ uint32 Material::write(ostream &rw)
 uint32 Texture::write(ostream &rw)
 {
 	HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( rw::rwInterface.GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Material

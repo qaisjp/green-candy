@@ -3,80 +3,110 @@
 namespace rw
 {
 
-inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, eColorOrdering colorOrder, D3DFORMAT& d3dFormat)
+inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, eColorOrdering colorOrder, uint32 itemDepth, D3DFORMAT& d3dFormat)
 {
     bool hasFormat = false;
 
     if ( paletteRasterType == RASTER_1555 )
     {
-        if (colorOrder == COLOR_BGRA)
+        if ( itemDepth == 16 )
         {
-            d3dFormat = D3DFMT_A1R5G5B5;
+            if (colorOrder == COLOR_BGRA)
+            {
+                d3dFormat = D3DFMT_A1R5G5B5;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
         }
     }
     else if ( paletteRasterType == RASTER_565 )
     {
-        if (colorOrder == COLOR_BGRA)
+        if ( itemDepth == 16 )
         {
-            d3dFormat = D3DFMT_R5G6B5;
+            if (colorOrder == COLOR_BGRA)
+            {
+                d3dFormat = D3DFMT_R5G6B5;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
         }
     }
     else if ( paletteRasterType == RASTER_4444 )
     {
-        if (colorOrder == COLOR_BGRA)
+        if ( itemDepth == 16 )
         {
-            d3dFormat = D3DFMT_A4R4G4B4;
+            if (colorOrder == COLOR_BGRA)
+            {
+                d3dFormat = D3DFMT_A4R4G4B4;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
         }
     }
     else if ( paletteRasterType == RASTER_LUM8 )
     {
-        d3dFormat = D3DFMT_L8;
-
-        hasFormat = true;
-    }
-    else if ( paletteRasterType == RASTER_8888 )
-    {
-        if (colorOrder == COLOR_BGRA)
+        if ( itemDepth == 8 )
         {
-            d3dFormat = D3DFMT_A8R8G8B8;
+            d3dFormat = D3DFMT_L8;
 
             hasFormat = true;
         }
-        else if (colorOrder == COLOR_RGBA)
+    }
+    else if ( paletteRasterType == RASTER_8888 )
+    {
+        if ( itemDepth == 32 )
         {
-            d3dFormat = D3DFMT_A8B8G8R8;
+            if (colorOrder == COLOR_BGRA)
+            {
+                d3dFormat = D3DFMT_A8R8G8B8;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
+            else if (colorOrder == COLOR_RGBA)
+            {
+                d3dFormat = D3DFMT_A8B8G8R8;
+
+                hasFormat = true;
+            }
         }
     }
     else if ( paletteRasterType == RASTER_888 )
     {
         if (colorOrder == COLOR_BGRA)
         {
-            d3dFormat = D3DFMT_X8R8G8B8;
+            if ( itemDepth == 32 )
+            {
+                d3dFormat = D3DFMT_X8R8G8B8;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
+            else if ( itemDepth == 24 )
+            {
+                d3dFormat = D3DFMT_R8G8B8;
+
+                hasFormat = true;
+            }
         }
         else if (colorOrder == COLOR_RGBA)
         {
-            d3dFormat = D3DFMT_X8B8G8R8;
+            if ( itemDepth == 32 )
+            {
+                d3dFormat = D3DFMT_X8B8G8R8;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
         }
     }
     else if ( paletteRasterType == RASTER_555 )
     {
-        if (colorOrder == COLOR_BGRA)
+        if ( itemDepth == 16 )
         {
-            d3dFormat = D3DFMT_X1R5G5B5;
+            if (colorOrder == COLOR_BGRA)
+            {
+                d3dFormat = D3DFMT_X1R5G5B5;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
         }
     }
 
@@ -142,6 +172,11 @@ struct NativeTextureD3D : public PlatformTexture
     ePaletteType getPaletteType( void ) const
     {
         return this->paletteType;
+    }
+
+    bool isCompressed( void ) const
+    {
+        return ( this->dxtCompression != 0 );
     }
 
     PlatformTexture* Clone( void ) const
@@ -233,6 +268,25 @@ struct NativeTextureD3D : public PlatformTexture
     // Use this to update/calculate the alpha flag when required.
     bool doesHaveAlpha(void) const;
 };
+
+inline uint32 getDXTRasterDataSize(uint32 dxtType, uint32 texUnitCount)
+{
+    uint32 texBlockCount = texUnitCount / 16;
+
+    uint32 blockSize = 0;
+
+    if (dxtType == 1)
+    {
+        blockSize = 8;
+    }
+    else if (dxtType == 2 || dxtType == 3 ||
+             dxtType == 4 || dxtType == 5)
+    {
+        blockSize = 16;
+    }
+
+    return ( texBlockCount * blockSize );
+}
 
 #pragma pack(1)
 struct textureMetaHeaderStructGeneric

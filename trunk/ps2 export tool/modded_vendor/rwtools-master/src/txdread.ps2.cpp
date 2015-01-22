@@ -288,29 +288,47 @@ void NativeTexture::readPs2(std::istream &rw)
         this->uAddressing = formatInfo.uAddressing;
         this->vAddressing = formatInfo.vAddressing;
     	
-	    READ_HEADER(CHUNK_STRING);
-	    char *buffer = new char[header.length+1];
-	    rw.read(buffer, header.length);
-        buffer[header.length] = '\0';
-	    this->name = buffer;
-	    delete[] buffer;
+        // Read the name chunk section.
+        {
+	        READ_HEADER(CHUNK_STRING);
+       
+            uint32 strLen = header.getLength();
 
-	    READ_HEADER(CHUNK_STRING);
-	    buffer = new char[header.length+1];
-	    rw.read(buffer, header.length);
-        buffer[header.length] = '\0';
-	    this->maskName = buffer;
-	    delete[] buffer;
+	        char *buffer = new char[strLen+1];
+	        rw.read(buffer, strLen);
+
+            buffer[strLen] = '\0';
+
+	        this->name = buffer;
+
+	        delete[] buffer;
+        }
+
+        // Read the mask name chunk section.
+        {
+	        READ_HEADER(CHUNK_STRING);
+
+            uint32 strLen = header.getLength();
+
+	        char *buffer = new char[strLen+1];
+	        rw.read(buffer, strLen);
+
+            buffer[strLen] = '\0';
+
+	        this->maskName = buffer;
+
+	        delete[] buffer;
+        }
 
         // Texture Struct.
 	    READ_HEADER(CHUNK_STRUCT);
 
-        uint32 texStructSize = header.length;
+        uint32 texStructSize = header.getLength();
         long texStructPos = rw.tellg();
 
 	    READ_HEADER(CHUNK_STRUCT);
 
-        if ( header.length != sizeof( textureMetaDataHeader ) )
+        if ( header.getLength() != sizeof( textureMetaDataHeader ) )
         {
             throw RwException( "invalid native header length" );
         }
@@ -376,8 +394,9 @@ void NativeTexture::readPs2(std::istream &rw)
         platformTex->gsParams.gsTEX1Unknown2 = textureMeta.tex1.unknown2;
         
         // If we are on the GTA III engine, we need to store the recommended buffer base pointer.
-        if (header.version == rw::GTA3_1 || header.version == rw::GTA3_2 || header.version == rw::GTA3_3 || header.version == rw::GTA3_4 ||
-            header.version == rw::VCPS2)
+        LibraryVersion libVer = header.getVersion();
+
+        if (libVer.rwLibMinor <= 3)
         {
             platformTex->recommendedBufferBasePointer = textureMeta.tex0.textureBasePointer;
         }
@@ -404,7 +423,7 @@ void NativeTexture::readPs2(std::istream &rw)
 	    READ_HEADER(CHUNK_STRUCT);
 
         // Decide about texture properties.
-        eFormatEncodingType imageEncodingType = platformTex->getHardwareRequiredEncoding(header.version);
+        eFormatEncodingType imageEncodingType = platformTex->getHardwareRequiredEncoding(header.getVersion());
 
         // Get the format we should decode to.
         eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(rasterFormat, platformTex->paletteType);
@@ -541,7 +560,7 @@ void NativeTexture::readPs2(std::istream &rw)
             NativeTexturePS2::GSTexture& palTex = platformTex->paletteTex;
 
             // The dimensions of this texture depend on game version.
-            getPaletteTextureDimensions(platformTex->paletteType, header.version, palTex.swizzleWidth, palTex.swizzleHeight);
+            getPaletteTextureDimensions(platformTex->paletteType, header.getVersion(), palTex.swizzleWidth, palTex.swizzleHeight);
 
             // Decide about encoding type.
             // Only a limited amount of types are truly supported.
@@ -640,7 +659,7 @@ void NativeTexture::readPs2(std::istream &rw)
         // Verify that our GPU data calculation routine is correct.
         ps2GSRegisters gpuData;
         
-        bool isValidTexture = platformTex->generatePS2GPUData(header.version, gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer);
+        bool isValidTexture = platformTex->generatePS2GPUData(header.getVersion(), gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer);
 
         // If any of those assertions fail then either our is routine incomplete
         // or the input texture is invalid (created by wrong tool probably.)
@@ -844,7 +863,7 @@ inline void getEffectivePaletteTextureDimensions(ePaletteType paletteType, uint3
 }
 
 inline void convertTexelsFromPS2(
-    void *texelSource, uint32 texelCount, eRasterFormat rasterFormat,
+    void *texelSource, uint32 texelCount, eRasterFormat rasterFormat, uint32 itemDepth,
     eColorOrdering ps2ColorOrder, eColorOrdering d3dColorOrder, bool fixAlpha
 )
 {
@@ -853,7 +872,7 @@ inline void convertTexelsFromPS2(
 	    for (uint32 i = 0; i < texelCount; i++)
         {
             uint8 red, green, blue, alpha;
-            browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, i, rasterFormat, ps2ColorOrder, red, green, blue, alpha);
+            browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, i, rasterFormat, ps2ColorOrder, itemDepth, red, green, blue, alpha);
 
 	        // fix alpha
             if (fixAlpha)
@@ -867,7 +886,7 @@ inline void convertTexelsFromPS2(
                 alpha = newAlpha;
             }
 
-            puttexelcolor(texelSource, i, rasterFormat, d3dColorOrder, red, green, blue, alpha);
+            puttexelcolor(texelSource, i, rasterFormat, d3dColorOrder, itemDepth, red, green, blue, alpha);
 	    }
     }
 }
@@ -885,9 +904,53 @@ void NativeTexture::convertFromPS2(void)
 
     NativeTexturePS2 *platformTex = (NativeTexturePS2*)this->platformData;
 
-    // Copy over general attributes.
     uint32 mipmapCount = platformTex->mipmaps.size();
 
+    eRasterFormat rasterFormat = this->rasterFormat;
+    ePaletteType paletteType = platformTex->paletteType;
+
+    try
+    {
+        // Do unsafe preparations.
+        // These operations can be performed by itself, but since they may fail, they should not be connected
+        // with code that must not fail.
+
+        // Unswizzle all mipmaps.
+        for ( uint32 n = 0; n < mipmapCount; n++ )
+        {
+            // unswizzle the image data.
+            {
+	            bool opSuccess = platformTex->swizzleDecryptPS2(n);
+
+                if ( opSuccess == false )
+                {
+                    throw RwException( "failed to unswizzle texture" );
+                }
+            }
+        }
+
+        // Unswizzle CLUT, if present.
+        if ( paletteType != PALETTE_NONE )
+        {
+            // unCLUT the palette.
+            bool unclutSuccess = unclut(paletteType, platformTex->paletteTex);
+
+            if ( unclutSuccess == false )
+            {
+                throw RwException( "failed to unswizzle the CLUT" );
+            }
+        }
+    }
+    catch( RwException& )
+    {
+        // Delete the new texture again.
+        delete d3dtex;
+
+        // We failed.
+        throw;
+    }
+
+    // Copy over general attributes.
     d3dtex->width.resize( mipmapCount );
     d3dtex->height.resize( mipmapCount );
     d3dtex->mipmapDepth.resize( mipmapCount );
@@ -902,37 +965,24 @@ void NativeTexture::convertFromPS2(void)
     d3dtex->hasAlpha = platformTex->hasAlpha;
 
     // Copy mipmap data.
-    eRasterFormat rasterFormat = this->rasterFormat;
-    ePaletteType paletteType = platformTex->paletteType;
-
     eColorOrdering ps2ColorOrder = platformTex->colorOrdering;
     eColorOrdering d3dColorOrder = d3dtex->colorOrdering;
 
-	for (uint32 j = 0; j < mipmapCount; j++)
+    for (uint32 j = 0; j < mipmapCount; j++)
     {
         NativeTexturePS2::GSMipmap& gsTex = platformTex->mipmaps[ j ];
 
         uint32 depth = gsTex.depth;
-
-        // unswizzle the image data.
-        {
-		    bool opSuccess = platformTex->swizzleDecryptPS2(j);
-
-            if ( opSuccess == false )
-            {
-                throw RwException( "failed to unswizzle texture" );
-            }
-        }
 
         // Now that the texture is in linear format, we can prepare it.
         bool fixAlpha = false;
 
         // TODO: do we have to fix alpha for 16bit raster depths?
 
-		if (rasterFormat == RASTER_8888)
+	    if (rasterFormat == RASTER_8888)
         {
             fixAlpha = true;
-		}
+	    }
 
         // Prepare colors.
         uint32 mipWidth = gsTex.width;
@@ -942,7 +992,7 @@ void NativeTexture::convertFromPS2(void)
 
         if (paletteType == PALETTE_NONE)
         {
-            convertTexelsFromPS2(texelData, mipWidth * mipHeight, rasterFormat, ps2ColorOrder, d3dColorOrder, fixAlpha);
+            convertTexelsFromPS2(texelData, mipWidth * mipHeight, rasterFormat, depth, ps2ColorOrder, d3dColorOrder, fixAlpha);
         }
 
         // Move over the texture data to the D3D texture.
@@ -952,29 +1002,26 @@ void NativeTexture::convertFromPS2(void)
         d3dtex->texels[ j ] = texelData;
         d3dtex->dataSizes[ j ] = gsTex.dataSize;
 
-        // Zero out the GS texture.
+        // Unset mipmap texels.
         gsTex.texels = NULL;
         gsTex.dataSize = 0;
-	}
+    }
 
     void *palTexels = NULL;
     uint32 palSize = 0;
 
-	if (paletteType != PALETTE_NONE)
+    if (paletteType != PALETTE_NONE)
     {
-        // unCLUT the palette.
-        bool unclutSuccess = unclut(paletteType, platformTex->paletteTex);
-
-        assert(unclutSuccess == true);
-
         // Prepare the palette colors.
         void *paletteTexelSource = platformTex->paletteTex.texels;
         {
             uint32 realSwizzleWidth, realSwizzleHeight;
 
             getEffectivePaletteTextureDimensions(paletteType, realSwizzleWidth, realSwizzleHeight);
+
+            uint32 palFormatDepth = Bitmap::getRasterFormatDepth(rasterFormat);
             
-            convertTexelsFromPS2(paletteTexelSource, realSwizzleWidth * realSwizzleHeight, rasterFormat, ps2ColorOrder, d3dColorOrder, true);
+            convertTexelsFromPS2(paletteTexelSource, realSwizzleWidth * realSwizzleHeight, rasterFormat, palFormatDepth, ps2ColorOrder, d3dColorOrder, true);
         }
 
         // Give the palette texels to the new texture.
@@ -984,15 +1031,12 @@ void NativeTexture::convertFromPS2(void)
         // Unset palette texels.
         platformTex->paletteTex.texels = NULL;
         platformTex->paletteTex.dataSize = 0;
-	}
+    }
 
     // Copy over more advanced attributes.
     d3dtex->palette = (uint8*)palTexels;
     d3dtex->paletteSize = palSize;
-    d3dtex->paletteType = platformTex->paletteType;
-
-    // Actually, since there is no alpha flag in PS2 textures, we should recalculate the alpha flag here.
-    d3dtex->hasAlpha = d3dtex->doesHaveAlpha();
+    d3dtex->paletteType = paletteType;
 
     // Set the backlink.
     d3dtex->parent = this;
@@ -1003,10 +1047,15 @@ void NativeTexture::convertFromPS2(void)
 
     // Delete the old platform texture.
     delete platformTex;
+
+    // Execute managed methods now...
+
+    // Actually, since there is no alpha flag in PS2 textures, we should recalculate the alpha flag here.
+    d3dtex->hasAlpha = d3dtex->doesHaveAlpha();
 }
 
 inline void convertTexelsToPS2(
-    const void *texelData, void *dstTexelData, uint32 texelCount, eRasterFormat srcRasterFormat, eRasterFormat dstRasterFormat,
+    const void *texelData, void *dstTexelData, uint32 texelCount, eRasterFormat srcRasterFormat, eRasterFormat dstRasterFormat, uint32 srcItemDepth, uint32 dstItemDepth,
     eColorOrdering d3dColorOrder, eColorOrdering ps2ColorOrder,
     bool fixAlpha
 )
@@ -1016,7 +1065,7 @@ inline void convertTexelsToPS2(
 		for (uint32 i = 0; i < texelCount; i++)
         {
             uint8 red, green, blue, alpha;
-            browsetexelcolor(texelData, PALETTE_NONE, NULL, 0, i, srcRasterFormat, d3dColorOrder, red, green, blue, alpha);
+            browsetexelcolor(texelData, PALETTE_NONE, NULL, 0, i, srcRasterFormat, d3dColorOrder, srcItemDepth, red, green, blue, alpha);
 
 		    // fix alpha
             {
@@ -1029,7 +1078,7 @@ inline void convertTexelsToPS2(
                 alpha = newAlpha;
             }
 
-            puttexelcolor(dstTexelData, i, dstRasterFormat, ps2ColorOrder, red, green, blue, alpha);
+            puttexelcolor(dstTexelData, i, dstRasterFormat, ps2ColorOrder, dstItemDepth, red, green, blue, alpha);
 		}
     }
 }
@@ -1062,6 +1111,8 @@ void NativeTexture::convertToPS2( void )
         eRasterFormat srcRasterFormat = this->rasterFormat;
         eRasterFormat targetRasterFormat = srcRasterFormat;
 
+        ePaletteType paletteType = platformTex->paletteType;
+
         // Only fix if the user wants us to.
         if (rw::rwInterface.GetFixIncompatibleRasters())
         {
@@ -1071,6 +1122,8 @@ void NativeTexture::convertToPS2( void )
                 targetRasterFormat = RASTER_8888;
             }
         }
+
+        uint32 targetRasterDepth = Bitmap::getRasterFormatDepth(targetRasterFormat);
 
         // Prepare mipmap data.
         eColorOrdering d3dColorOrder = platformTex->colorOrdering;
@@ -1106,9 +1159,9 @@ void NativeTexture::convertToPS2( void )
                 }
 
                 // Convert the texels.
-                if (platformTex->paletteType == PALETTE_NONE)
+                if (paletteType == PALETTE_NONE)
                 {
-                    convertTexelsToPS2(texelData, texelData, mipWidth * mipHeight, srcRasterFormat, targetRasterFormat, d3dColorOrder, ps2ColorOrder, fixAlpha);
+                    convertTexelsToPS2(texelData, texelData, mipWidth * mipHeight, srcRasterFormat, targetRasterFormat, mipDepth, targetRasterDepth, d3dColorOrder, ps2ColorOrder, fixAlpha);
                 }
 
                 newMipmap.width = mipWidth;
@@ -1133,13 +1186,16 @@ void NativeTexture::convertToPS2( void )
         ps2tex->hasAlpha = platformTex->hasAlpha;
 
         // Move over the palette texels.
-        if (platformTex->paletteType != PALETTE_NONE)
+        if (paletteType != PALETTE_NONE)
         {
             // Prepare the palette texels.
             void *palTexelData = platformTex->palette;
             uint32 palSize = platformTex->paletteSize;
 
-            convertTexelsToPS2(palTexelData, palTexelData, palSize, srcRasterFormat, targetRasterFormat, d3dColorOrder, ps2ColorOrder, true);
+            uint32 srcPalFormatDepth = Bitmap::getRasterFormatDepth( srcRasterFormat );
+            uint32 targetPalFormatDepth = Bitmap::getRasterFormatDepth( targetRasterFormat );
+
+            convertTexelsToPS2(palTexelData, palTexelData, palSize, srcRasterFormat, targetRasterFormat, srcPalFormatDepth, targetPalFormatDepth, d3dColorOrder, ps2ColorOrder, true);
 
             // Generate a palette texture.
             void *newPalTexelData;
@@ -1161,8 +1217,6 @@ void NativeTexture::convertToPS2( void )
 
             palTex.texels = newPalTexelData;
 
-            ps2tex->paletteType = platformTex->paletteType;
-
             // If we allocated a new palette array, we need to free the source one.
             if ( newPalTexelData != palTexelData )
             {
@@ -1173,6 +1227,9 @@ void NativeTexture::convertToPS2( void )
             platformTex->palette = NULL;
             platformTex->paletteSize = 0;
         }
+
+        // Set the palette type.
+        ps2tex->paletteType = paletteType;
 
         // Finally, update the raster format.
         if (srcRasterFormat != targetRasterFormat)
@@ -1191,46 +1248,66 @@ void NativeTexture::convertToPS2( void )
         delete platformTex;
     }
 
-    // Encode the image data.
-    uint32 mipmapCount = ps2tex->mipmaps.size();
-
-    for ( uint32 n = 0; n < mipmapCount; n++ )
+    // Any failing operation from now on does not have to result in an exception.
+    // In case we do, though, we need to figure out how to properly handle the error...
+    // For now, we just ignore it (TODO).
+    try
     {
-        NativeTexturePS2::GSMipmap& gsTex = ps2tex->mipmaps[n];
+        // Encode the image data.
+        uint32 mipmapCount = ps2tex->mipmaps.size();
 
-        // Initialize the swizzling state.
-        eFormatEncodingType internalFormat = 
-            getFormatEncodingFromRasterFormat(this->rasterFormat, ps2tex->paletteType);
-
-        gsTex.swizzleEncodingType = internalFormat;
-
-        assert(internalFormat != FORMAT_UNKNOWN);
-
-        // We need to store dimensions into the texture of the current encoding.
-        eFormatEncodingType requiredEncoding = ps2tex->getHardwareRequiredEncoding(rw::rwInterface.GetVersion());
-
-        ps2GSPixelEncodingFormats::getPackedFormatDimensions(
-            internalFormat, requiredEncoding,
-            gsTex.width, gsTex.height,
-            gsTex.swizzleWidth, gsTex.swizzleHeight
-        );
-        
-        // Perform swizzling.
+        for ( uint32 n = 0; n < mipmapCount; n++ )
         {
-            bool opSuccess = ps2tex->swizzleEncryptPS2(n);
+            NativeTexturePS2::GSMipmap& gsTex = ps2tex->mipmaps[n];
 
-            if ( opSuccess == false )
+            // Initialize the swizzling state.
+            eFormatEncodingType internalFormat = 
+                getFormatEncodingFromRasterFormat(this->rasterFormat, ps2tex->paletteType);
+
+            gsTex.swizzleEncodingType = internalFormat;
+
+            assert(internalFormat != FORMAT_UNKNOWN);
+
+            // We need to store dimensions into the texture of the current encoding.
+            eFormatEncodingType requiredEncoding = ps2tex->getHardwareRequiredEncoding(rw::rwInterface.GetVersion());
+
+            ps2GSPixelEncodingFormats::getPackedFormatDimensions(
+                internalFormat, requiredEncoding,
+                gsTex.width, gsTex.height,
+                gsTex.swizzleWidth, gsTex.swizzleHeight
+            );
+            
+            // Perform swizzling.
             {
-                throw RwException( "failed to swizzle texture" );
+                bool opSuccess = ps2tex->swizzleEncryptPS2(n);
+
+                if ( opSuccess == false )
+                {
+                    // The probability of this failing is medium.
+                    throw RwException( "failed to swizzle texture" );
+                }
             }
         }
-    }
 
-	if (ps2tex->paletteType != PALETTE_NONE)
+	    if (ps2tex->paletteType != PALETTE_NONE)
+        {
+            // Now CLUT the palette.
+            bool clutSuccess = clut(ps2tex->paletteType, ps2tex->paletteTex);
+
+            if ( clutSuccess == false )
+            {
+                // The probability of this failing is slim like a straw of hair.
+                throw RwException( "failed to swizzle the CLUT" );
+            }
+	    }
+    }
+    catch( RwException& )
     {
-        // Now CLUT the palette.
-        clut(ps2tex->paletteType, ps2tex->paletteTex);
-	}
+        // TODO: properly handle the exception.
+
+        // Pass the exception on.
+        throw;
+    }
 
     // Generate valid gsParams for this texture, as we lost our original ones.
     ps2tex->getOptimalGSParameters(ps2tex->gsParams);

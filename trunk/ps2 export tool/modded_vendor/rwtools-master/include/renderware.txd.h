@@ -124,6 +124,8 @@ struct PlatformTexture abstract
 
     virtual ePaletteType getPaletteType( void ) const = 0;
 
+    virtual bool isCompressed( void ) const = 0;
+
     virtual PlatformTexture* Clone( void ) const = 0;
 
     // Virtual function that can be overwritten so that the
@@ -209,6 +211,7 @@ struct NativeTexture
 	void readXbox(std::istream &txd);
 	uint32 writeD3d(std::ostream &txd);
     uint32 writePs2(std::ostream &txd);
+    uint32 writeXbox(std::ostream &txd);
     void writeTGA(const char *path);
 
     Bitmap getBitmap(void) const;
@@ -223,6 +226,7 @@ struct NativeTexture
 	void convertFromPS2(void);
     void convertToPS2(void);
 	void convertFromXbox(void);
+    void convertToXbox(void);
 	void convertToFormat(eRasterFormat format);
     void convertToPalette(ePaletteType paletteFormat);
 
@@ -242,10 +246,10 @@ struct TextureDictionary
 {
     inline TextureDictionary( void )
     {
-        this->dataStatus = 0;
+        this->hasRecommendedPlatform = false;
     }
 
-    uint16 dataStatus;
+    bool hasRecommendedPlatform;
 
 	std::vector<NativeTexture> texList;
 

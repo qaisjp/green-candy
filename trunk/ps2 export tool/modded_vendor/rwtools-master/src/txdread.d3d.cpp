@@ -43,7 +43,7 @@ void NativeTexture::readD3d(std::istream &rw)
 	
     long texNativeStructOff = rw.tellg();
 
-    uint32 texNativeStructSize = header.length;
+    uint32 texNativeStructSize = header.getLength();
 
 	uint32 platform = readUInt32(rw);
 
@@ -197,7 +197,7 @@ void NativeTexture::readD3d(std::istream &rw)
             {
                 eRasterFormat paletteRasterType = this->rasterFormat;
 
-                bool hasFormat = getD3DFormatFromRasterType( paletteRasterType, COLOR_BGRA, d3dFormat );
+                bool hasFormat = getD3DFormatFromRasterType( paletteRasterType, COLOR_BGRA, depth, d3dFormat );
 
                 if ( !hasFormat )
                 {
@@ -238,6 +238,14 @@ void NativeTexture::readD3d(std::istream &rw)
                 isValidFormat = true;
             }
             else if (d3dFormat == D3DFMT_X8R8G8B8)
+            {
+                d3dRasterFormat = RASTER_888;
+
+                colorOrder = COLOR_BGRA;
+
+                isValidFormat = true;
+            }
+            else if (d3dFormat == D3DFMT_R8G8B8)
             {
                 d3dRasterFormat = RASTER_888;
 
@@ -351,27 +359,28 @@ void NativeTexture::readD3d(std::istream &rw)
         }
         // - Verify depth.
         {
-            uint32 texDepth = 0;
+            bool hasInvalidDepth = false;
 
             if (platformTex->paletteType == PALETTE_4BIT)
             {
-                texDepth = 4;
+                if (depth != 4 && depth != 8)
+                {
+                    hasInvalidDepth = true;
+                }
             }
             else if (platformTex->paletteType == PALETTE_8BIT)
             {
-                texDepth = 8;
-            }
-            else
-            {
-                texDepth = Bitmap::getRasterFormatDepth(this->rasterFormat);
+                if (depth != 8)
+                {
+                    hasInvalidDepth = true;
+                }
             }
 
-            if (texDepth != depth)
+            if (hasInvalidDepth == true)
             {
-                rw::rwInterface.PushWarning( "texture " + this->name + " has an invalid depth (ignoring)" );
+                throw RwException( "texture " + this->name + " has an invalid depth" );
 
-                // Fix it.
-                depth = texDepth;
+                // We cannot fix an invalid depth.
             }
         }
 
@@ -446,21 +455,7 @@ void NativeTexture::readD3d(std::istream &rw)
 
                 if (dxtCompression != 0)
                 {
-                    uint32 texBlockCount = texItemCount / 16;
-
-                    uint32 blockSize = 0;
-
-                    if (dxtCompression == 1)
-                    {
-                        blockSize = 8;
-                    }
-                    else if (dxtCompression == 2 || dxtCompression == 3 ||
-                             dxtCompression == 4 || dxtCompression == 5)
-                    {
-                        blockSize = 16;
-                    }
-
-                    actualDataSize = texBlockCount * blockSize;
+                    actualDataSize = getDXTRasterDataSize(dxtCompression, texItemCount);
                 }
                 else
                 {
@@ -602,11 +597,13 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
 
             void *palColorSource = this->palette;
 
+            uint32 palFormatDepth = Bitmap::getRasterFormatDepth(rasterFormat);
+
             for (uint32 n = 0; n < palItemCount; n++)
             {
                 uint8 r, g, b, a;
 
-                browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, r, g, b, a);
+                browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, palFormatDepth, r, g, b, a);
 
                 if (a != 255)
                 {
@@ -624,13 +621,15 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
             uint32 mipWidth = this->width[ 0 ];
             uint32 mipHeight = this->height[ 0 ];
 
+            uint32 mipDepth = this->mipmapDepth[ 0 ];
+
             uint32 imageItemCount = ( mipWidth * mipHeight );
 
             for (uint32 n = 0; n < imageItemCount; n++)
             {
                 uint8 r, g, b, a;
 
-                browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, r, g, b, a);
+                browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, mipDepth, r, g, b, a);
 
                 if (a != 255)
                 {

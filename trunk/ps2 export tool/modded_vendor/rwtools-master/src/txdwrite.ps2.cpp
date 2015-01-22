@@ -13,7 +13,7 @@ namespace rw
 inline size_t writeStringSection( std::ostream& rw, const char *string, size_t strLen )
 {
     HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( rw::rwInterface.GetVersion() );
 
     uint32 writtenBytesReturn = 0;
 
@@ -320,7 +320,7 @@ void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
 }
 
 bool NativeTexturePS2::generatePS2GPUData(
-    uint32 gameVersion,
+    LibraryVersion gameVersion,
     ps2GSRegisters& gpuData,
     const uint32 mipmapBasePointer[], const uint32 mipmapBufferWidth[], const uint32 mipmapMemorySize[], uint32 maxMipmaps, eMemoryLayoutType memLayoutType,
     uint32 clutBasePointer
@@ -343,8 +343,7 @@ bool NativeTexturePS2::generatePS2GPUData(
     uint32 finalTexBasePointer = 0;
     uint32 finalClutBasePointer = 0;
 
-    if (gameVersion == rw::GTA3_1 || gameVersion == rw::GTA3_2 || gameVersion == rw::GTA3_3 || gameVersion == rw::GTA3_4 ||
-        gameVersion == rw::VCPS2)
+    if (gameVersion.rwLibMinor <= 3)
     {
         // We actually preallocate the textures on the game engine GS memory.
         uint32 totalMemOffset = this->recommendedBufferBasePointer;
@@ -600,8 +599,10 @@ inline void updateTextureRegisters(NativeTexturePS2::GSTexture& gsTex, eFormatEn
 
 uint32 NativeTexture::writePs2(std::ostream& rw)
 {
+    LibraryVersion version = rw::rwInterface.GetVersion();
+
 	HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( version );
 	uint32 writtenBytesReturn;
 
 	if (platform != PLATFORM_PS2)
@@ -672,7 +673,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         {
             uint32 reqPalWidth, reqPalHeight;
 
-            getPaletteTextureDimensions(platformTex->paletteType, header.version, reqPalWidth, reqPalHeight);
+            getPaletteTextureDimensions(platformTex->paletteType, header.getVersion(), reqPalWidth, reqPalHeight);
 
             // Update the texture.
             NativeTexturePS2::GSTexture& palTex = platformTex->paletteTex;
@@ -684,7 +685,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             uint32 newPalWidth, newPalHeight;
 
             genpalettetexeldata(
-                header.version, palDataSource,
+                version, palDataSource,
                 this->rasterFormat, platformTex->paletteType, palSize,
                 newPalTexels, newPalSize, newPalWidth, newPalHeight
             );
@@ -713,7 +714,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         }
 
         // Make sure all textures are in the required encoding format.
-        eFormatEncodingType requiredFormat = platformTex->getHardwareRequiredEncoding(header.version);
+        eFormatEncodingType requiredFormat = platformTex->getHardwareRequiredEncoding(version);
 
         // Get the format we should decode to.
         eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(this->rasterFormat, platformTex->paletteType);
@@ -746,7 +747,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             bool couldAllocate = platformTex->allocateTextureMemory(mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, mipmapTransData, maxMipmaps, decodedMemLayoutType, clutBasePointer, clutMemSize, clutTransData);
 
             ps2GSRegisters gpuData;
-            bool isCompatible = platformTex->generatePS2GPUData(header.version, gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer);
+            bool isCompatible = platformTex->generatePS2GPUData(version, gpuData, mipmapBasePointer, mipmapBufferWidth, mipmapMemorySize, maxMipmaps, decodedMemLayoutType, clutBasePointer);
 
             if ( isCompatible == false )
             {

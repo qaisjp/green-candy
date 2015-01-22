@@ -46,7 +46,7 @@ uint32 NativeTexturePS2::calculateGPUDataSize(
     return ALIGN_SIZE( textureMemoryDataSize, 2048u );
 }
 
-eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(uint32 version) const
+eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(LibraryVersion version) const
 {
     eFormatEncodingType imageEncodingType = FORMAT_UNKNOWN;
 
@@ -55,8 +55,7 @@ eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(uint32 version
 
     if (paletteType == PALETTE_4BIT)
     {
-        if (version == rw::GTA3_1 || version == rw::GTA3_2 ||
-            version == rw::GTA3_3 || version == rw::GTA3_4)
+        if (version.rwLibMinor <= 3)
         {
             imageEncodingType = FORMAT_IDTEX8_COMPRESSED;
         }
@@ -117,6 +116,7 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
     // Get picture meta information.
     uint32 realImageWidth = gsTex.width;
     uint32 realImageHeight = gsTex.height;
+    uint32 realImageDepth = gsTex.depth;
 
     if ( currentEncoding != encodeTo )
     {
@@ -129,6 +129,7 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
         newtexels =
             ps2GSPixelEncodingFormats::packImageData(
                 currentEncoding, encodeTo,
+                realImageDepth,
                 gsTex.texels,
                 realImageWidth, realImageHeight,
                 newDataSize, encryptedWidth, encryptedHeight
@@ -177,6 +178,7 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
     // Get picture meta information.
     uint32 realImageWidth = gsTex.width;
     uint32 realImageHeight = gsTex.height;
+    uint32 realImageDepth = gsTex.depth;
 
     if ( currentEncoding != decodeTo )
     {
@@ -186,6 +188,7 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
         newtexels =
             ps2GSPixelEncodingFormats::unpackImageData(
                 currentEncoding, decodeTo,
+                realImageDepth,
                 gsTex.texels,
                 gsTex.swizzleWidth, gsTex.swizzleHeight,
                 newDataSize,

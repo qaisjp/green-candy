@@ -16,12 +16,12 @@ void Clump::read(istream& rw)
 	// TODO: this is only a quick and dirty fix for uv anim dicts
 	header.read(rw);
 
-	if (header.type != CHUNK_CLUMP)
+	if (header.getType() != CHUNK_CLUMP)
     {
-		rw.seekg(header.length, ios::cur);
+		rw.seekg(header.getLength(), ios::cur);
 		header.read(rw);
 
-		if (header.type != CHUNK_CLUMP)
+		if (header.getType() != CHUNK_CLUMP)
         {
 			return;
         }
@@ -31,7 +31,7 @@ void Clump::read(istream& rw)
 	uint32 numAtomics = readUInt32(rw);
 	uint32 numLights = 0;
 
-	if (header.length == 0xC)
+	if (header.getLength() == 0xC)
     {
 		numLights = readUInt32(rw);
 		rw.seekg(4, ios::cur); /* camera count, unused in gta */
@@ -73,9 +73,9 @@ void Clump::read(istream& rw)
 	for (uint32 i = 0; i < numLights; i++)
     {
 		READ_HEADER(CHUNK_STRUCT);
-		rw.seekg(header.length, ios::cur);
+		rw.seekg(header.getLength(), ios::cur);
 		READ_HEADER(CHUNK_LIGHT);
-		rw.seekg(header.length, ios::cur);
+		rw.seekg(header.getLength(), ios::cur);
 	}
 
 	readExtension(rw);
@@ -88,19 +88,19 @@ void Clump::readExtension(istream &rw)
 	READ_HEADER(CHUNK_EXTENSION);
 
 	streampos end = rw.tellg();
-	end += header.length;
+	end += header.getLength();
 
 	while (rw.tellg() < end)
     {
 		header.read(rw);
 
-		switch (header.type)
+		switch (header.getType())
         {
 		case CHUNK_COLLISIONMODEL:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		default:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		}
 	}
@@ -169,13 +169,13 @@ void Atomic::readExtension(istream &rw)
 	READ_HEADER(CHUNK_EXTENSION);
 
 	streampos end = rw.tellg();
-	end += header.length;
+	end += header.getLength();
 
 	while (rw.tellg() < end)
     {
 		header.read(rw);
 
-		switch (header.type)
+		switch (header.getType())
         {
 		case CHUNK_RIGHTTORENDER:
 			hasRightToRender = true;
@@ -197,7 +197,7 @@ void Atomic::readExtension(istream &rw)
 //cout << filename << " pipelineset " << hex << pipelineSetVal << endl;
 			break;
 		default:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		}
 	}
@@ -268,20 +268,20 @@ void Frame::readExtension(istream &rw)
 	READ_HEADER(CHUNK_EXTENSION);
 
 	streampos end = rw.tellg();
-	end += header.length;
+	end += header.getLength();
 
 	while (rw.tellg() < end)
     {
 		header.read(rw);
 
-		switch (header.type)
+		switch (header.getType())
         {
 		case CHUNK_FRAME:
 		{
-			char *buffer = new char[header.length+1];
+			char *buffer = new char[header.getLength()+1];
 
-			rw.read(buffer, header.length);
-			buffer[header.length] = '\0';
+			rw.read(buffer, header.getLength());
+			buffer[header.getLength()] = '\0';
 
 			name = buffer;
 
@@ -315,7 +315,7 @@ void Frame::readExtension(istream &rw)
 			}
 			break;
 		default:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		}
 	}
@@ -392,9 +392,9 @@ void Geometry::read(istream &rw)
 	rw.seekg(4, ios::cur); /* number of morph targets, uninteresting */
 
 	// skip light info
-	if (header.version == GTA3_1 || header.version == GTA3_2 ||
-	    header.version == GTA3_3 || header.version == GTA3_4 ||
-	    header.version == VCPS2)
+    LibraryVersion libVer = header.getVersion();
+
+	if (libVer.rwLibMinor <= 3)
     {
 		rw.seekg(12, ios::cur);
 	}
@@ -467,13 +467,13 @@ void Geometry::readExtension(istream &rw)
 	READ_HEADER(CHUNK_EXTENSION);
 
 	streampos end = rw.tellg();
-	end += header.length;
+	end += header.getLength();
 
 	while ( rw.tellg() < end )
     {
 		header.read(rw);
 
-		switch( header.type )
+		switch( header.getType() )
         {
 		case CHUNK_BINMESH:
         {
@@ -484,7 +484,7 @@ void Geometry::readExtension(istream &rw)
 			numIndices = readUInt32(rw);
 			splits.resize(numSplits);
 
-			bool hasData = header.length > 12+numSplits*8;
+			bool hasData = header.getLength() > 12+numSplits*8;
 
 			for ( uint32 i = 0; i < numSplits; i++ )
             {
@@ -517,12 +517,12 @@ void Geometry::readExtension(istream &rw)
         {
 			streampos beg = rw.tellg();
 
-			uint32 size = header.length;
-			uint32 ver = header.version;
+			uint32 size = header.getLength();
+			LibraryVersion ver = header.getVersion();
 
 			header.read(rw);
 
-			if ( header.version == ver && header.type == CHUNK_STRUCT )
+			if ( header.getVersion() == ver && header.getType() == CHUNK_STRUCT )
             {
 				uint32 platform = readUInt32(rw);
 
@@ -566,15 +566,15 @@ void Geometry::readExtension(istream &rw)
 			if ( nightColors.size() != 0 )
             {
 				// native data also has them, so skip
-				rw.seekg(header.length - sizeof(uint32), ios::cur);
+				rw.seekg(header.getLength() - sizeof(uint32), ios::cur);
 			}
             else
             {
 				if ( nightColorsUnknown != 0 )
                 {
 				    /* TODO: could be better */
-					nightColors.resize(header.length-4);
-					rw.read((char *)(&nightColors[0]), header.length-4);
+					nightColors.resize(header.getLength() - 4);
+					rw.read((char *)(&nightColors[0]), header.getLength() - 4);
 				}
 			}
 			break;
@@ -611,7 +611,7 @@ void Geometry::readExtension(istream &rw)
                 {
 					cout << "skin: unknown platform " << platform << endl;
 
-					rw.seekg( header.length, ios::cur );
+					rw.seekg( header.getLength(), ios::cur );
 				}
 			}
             else
@@ -654,13 +654,13 @@ void Geometry::readExtension(istream &rw)
 		}
 		case CHUNK_ADCPLG:
 			/* only sa ps2, ignore (not very interesting anyway) */
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		case CHUNK_2DFX:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		default:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		}
 	}
@@ -1327,11 +1327,14 @@ void Material::readExtension(istream &rw)
 	READ_HEADER(CHUNK_EXTENSION);
 
 	streampos end = rw.tellg();
-	end += header.length;
+	end += header.getLength();
 
-	while (rw.tellg() < end) {
+	while (rw.tellg() < end)
+    {
 		header.read(rw);
-		switch (header.type) {
+
+		switch (header.getType())
+        {
 		case CHUNK_RIGHTTORENDER:
 			hasRightToRender = true;
 			rightToRenderVal1 = readUInt32(rw);
@@ -1426,19 +1429,25 @@ void Material::readExtension(istream &rw)
 		case CHUNK_SPECULARMAT: {
 			hasSpecularMat = true;
 			specularLevel = readFloat32(rw);
-			uint32 len = header.length - sizeof(float32) - 4;
+
+			uint32 len = header.getLength() - sizeof(float32) - 4;
 			char *name = new char[len];
+
 			rw.read(name, len);
+
 			specularName = name;
+
 			rw.seekg(4, ios::cur);
+
 			delete[] name;
+
 			break;
 		}
 		case CHUNK_UVANIMDICT:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		default:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		}
 	}
@@ -1672,19 +1681,35 @@ void Texture::read(istream &rw)
 	filterFlags = readUInt16(rw);
 	rw.seekg(2, ios::cur);
 
-	READ_HEADER(CHUNK_STRING);
-	char *buffer = new char[header.length+1];
-	rw.read(buffer, header.length);
-	buffer[header.length] = '\0';
-	name = buffer;
-	delete[] buffer;
+    // Read name
+    {
+	    READ_HEADER(CHUNK_STRING);
 
-	READ_HEADER(CHUNK_STRING);
-	buffer = new char[header.length+1];
-	rw.read(buffer, header.length);
-	buffer[header.length] = '\0';
-	maskName = buffer;
-	delete[] buffer;
+        uint32 strLen = header.getLength();
+
+	    char *buffer = new char[strLen + 1];
+	    rw.read(buffer, strLen);
+
+	    buffer[strLen] = '\0';
+
+	    name = buffer;
+	    delete[] buffer;
+    }
+
+    // Read mask name
+    {
+	    READ_HEADER(CHUNK_STRING);
+        
+        uint32 strLen = header.getLength();
+
+	    char *buffer = new char[strLen + 1];
+	    rw.read(buffer, strLen);
+
+	    buffer[strLen] = '\0';
+
+	    maskName = buffer;
+	    delete[] buffer;
+    }
 
 	readExtension(rw);
 }
@@ -1696,20 +1721,20 @@ void Texture::readExtension(istream &rw)
 	READ_HEADER(CHUNK_EXTENSION);
 
 	streampos end = rw.tellg();
-	end += header.length;
+	end += header.getLength();
 
 	while (rw.tellg() < end)
     {
 		header.read(rw);
 
-		switch (header.type)
+		switch (header.getType())
         {
 		case CHUNK_SKYMIPMAP:
 			hasSkyMipmap = true;
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		default:
-			rw.seekg(header.length, ios::cur);
+			rw.seekg(header.getLength(), ios::cur);
 			break;
 		}
 	}

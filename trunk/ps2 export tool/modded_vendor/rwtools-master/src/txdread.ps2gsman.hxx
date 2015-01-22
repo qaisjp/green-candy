@@ -431,6 +431,7 @@ namespace ps2GSPixelEncodingFormats
 
     inline static void* unpackImageData(
         eFormatEncodingType packedFormat, eFormatEncodingType rawFormat,
+        uint32 rawItemDepth,
         const void *srcToBeDecoded, uint32 packedWidth, uint32 packedHeight,
         uint32& dstDataSizeOut, uint32 dstWidth, uint32 dstHeight
     )
@@ -465,7 +466,7 @@ namespace ps2GSPixelEncodingFormats
 
         assert( gotRawDimms == true );
 
-        uint32 rawDepth = getFormatEncodingDepth(rawFormat);
+        uint32 rawDepth = rawItemDepth;//getFormatEncodingDepth(rawFormat);
 
         // Calculate the size of the destination data.
         uint32 dstDataSize = getRasterDataSize( dstWidth * dstHeight, rawDepth );
@@ -641,6 +642,7 @@ namespace ps2GSPixelEncodingFormats
 
     inline static void* packImageData(
         eFormatEncodingType rawFormat, eFormatEncodingType packedFormat,
+        uint32 rawItemDepth,
         const void *srcToBeEncoded, uint32 srcWidth, uint32 srcHeight,
         uint32& dstDataSizeOut, uint32& dstWidthOut, uint32& dstHeightOut
     )
@@ -657,7 +659,7 @@ namespace ps2GSPixelEncodingFormats
 
         assert( gotRawDimms == true );
 
-        uint32 rawDepth = getFormatEncodingDepth(rawFormat);
+        uint32 rawDepth = rawItemDepth;//getFormatEncodingDepth(rawFormat);
 
         // Make sure the raw texture is a multiple of the column dimensions.
         uint32 expSrcWidth = ALIGN_SIZE( srcWidth, rawColumnWidth );

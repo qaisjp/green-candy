@@ -24,7 +24,8 @@
 	header.read(rw);
 #endif
 
-namespace rw {
+namespace rw
+{
 
 // Forward declaration.
 struct Interface;
@@ -51,72 +52,73 @@ enum PLATFORM_ID
 };
 typedef enum PLATFORM_ID PLATFORM_ID;
 
-enum CHUNK_TYPE {
-        CHUNK_NAOBJECT        = 0x0,
-        CHUNK_STRUCT          = 0x1,
-        CHUNK_STRING          = 0x2,
-        CHUNK_EXTENSION       = 0x3,
-        CHUNK_CAMERA          = 0x5,
-        CHUNK_TEXTURE         = 0x6,
-        CHUNK_MATERIAL        = 0x7,
-        CHUNK_MATLIST         = 0x8,
-        CHUNK_ATOMICSECT      = 0x9,
-        CHUNK_PLANESECT       = 0xA,
-        CHUNK_WORLD           = 0xB,
-        CHUNK_SPLINE          = 0xC,
-        CHUNK_MATRIX          = 0xD,
-        CHUNK_FRAMELIST       = 0xE,
-        CHUNK_GEOMETRY        = 0xF,
-        CHUNK_CLUMP           = 0x10,
-        CHUNK_LIGHT           = 0x12,
-        CHUNK_UNICODESTRING   = 0x13,
-        CHUNK_ATOMIC          = 0x14,
-        CHUNK_TEXTURENATIVE   = 0x15,
-        CHUNK_TEXDICTIONARY   = 0x16,
-        CHUNK_ANIMDATABASE    = 0x17,
-        CHUNK_IMAGE           = 0x18,
-        CHUNK_SKINANIMATION   = 0x19,
-        CHUNK_GEOMETRYLIST    = 0x1A,
-        CHUNK_ANIMANIMATION   = 0x1B,
-        CHUNK_HANIMANIMATION  = 0x1B,
-        CHUNK_TEAM            = 0x1C,
-        CHUNK_CROWD           = 0x1D,
-        CHUNK_RIGHTTORENDER   = 0x1F,
-        CHUNK_MTEFFECTNATIVE  = 0x20,
-        CHUNK_MTEFFECTDICT    = 0x21,
-        CHUNK_TEAMDICTIONARY  = 0x22,
-        CHUNK_PITEXDICTIONARY = 0x23,
-        CHUNK_TOC             = 0x24,
-        CHUNK_PRTSTDGLOBALDATA = 0x25,
-        CHUNK_ALTPIPE         = 0x26,
-        CHUNK_PIPEDS          = 0x27,
-        CHUNK_PATCHMESH       = 0x28,
-        CHUNK_CHUNKGROUPSTART = 0x29,
-        CHUNK_CHUNKGROUPEND   = 0x2A,
-        CHUNK_UVANIMDICT      = 0x2B,
-        CHUNK_COLLTREE        = 0x2C,
-        CHUNK_ENVIRONMENT     = 0x2D,
-        CHUNK_COREPLUGINIDMAX = 0x2E,
+enum CHUNK_TYPE
+{
+    CHUNK_NAOBJECT        = 0x0,
+    CHUNK_STRUCT          = 0x1,
+    CHUNK_STRING          = 0x2,
+    CHUNK_EXTENSION       = 0x3,
+    CHUNK_CAMERA          = 0x5,
+    CHUNK_TEXTURE         = 0x6,
+    CHUNK_MATERIAL        = 0x7,
+    CHUNK_MATLIST         = 0x8,
+    CHUNK_ATOMICSECT      = 0x9,
+    CHUNK_PLANESECT       = 0xA,
+    CHUNK_WORLD           = 0xB,
+    CHUNK_SPLINE          = 0xC,
+    CHUNK_MATRIX          = 0xD,
+    CHUNK_FRAMELIST       = 0xE,
+    CHUNK_GEOMETRY        = 0xF,
+    CHUNK_CLUMP           = 0x10,
+    CHUNK_LIGHT           = 0x12,
+    CHUNK_UNICODESTRING   = 0x13,
+    CHUNK_ATOMIC          = 0x14,
+    CHUNK_TEXTURENATIVE   = 0x15,
+    CHUNK_TEXDICTIONARY   = 0x16,
+    CHUNK_ANIMDATABASE    = 0x17,
+    CHUNK_IMAGE           = 0x18,
+    CHUNK_SKINANIMATION   = 0x19,
+    CHUNK_GEOMETRYLIST    = 0x1A,
+    CHUNK_ANIMANIMATION   = 0x1B,
+    CHUNK_HANIMANIMATION  = 0x1B,
+    CHUNK_TEAM            = 0x1C,
+    CHUNK_CROWD           = 0x1D,
+    CHUNK_RIGHTTORENDER   = 0x1F,
+    CHUNK_MTEFFECTNATIVE  = 0x20,
+    CHUNK_MTEFFECTDICT    = 0x21,
+    CHUNK_TEAMDICTIONARY  = 0x22,
+    CHUNK_PITEXDICTIONARY = 0x23,
+    CHUNK_TOC             = 0x24,
+    CHUNK_PRTSTDGLOBALDATA = 0x25,
+    CHUNK_ALTPIPE         = 0x26,
+    CHUNK_PIPEDS          = 0x27,
+    CHUNK_PATCHMESH       = 0x28,
+    CHUNK_CHUNKGROUPSTART = 0x29,
+    CHUNK_CHUNKGROUPEND   = 0x2A,
+    CHUNK_UVANIMDICT      = 0x2B,
+    CHUNK_COLLTREE        = 0x2C,
+    CHUNK_ENVIRONMENT     = 0x2D,
+    CHUNK_COREPLUGINIDMAX = 0x2E,
 
-	CHUNK_MORPH           = 0x105,
-	CHUNK_SKYMIPMAP       = 0x110,
-	CHUNK_SKIN            = 0x116,
-	CHUNK_PARTICLES       = 0x118,
-	CHUNK_HANIM           = 0x11E,
-	CHUNK_MATERIALEFFECTS = 0x120,
-	CHUNK_ADCPLG          = 0x134,
-	CHUNK_BINMESH         = 0x50E,
-	CHUNK_NATIVEDATA      = 0x510,
-	CHUNK_VERTEXFORMAT    = 0x510,
+    CHUNK_MORPH           = 0x105,
+    CHUNK_SKYMIPMAP       = 0x110,
+    CHUNK_SKIN            = 0x116,
+    CHUNK_PARTICLES       = 0x118,
+    CHUNK_HANIM           = 0x11E,
+    CHUNK_MATERIALEFFECTS = 0x120,
+    CHUNK_ADCPLG          = 0x134,
+    CHUNK_BINMESH         = 0x50E,
+    CHUNK_NATIVEDATA      = 0x510,
+    CHUNK_VERTEXFORMAT    = 0x510,
 
-	CHUNK_PIPELINESET      = 0x253F2F3,
-	CHUNK_SPECULARMAT      = 0x253F2F6,
-	CHUNK_2DFX             = 0x253F2F8,
-	CHUNK_NIGHTVERTEXCOLOR = 0x253F2F9,
-	CHUNK_COLLISIONMODEL   = 0x253F2FA,
-	CHUNK_REFLECTIONMAT    = 0x253F2FC,
-	CHUNK_MESHEXTENSION    = 0x253F2FD,
-	CHUNK_FRAME            = 0x253F2FE
+    CHUNK_PIPELINESET      = 0x253F2F3,
+    CHUNK_SPECULARMAT      = 0x253F2F6,
+    CHUNK_2DFX             = 0x253F2F8,
+    CHUNK_NIGHTVERTEXCOLOR = 0x253F2F9,
+    CHUNK_COLLISIONMODEL   = 0x253F2FA,
+    CHUNK_REFLECTIONMAT    = 0x253F2FC,
+    CHUNK_MESHEXTENSION    = 0x253F2FD,
+    CHUNK_FRAME            = 0x253F2FE
 };
 typedef enum CHUNK_TYPE CHUNK_TYPE;
 
@@ -128,13 +130,106 @@ enum
 	RASTER_MIPMAP = 0x8000
 };
 
+#pragma warning(push)
+#pragma warning(disable: 4996)
+
+struct LibraryVersion
+{
+    uint16 buildNumber;
+    
+    union
+    {
+        uint32 version;
+        struct
+        {
+            uint8 rwRevMinor;
+            uint8 rwRevMajor;
+            uint8 rwLibMinor;
+            uint8 rwLibMajor;
+        };
+    };
+
+    inline bool operator ==( const LibraryVersion& right ) const
+    {
+        return
+            this->buildNumber == right.buildNumber &&
+            this->version == right.version;
+    }
+
+    std::string toString(void) const
+    {
+        std::string returnVer;
+
+        char numBuf[ 10 ];
+
+        // Zero it.
+        numBuf[ sizeof( numBuf ) - 1 ] = '\0';
+
+        _snprintf( numBuf, sizeof( numBuf ) - 1, "%u", this->rwLibMajor );
+
+        returnVer += numBuf;
+        returnVer += ".";
+
+        _snprintf( numBuf, sizeof( numBuf ) - 1, "%u", this->rwLibMinor );
+
+        returnVer += numBuf;
+        returnVer += ".";
+
+        _snprintf( numBuf, sizeof( numBuf ) - 1, "%u", this->rwRevMajor );
+
+        returnVer += numBuf;
+        returnVer += ".";
+
+        _snprintf( numBuf, sizeof( numBuf ) - 1, "%u", this->rwRevMinor );
+
+        returnVer += numBuf;
+
+        // If we have a valid build number, append it.
+        if ( this->buildNumber != 0xFFFF )
+        {
+            _snprintf( numBuf, sizeof( numBuf ) - 1, "%u", this->buildNumber );
+
+            returnVer += " (build: ";
+            returnVer += numBuf;
+            returnVer += ")";
+        }
+
+        return returnVer;
+    }
+};
+
+#pragma warning(pop)
+
 struct HeaderInfo
 {
+private:
 	uint32 type;
 	uint32 length;
-	uint32 version;
+	
+    // Packed library version.
+    struct PackedLibraryVersion
+    {
+        uint16 buildNumber;
+
+        uint16 packedMinor : 8;
+        uint16 pad : 2;
+        uint16 packedMajor : 6;
+    };
+
+    PackedLibraryVersion packedVersion;
+
+public:
 	void read(std::istream &rw);
 	uint32 write(std::ostream &rw);
+
+    void setVersion(const LibraryVersion& version);
+    LibraryVersion getVersion(void) const;
+
+    void setType(uint32 type)               { this->type = type; }
+    uint32 getType(void) const              { return this->type; }
+
+    void setLength(uint32 length)           { this->length = length; }
+    uint32 getLength(void) const            { return this->length; }
 };
 
 void ChunkNotFound(CHUNK_TYPE chunk, uint32 address);
@@ -163,18 +258,20 @@ std::string getChunkName(uint32 i);
 //#define	VERTSCALE2 (1.0/1024.0)	/* used by objects with normals */
 //#define	UVSCALE (1.0/4096.0)
 
-enum { 
-        FLAGS_TRISTRIP   = 0x01, 
-        FLAGS_POSITIONS  = 0x02, 
-        FLAGS_TEXTURED   = 0x04, 
-        FLAGS_PRELIT     = 0x08, 
-        FLAGS_NORMALS    = 0x10, 
-        FLAGS_LIGHT      = 0x20, 
-			FLAGS_MODULATEMATERIALCOLOR  = 0x40, 
-        FLAGS_TEXTURED2  = 0x80
+enum
+{ 
+    FLAGS_TRISTRIP   = 0x01, 
+    FLAGS_POSITIONS  = 0x02, 
+    FLAGS_TEXTURED   = 0x04, 
+    FLAGS_PRELIT     = 0x08, 
+    FLAGS_NORMALS    = 0x10, 
+    FLAGS_LIGHT      = 0x20, 
+    FLAGS_MODULATEMATERIALCOLOR  = 0x40, 
+    FLAGS_TEXTURED2  = 0x80
 };
 
-enum {
+enum
+{
 	MATFX_BUMPMAP = 0x1,
 	MATFX_ENVMAP = 0x2,
 	MATFX_BUMPENVMAP = 0x3,
@@ -188,20 +285,17 @@ enum {
 	FACETYPE_LIST = 0x0
 };
 
-/* gta3 ps2: 302, 304, 310 
- * gta3 pc: 304, 310, 401ffff, 800ffff, c02ffff
- * gtavc ps2: c02ffff
- * gtavc pc: c02ffff, 800ffff, 1003ffff
- * gtasa: 1803ffff */
+namespace KnownVersions
+{
+    enum eGameVersion
+    {
+        GTA3,
+        VC_PS2,
+        VC_PC,
+        SA
+    };
 
-enum {
-        GTA3_1 = 0x00000302,
-        GTA3_2 = 0x00000304,
-        GTA3_3 = 0x00000310,
-        GTA3_4 = 0x0800FFFF,
-        VCPS2  = 0x0C02FFFF,
-        VCPC   = 0x1003FFFF,
-        SA     = 0x1803FFFF
+    LibraryVersion  getGameVersion( eGameVersion gameVer );
 };
 
 struct Frame
@@ -277,8 +371,8 @@ struct Interface
     Interface( void );
     ~Interface( void );
 
-    void                SetVersion              ( uint32 version );
-    uint32              GetVersion              ( void ) const     { return this->version; }
+    void                SetVersion              ( LibraryVersion version );
+    LibraryVersion      GetVersion              ( void ) const     { return this->version; }
 
     void                BeginDebug              ( void );
     void                ProcessDebug            ( void );
@@ -308,7 +402,7 @@ struct Interface
     bool                GetDXTPackedDecompression   ( void ) const;
 
 private:
-    uint32 version;     // version of the output files (III, VC, SA)
+    LibraryVersion version;     // version of the output files (III, VC, SA)
 
     FileInterface *customFileInterface;
 

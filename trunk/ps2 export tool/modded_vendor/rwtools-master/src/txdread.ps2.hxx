@@ -497,6 +497,11 @@ struct NativeTexturePS2 : public PlatformTexture
         return this->paletteType;
     }
 
+    bool isCompressed( void ) const
+    {
+        return false;
+    }
+
     PlatformTexture* Clone( void ) const
     {
         NativeTexturePS2 *newTex = new NativeTexturePS2();
@@ -729,7 +734,7 @@ struct NativeTexturePS2 : public PlatformTexture
     };
     gsParams_t gsParams;
 
-    eFormatEncodingType getHardwareRequiredEncoding(uint32 version) const;
+    eFormatEncodingType getHardwareRequiredEncoding(LibraryVersion version) const;
 
     bool swizzleEncryptPS2(uint32 mip);
 	bool swizzleDecryptPS2(uint32 mip);
@@ -756,7 +761,7 @@ public:
     ) const;
 
     bool generatePS2GPUData(
-        uint32 gameVersion,
+        LibraryVersion gameVersion,
         ps2GSRegisters& gpuData,
         const uint32 mipmapBasePointer[], const uint32 mipmapBufferWidth[], const uint32 mipmapMemorySize[], uint32 maxMipmaps,
         eMemoryLayoutType memLayoutType,
@@ -823,11 +828,11 @@ inline eFormatEncodingType getFormatEncodingFromMemoryLayout(eMemoryLayoutType m
     return encodingFormat;
 }
 
-inline void getPaletteTextureDimensions(ePaletteType paletteType, uint32 version, uint32& width, uint32& height)
+inline void getPaletteTextureDimensions(ePaletteType paletteType, LibraryVersion version, uint32& width, uint32& height)
 {
     if (paletteType == PALETTE_4BIT)
     {
-        if (version == rw::GTA3_1 || version == rw::GTA3_2 || version == rw::GTA3_3 || version == rw::GTA3_4)
+        if (version.rwLibMinor <= 1)
         {
             width = 8;
             height = 2;
@@ -850,7 +855,7 @@ inline void getPaletteTextureDimensions(ePaletteType paletteType, uint32 version
 }
 
 inline void genpalettetexeldata(
-    uint32 gameVersion,
+    LibraryVersion gameVersion,
     void *paletteData, eRasterFormat rasterFormat, ePaletteType paletteType, uint32 itemCount,
     void*& texelData, uint32& texelDataSize, uint32& palWidth, uint32& palHeight
 )
@@ -883,7 +888,7 @@ inline void genpalettetexeldata(
         newTexelData = new uint8[ dstDataSize ];
 
         // Write the new memory.
-        memcpy(newTexelData, paletteData, srcDataSize);
+        memcpy(newTexelData, paletteData, std::min(srcDataSize, dstDataSize));
         
         if (dstDataSize > srcDataSize)
         {
