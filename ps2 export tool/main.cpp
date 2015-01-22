@@ -65,6 +65,12 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
         {
             isPrepared = true;
         }
+        else if ( tex.platform == rw::PLATFORM_XBOX )
+        {
+            tex.convertFromXbox();
+
+            isPrepared = true;
+        }
 
         // If the texture is prepared, do whatever.
         if ( isPrepared )
@@ -87,7 +93,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
             {
                 uint32 depth = tex.platformData->getDepth();
 
-                //if ( depth == 32 || depth == 16 )
+                if ( tex.platformData->getWidth() != tex.platformData->getHeight() && tex.platformData->isCompressed() == false )
                 {
                     // Create a path to store the textures to.
                     std::string textureSaveName( justFileName );
@@ -104,6 +110,13 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                         tex.writeTGA( absTexPath.c_str() );
                     }
                 }
+            }
+
+            if ( tex.platformData->getPaletteType() != rw::PALETTE_NONE )
+            {
+                __asm nop
+
+                DbgHeap_Validate();
             }
 
             tex.convertToPS2();
@@ -238,8 +251,9 @@ struct _discFileSentry
 static void DebugFuncs( CFileTranslator *discHandle )
 {
     // Debug a weird txd container...
-    CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
+    //CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC.TXD", "rb" );
+    CFile *txdChat = discHandle->Open( "ps2_sample/BURG_GA.TXD", "rb" );
 
     if ( txdChat )
     {
@@ -324,6 +338,11 @@ static void DebugFuncs( CFileTranslator *discHandle )
                     {
                         rw::NativeTexture& tex = use_txd.texList.at( n );
 
+                        if ( tex.name == "ketchup" )
+                        {
+                            __asm nop
+                        }
+
                         // WARNING: conversion does destroy some platform native data that
                         // is embedded into the texture!
                         // We need a way to retrieve the data and set it back after conversion.
@@ -333,6 +352,10 @@ static void DebugFuncs( CFileTranslator *discHandle )
                         if ( origPlatform == rw::PLATFORM_PS2 )
                         {
                             tex.convertFromPS2();
+                        }
+                        else if ( origPlatform == rw::PLATFORM_XBOX )
+                        {
+                            tex.convertFromXbox();
                         }
 
                         // Write the texture somewhere.
@@ -351,6 +374,11 @@ static void DebugFuncs( CFileTranslator *discHandle )
                         {
                             tex.convertToPS2();
                         }
+                        else if ( origPlatform == rw::PLATFORM_XBOX )
+                        {
+                            tex.convertToXbox();
+                        }
+                        // else we just keep it Direct3D/PC format.
                     }
                 }
 
@@ -448,7 +476,7 @@ int main( int argc, char *argv[] )
         return -1;
 
     // Set the global RenderWare version.
-    rw::rwInterface.SetVersion( rw::SA );
+    rw::rwInterface.SetVersion( rw::KnownVersions::getGameVersion( rw::KnownVersions::SA ) );
     {
         // Give the correct file interface to the interface.
         NEWFileInterface fInterface;
@@ -461,8 +489,9 @@ int main( int argc, char *argv[] )
 
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa\\" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtavc\\" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/" );
 
         if ( discHandle )
         {

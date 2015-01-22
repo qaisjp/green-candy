@@ -5,19 +5,78 @@ using namespace std;
 
 namespace rw {
 
+LibraryVersion KnownVersions::getGameVersion( KnownVersions::eGameVersion gameVer )
+{
+    LibraryVersion outVer;
+
+    outVer.buildNumber = 0xFFFF;
+    outVer.rwLibMajor = 3;
+    outVer.rwLibMinor = 0;
+    outVer.rwRevMajor = 0;
+    outVer.rwRevMinor = 0;
+
+    // Modify it for game engines we know.
+    if ( gameVer == GTA3 )
+    {
+        outVer.rwLibMinor = 1;
+    }
+    else if ( gameVer == VC_PS2 )
+    {
+        outVer.rwLibMinor = 3;
+        outVer.rwRevMinor = 2;
+    }
+    else if ( gameVer == VC_PC )
+    {
+        outVer.rwLibMinor = 4;
+        outVer.rwRevMinor = 3;
+    }
+    else if ( gameVer == SA )
+    {
+        outVer.rwLibMinor = 6;
+        outVer.rwRevMinor = 3;
+    }
+
+    return outVer;
+}
+
 void HeaderInfo::read(istream& rw)
 {
 	type = readUInt32(rw);
 	length = readUInt32(rw);
-	version = readUInt32(rw);
+	
+    // Read the packed version.
+    rw.read((char*)&this->packedVersion, sizeof(this->packedVersion));
 }
 
 uint32 HeaderInfo::write(ostream &rw)
 {
 	writeUInt32(type, rw);
 	writeUInt32(length, rw);
-	writeUInt32(version, rw);
+	
+    // Write the packed version.
+    rw.write((const char*)&this->packedVersion, sizeof(this->packedVersion));
+
 	return 3*sizeof(uint32);
+}
+
+void HeaderInfo::setVersion(const LibraryVersion& version)
+{
+    this->packedVersion.buildNumber = version.buildNumber;
+    this->packedVersion.packedMajor = version.rwLibMinor;
+    this->packedVersion.packedMinor = version.rwRevMinor;
+}
+
+LibraryVersion HeaderInfo::getVersion(void) const
+{
+    LibraryVersion outVer;
+
+    outVer.buildNumber = this->packedVersion.buildNumber;
+    outVer.rwLibMajor = 3;
+    outVer.rwLibMinor = this->packedVersion.packedMajor;
+    outVer.rwRevMajor = 0;
+    outVer.rwRevMinor = this->packedVersion.packedMinor;
+
+    return outVer;
 }
 
 void ChunkNotFound(CHUNK_TYPE chunk, uint32 address)

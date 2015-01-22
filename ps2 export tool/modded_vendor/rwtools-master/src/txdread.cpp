@@ -27,21 +27,41 @@ void TextureDictionary::read(istream &rw)
 	HeaderInfo header;
 
 	header.read(rw);
-	if (header.type != CHUNK_TEXDICTIONARY)
+	if (header.getType() != CHUNK_TEXDICTIONARY)
 		return;
 
-    uint32 texDictSize = header.length;
+    uint32 texDictSize = header.getLength();
 
 	READ_HEADER(CHUNK_STRUCT);
-	uint32 textureCount = readUInt16(rw);
-	this->dataStatus = readUInt16(rw);
+
+    // Read the header block depending on version.
+    LibraryVersion libVer = header.getVersion();
+
+    uint32 textureCount = 0;
+    bool requiresRecommendedPlatform = true;
+
+    if (libVer.rwLibMinor <= 5)
+    {
+        textureCount = readUInt32(rw);
+    }
+    else
+    {
+        textureCount = readUInt16(rw);
+        uint16 recommendedPlatform = readUInt16(rw);
+
+        // So if there is a recommended platform set, we will also give it one if we will write it.
+        requiresRecommendedPlatform = ( recommendedPlatform != 0 );
+    }
+    this->hasRecommendedPlatform = requiresRecommendedPlatform;
+
+    // Read the textures and store them.
 	texList.resize(textureCount);
 
 	for (uint32 i = 0; i < textureCount; i++)
     {
 		READ_HEADER(CHUNK_TEXTURENATIVE);
 
-        uint32 texNativeSize = header.length;
+        uint32 texNativeSize = header.getLength();
 
 		rw.seekg(0x0c, ios::cur);
 		texList[i].platform = readUInt32(rw);
@@ -67,16 +87,18 @@ void TextureDictionary::read(istream &rw)
         }
 
 		READ_HEADER(CHUNK_EXTENSION);
-		uint32 end = header.length;
+		uint32 end = header.getLength();
 		end += rw.tellg();
-		while (rw.tellg() < end) {
+		while (rw.tellg() < end)
+        {
 			header.read(rw);
-			switch (header.type) {
+			switch (header.getType())
+            {
 			case CHUNK_SKYMIPMAP:
 				rw.seekg(4, ios::cur);
 				break;
 			default:
-				rw.seekg(header.length, ios::cur);
+				rw.seekg(header.getLength(), ios::cur);
 				break;
 			}
 		}
@@ -84,14 +106,14 @@ void TextureDictionary::read(istream &rw)
 
     // Read extensions.
     READ_HEADER(CHUNK_EXTENSION);
-    uint32 end = header.length;
+    uint32 end = header.getLength();
     end += rw.tellg();
     
     while ( rw.tellg() < end )
     {
         header.read(rw);
 
-        rw.seekg(header.length, ios::cur);
+        rw.seekg(header.getLength(), ios::cur);
     }
 }
 
@@ -151,6 +173,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
                 void *texelSource = platformTex->texels[j];
                 uint32 srcWidth = platformTex->width[j];
                 uint32 srcHeight = platformTex->height[j];
+                uint32 srcDepth = platformTex->mipmapDepth[j];
 
                 for (uint32 y = 0; y < srcHeight; y++)
                 {
@@ -161,7 +184,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
 
                         // Grab the color values.
                         uint8 red, green, blue, alpha;
-                        bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, colorOrder, red, green, blue, alpha);
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, colorIndex, rasterFormat, colorOrder, srcDepth, red, green, blue, alpha);
 
                         if ( !hasColor )
                         {
@@ -172,7 +195,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
                         }
 
                         // Write the color data.
-                        puttexelcolor(newtexels, colorIndex, newFormat, colorOrder, red, green, blue, alpha);
+                        puttexelcolor(newtexels, colorIndex, newFormat, colorOrder, newDepth, red, green, blue, alpha);
                     }
                 }
 
@@ -191,7 +214,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
         {
             D3DFORMAT newD3DFormat;
 
-            bool hasD3DFormat = getD3DFormatFromRasterType( newFormat, colorOrder, newD3DFormat );
+            bool hasD3DFormat = getD3DFormatFromRasterType( newFormat, colorOrder, platformTex->mipmapDepth[ 0 ], newD3DFormat );
 
             if ( hasD3DFormat )
             {
@@ -267,9 +290,9 @@ Bitmap NativeTexture::getBitmap(void) const
                 for ( uint32 n = 0; n < texelCount; n++ )
                 {
                     uint8 r, g, b, a;
-                    browsetexelcolor(texelSource, platformTex->paletteType, palData, palSize, n, theFormat, theOrder, r, g, b, a);
+                    browsetexelcolor(texelSource, platformTex->paletteType, palData, palSize, n, theFormat, theOrder, depth, r, g, b, a);
 
-                    puttexelcolor(pixelData, n, theFormat, theOrder, r, g, b, a);
+                    puttexelcolor(pixelData, n, theFormat, theOrder, rasterFormatDepth, r, g, b, a);
                 }
 
                 // Update bitmap parameters.
@@ -361,7 +384,7 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
         {
             D3DFORMAT newD3DFormat;
 
-            bool hasD3DFormat = getD3DFormatFromRasterType(newFormat, newColorOrdering, newD3DFormat);
+            bool hasD3DFormat = getD3DFormatFromRasterType(newFormat, newColorOrdering, newDepth, newD3DFormat);
 
             if (hasD3DFormat)
             {
@@ -544,11 +567,12 @@ void NativeTexture::writeTGA(const char *path)
     eRasterFormat rasterFormat = this->rasterFormat;
     ePaletteType paletteType = platformTex->paletteType;
     eColorOrdering colorOrder = platformTex->colorOrdering;
+    uint32 rasterDepth = platformTex->mipmapDepth[0];
 
 	for (uint32 j = 0; j < width*height; j++)
     {
         uint8 red, green, blue, alpha;
-        browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, j, rasterFormat, colorOrder, red, green, blue, alpha);
+        browsetexelcolor(texelSource, paletteType, paletteData, maxpalette, j, rasterFormat, colorOrder, rasterDepth, red, green, blue, alpha);
 
 		writeUInt8(blue, tga);
 		writeUInt8(green, tga);

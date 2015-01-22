@@ -6,7 +6,7 @@ namespace rw
 Interface::Interface( void )
 {
     // Default to San Andreas version.
-    this->version = rw::SA;
+    this->version = KnownVersions::getGameVersion( KnownVersions::SA );
 
     // Setup standard members.
     this->customFileInterface = NULL;
@@ -30,7 +30,7 @@ Interface::~Interface( void )
     return;
 }
 
-void Interface::SetVersion( uint32 version )
+void Interface::SetVersion( LibraryVersion version )
 {
     this->version = version;
 }

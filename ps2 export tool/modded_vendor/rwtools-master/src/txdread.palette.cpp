@@ -880,7 +880,7 @@ struct palettizer
         {
             const texel_t& curTexel = *iter;
 
-            puttexelcolor(paletteData, n++, rasterFormat, colorOrder, curTexel.red, curTexel.green, curTexel.blue, curTexel.alpha);
+            puttexelcolor(paletteData, n++, rasterFormat, colorOrder, palDepth, curTexel.red, curTexel.green, curTexel.blue, curTexel.alpha);
         }
 
         return paletteData;
@@ -948,6 +948,8 @@ static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int w
     eRasterFormat rasterFormat = platformTex->parent->rasterFormat;
     ePaletteType paletteType = platformTex->paletteType;
 
+    uint32 itemDepth = platformTex->mipmapDepth[ info->mipIndex ];
+
     eColorOrdering colorOrder = platformTex->colorOrdering;
 
     void *palColors = platformTex->palette;
@@ -960,7 +962,7 @@ static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int w
         // Fetch the color.
         uint8 r, g, b, a;
 
-        browsetexelcolor(texelSource, paletteType, palColors, palColorCount, colorIndex, rasterFormat, colorOrder, r, g, b, a);
+        browsetexelcolor(texelSource, paletteType, palColors, palColorCount, colorIndex, rasterFormat, colorOrder, itemDepth, r, g, b, a);
 
         // Store the color.
         liq_color& outColor = row_out[ n ];
@@ -1032,6 +1034,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 uint32 srcWidth = platformTex->width[0];
                 uint32 srcHeight = platformTex->height[0];
                 void *texelSource = platformTex->texels[0];
+                uint32 srcDepth = platformTex->mipmapDepth[0];
 
 #if 0
                 // First define properties to use for linear elimination.
@@ -1063,7 +1066,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                         uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
 
                         uint8 red, green, blue, alpha;
-                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, red, green, blue, alpha);
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, srcDepth, red, green, blue, alpha);
 
                         if ( hasColor )
                         {
@@ -1083,6 +1086,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 uint32 srcWidth = platformTex->width[n];
                 uint32 srcHeight = platformTex->height[n];
                 void *texelSource = platformTex->texels[n];
+                uint32 srcDepth = platformTex->mipmapDepth[n];
 
                 uint32 itemCount = ( srcWidth * srcHeight );
                 
@@ -1105,7 +1109,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 {
                     // Browse each texel of the original image and link it to a palette entry.
                     uint8 red, green, blue, alpha;
-                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, red, green, blue, alpha);
+                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, srcDepth, red, green, blue, alpha);
 
                     uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
 
@@ -1292,7 +1296,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                     {
                         const liq_color& srcColor = palData->entries[ n ];
 
-                        puttexelcolor(newPalArray, n, rasterFormat, colorOrder, srcColor.r, srcColor.g, srcColor.b, srcColor.a);
+                        puttexelcolor(newPalArray, n, rasterFormat, colorOrder, palDepth, srcColor.r, srcColor.g, srcColor.b, srcColor.a);
                     }
 
                     // Update texture properties.

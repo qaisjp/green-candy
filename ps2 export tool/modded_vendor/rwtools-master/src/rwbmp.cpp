@@ -33,6 +33,7 @@ void Bitmap::setSize( uint32 width, uint32 height )
 
         eRasterFormat rasterFormat = this->rasterFormat;
         eColorOrdering colorOrder = this->colorOrder;
+        uint32 rasterDepth = this->depth;
 
         // Do an image copy.
         for ( uint32 y = 0; y < height; y++ )
@@ -52,14 +53,14 @@ void Bitmap::setSize( uint32 width, uint32 height )
                     uint32 oldColorIndex = ( y * oldWidth + x );
 
                     browsetexelcolor(
-                        oldTexels, PALETTE_NONE, NULL, 0, oldColorIndex, rasterFormat, colorOrder,
+                        oldTexels, PALETTE_NONE, NULL, 0, oldColorIndex, rasterFormat, colorOrder, rasterDepth,
                         srcRed, srcGreen, srcBlue, srcAlpha
                     );
                 }
 
                 // Put it into the new storage.
                 puttexelcolor(
-                    newTexels, colorIndex, rasterFormat, colorOrder, srcRed, srcGreen, srcBlue, srcAlpha
+                    newTexels, colorIndex, rasterFormat, colorOrder, rasterDepth, srcRed, srcGreen, srcBlue, srcAlpha
                 );
             }
         }
@@ -79,12 +80,12 @@ void Bitmap::setSize( uint32 width, uint32 height )
 }
 
 static inline void fetchpackedcolor(
-    void *texels, uint32 colorIndex, eRasterFormat theFormat, eColorOrdering colorOrder, double& redOut, double& greenOut, double& blueOut, double& alphaOut
+    void *texels, uint32 colorIndex, eRasterFormat theFormat, eColorOrdering colorOrder, uint32 itemDepth, double& redOut, double& greenOut, double& blueOut, double& alphaOut
 )
 {
     uint8 sourceRedPacked, sourceGreenPacked, sourceBluePacked, sourceAlphaPacked;
     browsetexelcolor(
-        texels, PALETTE_NONE, NULL, 0, colorIndex, theFormat, colorOrder,
+        texels, PALETTE_NONE, NULL, 0, colorIndex, theFormat, colorOrder, itemDepth,
         sourceRedPacked, sourceGreenPacked, sourceBluePacked, sourceAlphaPacked
     );
 
@@ -189,7 +190,7 @@ void Bitmap::draw(
                 uint32 srcColorIndex = ( sourceY * ourWidth + sourceX );
                 {
                     fetchpackedcolor(
-                        ourTexels, srcColorIndex, ourFormat, ourOrder,
+                        ourTexels, srcColorIndex, ourFormat, ourOrder, ourDepth,
                         sourceRed, sourceGreen, sourceBlue, sourceAlpha
                     );
                 }
@@ -261,7 +262,7 @@ void Bitmap::draw(
                 // Write back the new color.
                 {
                     puttexelcolor(
-                        ourTexels, srcColorIndex, ourFormat, ourOrder,
+                        ourTexels, srcColorIndex, ourFormat, ourOrder, ourDepth,
                         packcolor( resRed ), packcolor( resGreen ), packcolor( resBlue ), packcolor( resAlpha )
                     );
                 }
@@ -283,6 +284,7 @@ void Bitmap::drawBitmap(
 
         uint32 theWidth;
         uint32 theHeight;
+        uint32 theDepth;
         eRasterFormat theFormat;
         eColorOrdering theOrder;
         void *theTexels;
@@ -291,6 +293,7 @@ void Bitmap::drawBitmap(
         {
             bmp.getSize(this->theWidth, this->theHeight);
 
+            this->theDepth = bmp.getDepth();
             this->theFormat = bmp.getFormat();
             this->theOrder = bmp.getColorOrder();
             this->theTexels = bmp.texels;
@@ -309,7 +312,7 @@ void Bitmap::drawBitmap(
         void fetchcolor( uint32 colorIndex, double& red, double& green, double& blue, double& alpha )
         {
             fetchpackedcolor(
-                this->theTexels, colorIndex, this->theFormat, this->theOrder, red, green, blue, alpha
+                this->theTexels, colorIndex, this->theFormat, this->theOrder, this->theDepth, red, green, blue, alpha
             );
         }
     };

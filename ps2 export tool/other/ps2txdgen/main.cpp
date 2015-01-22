@@ -108,6 +108,10 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 // no conversion necessary.
                 isPrepared = true;
             }
+            else
+            {
+                assert( 0 );
+            }
 
             // If the texture is prepared, do whatever.
             if ( isPrepared )
@@ -125,12 +129,15 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 }
                 else if ( targetPlatform == PLATFORM_XBOX )
                 {
-                    // todo.
-                    assert( 0 );
+                    tex.convertToXbox();
                 }
                 else if ( targetPlatform == PLATFORM_PC )
                 {
                     // We are already at the appropriate format.
+                }
+                else
+                {
+                    assert( 0 );
                 }
             }
         }
@@ -295,7 +302,7 @@ bool ApplicationMain( void )
     fsHandle = CFileSystem::Create();
     
     // By default, we create San Andreas files.
-    rw::rwInterface.SetVersion( rw::SA );
+    rw::rwInterface.SetVersion( rw::KnownVersions::getGameVersion( rw::KnownVersions::SA ) );
 
     // Set up the warning buffer.
     rw::rwInterface.SetWarningManager( &_warningMan );
@@ -360,13 +367,18 @@ bool ApplicationMain( void )
             // Target game version.
             if ( const char *targetVersion = mainEntry->Get( "targetVersion" ) )
             {
+                rw::KnownVersions::eGameVersion gameVer;
+                bool hasGameVer = false;
+                    
                 if ( stricmp( targetVersion, "SA" ) == 0 ||
                      stricmp( targetVersion, "SanAndreas" ) == 0 ||
                      stricmp( targetVersion, "San Andreas" ) == 0 ||
                      stricmp( targetVersion, "GTA SA" ) == 0 ||
                      stricmp( targetVersion, "GTASA" ) == 0 )
                 {
-                    rw::rwInterface.SetVersion( rw::SA );
+                    gameVer = rw::KnownVersions::SA;
+
+                    hasGameVer = true;
                 }
                 else if ( stricmp( targetVersion, "VC" ) == 0 ||
                           stricmp( targetVersion, "ViceCity" ) == 0 ||
@@ -376,19 +388,28 @@ bool ApplicationMain( void )
                 {
                     if ( c_targetPlatform == PLATFORM_PS2 )
                     {
-                        rw::rwInterface.SetVersion( rw::VCPS2 );
+                        gameVer = rw::KnownVersions::VC_PS2;
                     }
                     else
                     {
-                        rw::rwInterface.SetVersion( rw::VCPC );
+                        gameVer = rw::KnownVersions::VC_PC;
                     }
+
+                    hasGameVer = true;
                 }
                 else if ( stricmp( targetVersion, "GTAIII" ) == 0 ||
                           stricmp( targetVersion, "III" ) == 0 ||
                           stricmp( targetVersion, "GTA3" ) == 0 ||
                           stricmp( targetVersion, "GTA 3" ) == 0 )
                 {
-                    rw::rwInterface.SetVersion( rw::GTA3_1 );
+                    gameVer = rw::KnownVersions::GTA3;
+
+                    hasGameVer = true;
+                }
+                
+                if ( hasGameVer )
+                {
+                    rw::rwInterface.SetVersion( rw::KnownVersions::getGameVersion( gameVer ) );
                 }
             }
 
@@ -485,27 +506,25 @@ bool ApplicationMain( void )
         << "* outputRoot: " << c_outputRoot << std::endl
         << "* gameRoot: " << c_gameRoot << std::endl;
 
-    uint32 targetVersion = rw::rwInterface.GetVersion();
+    rw::LibraryVersion targetVersion = rw::rwInterface.GetVersion();
 
     const char *strTargetVersion = "unknown";
 
-    if ( targetVersion == rw::SA )
+    if ( targetVersion.rwLibMajor == 3 && targetVersion.rwLibMinor == 6 )
     {
         strTargetVersion = "San Andreas";
     }
-    else if ( targetVersion == rw::VCPC ||
-              targetVersion == rw::VCPS2 )
+    else if ( targetVersion.rwLibMajor == 3 && ( targetVersion.rwLibMinor == 3 || targetVersion.rwLibMinor == 4 ) )
     {
         strTargetVersion = "Vice City";
     }
-    else if ( targetVersion == rw::GTA3_1 || targetVersion == rw::GTA3_2 ||
-              targetVersion == rw::GTA3_3 || targetVersion == rw::GTA3_4 )
+    else if ( targetVersion.rwLibMajor == 3 && ( targetVersion.rwLibMinor == 0 || targetVersion.rwLibMinor == 1 ) )
     {
         strTargetVersion = "GTA 3";
     }
 
     std::cout
-        << "* targetVersion: " << strTargetVersion << std::endl;
+        << "* targetVersion: " << strTargetVersion << " [rwver: " << targetVersion.toString() << "]" << std::endl;
 
     const char *strTargetPlatform = "unknown";
 

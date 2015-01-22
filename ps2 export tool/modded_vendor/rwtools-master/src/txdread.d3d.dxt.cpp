@@ -461,7 +461,7 @@ bool NativeTextureD3D::decompressDxtNative(uint32 dxtType)
 
                     uint32 dstColorIndex = PixelFormat::coord2index(target_x, target_y, texWidth);
 
-                    puttexelcolor(newtexels, dstColorIndex, targetRasterFormat, colorOrder, red, green, blue, alpha);
+                    puttexelcolor(newtexels, dstColorIndex, targetRasterFormat, colorOrder, rasterFormatDepth, red, green, blue, alpha);
                 }
             }
 
@@ -509,7 +509,7 @@ bool NativeTextureD3D::decompressDxtNative(uint32 dxtType)
         // We need to update our D3DFORMAT field.
         D3DFORMAT newD3DFormat;
 
-        bool hasD3DFormat = getD3DFormatFromRasterType(targetRasterFormat, colorOrder, newD3DFormat);
+        bool hasD3DFormat = getD3DFormatFromRasterType(targetRasterFormat, colorOrder, rasterFormatDepth, newD3DFormat);
 
         if (hasD3DFormat)
         {

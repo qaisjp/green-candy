@@ -12,6 +12,9 @@ struct NativeTextureXBOX : public PlatformTexture
         this->mipmapCount = 0;
         this->dxtCompression = 0;
         this->hasAlpha = false;
+        this->colorOrder = COLOR_BGRA;
+        this->rasterType = 4;   // by default it is a texture raster.
+        this->autoMipmaps = false;
     }
 
     void Delete( void )
@@ -54,6 +57,11 @@ struct NativeTextureXBOX : public PlatformTexture
     ePaletteType getPaletteType( void ) const
     {
         return this->paletteType;
+    }
+
+    bool isCompressed( void ) const
+    {
+        return ( this->dxtCompression != 0 );
     }
 
     PlatformTexture* Clone( void ) const
@@ -105,6 +113,10 @@ struct NativeTextureXBOX : public PlatformTexture
         newTex->dxtCompression = this->dxtCompression;
         newTex->hasAlpha = this->hasAlpha;
 
+        newTex->colorOrder = this->colorOrder;
+        newTex->rasterType = this->rasterType;
+        newTex->autoMipmaps = this->autoMipmaps;
+
         return newTex;
     }
 
@@ -124,10 +136,37 @@ struct NativeTextureXBOX : public PlatformTexture
 
     ePaletteType paletteType;
 
+    uint8 rasterType;
+
+    eColorOrdering colorOrder;
+
     bool hasAlpha;
+
+    bool autoMipmaps;
 
 	// PC/XBOX
 	uint32 dxtCompression;
 };
+
+#pragma pack(1)
+struct textureMetaHeaderStructXbox
+{
+    rw::texFormatInfo formatInfo;
+
+    char name[32];
+    char maskName[32];
+
+    uint32 rasterFormat;
+    uint32 hasAlpha;
+    uint16 width, height;
+
+    uint8 depth;
+    uint8 mipmapCount;
+    uint8 rasterType;
+    uint8 dxtCompression;
+
+    uint32 imageDataSectionSize;
+};
+#pragma pack()
 
 };

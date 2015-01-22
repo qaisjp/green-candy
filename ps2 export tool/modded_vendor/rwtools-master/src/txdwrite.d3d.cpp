@@ -10,11 +10,10 @@ namespace rw
 uint32 NativeTexture::writeD3d(std::ostream &rw)
 {
 	HeaderInfo header;
-    header.version = rw::rwInterface.GetVersion();
+    header.setVersion( rw::rwInterface.GetVersion() );
 	uint32 writtenBytesReturn;
 
-	if (platform != PLATFORM_D3D8 &&
-	    platform != PLATFORM_D3D9)
+	if (platform != PLATFORM_D3D8 && platform != PLATFORM_D3D9)
 		return 0;
 
     NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
@@ -42,36 +41,8 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         // Even though we can read those name fields with zero-termination safety,
         // the engines are not guarranteed to do so.
         // Also, print a warning if the name is changed this way.
-        {
-            size_t nameLen = this->name.size();
-
-            if (nameLen >= sizeof(metaHeader.name))
-            {
-                rw::rwInterface.PushWarning( "texture " + this->name + " has been written using truncated name" );
-
-                nameLen = sizeof(metaHeader.name) - 1;
-            }
-
-            memcpy( metaHeader.name, this->name.c_str(), nameLen );
-
-            // Pad with zeroes (which will also zero-terminate).
-            memset( metaHeader.name + nameLen, 0, sizeof(metaHeader.name) - nameLen );
-        }
-        {
-            size_t maskNameLen = this->maskName.size();
-
-            if (maskNameLen >= sizeof(metaHeader.maskName))
-            {
-                rw::rwInterface.PushWarning( "texture " + this->maskName + " has been written using truncated mask name" );
-
-                maskNameLen = sizeof(metaHeader.maskName) - 1;
-            }
-
-            memcpy( metaHeader.maskName, this->maskName.c_str(), maskNameLen );
-
-            // Pad with zeroes.
-            memset( metaHeader.maskName + maskNameLen, 0, sizeof(metaHeader.maskName) - maskNameLen );
-        }
+        writeStringIntoBufferSafe( this->name, metaHeader.name, sizeof( metaHeader.name ), this->name, "name" );
+        writeStringIntoBufferSafe( this->maskName, metaHeader.maskName, sizeof( metaHeader.maskName ), this->name, "mask name" );
 
         // Construct raster flags.
         metaHeader.rasterFormat = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, platformTex->mipmapCount > 1, platformTex->autoMipmaps );
@@ -125,32 +96,13 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 
             uint32 palItemCount = platformTex->paletteSize;
 
-            uint32 actualPalItemWriteCount = std::min( palItemCount, reqPalCount );
-
             // Get the real data size of the palette.
             uint32 palRasterDepth = Bitmap::getRasterFormatDepth(this->rasterFormat);
 
-            uint32 paletteDataSize = getRasterDataSize( actualPalItemWriteCount, palRasterDepth );
+            uint32 paletteDataSize = getRasterDataSize( palItemCount, palRasterDepth );
 
-			rw.write(reinterpret_cast <char *> (platformTex->palette), paletteDataSize);
-
-            uint32 palByteWriteCount = paletteDataSize;
+            uint32 palByteWriteCount = writePartialBlockSafe(rw, platformTex->palette, paletteDataSize, getRasterDataSize(reqPalCount, palRasterDepth));
     
-            // Write the remainder, if required.
-            if (actualPalItemWriteCount < reqPalCount)
-            {
-                uint32 leftCount = ( reqPalCount - actualPalItemWriteCount );
-
-                uint32 leftDataSize = getRasterDataSize( leftCount, palRasterDepth );
-
-                for ( uint32 n = 0; n < leftDataSize; n++ )
-                {
-                    writeUInt8(0, rw);
-                }
-
-                palByteWriteCount += leftDataSize;
-            }
-
             assert( palByteWriteCount * 8 / palRasterDepth == reqPalCount );
 
             bytesWritten += palByteWriteCount;
