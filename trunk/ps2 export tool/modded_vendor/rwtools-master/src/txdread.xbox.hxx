@@ -10,6 +10,7 @@ struct NativeTextureXBOX : public PlatformTexture
         this->paletteSize = 0;
         this->paletteType = PALETTE_NONE;
         this->mipmapCount = 0;
+        this->depth = 0;
         this->dxtCompression = 0;
         this->hasAlpha = false;
         this->colorOrder = COLOR_BGRA;
@@ -46,7 +47,7 @@ struct NativeTextureXBOX : public PlatformTexture
 
     uint32 getDepth( void ) const
     {
-        return this->mipmapDepth[0];
+        return this->depth;
     }
 
     uint32 getMipmapCount( void ) const
@@ -71,7 +72,7 @@ struct NativeTextureXBOX : public PlatformTexture
         // Copy over attributes.
         newTex->width = this->width;
         newTex->height = this->height;
-        newTex->mipmapDepth = this->mipmapDepth;
+        newTex->depth = this->depth;
         newTex->dataSizes = this->dataSizes;
         
         // Copy palette information.
@@ -125,9 +126,10 @@ struct NativeTextureXBOX : public PlatformTexture
 
 	uint32 mipmapCount;
 
+    uint32 depth;
+
 	std::vector<uint32> width;	// store width & height
 	std::vector<uint32> height;	// for each mipmap
-    std::vector<uint32> mipmapDepth;
 	std::vector<uint32> dataSizes;
 	std::vector<void*> texels;	// holds either indices or color values
 					// (also per mipmap)

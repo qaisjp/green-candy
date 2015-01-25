@@ -380,6 +380,8 @@ void NativeTexture::readPs2(std::istream &rw)
         // Store the raster type.
         platformTex->rasterType = ( textureMeta.rasterFormat & 0xFF );
 
+        platformTex->depth = depth;
+
         // Store unique parameters from the texture registers.
         platformTex->gsParams.maxMIPLevel = textureMeta.tex1.maximumMIPLevel;
         platformTex->gsParams.mtba = textureMeta.tex1.mtba;
@@ -507,7 +509,6 @@ void NativeTexture::readPs2(std::istream &rw)
             }
 
             // General properties.
-            newMipmap.depth = depth;
             newMipmap.swizzleEncodingType = imageEncodingType;
 
             // Calculate the texture data size.
@@ -953,11 +954,14 @@ void NativeTexture::convertFromPS2(void)
     // Copy over general attributes.
     d3dtex->width.resize( mipmapCount );
     d3dtex->height.resize( mipmapCount );
-    d3dtex->mipmapDepth.resize( mipmapCount );
     d3dtex->dataSizes.resize( mipmapCount );
     d3dtex->texels.resize( mipmapCount );
 
     d3dtex->mipmapCount = mipmapCount;
+
+    uint32 depth = platformTex->depth;
+
+    d3dtex->depth = depth;
 
     d3dtex->autoMipmaps = platformTex->autoMipmaps;
     d3dtex->rasterType = platformTex->rasterType;
@@ -971,8 +975,6 @@ void NativeTexture::convertFromPS2(void)
     for (uint32 j = 0; j < mipmapCount; j++)
     {
         NativeTexturePS2::GSMipmap& gsTex = platformTex->mipmaps[ j ];
-
-        uint32 depth = gsTex.depth;
 
         // Now that the texture is in linear format, we can prepare it.
         bool fixAlpha = false;
@@ -998,7 +1000,6 @@ void NativeTexture::convertFromPS2(void)
         // Move over the texture data to the D3D texture.
         d3dtex->width[ j ] = mipWidth;
         d3dtex->height[ j ] = mipHeight;
-        d3dtex->mipmapDepth[ j ] = gsTex.depth;
         d3dtex->texels[ j ] = texelData;
         d3dtex->dataSizes[ j ] = gsTex.dataSize;
 
@@ -1060,7 +1061,7 @@ inline void convertTexelsToPS2(
     bool fixAlpha
 )
 {
-    if ( fixAlpha || d3dColorOrder != ps2ColorOrder )
+    if ( fixAlpha || d3dColorOrder != ps2ColorOrder || srcRasterFormat != dstRasterFormat || srcItemDepth != dstItemDepth )
     {
 		for (uint32 i = 0; i < texelCount; i++)
         {
@@ -1109,7 +1110,10 @@ void NativeTexture::convertToPS2( void )
         // The PlayStation 2 does NOT support all raster formats.
         // We need to avoid giving it raster formats that are prone to crashes, like RASTER_888.
         eRasterFormat srcRasterFormat = this->rasterFormat;
+        uint32 srcItemDepth = platformTex->depth;
+
         eRasterFormat targetRasterFormat = srcRasterFormat;
+        uint32 dstItemDepth = srcItemDepth;
 
         ePaletteType paletteType = platformTex->paletteType;
 
@@ -1124,6 +1128,11 @@ void NativeTexture::convertToPS2( void )
         }
 
         uint32 targetRasterDepth = Bitmap::getRasterFormatDepth(targetRasterFormat);
+
+        if (paletteType == PALETTE_NONE)
+        {
+            dstItemDepth = targetRasterDepth;
+        }
 
         // Prepare mipmap data.
         eColorOrdering d3dColorOrder = platformTex->colorOrdering;
@@ -1143,10 +1152,9 @@ void NativeTexture::convertToPS2( void )
 
                 uint32 mipWidth = platformTex->width[ n ];
                 uint32 mipHeight = platformTex->height[ n ];
-                uint32 mipDepth = platformTex->mipmapDepth[ n ];
-                uint32 dataSize = platformTex->dataSizes[ n ];
+                uint32 srcDataSize = platformTex->dataSizes[ n ];
 
-                void *texelData = platformTex->texels[ n ];
+                void *srcTexelData = platformTex->texels[ n ];
 
                 // We need to convert the texels before storing them in the PS2 texture.
                 bool fixAlpha = false;
@@ -1158,18 +1166,41 @@ void NativeTexture::convertToPS2( void )
                     fixAlpha = true;
                 }
 
+                // Determine whether we need to allocate new texel data.
+                void *dstTexelData = srcTexelData;
+                uint32 dstDataSize = srcDataSize;
+
                 // Convert the texels.
                 if (paletteType == PALETTE_NONE)
                 {
-                    convertTexelsToPS2(texelData, texelData, mipWidth * mipHeight, srcRasterFormat, targetRasterFormat, mipDepth, targetRasterDepth, d3dColorOrder, ps2ColorOrder, fixAlpha);
+                    uint32 itemCount = mipWidth * mipHeight;
+
+                    if (srcItemDepth != dstItemDepth)
+                    {
+                        dstDataSize = getRasterDataSize(itemCount, dstItemDepth);
+
+                        dstTexelData = new uint8[ dstDataSize ];
+                    }
+
+                    convertTexelsToPS2(
+                        srcTexelData, dstTexelData, itemCount,
+                        srcRasterFormat, targetRasterFormat,
+                        srcItemDepth, dstItemDepth,
+                        d3dColorOrder, ps2ColorOrder,
+                        fixAlpha
+                    );
+                }
+
+                if (srcTexelData != dstTexelData)
+                {
+                    delete [] srcTexelData;
                 }
 
                 newMipmap.width = mipWidth;
                 newMipmap.height = mipHeight;
-                newMipmap.depth = mipDepth;
-                newMipmap.dataSize = dataSize;
+                newMipmap.dataSize = dstDataSize;
 
-                newMipmap.texels = texelData;
+                newMipmap.texels = dstTexelData;
             }
 
             // For all the texels that we dont require, delete them.
@@ -1180,6 +1211,7 @@ void NativeTexture::convertToPS2( void )
         }
 
         // Copy over general attributes.
+        ps2tex->depth = dstItemDepth;
         ps2tex->autoMipmaps = platformTex->autoMipmaps;
         ps2tex->rasterType = platformTex->rasterType;
 
@@ -1189,13 +1221,33 @@ void NativeTexture::convertToPS2( void )
         if (paletteType != PALETTE_NONE)
         {
             // Prepare the palette texels.
-            void *palTexelData = platformTex->palette;
+            void *srcPalTexelData = platformTex->palette;
             uint32 palSize = platformTex->paletteSize;
 
             uint32 srcPalFormatDepth = Bitmap::getRasterFormatDepth( srcRasterFormat );
-            uint32 targetPalFormatDepth = Bitmap::getRasterFormatDepth( targetRasterFormat );
+            uint32 targetPalFormatDepth = targetRasterDepth;
 
-            convertTexelsToPS2(palTexelData, palTexelData, palSize, srcRasterFormat, targetRasterFormat, srcPalFormatDepth, targetPalFormatDepth, d3dColorOrder, ps2ColorOrder, true);
+            void *dstPalTexelData = srcPalTexelData;
+
+            if (targetPalFormatDepth != srcPalFormatDepth)
+            {
+                uint32 palDataSize = getRasterDataSize(palSize, targetPalFormatDepth);
+
+                dstPalTexelData = new uint32[ palDataSize ];
+            }
+
+            convertTexelsToPS2(
+                srcPalTexelData, dstPalTexelData, palSize,
+                srcRasterFormat, targetRasterFormat,
+                srcPalFormatDepth, targetPalFormatDepth,
+                d3dColorOrder, ps2ColorOrder,
+                true
+            );
+
+            if (srcPalTexelData != dstPalTexelData)
+            {
+                delete [] srcPalTexelData;
+            }
 
             // Generate a palette texture.
             void *newPalTexelData;
@@ -1204,7 +1256,7 @@ void NativeTexture::convertToPS2( void )
             uint32 palWidth, palHeight;
 
             genpalettetexeldata(
-                rw::rwInterface.GetVersion(), palTexelData, this->rasterFormat, platformTex->paletteType, palSize,
+                rw::rwInterface.GetVersion(), dstPalTexelData, targetRasterFormat, paletteType, palSize,
                 newPalTexelData, newPalSize, palWidth, palHeight
             );
 
@@ -1213,14 +1265,14 @@ void NativeTexture::convertToPS2( void )
             palTex.swizzleWidth = palWidth;
             palTex.swizzleHeight = palHeight;
             palTex.dataSize = newPalSize;
-            palTex.swizzleEncodingType = getFormatEncodingFromRasterFormat(this->rasterFormat, PALETTE_NONE);
+            palTex.swizzleEncodingType = getFormatEncodingFromRasterFormat(targetRasterFormat, PALETTE_NONE);
 
             palTex.texels = newPalTexelData;
 
             // If we allocated a new palette array, we need to free the source one.
-            if ( newPalTexelData != palTexelData )
+            if ( newPalTexelData != dstPalTexelData )
             {
-                delete [] palTexelData;
+                delete [] dstPalTexelData;
             }
 
             // Zero out the palette data at the source texture.

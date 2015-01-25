@@ -439,6 +439,7 @@ struct NativeTexturePS2 : public PlatformTexture
     NativeTexturePS2( void )
     {
         // Initialize the texture object.
+        this->depth = 0;
         this->paletteType = PALETTE_NONE;
         this->autoMipmaps = false;
         this->requiresHeaders = true;
@@ -484,7 +485,7 @@ struct NativeTexturePS2 : public PlatformTexture
 
     uint32 getDepth( void ) const
     {
-        return this->mipmaps[0].depth;
+        return this->depth;
     }
 
     uint32 getMipmapCount( void ) const
@@ -511,6 +512,7 @@ struct NativeTexturePS2 : public PlatformTexture
         newTex->paletteType = this->paletteType;
 
         // Copy image texel information.
+        newTex->depth = this->depth;
         newTex->mipmaps = this->mipmaps;
         
         // Copy PS2 data.
@@ -667,7 +669,6 @@ struct NativeTexturePS2 : public PlatformTexture
         {
             this->width = 0;
             this->height = 0;
-            this->depth = 0;
         }
 
         inline ~GSMipmap( void )
@@ -685,18 +686,18 @@ struct NativeTexturePS2 : public PlatformTexture
             // Copy general attributes.
             this->width = right.width;
             this->height = right.height;
-            this->depth = right.depth;
 
             // Copy texture stuff.
             GSTexture::operator = ( right );
         }
 
         uint32 width, height;   // store width & height for each mipmap
-        uint32 depth;
     };
 
     // mipmaps are GSTextures.
     std::vector <GSMipmap> mipmaps;
+
+    uint32 depth;
 
     GSTexture paletteTex;
 

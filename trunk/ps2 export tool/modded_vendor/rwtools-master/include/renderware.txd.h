@@ -212,7 +212,7 @@ struct NativeTexture
 	uint32 writeD3d(std::ostream &txd);
     uint32 writePs2(std::ostream &txd);
     uint32 writeXbox(std::ostream &txd);
-    void writeTGA(const char *path);
+    void writeTGA(const char *path, bool optimized = false);
 
     Bitmap getBitmap(void) const;
     void setImageData(const Bitmap& srcImage);

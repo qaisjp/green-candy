@@ -61,7 +61,7 @@ void NativeTexturePS2::getOptimalGSParameters(gsParams_t& paramsOut) const
     // Calculate according to texture properties.
     uint32 width = mainTex.width;
     uint32 height = mainTex.height;
-    uint32 depth = mainTex.depth;
+    uint32 depth = this->depth;
 
     bool hasMipmaps = this->autoMipmaps;
 
@@ -332,7 +332,7 @@ bool NativeTexturePS2::generatePS2GPUData(
     // There is no guarrantee that this works for modified textures!
     uint32 width = mainTex.width;
     uint32 height = mainTex.height;
-    uint32 depth = mainTex.depth;
+    uint32 depth = this->depth;
 
     // Reconstruct GPU flags, kinda.
     rw::ps2GSRegisters::TEX0_REG tex0;
@@ -807,7 +807,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             metaHeader.miptbp2 = gpuData.miptbp2;
             metaHeader.width = mainTex.width;
             metaHeader.height = mainTex.height;
-            metaHeader.depth = mainTex.depth;
+            metaHeader.depth = platformTex->depth;
             metaHeader.tex0 = gpuData.tex0;
             metaHeader.tex1 = gpuData.tex1;
             metaHeader.rasterFormat = formatFlags;

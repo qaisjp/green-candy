@@ -116,7 +116,7 @@ bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
     // Get picture meta information.
     uint32 realImageWidth = gsTex.width;
     uint32 realImageHeight = gsTex.height;
-    uint32 realImageDepth = gsTex.depth;
+    uint32 realImageDepth = this->depth;
 
     if ( currentEncoding != encodeTo )
     {
@@ -178,7 +178,7 @@ bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
     // Get picture meta information.
     uint32 realImageWidth = gsTex.width;
     uint32 realImageHeight = gsTex.height;
-    uint32 realImageDepth = gsTex.depth;
+    uint32 realImageDepth = this->depth;
 
     if ( currentEncoding != decodeTo )
     {

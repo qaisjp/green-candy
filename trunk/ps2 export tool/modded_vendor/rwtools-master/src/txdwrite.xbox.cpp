@@ -70,7 +70,7 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
             metaInfo.width = platformTex->width[ 0 ];
             metaInfo.height = platformTex->height[ 0 ];
 
-            metaInfo.depth = platformTex->mipmapDepth[ 0 ];
+            metaInfo.depth = platformTex->depth;
 
             // Calculate the size of all the texture data combined.
             uint32 imageDataSectionSize = 0;

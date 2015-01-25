@@ -948,7 +948,7 @@ static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int w
     eRasterFormat rasterFormat = platformTex->parent->rasterFormat;
     ePaletteType paletteType = platformTex->paletteType;
 
-    uint32 itemDepth = platformTex->mipmapDepth[ info->mipIndex ];
+    uint32 itemDepth = platformTex->depth;
 
     eColorOrdering colorOrder = platformTex->colorOrdering;
 
@@ -1034,7 +1034,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 uint32 srcWidth = platformTex->width[0];
                 uint32 srcHeight = platformTex->height[0];
                 void *texelSource = platformTex->texels[0];
-                uint32 srcDepth = platformTex->mipmapDepth[0];
+                uint32 srcDepth = platformTex->depth;
 
 #if 0
                 // First define properties to use for linear elimination.
@@ -1080,13 +1080,14 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
             conv.constructpalette(maxPaletteEntries);
 
             // Point each color from the original texture to the palette.
+            uint32 itemDepth = platformTex->depth;
+
             for (uint32 n = 0; n < mipmapCount; n++)
             {
                 // Create palette index memory for each mipmap.
                 uint32 srcWidth = platformTex->width[n];
                 uint32 srcHeight = platformTex->height[n];
                 void *texelSource = platformTex->texels[n];
-                uint32 srcDepth = platformTex->mipmapDepth[n];
 
                 uint32 itemCount = ( srcWidth * srcHeight );
                 
@@ -1109,7 +1110,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 {
                     // Browse each texel of the original image and link it to a palette entry.
                     uint8 red, green, blue, alpha;
-                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, srcDepth, red, green, blue, alpha);
+                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, itemDepth, red, green, blue, alpha);
 
                     uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
 
@@ -1135,8 +1136,10 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 platformTex->texels[n] = newTexelData;
 
                 platformTex->dataSizes[n] = dataSize;
-                platformTex->mipmapDepth[n] = newDepth;
             }
+
+            // Set the new depth of the texture.
+            platformTex->depth = newDepth;
 
             // Delete the old palette data (if available).
             if (srcPaletteData != NULL)
@@ -1264,8 +1267,6 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                         // Set the texels.
                         platformTex->texels[ n ] = newTexelArray;
                         platformTex->dataSizes[ n ] = dataSize;
-
-                        platformTex->mipmapDepth[ n ] = newDepth;
                     }
 
                     if ( !hasUsedArray )
@@ -1279,6 +1280,9 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 {
                     delete [] srcPalData;
                 }
+
+                // Update the texture depth.
+                platformTex->depth = newDepth;
 
                 // Update the texture palette data.
                 {
