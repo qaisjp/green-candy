@@ -236,7 +236,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
     // Debug a weird txd container...
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC.TXD", "rb" );
-    CFile *txdChat = discHandle->Open( "xbox_sample/BURG_GA.TXD", "rb" );
+    CFile *txdChat = discHandle->Open( "outro.txd", "rb" );
 
     if ( txdChat )
     {
@@ -476,14 +476,14 @@ int main( int argc, char *argv[] )
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa_xbox\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/xbox_broken_samples/" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/" );
 
         if ( discHandle )
         {
             // Debug some obscurities.
-            //DebugFuncs( discHandle );
+            DebugFuncs( discHandle );
 
-            if ( true )
+            if ( false )
             {
                 // Create the build directory and get a link to it.
                 bool dirCreationSuccess = fileRoot->CreateDir( "BUILD_ROOT/" );

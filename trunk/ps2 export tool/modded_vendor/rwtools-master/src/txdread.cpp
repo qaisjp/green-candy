@@ -215,7 +215,7 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
         {
             D3DFORMAT newD3DFormat;
 
-            bool hasD3DFormat = getD3DFormatFromRasterType( newFormat, colorOrder, newDepth, newD3DFormat );
+            bool hasD3DFormat = getD3DFormatFromRasterType( newFormat, PALETTE_NONE, colorOrder, newDepth, newD3DFormat );
 
             if ( hasD3DFormat )
             {
@@ -384,7 +384,7 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
         {
             D3DFORMAT newD3DFormat;
 
-            bool hasD3DFormat = getD3DFormatFromRasterType(newFormat, newColorOrdering, newDepth, newD3DFormat);
+            bool hasD3DFormat = getD3DFormatFromRasterType(newFormat, PALETTE_NONE, newColorOrdering, newDepth, newD3DFormat);
 
             if (hasD3DFormat)
             {
@@ -550,6 +550,10 @@ bool NativeTexture::convertToDirect3D8(void)
         // We need to downgrade this texture.
         canConvert = true;
     }
+    else if (thisPlatform == PLATFORM_D3D8)
+    {
+        return true;
+    }
 
     // Now that we are in Direct3D format, we need to target a specific version.
     bool successful = false;
@@ -594,6 +598,10 @@ bool NativeTexture::convertToDirect3D9(void)
         // We need to downgrade this texture.
         canConvert = true;
     }
+    else if (thisPlatform == PLATFORM_D3D9)
+    {
+        return true;
+    }
 
     // Now that we are in Direct3D format, we need to target a specific version.
     bool successful = false;
@@ -612,6 +620,40 @@ bool NativeTexture::convertToDirect3D9(void)
     }
 
     return successful;
+}
+
+bool NativeTexture::isDirect3DWritable(void) const
+{
+    bool isWritable = false;
+
+    if (this->platform == PLATFORM_D3D8 || this->platform == PLATFORM_D3D9)
+    {
+        NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+
+        // We can write the texture if it has a Direct3D format.
+        if (platformTex->hasD3DFormat == true)
+        {
+            isWritable = true;
+        }
+    }
+
+    return isWritable;
+}
+
+void NativeTexture::makeDirect3DCompatible(void)
+{
+    // Only works if the texture is in Direct3D platform already.
+
+    if (this->platform == PLATFORM_D3D8 || this->platform == PLATFORM_D3D9)
+    {
+        NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+
+        // Make sure this texture has a Direct3D format.
+        if ( !platformTex->hasD3DFormat )
+        {
+            // TODO.
+        }
+    }
 }
 
 #pragma pack(1)

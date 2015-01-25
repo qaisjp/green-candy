@@ -530,7 +530,7 @@ void NativeTexture::convertFromXbox(void)
         // If there is no compression, the D3DFORMAT field is made up of the rasterFormat.
         uint32 depth = platformTex->depth;
 
-        hasD3DFormat = getD3DFormatFromRasterType(this->rasterFormat, platformTex->colorOrder, depth, theD3DFormat);
+        hasD3DFormat = getD3DFormatFromRasterType(this->rasterFormat, platformTex->paletteType, platformTex->colorOrder, depth, theD3DFormat);
 
         if ( true )
         {

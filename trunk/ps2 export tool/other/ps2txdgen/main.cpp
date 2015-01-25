@@ -88,10 +88,8 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
         {
             rw::NativeTexture& tex = txd.texList[n];
 
-            bool isPrepared = false;
-
             // Convert the texture to Direct3D 9 format.
-            tex.convertToDirect3D9();
+            bool isPrepared = tex.convertToDirect3D9();
 
             // If the texture is prepared, do whatever.
             if ( isPrepared )
@@ -113,6 +111,12 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 }
                 else if ( targetPlatform == PLATFORM_PC )
                 {
+                    // Make sure that we have a D3DFORMAT field.
+                    if ( !tex.isDirect3DWritable() )
+                    {
+                        tex.makeDirect3DCompatible();
+                    }
+
                     // Depends on the game.
                     if (gameVersion == rw::KnownVersions::SA)
                     {

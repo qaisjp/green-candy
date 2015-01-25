@@ -996,7 +996,14 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
     if (paletteType == convPaletteFormat)
         return;
 
-    eColorOrdering colorOrder = platformTex->colorOrdering;
+    eColorOrdering srcColorOrder = platformTex->colorOrdering;
+    eColorOrdering dstColorOrder = srcColorOrder;
+
+    // We prefer COLOR_RGBA, since all architectures seem to use it.
+    if ( dstColorOrder != COLOR_RGBA )
+    {
+        dstColorOrder = COLOR_RGBA;
+    }
 
     void *srcPaletteData = platformTex->palette;
     uint32 srcPaletteCount = platformTex->paletteSize;
@@ -1066,7 +1073,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                         uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
 
                         uint8 red, green, blue, alpha;
-                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, srcDepth, red, green, blue, alpha);
+                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, srcColorOrder, srcDepth, red, green, blue, alpha);
 
                         if ( hasColor )
                         {
@@ -1110,7 +1117,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 {
                     // Browse each texel of the original image and link it to a palette entry.
                     uint8 red, green, blue, alpha;
-                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, colorOrder, itemDepth, red, green, blue, alpha);
+                    browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, srcColorOrder, itemDepth, red, green, blue, alpha);
 
                     uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
 
@@ -1148,7 +1155,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
             }
 
             // Store the new palette texels.
-            platformTex->palette = conv.makepalette(rasterFormat, colorOrder);
+            platformTex->palette = conv.makepalette(rasterFormat, dstColorOrder);
             platformTex->paletteSize = conv.texelElimData.size();
         }
         else if (useRuntime == PALRUNTIME_PNGQUANT)
@@ -1300,7 +1307,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                     {
                         const liq_color& srcColor = palData->entries[ n ];
 
-                        puttexelcolor(newPalArray, n, rasterFormat, colorOrder, palDepth, srcColor.r, srcColor.g, srcColor.b, srcColor.a);
+                        puttexelcolor(newPalArray, n, rasterFormat, dstColorOrder, palDepth, srcColor.r, srcColor.g, srcColor.b, srcColor.a);
                     }
 
                     // Update texture properties.
@@ -1328,6 +1335,19 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
     // Notify the raster about its new format.
     platformTex->paletteType = convPaletteFormat;
+
+    // Update the D3DFORMAT field.
+    {
+        D3DFORMAT newD3DFormat;
+
+        bool gotNewFormat = getD3DFormatFromRasterType(rasterFormat, convPaletteFormat, dstColorOrder, newDepth, newD3DFormat);
+
+        if (gotNewFormat)
+        {
+            platformTex->d3dFormat = newD3DFormat;
+        }
+        platformTex->hasD3DFormat = gotNewFormat;
+    }
 
     // Since we changed the colors, update the alpha flag.
     platformTex->hasAlpha = platformTex->doesHaveAlpha();

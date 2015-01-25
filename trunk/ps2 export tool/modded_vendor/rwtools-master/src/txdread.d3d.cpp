@@ -128,8 +128,6 @@ void NativeTexture::readD3d(std::istream &rw)
 
         platformTex->depth = depth;
 
-        assert( dimInfo.rasterType == 4 );  // TODO
-
         platformTex->rasterType = dimInfo.rasterType;
 
 	    if ( platform == PLATFORM_D3D9 )
@@ -198,8 +196,16 @@ void NativeTexture::readD3d(std::istream &rw)
             else
             {
                 eRasterFormat paletteRasterType = this->rasterFormat;
+                ePaletteType paletteType = platformTex->paletteType;
+                
+                eColorOrdering probableColorOrder = COLOR_BGRA;
 
-                bool hasFormat = getD3DFormatFromRasterType( paletteRasterType, COLOR_BGRA, depth, d3dFormat );
+                if (paletteType != PALETTE_NONE)
+                {
+                    probableColorOrder = COLOR_RGBA;
+                }
+
+                bool hasFormat = getD3DFormatFromRasterType( paletteRasterType, paletteType, probableColorOrder, depth, d3dFormat );
 
                 if ( !hasFormat )
                 {
@@ -334,6 +340,19 @@ void NativeTexture::readD3d(std::istream &rw)
 
                 isValidFormat = true;
             }
+            else if (d3dFormat == D3DFMT_P8)
+            {
+                // We are a palette raster.
+                // The raster format can be what it is.
+                if (platformTex->paletteType != PALETTE_NONE)
+                {
+                    d3dRasterFormat = this->rasterFormat;
+
+                    colorOrder = COLOR_RGBA;
+
+                    isValidFormat = true;
+                }
+            }
 
             if ( isValidFormat == false )
             {
@@ -401,7 +420,7 @@ void NativeTexture::readD3d(std::istream &rw)
 		    rw.read(reinterpret_cast <char *> (palData), paletteDataSize);
 
             // Store the palette.
-            platformTex->palette = (uint8*)palData;
+            platformTex->palette = palData;
             platformTex->paletteSize = reqPalItemCount;
 	    }
 
