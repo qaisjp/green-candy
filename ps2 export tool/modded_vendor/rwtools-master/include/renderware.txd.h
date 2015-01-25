@@ -232,6 +232,10 @@ struct NativeTexture
 
     bool convertToDirect3D8(void);
     bool convertToDirect3D9(void);
+    
+    // Check whether a texture is Direct3D compatible.
+    bool isDirect3DWritable(void) const;
+    void makeDirect3DCompatible(void);
 
     // Optimization routines.
     void optimizeForLowEnd(float quality);

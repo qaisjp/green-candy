@@ -3,109 +3,124 @@
 namespace rw
 {
 
-inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, eColorOrdering colorOrder, uint32 itemDepth, D3DFORMAT& d3dFormat)
+inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, ePaletteType paletteType, eColorOrdering colorOrder, uint32 itemDepth, D3DFORMAT& d3dFormat)
 {
     bool hasFormat = false;
 
-    if ( paletteRasterType == RASTER_1555 )
-    {
-        if ( itemDepth == 16 )
-        {
-            if (colorOrder == COLOR_BGRA)
-            {
-                d3dFormat = D3DFMT_A1R5G5B5;
-
-                hasFormat = true;
-            }
-        }
-    }
-    else if ( paletteRasterType == RASTER_565 )
-    {
-        if ( itemDepth == 16 )
-        {
-            if (colorOrder == COLOR_BGRA)
-            {
-                d3dFormat = D3DFMT_R5G6B5;
-
-                hasFormat = true;
-            }
-        }
-    }
-    else if ( paletteRasterType == RASTER_4444 )
-    {
-        if ( itemDepth == 16 )
-        {
-            if (colorOrder == COLOR_BGRA)
-            {
-                d3dFormat = D3DFMT_A4R4G4B4;
-
-                hasFormat = true;
-            }
-        }
-    }
-    else if ( paletteRasterType == RASTER_LUM8 )
+    if ( paletteType != PALETTE_NONE )
     {
         if ( itemDepth == 8 )
         {
-            d3dFormat = D3DFMT_L8;
+            if (colorOrder == COLOR_RGBA)
+            {
+                d3dFormat = D3DFMT_P8;
 
-            hasFormat = true;
+                hasFormat = true;
+            }
         }
     }
-    else if ( paletteRasterType == RASTER_8888 )
+    else
     {
-        if ( itemDepth == 32 )
+        if ( paletteRasterType == RASTER_1555 )
+        {
+            if ( itemDepth == 16 )
+            {
+                if (colorOrder == COLOR_BGRA)
+                {
+                    d3dFormat = D3DFMT_A1R5G5B5;
+
+                    hasFormat = true;
+                }
+            }
+        }
+        else if ( paletteRasterType == RASTER_565 )
+        {
+            if ( itemDepth == 16 )
+            {
+                if (colorOrder == COLOR_BGRA)
+                {
+                    d3dFormat = D3DFMT_R5G6B5;
+
+                    hasFormat = true;
+                }
+            }
+        }
+        else if ( paletteRasterType == RASTER_4444 )
+        {
+            if ( itemDepth == 16 )
+            {
+                if (colorOrder == COLOR_BGRA)
+                {
+                    d3dFormat = D3DFMT_A4R4G4B4;
+
+                    hasFormat = true;
+                }
+            }
+        }
+        else if ( paletteRasterType == RASTER_LUM8 )
+        {
+            if ( itemDepth == 8 )
+            {
+                d3dFormat = D3DFMT_L8;
+
+                hasFormat = true;
+            }
+        }
+        else if ( paletteRasterType == RASTER_8888 )
+        {
+            if ( itemDepth == 32 )
+            {
+                if (colorOrder == COLOR_BGRA)
+                {
+                    d3dFormat = D3DFMT_A8R8G8B8;
+
+                    hasFormat = true;
+                }
+                else if (colorOrder == COLOR_RGBA)
+                {
+                    d3dFormat = D3DFMT_A8B8G8R8;
+
+                    hasFormat = true;
+                }
+            }
+        }
+        else if ( paletteRasterType == RASTER_888 )
         {
             if (colorOrder == COLOR_BGRA)
             {
-                d3dFormat = D3DFMT_A8R8G8B8;
+                if ( itemDepth == 32 )
+                {
+                    d3dFormat = D3DFMT_X8R8G8B8;
 
-                hasFormat = true;
+                    hasFormat = true;
+                }
+                else if ( itemDepth == 24 )
+                {
+                    d3dFormat = D3DFMT_R8G8B8;
+
+                    hasFormat = true;
+                }
             }
             else if (colorOrder == COLOR_RGBA)
             {
-                d3dFormat = D3DFMT_A8B8G8R8;
+                if ( itemDepth == 32 )
+                {
+                    d3dFormat = D3DFMT_X8B8G8R8;
 
-                hasFormat = true;
+                    hasFormat = true;
+                }
             }
         }
-    }
-    else if ( paletteRasterType == RASTER_888 )
-    {
-        if (colorOrder == COLOR_BGRA)
+        else if ( paletteRasterType == RASTER_555 )
         {
-            if ( itemDepth == 32 )
+            if ( itemDepth == 16 )
             {
-                d3dFormat = D3DFMT_X8R8G8B8;
+                if (colorOrder == COLOR_BGRA)
+                {
+                    d3dFormat = D3DFMT_X1R5G5B5;
 
-                hasFormat = true;
-            }
-            else if ( itemDepth == 24 )
-            {
-                d3dFormat = D3DFMT_R8G8B8;
-
-                hasFormat = true;
-            }
-        }
-        else if (colorOrder == COLOR_RGBA)
-        {
-            if ( itemDepth == 32 )
-            {
-                d3dFormat = D3DFMT_X8B8G8R8;
-
-                hasFormat = true;
-            }
-        }
-    }
-    else if ( paletteRasterType == RASTER_555 )
-    {
-        if ( itemDepth == 16 )
-        {
-            if (colorOrder == COLOR_BGRA)
-            {
-                d3dFormat = D3DFMT_X1R5G5B5;
-
-                hasFormat = true;
+                    hasFormat = true;
+                }
             }
         }
     }

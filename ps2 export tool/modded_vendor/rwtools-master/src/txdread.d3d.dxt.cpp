@@ -510,7 +510,7 @@ bool NativeTextureD3D::decompressDxtNative(uint32 dxtType)
         // We need to update our D3DFORMAT field.
         D3DFORMAT newD3DFormat;
 
-        bool hasD3DFormat = getD3DFormatFromRasterType(targetRasterFormat, colorOrder, rasterFormatDepth, newD3DFormat);
+        bool hasD3DFormat = getD3DFormatFromRasterType(targetRasterFormat, PALETTE_NONE, colorOrder, rasterFormatDepth, newD3DFormat);
 
         if (hasD3DFormat)
         {
