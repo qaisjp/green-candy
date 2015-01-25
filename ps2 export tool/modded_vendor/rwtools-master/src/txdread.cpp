@@ -14,7 +14,8 @@
 
 #include "txdread.d3d.hxx"
 
-namespace rw {
+namespace rw
+{
 
 /*
  * Texture Dictionary
@@ -523,6 +524,94 @@ void NativeTexture::optimizeForLowEnd(float quality)
             break;
         }
     }
+}
+
+bool NativeTexture::convertToDirect3D8(void)
+{
+    // Get the platform and convert it.
+    uint32 thisPlatform = this->platform;
+
+    bool canConvert = false;
+
+    if (thisPlatform == PLATFORM_PS2)
+    {
+        this->convertFromPS2();
+
+        canConvert = true;
+    }
+    else if (thisPlatform == PLATFORM_XBOX)
+    {
+        this->convertFromXbox();
+
+        canConvert = true;
+    }
+    else if (thisPlatform == PLATFORM_D3D9)
+    {
+        // We need to downgrade this texture.
+        canConvert = true;
+    }
+
+    // Now that we are in Direct3D format, we need to target a specific version.
+    bool successful = false;
+
+    if (canConvert)
+    {
+        thisPlatform = this->platform;
+
+        if (thisPlatform != PLATFORM_D3D8)
+        {
+            // Update it.
+            this->platform = PLATFORM_D3D8;
+        }
+
+        successful = true;
+    }
+
+    return successful;
+}
+
+bool NativeTexture::convertToDirect3D9(void)
+{
+    // Get the platform and convert it.
+    uint32 thisPlatform = this->platform;
+
+    bool canConvert = false;
+
+    if (thisPlatform == PLATFORM_PS2)
+    {
+        this->convertFromPS2();
+
+        canConvert = true;
+    }
+    else if (thisPlatform == PLATFORM_XBOX)
+    {
+        this->convertFromXbox();
+
+        canConvert = true;
+    }
+    else if (thisPlatform == PLATFORM_D3D8)
+    {
+        // We need to downgrade this texture.
+        canConvert = true;
+    }
+
+    // Now that we are in Direct3D format, we need to target a specific version.
+    bool successful = false;
+
+    if (canConvert)
+    {
+        thisPlatform = this->platform;
+
+        if (thisPlatform != PLATFORM_D3D9)
+        {
+            // Update it.
+            this->platform = PLATFORM_D3D9;
+        }
+
+        successful = true;
+    }
+
+    return successful;
 }
 
 #pragma pack(1)

@@ -230,6 +230,9 @@ struct NativeTexture
 	void convertToFormat(eRasterFormat format);
     void convertToPalette(ePaletteType paletteFormat);
 
+    bool convertToDirect3D8(void);
+    bool convertToDirect3D9(void);
+
     // Optimization routines.
     void optimizeForLowEnd(float quality);
 

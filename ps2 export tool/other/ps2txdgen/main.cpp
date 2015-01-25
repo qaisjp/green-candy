@@ -56,7 +56,7 @@ struct RwWarningBuffer : public rw::WarningManagerInterface
 
 static RwWarningBuffer _warningMan;
 
-static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, eTargetPlatform targetPlatform, bool doCompress, float compressionQuality, std::string& errMsg )
+static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, eTargetPlatform targetPlatform, bool doCompress, float compressionQuality, rw::KnownVersions::eGameVersion gameVersion, std::string& errMsg )
 {
     bool hasProcessed = false;
 
@@ -90,28 +90,8 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
             bool isPrepared = false;
 
-            // Convert the texture to Direct3D format.
-            if ( tex.platform == rw::PLATFORM_PS2 )
-            {
-                tex.convertFromPS2();
-
-                isPrepared = true;
-            }
-            else if ( tex.platform == rw::PLATFORM_XBOX )
-            {
-                tex.convertFromXbox();
-
-                isPrepared = true;
-            }
-            else if ( tex.platform == rw::PLATFORM_D3D8 || tex.platform == rw::PLATFORM_D3D9 )
-            {
-                // no conversion necessary.
-                isPrepared = true;
-            }
-            else
-            {
-                assert( 0 );
-            }
+            // Convert the texture to Direct3D 9 format.
+            tex.convertToDirect3D9();
 
             // If the texture is prepared, do whatever.
             if ( isPrepared )
@@ -133,7 +113,15 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 }
                 else if ( targetPlatform == PLATFORM_PC )
                 {
-                    // We are already at the appropriate format.
+                    // Depends on the game.
+                    if (gameVersion == rw::KnownVersions::SA)
+                    {
+                        tex.convertToDirect3D9();
+                    }
+                    else
+                    {
+                        tex.convertToDirect3D8();
+                    }
                 }
                 else
                 {
@@ -179,6 +167,7 @@ struct _discFileSentry
     eTargetPlatform targetPlatform;
     bool doCompress;
     float compressionQuality;
+    rw::KnownVersions::eGameVersion gameVersion;
 
     inline bool OnSingletonFile(
         CFileTranslator *sourceRoot, CFileTranslator *buildRoot, const filePath& relPathFromRoot,
@@ -221,7 +210,7 @@ struct _discFileSentry
 
                     std::string errorMessage;
 
-                    bool couldProcessTXD = ProcessTXDArchive( sourceRoot, sourceStream, targetStream, this->targetPlatform, this->doCompress, this->compressionQuality, errorMessage );
+                    bool couldProcessTXD = ProcessTXDArchive( sourceRoot, sourceStream, targetStream, this->targetPlatform, this->doCompress, this->compressionQuality, this->gameVersion, errorMessage );
 
                     if ( couldProcessTXD )
                     {
@@ -302,7 +291,7 @@ bool ApplicationMain( void )
     fsHandle = CFileSystem::Create();
     
     // By default, we create San Andreas files.
-    rw::rwInterface.SetVersion( rw::KnownVersions::getGameVersion( rw::KnownVersions::SA ) );
+    rw::KnownVersions::eGameVersion c_gameVersion = rw::KnownVersions::SA;
 
     // Set up the warning buffer.
     rw::rwInterface.SetWarningManager( &_warningMan );
@@ -409,7 +398,7 @@ bool ApplicationMain( void )
                 
                 if ( hasGameVer )
                 {
-                    rw::rwInterface.SetVersion( rw::KnownVersions::getGameVersion( gameVer ) );
+                    c_gameVersion = gameVer;
                 }
             }
 
@@ -490,6 +479,7 @@ bool ApplicationMain( void )
     }
 
     // Set some configuration.
+    rw::rwInterface.SetVersion( rw::KnownVersions::getGameVersion( c_gameVersion ) );
     rw::rwInterface.SetPaletteRuntime( c_palRuntimeType );
     rw::rwInterface.SetDXTRuntime( c_dxtRuntimeType );
 
@@ -618,6 +608,7 @@ bool ApplicationMain( void )
                 sentry.targetPlatform = c_targetPlatform;
                 sentry.doCompress = compressTextures;
                 sentry.compressionQuality = c_compressionQuality;
+                sentry.gameVersion = c_gameVersion;
 
                 fileProc.process( &sentry, absGameRootTranslator, absOutputRootTranslator );
 
