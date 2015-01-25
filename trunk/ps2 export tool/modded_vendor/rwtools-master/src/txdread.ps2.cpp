@@ -1056,7 +1056,7 @@ void NativeTexture::convertFromPS2(void)
 }
 
 inline void convertTexelsToPS2(
-    const void *texelData, void *dstTexelData, uint32 texelCount, eRasterFormat srcRasterFormat, eRasterFormat dstRasterFormat, uint32 srcItemDepth, uint32 dstItemDepth,
+    const void *srcTexelData, void *dstTexelData, uint32 texelCount, eRasterFormat srcRasterFormat, eRasterFormat dstRasterFormat, uint32 srcItemDepth, uint32 dstItemDepth,
     eColorOrdering d3dColorOrder, eColorOrdering ps2ColorOrder,
     bool fixAlpha
 )
@@ -1066,7 +1066,7 @@ inline void convertTexelsToPS2(
 		for (uint32 i = 0; i < texelCount; i++)
         {
             uint8 red, green, blue, alpha;
-            browsetexelcolor(texelData, PALETTE_NONE, NULL, 0, i, srcRasterFormat, d3dColorOrder, srcItemDepth, red, green, blue, alpha);
+            browsetexelcolor(srcTexelData, PALETTE_NONE, NULL, 0, i, srcRasterFormat, d3dColorOrder, srcItemDepth, red, green, blue, alpha);
 
 		    // fix alpha
             {
@@ -1124,6 +1124,20 @@ void NativeTexture::convertToPS2( void )
             {
                 // Since this raster takes the same memory space as RASTER_8888, we can silently convert it.
                 targetRasterFormat = RASTER_8888;
+            }
+
+            if (paletteType != PALETTE_NONE)
+            {
+                // The architecture does not support 8bit PALETTE_4BIT rasters.
+                // Fix that.
+                if (paletteType == PALETTE_4BIT)
+                {
+                    dstItemDepth = 4;
+                }
+                else if (paletteType == PALETTE_8BIT)
+                {
+                    dstItemDepth = 8;
+                }
             }
         }
 
@@ -1189,6 +1203,61 @@ void NativeTexture::convertToPS2( void )
                         d3dColorOrder, ps2ColorOrder,
                         fixAlpha
                     );
+                }
+                else
+                {
+                    // Maybe we need to fix the indice (if the texture comes from PC or XBOX architecture).
+                    if (dstItemDepth != srcItemDepth)
+                    {
+                        uint32 itemCount = mipWidth * mipHeight;
+
+                        uint32 newDataSize = 0;
+
+                        if (dstItemDepth == 4)
+                        {
+                            newDataSize = PixelFormat::palette4bit::sizeitems( itemCount );
+                        }
+                        else if (dstItemDepth == 8)
+                        {
+                            newDataSize = PixelFormat::palette8bit::sizeitems( itemCount );
+                        }
+
+                        if (newDataSize != 0)
+                        {
+                            dstTexelData = new uint8[ newDataSize ];
+                            
+                            dstDataSize = newDataSize;
+
+                            // Update the indice.
+                            uint32 palSize = platformTex->paletteSize;
+
+                            for ( uint32 n = 0; n < itemCount; n++ )
+                            {
+                                uint8 palIndex;
+
+                                bool gotPalIndex = getpaletteindex(srcTexelData, paletteType, palSize, srcItemDepth, n, palIndex);
+
+                                if ( !gotPalIndex )
+                                {
+                                    palIndex = 0;
+                                }
+
+                                // Write it again.
+                                if (dstItemDepth == 4)
+                                {
+                                    ( (PixelFormat::palette4bit*)dstTexelData )->setvalue(n, palIndex);
+                                }
+                                else if (dstItemDepth == 8)
+                                {
+                                    ( (PixelFormat::palette8bit*)dstTexelData )->setvalue(n, palIndex);
+                                }
+                                else
+                                {
+                                    assert( 0 );
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (srcTexelData != dstTexelData)

@@ -54,25 +54,8 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
     {
         rw::NativeTexture& tex = txd.texList[n];
 
-        bool isPrepared = false;
-
-        if ( tex.platform == rw::PLATFORM_PS2 )
-        {
-            tex.convertFromPS2();
-
-            isPrepared = true;
-        }
-        else if ( tex.platform == rw::PLATFORM_D3D9 ||
-                  tex.platform == rw::PLATFORM_D3D8 )
-        {
-            isPrepared = true;
-        }
-        else if ( tex.platform == rw::PLATFORM_XBOX )
-        {
-            tex.convertFromXbox();
-
-            isPrepared = true;
-        }
+        // Make sure are in Direct3D 9 format.
+        bool isPrepared = tex.convertToDirect3D9();
 
         // If the texture is prepared, do whatever.
         if ( isPrepared )
