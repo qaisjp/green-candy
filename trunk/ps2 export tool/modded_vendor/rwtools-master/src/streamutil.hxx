@@ -32,9 +32,11 @@ inline void writeStringIntoBufferSafe( const std::string& theString, char *buf, 
 
 inline rw::uint32 writePartialBlockSafe( std::ostream& rw, const void *srcData, rw::uint32 srcDataSize, rw::uint32 streamSize )
 {
-    rw.write((const char*)srcData, std::min(srcDataSize, streamSize));
+    rw::uint32 streamWriteCount = std::min(srcDataSize, streamSize);
 
-    rw::uint32 writeCount = srcDataSize;
+    rw.write((const char*)srcData, streamWriteCount);
+
+    rw::uint32 writeCount = streamWriteCount;
 
     // Write the remainder, if required.
     if (srcDataSize < streamSize)

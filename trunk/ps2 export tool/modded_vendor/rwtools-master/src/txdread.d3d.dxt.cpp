@@ -548,4 +548,209 @@ void NativeTextureD3D::decompressDxt(void)
     }
 }
 
+void NativeTextureD3D::compressDxt(uint32 dxtType)
+{
+    if (this->dxtCompression == dxtType)
+        return;
+
+    if (dxtType != 1 && dxtType != 3 && dxtType != 5)
+    {
+        throw RwException( "cannot compress Direct3D textures using unsupported DXTn format" );
+    }
+
+    // Decompress if we are compressed.
+    if (this->dxtCompression)
+    {
+        this->decompressDxt();
+    }
+
+    // Compress it now.
+    uint32 mipmapCount = this->mipmapCount;
+
+    uint32 itemDepth = this->depth;
+
+    eRasterFormat rasterFormat = this->parent->rasterFormat;
+    ePaletteType paletteType = this->paletteType;
+    eColorOrdering colorOrder = this->colorOrdering;
+
+    uint32 maxpalette = this->paletteSize;
+    void *paletteData = this->palette;
+
+    for (uint32 n = 0; n < mipmapCount; n++)
+    {
+        uint32 mipWidth = this->width[ n ];
+        uint32 mipHeight = this->height[ n ];
+
+        const void *texelSource = this->texels[ n ];
+
+        // Make sure the texture dimensions are aligned by 4.
+        uint32 alignedMipWidth = ALIGN_SIZE( mipWidth, 4u );
+        uint32 alignedMipHeight = ALIGN_SIZE( mipHeight, 4u );
+
+        uint32 texUnitCount = ( alignedMipWidth * alignedMipHeight );
+
+        uint32 dxtDataSize = getDXTRasterDataSize(dxtType, texUnitCount);
+
+        void *dxtArray = new uint8[ dxtDataSize ];
+
+        // Loop across the image.
+        uint32 compressedBlockCount = 0;
+
+        uint32 widthBlocks = alignedMipWidth / 4;
+        uint32 heightBlocks = alignedMipHeight / 4;
+
+        uint32 y = 0;
+
+        for ( uint32 y_block = 0; y_block < heightBlocks; y_block++, y += 4 )
+        {
+            uint32 x = 0;
+
+            for ( uint32 x_block = 0; x_block < widthBlocks; x_block++, x += 4 )
+            {
+                // Compress a 4x4 color block.
+                PixelFormat::pixeldata32bit colors[4][4];
+
+                for ( uint32 y_iter = 0; y_iter != 4; y_iter++ )
+                {
+                    for ( uint32 x_iter = 0; x_iter != 4; x_iter++ )
+                    {
+                        PixelFormat::pixeldata32bit& inColor = colors[ y_iter ][ x_iter ];
+
+                        uint8 r = 0;
+                        uint8 g = 0;
+                        uint8 b = 0;
+                        uint8 a = 0;
+
+                        uint32 targetX = ( x + x_iter );
+                        uint32 targetY = ( y + y_iter );
+
+                        if ( targetX < mipWidth && targetY < mipHeight )
+                        {
+                            uint32 colorIndex = PixelFormat::coord2index( targetX, targetY, mipWidth );
+
+                            browsetexelcolor(
+                                texelSource, paletteType, paletteData, maxpalette,
+                                colorIndex, rasterFormat, colorOrder, itemDepth,
+                                r, g, b, a
+                            );
+                        }
+
+                        inColor.red = r;
+                        inColor.green = g;
+                        inColor.blue = b;
+                        inColor.alpha = a;
+                    }
+                }
+
+                // Compress it using SQUISH.
+                int squishFlags = 0;
+                bool canCompress = false;
+
+                size_t compressBlockSize = 0;
+                void *blockPointer = NULL;
+
+                union
+                {
+                    dxt1_block _dxt1_block;
+                    dxt3_block _dxt3_block;
+                    dxt4_block _dxt5_block;
+                };
+
+                if ( dxtType == 1 )
+                {
+                    squishFlags |= squish::kDxt1;
+
+                    canCompress = true;
+
+                    compressBlockSize = sizeof( _dxt1_block );
+                    blockPointer = &_dxt1_block;
+                }
+                else if ( dxtType == 3 )
+                {
+                    squishFlags |= squish::kDxt3;
+
+                    canCompress = true;
+
+                    compressBlockSize = sizeof( _dxt3_block );
+                    blockPointer = &_dxt3_block;
+                }
+                else if ( dxtType == 5 )
+                {
+                    squishFlags |= squish::kDxt5;
+
+                    canCompress = true;
+
+                    compressBlockSize = sizeof( _dxt5_block );
+                    blockPointer = &_dxt5_block;
+                }
+
+                if ( canCompress )
+                {
+                    squish::Compress( (const squish::u8*)colors, blockPointer, squishFlags );
+                }
+
+                // Put the block into the texture.
+                memcpy( (char*)dxtArray + compressedBlockCount * compressBlockSize, blockPointer, compressBlockSize );
+
+                // Increment the block count.
+                compressedBlockCount++;
+            }
+        }
+
+        // Delete the raw texels.
+        delete [] texelSource;
+
+        // Put in the new DXTn texels.
+        this->texels[ n ] = dxtArray;
+
+        // Update fields.
+        this->dataSizes[ n ] = dxtDataSize;
+    }
+
+    // We are finished compressing.
+    // If we were palettized, unset that.
+    if ( paletteType != PALETTE_NONE )
+    {
+        // Free the palette colors.
+        delete [] paletteData;
+
+        // Reset the fields.
+        this->paletteType = PALETTE_NONE;
+        this->palette = NULL;
+        this->paletteSize = 0;
+    }
+
+    // Update the D3DFMT field.
+    {
+        D3DFORMAT newD3DFormat = D3DFMT_DXT1;
+
+        if ( dxtType == 1 )
+        {
+            newD3DFormat = D3DFMT_DXT1;
+        }
+        else if ( dxtType == 2 )
+        {
+            newD3DFormat = D3DFMT_DXT2;
+        }
+        else if ( dxtType == 3 )
+        {
+            newD3DFormat = D3DFMT_DXT3;
+        }
+        else if ( dxtType == 4 )
+        {
+            newD3DFormat = D3DFMT_DXT4;
+        }
+        else if ( dxtType == 5 )
+        {
+            newD3DFormat = D3DFMT_DXT5;
+        }
+
+        this->d3dFormat = newD3DFormat;
+        this->hasD3DFormat = true;
+    }
+
+    // We are now successfully compressed.
+    this->dxtCompression = dxtType;
+}
+
 };

@@ -503,6 +503,11 @@ struct NativeTexturePS2 : public PlatformTexture
         return false;
     }
 
+    void compress( void )
+    {
+        // nothing to do here.
+    }
+
     PlatformTexture* Clone( void ) const
     {
         NativeTexturePS2 *newTex = new NativeTexturePS2();

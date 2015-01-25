@@ -97,7 +97,14 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 // Palettize the texture to save space.
                 if ( doCompress )
                 {
-                    tex.optimizeForLowEnd( compressionQuality );
+                    if ( targetPlatform == PLATFORM_PS2 )
+                    {
+                        tex.optimizeForLowEnd( compressionQuality );
+                    }
+                    else if ( targetPlatform == PLATFORM_XBOX || targetPlatform == PLATFORM_PC )
+                    {
+                        tex.platformData->compress();
+                    }
                 }
 
                 // Convert it into the target platform.
