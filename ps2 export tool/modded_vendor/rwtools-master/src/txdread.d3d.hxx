@@ -122,6 +122,7 @@ struct NativeTextureD3D : public PlatformTexture
         this->paletteSize = 0;
         this->paletteType = PALETTE_NONE;
         this->mipmapCount = 0;
+        this->depth = 0;
         this->isCubeTexture = false;
         this->autoMipmaps = false;
         this->d3dFormat = D3DFMT_A8R8G8B8;
@@ -161,7 +162,7 @@ struct NativeTextureD3D : public PlatformTexture
 
     uint32 getDepth( void ) const
     {
-        return this->mipmapDepth[0];
+        return this->depth;
     }
 
     uint32 getMipmapCount( void ) const
@@ -216,6 +217,12 @@ struct NativeTextureD3D : public PlatformTexture
 
 		        newTex->texels.push_back(newtexels);
 	        }
+
+            newTex->width = this->width;
+            newTex->height = this->height;
+            newTex->dataSizes = this->dataSizes;
+
+            newTex->depth = this->depth;
         }
 
         newTex->mipmapCount = this->mipmapCount;
@@ -236,9 +243,10 @@ struct NativeTextureD3D : public PlatformTexture
 
 	uint32 mipmapCount;
 
+    uint32 depth;
+
 	std::vector<uint32> width;	// store width & height
 	std::vector<uint32> height;	// for each mipmap
-    std::vector<uint32> mipmapDepth;
 	std::vector<uint32> dataSizes;
 	std::vector<void*> texels;	// holds either indices or color values
 					// (also per mipmap)

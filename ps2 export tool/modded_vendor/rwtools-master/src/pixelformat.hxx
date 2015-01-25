@@ -1,6 +1,62 @@
 namespace rw
 {
 
+static inline bool getpaletteindex(
+    const void *texelSource, ePaletteType paletteType, uint32 maxpalette, uint32 itemDepth, uint32 colorIndex,
+    uint8& paletteIndexOut
+)
+{
+    // Get the color lookup index from the texel.
+    uint8 paletteIndex;
+
+    bool couldGetIndex = false;
+
+    if (paletteType == PALETTE_4BIT)
+    {
+        if (itemDepth == 4)
+        {
+            PixelFormat::palette4bit *srcData = (PixelFormat::palette4bit*)texelSource;
+
+            srcData->getvalue(colorIndex, paletteIndex);
+
+            couldGetIndex = true;
+        }
+        else if (itemDepth == 8)
+        {
+            PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)texelSource;
+
+            srcData->getvalue(colorIndex, paletteIndex);
+
+            // Trim off unused bits.
+            paletteIndex &= 0xF;
+
+            couldGetIndex = true;
+        }
+    }
+    else if (paletteType == PALETTE_8BIT)
+    {
+        if (itemDepth == 8)
+        {
+            PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)texelSource;
+
+            srcData->getvalue(colorIndex, paletteIndex);
+
+            couldGetIndex = true;
+        }
+    }
+
+    bool couldResolveSource = false;
+
+    if (couldGetIndex && paletteIndex < maxpalette)
+    {
+        couldResolveSource = true;
+
+        paletteIndexOut = paletteIndex;
+    }
+
+    return couldResolveSource;
+}
+
 static inline bool browsetexelcolor(
     const void *texelSource, ePaletteType paletteType, const void *paletteData, uint32 maxpalette,
     uint32 colorIndex, eRasterFormat rasterFormat, eColorOrdering colorOrder, uint32 itemDepth,
@@ -22,47 +78,16 @@ static inline bool browsetexelcolor(
     {
         realTexelSource = paletteData;
 
-        // Get the color lookup index from the texel.
         uint8 paletteIndex;
 
-        if (paletteType == PALETTE_4BIT)
-        {
-            if (itemDepth == 4)
-            {
-                PixelFormat::palette4bit *srcData = (PixelFormat::palette4bit*)texelSource;
+        bool couldResolvePalIndex = getpaletteindex(texelSource, paletteType, maxpalette, itemDepth, colorIndex, paletteIndex);
 
-                srcData->getvalue(colorIndex, paletteIndex);
-
-                couldResolveSource = true;
-            }
-            else if (itemDepth == 8)
-            {
-                PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)texelSource;
-
-                srcData->getvalue(colorIndex, paletteIndex);
-
-                // Trim off unused bits.
-                paletteIndex &= 0xF;
-
-                couldResolveSource = true;
-            }
-        }
-        else if (paletteType == PALETTE_8BIT)
-        {
-            if (itemDepth == 8)
-            {
-                PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)texelSource;
-
-                srcData->getvalue(colorIndex, paletteIndex);
-
-                couldResolveSource = true;
-            }
-        }
-
-        if (couldResolveSource)
+        if (couldResolvePalIndex)
         {
             realColorIndex = paletteIndex;
             realColorDepth = Bitmap::getRasterFormatDepth(rasterFormat);
+
+            couldResolveSource = true;
         }
     }
     else
@@ -406,42 +431,6 @@ static inline bool puttexelcolor(
     }
 
     return setColor;
-}
-
-static inline bool getrastermeta(eRasterFormat rasterFormat, uint32 colorItemCount, uint32& dataSize, uint32& colorDepth)
-{
-    bool validFormat = false;
-
-    if (rasterFormat == RASTER_1555 ||
-        rasterFormat == RASTER_565 ||
-        rasterFormat == RASTER_4444)
-    {
-        dataSize = colorItemCount*sizeof(uint16);
-
-        validFormat = true;
-    }
-    else if (rasterFormat == RASTER_8888 || rasterFormat == RASTER_8888)
-    {
-        dataSize = colorItemCount*sizeof(uint32);
-
-        validFormat = true;
-    }
-
-    if ( validFormat )
-    {
-        uint32 depth = Bitmap::getRasterFormatDepth( rasterFormat );
-
-        if ( depth == 0 )
-        {
-            validFormat = false;
-        }
-        else
-        {
-            colorDepth = depth;
-        }
-    }
-
-    return validFormat;
 }
 
 };

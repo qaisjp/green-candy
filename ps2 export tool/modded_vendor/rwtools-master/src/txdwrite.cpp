@@ -4,13 +4,12 @@
 
 #include <StdInc.h>
 
-using namespace std;
-
 #include "streamutil.hxx"
 
-namespace rw {
+namespace rw
+{
 
-uint32 TextureDictionary::write(ostream &rw)
+uint32 TextureDictionary::write(std::ostream& rw)
 {
     LibraryVersion version = rw::rwInterface.GetVersion();
 
@@ -29,21 +28,21 @@ uint32 TextureDictionary::write(ostream &rw)
 	// Struct
     uint32 numTextures = texList.size();
 
-    if ( numTextures > 0xFFFF )
-    {
-        throw RwException( "texture dictionary has too many textures" );
-    }
-
 	{
 		SKIP_HEADER();
 
         // Write depending on version.
         if (version.rwLibMinor <= 5)
         {
-            writeUInt32(numTextures, rw);
+            bytesWritten += writeUInt32(numTextures, rw);
         }
         else
         {
+            if ( numTextures > 0xFFFF )
+            {
+                throw RwException( "texture dictionary has too many textures for writing" );
+            }
+
             // Determine the recommended platform to give this TXD.
             // If we dont have any, we can write 0.
             uint16 recommendedPlatform = 0;
@@ -110,8 +109,8 @@ uint32 TextureDictionary::write(ostream &rw)
 	for (uint32 i = 0; i < numTextures; i++)
     {
         NativeTexture& tex = texList[i];
-	    if (tex.platform == PLATFORM_D3D8 ||
-	        tex.platform == PLATFORM_D3D9)
+
+	    if (tex.platform == PLATFORM_D3D8 || tex.platform == PLATFORM_D3D9)
         {
 		    bytesWritten += tex.writeD3d(rw);
         }

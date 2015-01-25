@@ -497,12 +497,13 @@ bool NativeTextureD3D::decompressDxtNative(uint32 dxtType)
 		this->texels[i] = newtexels;
 
 		this->dataSizes[i] = dataSize;
-
-        this->mipmapDepth[i] = rasterFormatDepth;
 	}
 
     if (conversionSuccessful)
     {
+        // Update the depth.
+        this->depth = rasterFormatDepth;
+
         // Update the raster format.
         parent->rasterFormat = targetRasterFormat;
 

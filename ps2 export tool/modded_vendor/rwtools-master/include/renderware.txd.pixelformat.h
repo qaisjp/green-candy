@@ -13,6 +13,8 @@ namespace PixelFormat
             uint8 sp_index : 4;
         };
 
+        typedef uint8 trav_t;
+
         static inline uint32 sizeitems( size_t itemCount )
         {
             return ALIGN_SIZE( itemCount / 2, (size_t)2 );
@@ -30,8 +32,7 @@ namespace PixelFormat
             return ( (data*)this + dataIndex );
         }
 
-        template <typename dataOutType>
-        inline void setvalue(uint32 index, dataOutType palette)
+        inline void setvalue(uint32 index, trav_t palette)
         {
             uint32 indexSelector = ( index % 2 );
 
@@ -47,8 +48,7 @@ namespace PixelFormat
             }
         }
 
-        template <typename dataOutType>
-        inline void getvalue(uint32 index, dataOutType& palette) const
+        inline void getvalue(uint32 index, trav_t& palette) const
         {
             uint32 indexSelector = ( index % 2 );
 
@@ -72,6 +72,8 @@ namespace PixelFormat
             uint8 index;
         };
 
+        typedef uint8 trav_t;
+
         static uint32 sizeitems( size_t itemCount )
         {
             return ( itemCount * sizeof(uint8) );
@@ -87,20 +89,53 @@ namespace PixelFormat
             return ( (data*)this + index );
         }
 
-        template <typename dataOutType>
-        inline void setvalue(uint32 index, dataOutType palette)
+        inline void setvalue(uint32 index, trav_t palette)
         {
             data *theData = findpalette(index);
 
             theData->index = palette;
         }
 
-        template <typename dataOutType>
-        inline void getvalue(uint32 index, dataOutType& palette) const
+        inline void getvalue(uint32 index, trav_t& palette) const
         {
             const data *theData = findpalette(index);
 
             palette = theData->index;
+        }
+    };
+
+    template <typename pixelstruct>
+    struct typedcolor
+    {
+        typedef pixelstruct trav_t;
+
+        static uint32 sizeitems( size_t itemCount )
+        {
+            return ( itemCount * sizeof( itemCount ) );
+        }
+
+        static inline typedcolor* allocate( size_t itemCount )
+        {
+            return (typedcolor*)new uint8[ sizeitems( itemCount ) ];
+        }
+
+        inline pixelstruct* finddata(uint32 index) const
+        {
+            return ( (pixelstruct*)this + index );
+        }
+
+        inline void setvalue(uint32 index, trav_t palette)
+        {
+            pixelstruct *theData = finddata(index);
+
+            *theData = palette;
+        }
+
+        inline void getvalue(uint32 index, trav_t& palette) const
+        {
+            const pixelstruct *theData = finddata(index);
+
+            palette = *theData;
         }
     };
 

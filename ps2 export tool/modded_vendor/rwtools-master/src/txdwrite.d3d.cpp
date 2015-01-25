@@ -63,7 +63,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         textureMetaHeaderStructDimInfo dimInfo;
         dimInfo.width = platformTex->width[0];
         dimInfo.height = platformTex->height[0];
-        dimInfo.depth = platformTex->mipmapDepth[0];
+        dimInfo.depth = platformTex->depth;
         dimInfo.mipmapCount = platformTex->mipmapCount;
         dimInfo.rasterType = platformTex->rasterType;
 

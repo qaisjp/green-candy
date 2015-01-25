@@ -9,6 +9,8 @@
 
 static CFileSystem *fsHandle = NULL;
 
+static bool _outputOptimizedTGA = false;
+
 static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, CFileTranslator *debugOutputRoot )
 {
     bool hasProcessed = false;
@@ -91,9 +93,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
             if ( canOutputDebug )
             {
-                uint32 depth = tex.platformData->getDepth();
-
-                if ( tex.platformData->getWidth() != tex.platformData->getHeight() && tex.platformData->isCompressed() == false )
+                if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
                 {
                     // Create a path to store the textures to.
                     std::string textureSaveName( justFileName );
@@ -107,7 +107,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
                     if ( hasAbsTexPath )
                     {
-                        tex.writeTGA( absTexPath.c_str() );
+                        tex.writeTGA( absTexPath.c_str(), _outputOptimizedTGA );
                     }
                 }
             }
@@ -156,7 +156,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                             newTex.setImageData( debugBitmap );
 
                             // Write the TGA.
-                            newTex.writeTGA( absTexPath.c_str() );
+                            newTex.writeTGA( absTexPath.c_str(), false );
                         }
                     }
                 }
@@ -253,7 +253,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
     // Debug a weird txd container...
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC.TXD", "rb" );
-    CFile *txdChat = discHandle->Open( "ps2_sample/BURG_GA.TXD", "rb" );
+    CFile *txdChat = discHandle->Open( "xbox_sample/BURG_GA.TXD", "rb" );
 
     if ( txdChat )
     {
@@ -338,10 +338,12 @@ static void DebugFuncs( CFileTranslator *discHandle )
                     {
                         rw::NativeTexture& tex = use_txd.texList.at( n );
 
+#if 0
                         if ( tex.name == "ketchup" )
                         {
                             __asm nop
                         }
+#endif
 
                         // WARNING: conversion does destroy some platform native data that
                         // is embedded into the texture!
@@ -365,7 +367,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
                         //tex.convertToFormat( rw::RASTER_8888 );
                         //if ( tex.platformData->getDepth() == 8 )
                         {
-                            tex.convertToPalette( rw::PALETTE_8BIT );
+                            //tex.convertToPalette( rw::PALETTE_8BIT );
                         }
 
                         tex.writeTGA(newName.c_str());
@@ -490,8 +492,8 @@ int main( int argc, char *argv[] )
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtavc\\" );
-        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa_xbox\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/xbox_broken_samples/" );
 
         if ( discHandle )
         {

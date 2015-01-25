@@ -126,6 +126,8 @@ void NativeTexture::readD3d(std::istream &rw)
 	    uint32 depth = dimInfo.depth;
 	    uint32 maybeMipmapCount = dimInfo.mipmapCount;
 
+        platformTex->depth = depth;
+
         assert( dimInfo.rasterType == 4 );  // TODO
 
         platformTex->rasterType = dimInfo.rasterType;
@@ -501,8 +503,6 @@ void NativeTexture::readD3d(std::istream &rw)
 		    platformTex->width.push_back( texWidth );
 		    platformTex->height.push_back( texHeight );
 
-            platformTex->mipmapDepth.push_back( depth );
-
 		    platformTex->dataSizes.push_back(texDataSize);
 
             // Store the image data pointer.
@@ -621,7 +621,7 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
             uint32 mipWidth = this->width[ 0 ];
             uint32 mipHeight = this->height[ 0 ];
 
-            uint32 mipDepth = this->mipmapDepth[ 0 ];
+            uint32 mipDepth = this->depth;
 
             uint32 imageItemCount = ( mipWidth * mipHeight );
 

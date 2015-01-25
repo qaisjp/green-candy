@@ -350,53 +350,86 @@ namespace ps2GSPixelEncodingFormats
                             }
 
                             // Perform the texel movement.
-                            uint32 srcVal = 0;
-
                             if (permItemDepth == 4)
                             {
                                 PixelFormat::palette4bit *srcData = (PixelFormat::palette4bit*)srcToBePermuted;
 
-                                srcData->getvalue(srcArrayIndex, srcVal);
-                            }
-                            else if (permItemDepth == 8)
-                            {
-                                PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)srcToBePermuted;
+                                // Get the src item.
+                                PixelFormat::palette4bit::trav_t travItem;
 
-                                srcData->getvalue(srcArrayIndex, srcVal);
-                            }
-                            else if (permItemDepth == 16)
-                            {
-                                srcVal = *( (unsigned short*)srcToBePermuted + srcArrayIndex );
-                            }
-                            else if (permItemDepth == 32)
-                            {
-                                srcVal = *( (unsigned int*)srcToBePermuted + srcArrayIndex );
-                            }
-                            else
-                            {
-                                assert(0);
-                            }
+                                srcData->getvalue(srcArrayIndex, travItem);
 
-                            // Put the texel.
-                            if (permItemDepth == 4)
-                            {
+                                // Put the dst item.
                                 PixelFormat::palette4bit *dstData = (PixelFormat::palette4bit*)dstTexels;
 
-                                dstData->setvalue(targetArrayIndex, srcVal);
+                                dstData->setvalue(targetArrayIndex, travItem);
                             }
                             else if (permItemDepth == 8)
                             {
+                                // Get the src item.
+                                PixelFormat::palette8bit *srcData = (PixelFormat::palette8bit*)srcToBePermuted;
+
+                                PixelFormat::palette8bit::trav_t travItem;
+
+                                srcData->getvalue(srcArrayIndex, travItem);
+
+                                // Put the dst item.
                                 PixelFormat::palette8bit *dstData = (PixelFormat::palette8bit*)dstTexels;
 
-                                dstData->setvalue(targetArrayIndex, srcVal);
+                                dstData->setvalue(targetArrayIndex, travItem);
                             }
                             else if (permItemDepth == 16)
                             {
-                                *( (unsigned short*)dstTexels + targetArrayIndex ) = srcVal;
+                                typedef PixelFormat::typedcolor <uint16> theColor;
+
+                                // Get the src item.
+                                theColor *srcData = (theColor*)srcToBePermuted;
+
+                                theColor::trav_t travItem;
+
+                                srcData->getvalue(srcArrayIndex, travItem);
+
+                                // Put the dst item.
+                                theColor *dstData = (theColor*)dstTexels;
+
+                                dstData->setvalue(targetArrayIndex, travItem);
+                            }
+                            else if (permItemDepth == 24)
+                            {
+                                struct colorStruct
+                                {
+                                    uint8 x, y, z;
+                                };
+
+                                typedef PixelFormat::typedcolor <colorStruct> theColor;
+
+                                // Get the src item.
+                                theColor *srcData = (theColor*)srcToBePermuted;
+
+                                theColor::trav_t travItem;
+
+                                srcData->getvalue(srcArrayIndex, travItem);
+
+                                // Put the dst item.
+                                theColor *dstData = (theColor*)dstTexels;
+
+                                dstData->setvalue(targetArrayIndex, travItem);
                             }
                             else if (permItemDepth == 32)
                             {
-                                *( (unsigned int*)dstTexels + targetArrayIndex ) = srcVal;
+                                typedef PixelFormat::typedcolor <uint32> theColor;
+
+                                // Get the src item.
+                                theColor *srcData = (theColor*)srcToBePermuted;
+
+                                theColor::trav_t travItem;
+
+                                srcData->getvalue(srcArrayIndex, travItem);
+
+                                // Put the dst item.
+                                theColor *dstData = (theColor*)dstTexels;
+
+                                dstData->setvalue(targetArrayIndex, travItem);
                             }
                             else
                             {
