@@ -195,6 +195,16 @@ struct NativeTextureD3D : public PlatformTexture
         return ( this->dxtCompression != 0 );
     }
 
+    void compress( void )
+    {
+        // Compress it with DXT.
+        uint32 dxtType = ( this->hasAlpha ? 3 : 1 );
+
+        // This may not be the optimal routine for compressing to DXT.
+        // A different method should be used if more accuracy is required.
+        compressDxt( dxtType );
+    }
+
     PlatformTexture* Clone( void ) const
     {
         NativeTextureD3D *newTex = new NativeTextureD3D();
@@ -284,6 +294,7 @@ struct NativeTextureD3D : public PlatformTexture
 
     eColorOrdering colorOrdering;
 
+    void compressDxt(uint32 dxtType);
 	void decompressDxt(void);
 	bool decompressDxtNative(uint32 dxtType);
 

@@ -476,14 +476,14 @@ int main( int argc, char *argv[] )
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa_xbox\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_ps2_out/" );
 
         if ( discHandle )
         {
             // Debug some obscurities.
-            DebugFuncs( discHandle );
+            //DebugFuncs( discHandle );
 
-            if ( false )
+            if ( true )
             {
                 // Create the build directory and get a link to it.
                 bool dirCreationSuccess = fileRoot->CreateDir( "BUILD_ROOT/" );

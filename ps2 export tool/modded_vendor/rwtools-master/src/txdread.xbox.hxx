@@ -65,6 +65,11 @@ struct NativeTextureXBOX : public PlatformTexture
         return ( this->dxtCompression != 0 );
     }
 
+    void compress( void )
+    {
+        // nothing to do here.
+    }
+
     PlatformTexture* Clone( void ) const
     {
         NativeTextureXBOX *newTex = new NativeTextureXBOX();
