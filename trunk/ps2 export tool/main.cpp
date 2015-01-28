@@ -61,7 +61,6 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
         if ( isPrepared )
         {
             // Palettize the texture and convert it back into PS2 format.
-#if 0
             if (tex.platformData->getPaletteType() == rw::PALETTE_8BIT)
             {
                 tex.convertToPalette( rw::PALETTE_4BIT );
@@ -70,13 +69,12 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
             {
                 tex.convertToPalette( rw::PALETTE_8BIT );
             }
-#endif
 
             std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
 
             if ( canOutputDebug )
             {
-                if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
+                //if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
                 {
                     // Create a path to store the textures to.
                     std::string textureSaveName( justFileName );
@@ -476,7 +474,7 @@ int main( int argc, char *argv[] )
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa_xbox\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_ps2_out/" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/test_samples/" );
 
         if ( discHandle )
         {

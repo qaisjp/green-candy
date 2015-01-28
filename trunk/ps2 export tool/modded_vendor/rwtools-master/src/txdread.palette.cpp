@@ -1333,6 +1333,9 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
         }
     }
 
+    // Update our color order.
+    platformTex->colorOrdering = dstColorOrder;
+
     // Notify the raster about its new format.
     platformTex->paletteType = convPaletteFormat;
 
