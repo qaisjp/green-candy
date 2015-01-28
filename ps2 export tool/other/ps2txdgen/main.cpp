@@ -602,8 +602,8 @@ bool ApplicationMain( void )
         CFileTranslator *absGameRootTranslator = NULL;
         CFileTranslator *absOutputRootTranslator = NULL;
 
-        bool hasGameRoot = obtainAbsolutePath( c_gameRoot.c_str(), absGameRootTranslator, false );
-        bool hasOutputRoot = obtainAbsolutePath( c_outputRoot.c_str(), absOutputRootTranslator, true );
+        bool hasGameRoot = obtainAbsolutePath( c_gameRoot.c_str(), absGameRootTranslator, false, true );
+        bool hasOutputRoot = obtainAbsolutePath( c_outputRoot.c_str(), absOutputRootTranslator, true, true );
 
         if ( hasGameRoot && hasOutputRoot )
         {

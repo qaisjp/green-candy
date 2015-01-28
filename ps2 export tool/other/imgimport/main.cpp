@@ -114,8 +114,8 @@ int main( int argc, char *argv[] )
         CFileTranslator *absImgFileRoot = NULL;
         CFileTranslator *absSourceRoot = NULL;
 
-        bool hasIMGFileRoot = obtainAbsolutePath(c_imgFilePath.c_str(), absImgFileRoot, true );
-        bool hasSourceRoot = obtainAbsolutePath(c_sourceRoot.c_str(), absSourceRoot, false );
+        bool hasIMGFileRoot = obtainAbsolutePath(c_imgFilePath.c_str(), absImgFileRoot, true, false );
+        bool hasSourceRoot = obtainAbsolutePath(c_sourceRoot.c_str(), absSourceRoot, false, true );
 
         if ( hasIMGFileRoot && hasSourceRoot )
         {

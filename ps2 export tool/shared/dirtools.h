@@ -233,7 +233,7 @@ private:
     }
 };
 
-inline bool obtainAbsolutePath( const char *path, CFileTranslator*& transOut, bool createDir )
+inline bool obtainAbsolutePath( const char *path, CFileTranslator*& transOut, bool createDir, bool hasToBeDirectory = true )
 {
     bool hasTranslator = false;
     
@@ -244,6 +244,8 @@ inline bool obtainAbsolutePath( const char *path, CFileTranslator*& transOut, bo
     // Check whether the file path has a trailing slash.
     // If it has not, then append one.
     filePath inputPath( path );
+
+    if ( hasToBeDirectory )
     {
         if ( !FileSystem::IsPathDirectory( inputPath ) )
         {
