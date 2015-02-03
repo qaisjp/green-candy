@@ -1,4 +1,4 @@
-TxdGen 0.8 by The_GTA. Beta release.
+TxdGen 0.8.1 by The_GTA. Beta release.
 ==================================
 
 TxdGen is the RW Texture Dictionary conversion tool. Its goal is to support
@@ -32,8 +32,9 @@ CREDITS
 1) uses a fork of rwtools by aap (https://github.com/aap/rwtools)
 2) uses the libimagequant library (http://pngquant.org/lib/)
 3) uses the libsquish library (https://code.google.com/p/libsquish/)
-4) Thanks to aru from GTAForums for XBOX swizzling and unswizzling algorithms (http://gtaforums.com/topic/213907-unswizzle-tool/)
-5) Some parts are inspired by research from DK22Pac
+4) uses the lzo library (http://www.oberhumer.com/opensource/lzo/)
+5) Thanks to aru from GTAForums for XBOX swizzling and unswizzling algorithms (http://gtaforums.com/topic/213907-unswizzle-tool/)
+6) Some parts are inspired by research from DK22Pac
 
 ==================================
 WHAT IS IMGIMPORT ?

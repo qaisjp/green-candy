@@ -1,0 +1,93 @@
+r565
+- added DXTn compression for PC and XBOX
+---------------------
+r564
+- fixed some errors regarding new Direct3D conversion algorithms - set up some routines that should ensure writability of Direct3D textures
+---------------------
+r563
+- fixed some more conversion problems
+---------------------
+r562
+- added optimized TGA writing algorithm - optimized the depth parameter (it now is not stored per mipmap anymore) - fixed some bugs when copying NativeTexture - improved the conversion of textures to PS2 format - improved XBOX unswizzling (...
+---------------------
+r561
+- fixed a bug where TXDs would not properly convert from San Andreas to Vice City/III - fixed a crash when reading XBOX TXDs - added a version decoding algorithm to rwtools - added a RenderWare version output to TxdGen - improved handling o...
+---------------------
+r560
+
+---------------------
+r559
+- added missing file, sorry guys
+---------------------
+r558
+
+---------------------
+r557
+
+---------------------
+r556
+- improved the DXT decompression code - added libsquish as an alternative to our DXT decompression algorithms - added support for DXT5 decompression - various improvements and fixes
+---------------------
+r555
+- fixed a bug in the IMG implementation that could cause archive corruption at certain file entry counts - fixed a bug in the filePath ANSI string implementation so that resizing a string also zero-terminates it - fixed a bug in the NativeT...
+---------------------
+r554
+- improved support of Direct3D raster parsing; it can now understand partially broken textures - improved error detection in general - added warnings to Direct3D texture parsing - improved some color ordering logic - etc
+---------------------
+r553
+- cleaned up some awkward code
+---------------------
+r552
+- fixed palette color ordering when palettizing a texture (it now takes the color order properly into account)
+---------------------
+r551
+- fixed color ordering issues between platforms (mainly PS2 and D3D)
+---------------------
+r550
+- added warningLevel parameter to RenderWare to toggle the throughput of engine warnings - misc user friendly-ness improvements
+---------------------
+r549
+- improved alpha flag handling - added alpha flag recalculation when image data is and could be changed - fixed some palette data output errors for D3D rasters
+---------------------
+r548
+- improved application termination, so it does not cause assertion errors anymore
+---------------------
+r547
+- implemented PNGQUANT as an option for palettization into rwtools - created the "txdgen" project, a user-friendly texture converter based on rwtools - implemented a basic exception system - implemented a basic warning system - fixed some d...
+---------------------
+r546
+- improved some code management - removed some debug stuff
+---------------------
+r545
+- loading textures that have been generated from PC textures does not crash on PS2 anymore
+---------------------
+r544
+- fixed swizzling again (was broken due to some screw ups of mine)
+---------------------
+r543
+- improved PS2 palette texture reading
+---------------------
+r542
+- added GITtag parsing support - fixed textures which include meta-data appended to the image sections - improved CLUT allocation (still not there yet!)
+---------------------
+r541
+- rewrote the texture swizzling algorithm so it makes more sense (still WIP, there are weird things left) - fixed the mipmap coordinate allocation in GS memory (it now matches the R* converter) - fixed the PS2 GS memory size calculation cod...
+---------------------
+r540
+- added IMG archive reading support for CFileSystem (version 1 and 2) + tons of updates for performance and stability - added basic Bitmap management and rendering library to rwtools, so that pictures can be inserted into TXD containers - a...
+---------------------
+r539
+- fixed include problems for release compilation mode - removed debug flag
+---------------------
+r538
+- added experimental PS2 texture memory allocator; it works for R* textures but not for newly generated ones, need to figure out why (something about the texture memory size calculation being wrong)
+---------------------
+r537
+- improved Direct3D texture writing (for PC)
+---------------------
+r536
+- improved conversion between platforms - improved texture flag management 
+---------------------
+r535
+- uploading my version of aap's rwtools (from github), basically a fork; I am forking it to create a stable implementation for platform conversion (focusing on textures, mainly PS2)
+---------------------

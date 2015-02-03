@@ -36,6 +36,8 @@ void NativeTexture::readXbox(std::istream &rw)
 
     int engineWarningLevel = rw::rwInterface.GetWarningLevel();
 
+    bool engineIgnoreSecureWarnings = rw::rwInterface.GetIgnoreSecureWarnings();
+
     // Attempt reading the data.
     try
     {
@@ -156,6 +158,8 @@ void NativeTexture::readXbox(std::istream &rw)
 
         uint32 dxtCompression = platformTex->dxtCompression;
 
+        bool hasZeroSizedMipmaps = false;
+
 	    for (uint32 i = 0; i < maybeMipmapCount; i++)
         {
             if ( remainingImageSectionData == 0 )
@@ -171,6 +175,13 @@ void NativeTexture::readXbox(std::istream &rw)
 
             uint32 texWidth = currentMipWidth;
             uint32 texHeight = currentMipHeight;
+
+            // If any dimension is zero, ignore that mipmap.
+            if ( texWidth == 0 || texHeight == 0 )
+            {
+                hasZeroSizedMipmaps = true;
+                break;
+            }
 
             // Process dimensions.
             {
@@ -261,6 +272,17 @@ void NativeTexture::readXbox(std::istream &rw)
             {
                 rw::rwInterface.PushWarning( "texture " + this->name + " appears to have image section meta-data" );
             }
+
+            // Skip those bytes.
+            rw.seekg( remainingImageSectionData, std::ios_base::cur );
+        }
+
+        if ( hasZeroSizedMipmaps )
+        {
+            if ( !engineIgnoreSecureWarnings )
+            {
+                rw::rwInterface.PushWarning( "texture " + this->name + " has zero sized mipmaps" );
+            }
         }
 
         // Store remaining mipmap info.
@@ -273,6 +295,9 @@ void NativeTexture::readXbox(std::istream &rw)
             if ( curTexNativeOffset != texNativeStructSize )
             {
                 __asm nop
+
+                // Readjust so we are at the end of it.
+                rw.seekg( texNativeStructOff + texNativeStructSize, std::ios_base::beg );
             }
         }
     }
