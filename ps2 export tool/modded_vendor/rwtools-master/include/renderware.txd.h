@@ -125,7 +125,7 @@ struct PlatformTexture abstract
     virtual ePaletteType getPaletteType( void ) const = 0;
 
     virtual bool isCompressed( void ) const = 0;
-    virtual void compress( void ) = 0;
+    virtual void compress( float quality ) = 0;
 
     virtual PlatformTexture* Clone( void ) const = 0;
 

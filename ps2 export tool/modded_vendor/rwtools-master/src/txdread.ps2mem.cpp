@@ -55,7 +55,7 @@ eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(LibraryVersion
 
     if (paletteType == PALETTE_4BIT)
     {
-        if (version.rwLibMinor <= 3)
+        if (version.rwLibMinor < 3)
         {
             imageEncodingType = FORMAT_IDTEX8_COMPRESSED;
         }

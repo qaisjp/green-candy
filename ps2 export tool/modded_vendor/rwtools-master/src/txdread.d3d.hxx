@@ -195,10 +195,23 @@ struct NativeTextureD3D : public PlatformTexture
         return ( this->dxtCompression != 0 );
     }
 
-    void compress( void )
+    void compress( float quality )
     {
         // Compress it with DXT.
-        uint32 dxtType = ( this->hasAlpha ? 3 : 1 );
+        // If the compression quality is above or equal to 1.0, we want to allow DXT5 compression when alpha is there.
+        uint32 dxtType = 1;
+
+        if ( this->hasAlpha )
+        {
+            if ( quality >= 1.0f )
+            {
+                dxtType = 5;
+            }
+            else
+            {
+                dxtType = 3;
+            }
+        }
 
         // This may not be the optimal routine for compressing to DXT.
         // A different method should be used if more accuracy is required.

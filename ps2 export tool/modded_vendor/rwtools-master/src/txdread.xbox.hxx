@@ -65,9 +65,10 @@ struct NativeTextureXBOX : public PlatformTexture
         return ( this->dxtCompression != 0 );
     }
 
-    void compress( void )
+    void compress( float quality )
     {
         // nothing to do here.
+        // you have to convert to D3D first to be able to compress (to DXT).
     }
 
     PlatformTexture* Clone( void ) const
