@@ -143,7 +143,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
     }
     catch( rw::RwException& except )
     {
-        errMsg = "error precessing textures: " + except.message;
+        errMsg = "error processing textures: " + except.message;
         return false;
     }
 
@@ -326,6 +326,8 @@ bool ApplicationMain( void )
     bool c_fixIncompatibleRasters = true;
     bool c_dxtPackedDecompression = false;
 
+    bool c_imgArchivesCompressed = false;
+
     float c_compressionQuality = 0.5f;
 
     if ( configFile )
@@ -483,6 +485,12 @@ bool ApplicationMain( void )
             {
                 c_dxtPackedDecompression = mainEntry->GetBool( "dxtPackedDecompression" );
             }
+            
+            // IMG archive compression
+            if ( mainEntry->Find( "imgArchivesCompressed" ) )
+            {
+                c_imgArchivesCompressed = mainEntry->GetBool( "imgArchivesCompressed" );
+            }
         }
 
         // Kill the configuration.
@@ -594,6 +602,9 @@ bool ApplicationMain( void )
     std::cout
         << "* dxtPackedDecompression: " << ( c_dxtPackedDecompression ? "true" : "false" ) << std::endl;
 
+    std::cout
+        << "* imgArchivesCompressed: " << ( c_imgArchivesCompressed ? "true" : "false" ) << std::endl;
+
     // Finish with a newline.
     std::cout << std::endl;
 
@@ -614,6 +625,8 @@ bool ApplicationMain( void )
                 gtaFileProcessor <_discFileSentry> fileProc;
 
                 fileProc.setArchiveReconstruction( c_reconstructIMGArchives );
+
+                fileProc.setUseCompressedIMGArchives( c_imgArchivesCompressed );
 
                 _discFileSentry sentry;
                 sentry.targetPlatform = c_targetPlatform;

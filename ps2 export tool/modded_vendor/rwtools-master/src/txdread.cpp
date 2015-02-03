@@ -27,7 +27,9 @@ void TextureDictionary::read(std::istream &rw)
 
 	header.read(rw);
 	if (header.getType() != CHUNK_TEXDICTIONARY)
-		return;
+    {
+        throw RwException( "not a texture dictionary (maybe compressed)" );
+    }
 
     uint32 texDictSize = header.getLength();
 

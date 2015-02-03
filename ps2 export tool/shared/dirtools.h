@@ -4,6 +4,7 @@ struct gtaFileProcessor
     inline gtaFileProcessor( void )
     {
         this->reconstruct_archives = true;
+        this->use_compressed_img_archives = true;
     }
 
     inline ~gtaFileProcessor( void )
@@ -19,6 +20,7 @@ struct gtaFileProcessor
         traverse.isInArchive = false;
         traverse.sentry = theSentry;
         traverse.reconstruct_archives = this->reconstruct_archives;
+        traverse.use_compressed_img_archives = this->use_compressed_img_archives;
 
         discHandle->ScanDirectory( "@", "*", true, NULL, _discFileCallback, &traverse );
     }
@@ -28,8 +30,14 @@ struct gtaFileProcessor
         this->reconstruct_archives = doReconstruct;
     }
 
+    inline void setUseCompressedIMGArchives( bool doUse )
+    {
+        this->use_compressed_img_archives = doUse;
+    }
+
 private:
     bool reconstruct_archives;
+    bool use_compressed_img_archives;
 
     struct _discFileTraverse
     {
@@ -45,6 +53,7 @@ private:
         bool anyWork;
 
         bool reconstruct_archives;
+        bool use_compressed_img_archives;
 
         sentryType *sentry;
     };
@@ -82,7 +91,16 @@ private:
                     if ( info->reconstruct_archives )
                     {
                         // We copy the files into a new IMG archive tho.
-                        CArchiveTranslator *newIMGRoot = fileSystem->CreateIMGArchive( info->buildRoot, relPathFromRoot.c_str() );
+                        CArchiveTranslator *newIMGRoot = NULL;
+
+                        if ( info->use_compressed_img_archives )
+                        {
+                            newIMGRoot = fileSystem->CreateCompressedIMGArchive( info->buildRoot, relPathFromRoot.c_str() );
+                        }
+                        else
+                        {
+                            newIMGRoot = fileSystem->CreateIMGArchive( info->buildRoot, relPathFromRoot.c_str() );
+                        }
 
                         if ( newIMGRoot )
                         {
@@ -121,7 +139,16 @@ private:
                     {
                         try
                         {
-                            CArchiveTranslator *srcIMGRoot = fileSystem->OpenIMGArchive( info->discHandle, relPathFromRoot.c_str() );
+                            CArchiveTranslator *srcIMGRoot = NULL;
+
+                            if ( info->use_compressed_img_archives )
+                            {
+                                srcIMGRoot = fileSystem->OpenCompressedIMGArchive( info->discHandle, relPathFromRoot.c_str() );
+                            }
+                            else
+                            {
+                                srcIMGRoot = fileSystem->OpenIMGArchive( info->discHandle, relPathFromRoot.c_str() );
+                            }
 
                             if ( srcIMGRoot )
                             {
@@ -132,6 +159,7 @@ private:
                                 traverse.isInArchive = ( outputRoot_archive != NULL ) || info->isInArchive;
                                 traverse.sentry = info->sentry;
                                 traverse.reconstruct_archives = info->reconstruct_archives;
+                                traverse.use_compressed_img_archives = info->use_compressed_img_archives;
 
                                 try
                                 {

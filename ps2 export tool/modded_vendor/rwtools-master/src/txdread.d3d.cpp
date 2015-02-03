@@ -233,6 +233,7 @@ void NativeTexture::readD3d(std::istream &rw)
         // - Verify raster format.
         {
             bool isValidFormat = false;
+            bool isRasterFormatRequired = true;
 
             eColorOrdering colorOrder;
             eRasterFormat d3dRasterFormat;
@@ -323,6 +324,8 @@ void NativeTexture::readD3d(std::istream &rw)
                 colorOrder = COLOR_BGRA;
 
                 isValidFormat = true;
+
+                isRasterFormatRequired = false;
             }
             else if (d3dFormat == D3DFMT_DXT2 || d3dFormat == D3DFMT_DXT3)
             {
@@ -331,6 +334,8 @@ void NativeTexture::readD3d(std::istream &rw)
                 colorOrder = COLOR_BGRA;
 
                 isValidFormat = true;
+
+                isRasterFormatRequired = false;
             }
             else if (d3dFormat == D3DFMT_DXT4 || d3dFormat == D3DFMT_DXT5)
             {
@@ -339,6 +344,8 @@ void NativeTexture::readD3d(std::istream &rw)
                 colorOrder = COLOR_BGRA;
 
                 isValidFormat = true;
+
+                isRasterFormatRequired = false;
             }
             else if (d3dFormat == D3DFMT_P8)
             {
@@ -363,9 +370,12 @@ void NativeTexture::readD3d(std::istream &rw)
 
             if ( rasterFormat != d3dRasterFormat )
             {
-                if ( engineWarningLevel >= 3 )
+                if ( isRasterFormatRequired || !engineIgnoreSecureWarnings )
                 {
-                    rw::rwInterface.PushWarning( "texture " + this->name + " has an invalid raster format (ignoring)" );
+                    if ( engineWarningLevel >= 3 )
+                    {
+                        rw::rwInterface.PushWarning( "texture " + this->name + " has an invalid raster format (ignoring)" );
+                    }
                 }
 
                 // Fix it.

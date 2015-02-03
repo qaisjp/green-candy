@@ -74,6 +74,8 @@ int main( int argc, char *argv[] )
     std::string c_sourceRoot = "imgimport/";
     std::string c_imgFilePath = "imgout.img";
 
+    bool c_imgArchivesCompressed = false;
+
     if ( imgConfig )
     {
         if ( CINI::Entry *mainEntry = imgConfig->GetEntry( "Main" ) )
@@ -88,6 +90,12 @@ int main( int argc, char *argv[] )
             if ( const char *strImgFilePath = mainEntry->Get( "imgFile" ) )
             {
                 c_imgFilePath = strImgFilePath;
+            }
+
+            // IMG archive compression.
+            if ( mainEntry->Find( "imgArchivesCompressed" ) )
+            {
+                c_imgArchivesCompressed = mainEntry->GetBool( "imgArchivesCompressed" );
             }
         }
     }
@@ -104,6 +112,9 @@ int main( int argc, char *argv[] )
 
     std::cout
         << "* imgFile: " << c_imgFilePath << std::endl;
+
+    std::cout
+        << "* imgArchivesCompressed: " << ( c_imgArchivesCompressed ? "true" : "false" ) << std::endl;
 
     // Finish with an endline.
     std::cout << std::endl;
@@ -130,7 +141,15 @@ int main( int argc, char *argv[] )
             {
                 std::cout << "opening IMG archive" << std::endl << std::endl;
 
-                outputArchive = fsHandle->OpenIMGArchive( absImgFileRoot, fileName.c_str() );
+                // Make sure we open using compression support if the user wants us to.
+                if ( c_imgArchivesCompressed )
+                {
+                    outputArchive = fsHandle->OpenCompressedIMGArchive( absImgFileRoot, fileName.c_str() );
+                }
+                else
+                {
+                    outputArchive = fsHandle->OpenIMGArchive( absImgFileRoot, fileName.c_str() );
+                }
 
                 if ( !outputArchive )
                 {
@@ -141,7 +160,14 @@ int main( int argc, char *argv[] )
             {
                 std::cout << "creating IMG archive" << std::endl;
 
-                outputArchive = fsHandle->CreateIMGArchive( absImgFileRoot, fileName.c_str() );
+                if ( c_imgArchivesCompressed )
+                {
+                    outputArchive = fsHandle->CreateCompressedIMGArchive( absImgFileRoot, fileName.c_str() );
+                }
+                else
+                {
+                    outputArchive = fsHandle->CreateIMGArchive( absImgFileRoot, fileName.c_str() );
+                }
 
                 if ( !outputArchive )
                 {

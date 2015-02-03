@@ -23,7 +23,14 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
     
     if ( rw.good() )
     {
-        txd.read(rw);
+        try
+        {
+            txd.read(rw);
+        }
+        catch( rw::RwException& )
+        {
+            return false;
+        }
     }
 
     const filePath& texPath = srcStream->GetPath();
@@ -50,99 +57,108 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
     // Process all textures.
     bool processSuccessful = true;
 
-    for ( unsigned int n = 0; n < txd.texList.size(); n++ )
+    try
     {
-        rw::NativeTexture& tex = txd.texList[n];
-
-        // Make sure are in Direct3D 9 format.
-        bool isPrepared = tex.convertToDirect3D9();
-
-        // If the texture is prepared, do whatever.
-        if ( isPrepared )
+        for ( unsigned int n = 0; n < txd.texList.size(); n++ )
         {
-            // Palettize the texture and convert it back into PS2 format.
-            if (tex.platformData->getPaletteType() == rw::PALETTE_8BIT)
-            {
-                tex.convertToPalette( rw::PALETTE_4BIT );
-            }
-            else
-            {
-                tex.convertToPalette( rw::PALETTE_8BIT );
-            }
+            rw::NativeTexture& tex = txd.texList[n];
 
-            std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
+            // Make sure are in Direct3D 9 format.
+            bool isPrepared = tex.convertToDirect3D9();
 
-            if ( canOutputDebug )
+            // If the texture is prepared, do whatever.
+            if ( isPrepared )
             {
-                //if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
+#if 0
+                // Palettize the texture and convert it back into PS2 format.
+                if (tex.platformData->getPaletteType() == rw::PALETTE_8BIT)
                 {
-                    // Create a path to store the textures to.
-                    std::string textureSaveName( justFileName );
-                    textureSaveName += "_";
-                    textureSaveName += tex.name;
-                    textureSaveName += ".tga";
-
-                    filePath absTexPath;
-
-                    bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
-
-                    if ( hasAbsTexPath )
-                    {
-                        tex.writeTGA( absTexPath.c_str(), _outputOptimizedTGA );
-                    }
+                    tex.convertToPalette( rw::PALETTE_4BIT );
                 }
-            }
-
-            if ( tex.platformData->getPaletteType() != rw::PALETTE_NONE )
-            {
-                __asm nop
-
-                DbgHeap_Validate();
-            }
-
-            tex.convertToPS2();
-
-            if ( false && canOutputDebug )
-            {
-                if ( tex.platformData->getMipmapCount() > 1 )
+                else
                 {
-                    // Save a debug image that displays the allocation scheme.
-                    rw::Bitmap debugBitmap( 32, rw::RASTER_8888, rw::COLOR_RGBA );
+                    tex.convertToPalette( rw::PALETTE_8BIT );
+                }
+#endif
 
-                    // Make sure we atleast have some content.
-                    debugBitmap.setSize( 10, 10 );
+                std::string justFileName = FileSystem::GetFileNameItem( fileNameItem, false, NULL, NULL );
 
-                    bool hasDebugBitmap = tex.platformData->getDebugBitmap( debugBitmap );
-
-                    if ( hasDebugBitmap )
+                if ( canOutputDebug )
+                {
+                    //if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
                     {
-                        std::string texDebugSaveName( justFileName );
-                        texDebugSaveName += "_";
-                        texDebugSaveName += tex.name;
-                        texDebugSaveName += "_";
-                        texDebugSaveName += "debug.tga";
+                        // Create a path to store the textures to.
+                        std::string textureSaveName( justFileName );
+                        textureSaveName += "_";
+                        textureSaveName += tex.name;
+                        textureSaveName += ".tga";
 
                         filePath absTexPath;
 
-                        bool hasAbsTexPath = debugOutputRoot->GetFullPath( texDebugSaveName.c_str(), true, absTexPath );
+                        bool hasAbsTexPath = debugOutputRoot->GetFullPath( textureSaveName.c_str(), true, absTexPath );
 
                         if ( hasAbsTexPath )
                         {
-                            // Create a direct3D texture and store it as TGA.
-                            rw::NativeTexture newTex;
-                            
-                            newTex.newDirect3D();
+                            tex.writeTGA( absTexPath.c_str(), _outputOptimizedTGA );
+                        }
+                    }
+                }
 
-                            // Write image data.
-                            newTex.setImageData( debugBitmap );
+                if ( tex.platformData->getPaletteType() != rw::PALETTE_NONE )
+                {
+                    __asm nop
 
-                            // Write the TGA.
-                            newTex.writeTGA( absTexPath.c_str(), false );
+                    DbgHeap_Validate();
+                }
+
+                tex.convertToPS2();
+
+                if ( false && canOutputDebug )
+                {
+                    if ( tex.platformData->getMipmapCount() > 1 )
+                    {
+                        // Save a debug image that displays the allocation scheme.
+                        rw::Bitmap debugBitmap( 32, rw::RASTER_8888, rw::COLOR_RGBA );
+
+                        // Make sure we atleast have some content.
+                        debugBitmap.setSize( 10, 10 );
+
+                        bool hasDebugBitmap = tex.platformData->getDebugBitmap( debugBitmap );
+
+                        if ( hasDebugBitmap )
+                        {
+                            std::string texDebugSaveName( justFileName );
+                            texDebugSaveName += "_";
+                            texDebugSaveName += tex.name;
+                            texDebugSaveName += "_";
+                            texDebugSaveName += "debug.tga";
+
+                            filePath absTexPath;
+
+                            bool hasAbsTexPath = debugOutputRoot->GetFullPath( texDebugSaveName.c_str(), true, absTexPath );
+
+                            if ( hasAbsTexPath )
+                            {
+                                // Create a direct3D texture and store it as TGA.
+                                rw::NativeTexture newTex;
+                                
+                                newTex.newDirect3D();
+
+                                // Write image data.
+                                newTex.setImageData( debugBitmap );
+
+                                // Write the TGA.
+                                newTex.writeTGA( absTexPath.c_str(), false );
+                            }
                         }
                     }
                 }
             }
         }
+    }
+    catch( rw::RwException& )
+    {
+        processSuccessful = false;
     }
 
     // We do not perform any error checking for now.
@@ -154,9 +170,16 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
         if ( rwout.good() )
         {
-            txd.write(rwout);
+            try
+            {
+                txd.write(rwout);
 
-            hasProcessed = true;
+                hasProcessed = true;
+            }
+            catch( rw::RwException& )
+            {
+                hasProcessed = false;
+            }
         }
     }
 
@@ -195,9 +218,13 @@ struct _discFileSentry
                     if ( couldProcessTXD )
                     {
                         hasCopiedFile = true;
-                    }
 
-                    printf( "OK\n" );
+                        printf( "OK\n" );
+                    }
+                    else
+                    {
+                        printf( "error\n" );
+                    }
                 }
             }
 
@@ -234,7 +261,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
     // Debug a weird txd container...
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC.TXD", "rb" );
-    CFile *txdChat = discHandle->Open( "outro.txd", "rb" );
+    CFile *txdChat = discHandle->Open( "TAXI.TXD", "rb" );
 
     if ( txdChat )
     {
@@ -473,8 +500,8 @@ int main( int argc, char *argv[] )
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa_xbox\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/test_samples/" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtavc_xbox\\" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/" );
 
         if ( discHandle )
         {
@@ -516,6 +543,9 @@ int main( int argc, char *argv[] )
                     // Iterate through every disc file and output it into the build directory.
                     // If necessary, perform conversions.
                     gtaFileProcessor <_discFileSentry> fileProc;
+
+                    // Change this if required!
+                    fileProc.setUseCompressedIMGArchives( true );
 
                     _discFileSentry sentry;
                     sentry.debugRoot = debugRoot;
