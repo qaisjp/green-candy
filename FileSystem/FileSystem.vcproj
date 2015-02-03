@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib;../Shared/"
+				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib;../Shared/;&quot;../vendor/lzo-2.08/include&quot;"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -58,9 +58,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="zlibd_2008.lib"
+				AdditionalDependencies="zlibd_2008.lib lzo2.lib"
 				OutputFile="$(OutDir)\libfs_d.lib"
-				AdditionalLibraryDirectories="..\vendor\zlib\lib\"
+				AdditionalLibraryDirectories="..\vendor\zlib\lib\;&quot;..\vendor\lzo-2.08\lib\&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -108,7 +108,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib;../Shared/"
+				AdditionalIncludeDirectories="../Shared/core;../Shared/sdk;.;../vendor/zlib;../Shared/;&quot;../vendor/lzo-2.08/include&quot;"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -125,9 +125,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="zlib_2008.lib"
+				AdditionalDependencies="zlib_2008.lib lzo2.lib"
 				OutputFile="$(OutDir)\libfs.lib"
-				AdditionalLibraryDirectories="..\vendor\zlib\lib\"
+				AdditionalLibraryDirectories="..\vendor\zlib\lib\;&quot;..\vendor\lzo-2.08\lib\&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -246,6 +246,10 @@
 			>
 			<File
 				RelativePath="..\Shared\core\CFileSystem.img.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\Shared\core\fsinternal\CFileSystem.img.translator.compress.cpp"
 				>
 			</File>
 			<File
