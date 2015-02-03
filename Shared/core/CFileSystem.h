@@ -42,10 +42,14 @@ public:
     CArchiveTranslator*     OpenArchive             ( CFile& file );
 
     CArchiveTranslator*     OpenZIPArchive          ( CFile& file );
-    CArchiveTranslator*     OpenIMGArchive          ( CFileTranslator *srcRoot, const char *srcPath );
-
     CArchiveTranslator*     CreateZIPArchive        ( CFile& file );
-    CArchiveTranslator*     CreateIMGArchive        ( CFileTranslator *srcRoot, const char *srcPath );
+
+    CIMGArchiveTranslatorHandle*    OpenIMGArchive      ( CFileTranslator *srcRoot, const char *srcPath );
+    CIMGArchiveTranslatorHandle*    CreateIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath );
+
+    // Special functions for IMG archives that should support compression.
+    CIMGArchiveTranslatorHandle*    OpenCompressedIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath );
+    CIMGArchiveTranslatorHandle*    CreateCompressedIMGArchive  ( CFileTranslator *srcRoot, const char *srcPath );
 
     // Function to cast a CFileTranslator into a CArchiveTranslator.
     // If not possible, it returns NULL.

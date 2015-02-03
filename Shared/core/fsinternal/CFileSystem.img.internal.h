@@ -12,6 +12,123 @@
 #ifndef _FILESYSTEM_IMG_ROCKSTAR_MANAGEMENT_INTERNAL_
 #define _FILESYSTEM_IMG_ROCKSTAR_MANAGEMENT_INTERNAL_
 
+// Implement the GTAIII/GTAVC XBOX IMG archive compression.
+struct xboxIMGCompression : public CIMGArchiveCompressionHandler
+{
+                xboxIMGCompression( void );
+                ~xboxIMGCompression( void );
+
+    void        InitializeLZO( void );
+    void        ShutdownLZO( void );
+
+    bool        IsStreamCompressed( CFile *stream ) const;
+
+    bool        Decompress( CFile *input, CFile *output );
+    bool        Compress( CFile *input, CFile *output );
+
+    bool        isUsingLZO;
+
+    struct simpleWorkBuffer
+    {
+        inline simpleWorkBuffer( void )
+        {
+            this->bufferSize = 0;
+            this->buffer = NULL;
+        }
+
+        inline ~simpleWorkBuffer( void )
+        {
+            if ( void *ptr = this->buffer )
+            {
+                free( ptr );
+
+                this->buffer = NULL;
+            }
+        }
+
+        inline bool MinimumSize( size_t minSize )
+        {
+            bool hasChanged = false;
+
+            void *bufPtr = this->buffer;
+            size_t bufSize = this->bufferSize;
+
+            if ( bufPtr == NULL || bufSize < minSize )
+            {
+                void *newBufPtr = NULL;
+
+                if ( bufPtr == NULL )
+                {
+                    newBufPtr = malloc( minSize );
+                }
+                else
+                {
+                    newBufPtr = realloc( bufPtr, minSize );
+                }
+
+                if ( newBufPtr != bufPtr )
+                {
+                    this->buffer = newBufPtr;
+
+                    hasChanged = true;
+                }
+
+                if ( minSize != bufSize )
+                {
+                    this->bufferSize = minSize;
+
+                    hasChanged = true;
+                }
+            }
+
+            return hasChanged;
+        }
+
+        inline void Grow( size_t growBy )
+        {
+            size_t newSize = ( this->bufferSize + growBy );
+
+            this->buffer = realloc( this->buffer, newSize );
+
+            this->bufferSize = newSize;
+        }
+
+        inline void* GetPointer( void )
+        {
+            return this->buffer;
+        }
+
+        inline size_t GetSize( void ) const
+        {
+            return bufferSize;
+        }
+
+        inline bool IsReady( void ) const
+        {
+            return ( this->buffer != NULL );
+        }
+
+        inline void Release( void )
+        {
+            // Zero us out.
+            this->buffer = NULL;
+            this->bufferSize = 0;
+        }
+
+    private:
+        size_t bufferSize;
+        void *buffer;
+    };
+
+    simpleWorkBuffer decompressBuffer;
+
+    typedef unsigned long (__cdecl*checksumCallback_t)( unsigned long c, const void *data, size_t dataSize );
+
+    checksumCallback_t  _checksumCallback;
+
+    size_t      compressionMaximumBlockSize;
+};
+
 // IMG extension struct.
 struct imgExtension
 {
@@ -29,8 +146,8 @@ struct imgExtension
     void                        Initialize      ( CFileSystemNative *sys );
     void                        Shutdown        ( CFileSystemNative *sys );
 
-    CArchiveTranslator*         NewArchive      ( CFileTranslator *srcRoot, const char *srcPath );
-    CArchiveTranslator*         OpenArchive     ( CFileTranslator *srcRoot, const char *srcPath );
+    CIMGArchiveTranslatorHandle*    NewArchive  ( CFileTranslator *srcRoot, const char *srcPath );
+    CIMGArchiveTranslatorHandle*    OpenArchive ( CFileTranslator *srcRoot, const char *srcPath );
 
     // Private extension methods.
     CFileTranslator*            GetTempRoot     ( void );
@@ -38,6 +155,9 @@ struct imgExtension
     // Extension members.
     // ... for managing temporary files (OS dependent).
     CRepository                 repo;
+
+    // Compression handlers, that are optional.
+    xboxIMGCompression          xboxCompressionHandler;
 };
 
 #include <sys/stat.h>
@@ -56,7 +176,7 @@ enum eIMGArchiveVersion
     IMG_VERSION_2
 };
 
-class CIMGArchiveTranslator : public CSystemPathTranslator, public CArchiveTranslator
+class CIMGArchiveTranslator : public CSystemPathTranslator, public CIMGArchiveTranslatorHandle
 {
     friend class CFileSystem;
     friend struct imgExtension;
@@ -87,13 +207,17 @@ public:
 
     void            Save();
 
+    void            SetCompressionHandler( CIMGArchiveCompressionHandler *handler );
+
     // Members.
     imgExtension&   m_imgExtension;
     CFile*          m_contentFile;
     CFile*          m_registryFile;
     eIMGArchiveVersion  m_version;
 
-protected:
+    CIMGArchiveCompressionHandler*  m_compressionHandler;
+
+protected: 
     struct fileMetaData
     {
         VirtualFileSystem::fileInterface *fileNode;
@@ -156,7 +280,7 @@ protected:
             {
                 const filePath& ourPath = this->fileNode->GetRelativePath();
 
-                CFileTranslator *fileRoot = translator->GetFileRoot();
+                CFileTranslator *fileRoot = translator->GetUnpackRoot();
 
                 if ( fileRoot )
                 {
@@ -256,6 +380,10 @@ public:
     // Special VFS functions.
     CFile* OpenNativeFileStream( file *fsObject, unsigned int openMode, unsigned int access );
 
+    // Extraction helper for data still inside the IMG archive.
+    bool RequiresExtraction( CFile *stream );
+    bool ExtractStream( CFile *input, CFile *output, file *theFile );
+
 protected:
     // Public stream base-class for IMG archive streams.
     struct streamBase : public CFile
@@ -335,8 +463,10 @@ protected:
 
     // Root of this translator, so it can dump files for rebuilding.
     CFileTranslator *m_fileRoot;
+    CFileTranslator *m_unpackRoot;
 
     CFileTranslator*    GetFileRoot( void );
+    CFileTranslator*    GetUnpackRoot( void );
 
     // File stream using cached on-disk versions of the files.
     struct dataCachedStream : public streamBase

@@ -16,10 +16,10 @@
 
 namespace DbgTrace
 {
-    static const std::string GetValidDebugSymbolPath( void )
+    static const char* GetValidDebugSymbolPath( void )
     {
         // TODO: allow the debuggee to set this path using a FileSearch dialog.
-        return "E:\\Users\\The_GTA\\Desktop\\mta_green\\symbols";
+        return "C:\\Users\\The_GTA\\Desktop\\mta_green\\symbols";
     }
 
     struct Win32DebugManager
@@ -54,10 +54,20 @@ namespace DbgTrace
 
             contextProcess = GetCurrentProcess();
 
-            BOOL initializeSuccessful =
-                SymInitialize( contextProcess, GetValidDebugSymbolPath().c_str(), true );
+            const char *debSymbPath = GetValidDebugSymbolPath();
 
-            successful = ( initializeSuccessful == TRUE );
+            __try
+            {
+                BOOL initializeSuccessful =
+                    SymInitialize( contextProcess, debSymbPath, true );
+
+                successful = ( initializeSuccessful == TRUE );
+            }
+            __except( EXCEPTION_EXECUTE_HANDLER )
+            {
+                // We are unsuccessful.
+                successful = false;
+            }
 
             isInitialized = successful;
 

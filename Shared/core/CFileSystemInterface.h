@@ -290,6 +290,22 @@ public:
             if ( !successful || !c || c == '\n' )
                 break;
 
+            if ( c == '\r' )
+            {
+                char next_c;
+
+                ReadByte( next_c );
+
+                if ( next_c == '\n' )
+                {
+                    break;
+                }
+                else
+                {
+                    this->Seek( -1, SEEK_CUR );
+                }
+            }
+
             output += c;
         }
         while ( !IsEOF() );
@@ -679,10 +695,14 @@ public:
     virtual CArchiveTranslator* OpenArchive         ( CFile& file ) = 0;
 
     virtual CArchiveTranslator* OpenZIPArchive      ( CFile& file ) = 0;
-    virtual CArchiveTranslator* OpenIMGArchive      ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
-
     virtual CArchiveTranslator* CreateZIPArchive    ( CFile& file ) = 0;
+
+    virtual CArchiveTranslator* OpenIMGArchive      ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
     virtual CArchiveTranslator* CreateIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
+
+    // Special functions for IMG archives that should support compression.
+    virtual CArchiveTranslator* OpenCompressedIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
+    virtual CArchiveTranslator* CreateCompressedIMGArchive  ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
 
     // Insecure, use with caution!
     virtual bool                IsDirectory         ( const char *path ) = 0;

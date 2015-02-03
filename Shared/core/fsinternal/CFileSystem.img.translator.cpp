@@ -330,6 +330,10 @@ CIMGArchiveTranslator::CIMGArchiveTranslator( imgExtension& imgExt, CFile *conte
 
     // NULL the file root translator.
     this->m_fileRoot = NULL;
+    this->m_unpackRoot = NULL;
+
+    // We have no compression handler by default.
+    this->m_compressionHandler = NULL;
 }
 
 CIMGArchiveTranslator::~CIMGArchiveTranslator( void )
@@ -352,6 +356,13 @@ CIMGArchiveTranslator::~CIMGArchiveTranslator( void )
     }
 
     // Destroy the locks to our runtime management folders.
+    if ( m_unpackRoot )
+    {
+        delete m_unpackRoot;
+
+        m_unpackRoot = NULL;
+    }
+
     if ( m_fileRoot )
     {
         delete m_fileRoot;
@@ -378,6 +389,27 @@ CFileTranslator* CIMGArchiveTranslator::GetFileRoot( void )
     return m_fileRoot;
 }
 
+CFileTranslator* CIMGArchiveTranslator::GetUnpackRoot( void )
+{
+    CFileTranslator *unpackRoot = this->m_unpackRoot;
+
+    if ( unpackRoot == NULL )
+    {
+        CFileTranslator *fileRoot = this->GetFileRoot();
+
+        if ( fileRoot )
+        {
+            unpackRoot = CRepository::AcquireDirectoryTranslator( fileRoot, "unpack/" );
+
+            if ( unpackRoot )
+            {
+                this->m_unpackRoot = unpackRoot;
+            }
+        }
+    }
+    return unpackRoot;
+}
+
 bool CIMGArchiveTranslator::WriteData( const char *path, const char *buffer, size_t size )
 {
     // TODO
@@ -394,6 +426,8 @@ CFile* CIMGArchiveTranslator::OpenNativeFileStream( file *fsObject, unsigned int
     CFile *outputStream = NULL;
 
     const filePath& relPath = fsObject->relPath;
+
+    bool needsCachedWrap = false;
 
     if ( openMode == FILE_MODE_OPEN )
     {
@@ -421,20 +455,88 @@ CFile* CIMGArchiveTranslator::OpenNativeFileStream( file *fsObject, unsigned int
         }
         else
         {
+            // Determine whether our stream needs extraction.
+            bool needsExtraction = false;
+
+            if ( !needsExtraction )
+            {
+                // If we want write access, we definately have to extract.
+                if ( ( access & FILE_ACCESS_WRITE ) != 0 )
+                {
+                    needsExtraction = true;
+                }
+            }
+
             // Create our stream.
             dataSectorStream *dataStream = new dataSectorStream( this, fsObject, relPath );
 
+            if ( !needsExtraction )
+            {
+                // If we are not writing, then we may be compressed.
+                // Compressed files have to be extracted.
+                bool runtimeExtractionRequest = this->RequiresExtraction( dataStream );
+
+                if ( runtimeExtractionRequest )
+                {
+                    needsExtraction = true;
+                }
+            }
+
             if ( dataStream )
             {
-                // TODO.
+                CFile *intermediateStream = NULL;
 
-                outputStream = dataStream;
+                // If we have to extract, do that and return a handle to the on-disk file.
+                if ( needsExtraction )
+                {
+                    // Extract the stream.
+                    CFileTranslator *fileRoot = this->GetUnpackRoot();
+                    
+                    if ( fileRoot )
+                    {
+                        CFile *extractedStream = fileRoot->Open( relPath.c_str(), "wb+" );
+
+                        if ( extractedStream )
+                        {
+                            // Perform the extraction.
+                            bool extractionSuccess = this->ExtractStream( dataStream, extractedStream, fsObject );
+
+                            if ( extractionSuccess )
+                            {
+                                // Return our extracted stream.
+                                intermediateStream = extractedStream;
+
+                                // We need to wrap this stream in a special class.
+                                needsCachedWrap = true;
+                            }
+
+                            // Clean up if not required anymore.
+                            if ( intermediateStream != extractedStream )
+                            {
+                                delete extractedStream;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Otherwise we can return the optimized in-archive file.
+                    intermediateStream = dataStream;
+                }
+
+                // Clean up the in-archive handle if we don't need it anymore.
+                if ( intermediateStream != dataStream )
+                {
+                    delete dataStream;
+                }
+
+                outputStream = intermediateStream;
             }
         }
     }
     else if ( openMode == FILE_MODE_CREATE )
     {
-        CFileTranslator *fileRoot = this->GetFileRoot();
+        CFileTranslator *fileRoot = this->GetUnpackRoot();
 
         if ( fileRoot )
         {
@@ -442,18 +544,18 @@ CFile* CIMGArchiveTranslator::OpenNativeFileStream( file *fsObject, unsigned int
 
             if ( diskFile )
             {
-                // Notify the file registry that a cached file has replaced the
-                // original archive entry.
-                fsObject->metaData.isExtracted = true;
-
-                dataCachedStream *repoStream = new dataCachedStream( this, fsObject, relPath, access, diskFile );
-
-                if ( repoStream )
+                if ( fsObject->metaData.isExtracted == false )
                 {
-                    //todo: maybe set special properties.
-
-                    outputStream = repoStream;
+                    // Notify the file registry that a cached file has replaced the
+                    // original archive entry.
+                    fsObject->metaData.isExtracted = true;
                 }
+
+                // Return the handle to the on-disk file.
+                outputStream = diskFile;
+
+                // Remember to wrap it.
+                needsCachedWrap = true;
             }
 
             // Fix grave errors.
@@ -472,7 +574,103 @@ CFile* CIMGArchiveTranslator::OpenNativeFileStream( file *fsObject, unsigned int
         }
     }
 
+    if ( outputStream )
+    {
+        if ( needsCachedWrap )
+        {
+            dataCachedStream *repoStream = new dataCachedStream( this, fsObject, relPath, access, outputStream );
+
+            if ( repoStream )
+            {
+                //todo: maybe set special properties.
+
+                outputStream = repoStream;
+            }
+            else
+            {
+                // We kinda failed.
+                delete outputStream;
+
+                outputStream = NULL;
+            }
+        }
+    }
+
     return outputStream;
+}
+
+bool CIMGArchiveTranslator::RequiresExtraction( CFile *stream )
+{
+    bool needsExtraction = false;
+
+    // If we have a compression provider, check it.
+    if ( CIMGArchiveCompressionHandler *compressHandler = this->m_compressionHandler )
+    {
+        // Save the stream seek.
+        fsOffsetNumber_t savedOffset = stream->TellNative();
+        
+        // Query the compression provider.
+        bool isCompressed = compressHandler->IsStreamCompressed( stream );
+
+        if ( isCompressed )
+        {
+            // If we are compressed, we must decompress.
+            // This is done at extraction time.
+            needsExtraction = true;
+        }
+
+        // Reset the stream.
+        stream->SeekNative( savedOffset, SEEK_SET );
+    }
+
+    return needsExtraction;
+}
+
+bool CIMGArchiveTranslator::ExtractStream( CFile *input, CFile *output, file *theFile )
+{
+    // If we have a compressed provider and it recognizes that the stream is compressed,
+    // then let it process the stream.
+    bool hasProcessed = false;
+
+    if ( !hasProcessed )
+    {
+        if ( CIMGArchiveCompressionHandler *compressHandler = this->m_compressionHandler )
+        {
+            fsOffsetNumber_t savedOffset = input->TellNative();
+
+            bool isCompressed = compressHandler->IsStreamCompressed( input );
+
+            input->SeekNative( savedOffset, SEEK_SET );
+
+            if ( isCompressed )
+            {
+                bool decompressSuccess = compressHandler->Decompress( input, output );
+
+                if ( decompressSuccess )
+                {
+                    hasProcessed = true;
+                }
+                else
+                {
+                    // We have to reset the stream and try a file-copy instead.
+                    input->SeekNative( 0, SEEK_SET );
+                    output->SeekNative( 0, SEEK_SET );
+                }
+            }
+        }
+    }
+
+    // If we have not proceesed it through the compression provider, simply copy the stream.
+    if ( !hasProcessed )
+    {
+        // TODO.
+        FileSystem::StreamCopy( *input, *output );
+    }
+
+    // We successfully copied, so mark as extracted.
+    theFile->metaData.isExtracted = true;
+
+    return true;
 }
 
 CFile* CIMGArchiveTranslator::Open( const char *path, const char *mode )
@@ -490,7 +688,7 @@ void CIMGArchiveTranslator::fileMetaData::OnFileDelete( void )
     // Delete all left-overs.
     if ( this->isExtracted )
     {
-        CFileTranslator *fileRoot = translator->GetFileRoot();
+        CFileTranslator *fileRoot = translator->GetUnpackRoot();
 
         if ( fileRoot )
         {
@@ -513,7 +711,7 @@ bool CIMGArchiveTranslator::fileMetaData::OnFileCopy( const dirTree& tree, const
     if ( this->isExtracted )
     {
         // Copy over the extracted disk content to another location.
-        CFileTranslator *fileRoot = translator->GetFileRoot();
+        CFileTranslator *fileRoot = translator->GetUnpackRoot();
 
         if ( fileRoot )
         {
@@ -548,7 +746,7 @@ bool CIMGArchiveTranslator::fileMetaData::OnFileRename( const dirTree& tree, con
 
     if ( this->isExtracted )
     {
-        CFileTranslator *fileRoot = translator->GetFileRoot();
+        CFileTranslator *fileRoot = translator->GetUnpackRoot();
         
         if ( fileRoot )
         {
@@ -678,7 +876,7 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
 
         if ( theFile->metaData.isExtracted )
         {
-            CFileTranslator *fileRoot = this->GetFileRoot();
+            CFileTranslator *fileRoot = this->GetUnpackRoot();
 
             if ( fileRoot )
             {
@@ -698,9 +896,40 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
         else
         {
             // We need to dump the file to disk.
-            FileSystem::FileCopy( this, relativePath, m_fileRoot, relativePath );
+            CFile *srcStream = this->OpenNativeFileStream( theFile, FILE_MODE_OPEN, FILE_ACCESS_READ );
 
-            theFile->metaData.isExtracted = true;
+            if ( srcStream )
+            {
+                // The routine may have extracted the file at this point.
+                // If it has, then we can terminate.
+                if ( theFile->metaData.isExtracted == false )
+                {
+                    CFileTranslator *fileRoot = this->GetUnpackRoot();
+
+                    // Create the file in the target directory and put data into it.
+                    CFile *dstStream = fileRoot->Open( relativePath, "wb" );
+
+                    if ( dstStream )
+                    {
+                        bool extractSuccess = this->ExtractStream( srcStream, dstStream, theFile );
+
+                        assert( extractSuccess == true );
+
+                        // Close the destination stream.
+                        delete dstStream;
+                    }
+                    else
+                    {
+                        assert( 0 );
+                    }
+                }
+
+                delete srcStream;
+            }
+            else
+            {
+                assert( 0 );
+            }
 
             // Grab the block count.
             blockCount = theFile->metaData.resourceSize;
@@ -778,7 +1007,7 @@ void CIMGArchiveTranslator::WriteFiles( CFile *targetStream, directory& baseDir 
         // Write the data.
         assert( theFile->metaData.isExtracted == true );
         {
-            CFileTranslator *fileRoot = this->GetFileRoot();
+            CFileTranslator *fileRoot = this->GetUnpackRoot();
 
             if ( fileRoot )
             {
@@ -879,6 +1108,11 @@ void CIMGArchiveTranslator::Save( void )
     }
 }
 
+void CIMGArchiveTranslator::SetCompressionHandler( CIMGArchiveCompressionHandler *handler )
+{
+    this->m_compressionHandler = handler;
+}
+
 bool CIMGArchiveTranslator::ReadArchive( void )
 {
     // Load archive.
@@ -921,6 +1155,7 @@ bool CIMGArchiveTranslator::ReadArchive( void )
                 successLoadingFiles = false;
             }
 
+            // If we are version 1, we will probably halt here.
             break;
         }
 
@@ -954,6 +1189,8 @@ bool CIMGArchiveTranslator::ReadArchive( void )
                     ( entryHeader.realBlockCount != 0 ) ? ( entryHeader.realBlockCount ) : ( entryHeader.alignedBlockCount );
 
                 size_t maxName = sizeof( fileEntry->metaData.resourceName );
+
+                assert( maxName == sizeof( newPath ) );
 
                 memcpy( fileEntry->metaData.resourceName, newPath, maxName );
                 fileEntry->metaData.resourceName[ maxName - 1 ] = '\0';
