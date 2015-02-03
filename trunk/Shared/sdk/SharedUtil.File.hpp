@@ -23,21 +23,21 @@ filePath SharedUtil::GetSystemLocalAppDataPath()
 {
     char szResult[MAX_PATH] = "";
     SHGetFolderPath( NULL, CSIDL_LOCAL_APPDATA, NULL, 0, szResult );
-    return szResult;
+    return filePath( szResult );
 }
 
 filePath SharedUtil::GetSystemCommonAppDataPath()
 {
     char szResult[MAX_PATH] = "";
     SHGetFolderPath( NULL, CSIDL_COMMON_APPDATA, NULL, 0, szResult );
-    return szResult;
+    return filePath( szResult );
 }
 
 filePath SharedUtil::GetSystemTempPath()
 {
     char szResult[4030] = "";
     GetTempPath( 4000, szResult );
-    return szResult;
+    return filePath( szResult );
 }
 
 filePath SharedUtil::GetMTADataPath()

@@ -19,6 +19,7 @@
 
 // TODO: Remove the internal RW definitions, DIF
 #include <CVector.h>
+#include <CVector2D.h>
 
 // RenderWare primitive types
 struct RwV2d

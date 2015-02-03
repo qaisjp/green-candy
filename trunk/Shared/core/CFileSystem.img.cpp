@@ -30,7 +30,7 @@ void imgExtension::Shutdown( CFileSystemNative *sys )
     return;
 }
 
-CArchiveTranslator* imgExtension::NewArchive( CFileTranslator *srcRoot, const char *srcPath )
+CIMGArchiveTranslatorHandle* imgExtension::NewArchive( CFileTranslator *srcRoot, const char *srcPath )
 {
     // Just create a version two archive.
     CFile *contentFile = srcRoot->Open( srcPath, "wb" );
@@ -41,9 +41,9 @@ CArchiveTranslator* imgExtension::NewArchive( CFileTranslator *srcRoot, const ch
     return new CIMGArchiveTranslator( *this, contentFile, contentFile, IMG_VERSION_2 );
 }
 
-CArchiveTranslator* imgExtension::OpenArchive( CFileTranslator *srcRoot, const char *srcPath )
+CIMGArchiveTranslatorHandle* imgExtension::OpenArchive( CFileTranslator *srcRoot, const char *srcPath )
 {
-    CArchiveTranslator *transOut = NULL;
+    CIMGArchiveTranslatorHandle *transOut = NULL;
         
     bool hasValidArchive = false;
     eIMGArchiveVersion theVersion;
@@ -152,7 +152,7 @@ CFileTranslator* imgExtension::GetTempRoot( void )
     return repo.GetTranslator();
 }
 
-CArchiveTranslator* CFileSystem::OpenIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
+CIMGArchiveTranslatorHandle* CFileSystem::OpenIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
 {
     imgExtension *imgExt = imgExtension::Get( this );
 
@@ -163,7 +163,7 @@ CArchiveTranslator* CFileSystem::OpenIMGArchive( CFileTranslator *srcRoot, const
     return NULL;
 }
 
-CArchiveTranslator* CFileSystem::CreateIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
+CIMGArchiveTranslatorHandle* CFileSystem::CreateIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
 {
     imgExtension *imgExt = imgExtension::Get( this );
 
@@ -172,6 +172,42 @@ CArchiveTranslator* CFileSystem::CreateIMGArchive( CFileTranslator *srcRoot, con
         return imgExt->NewArchive( srcRoot, srcPath );
     }
     return NULL;
+}
+
+CIMGArchiveTranslatorHandle* CFileSystem::OpenCompressedIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
+{
+    CIMGArchiveTranslatorHandle *archiveHandle = this->OpenIMGArchive( srcRoot, srcPath );
+
+    if ( archiveHandle )
+    {
+        imgExtension *imgExt = imgExtension::Get( this );
+
+        if ( imgExt )
+        {
+            // Set the xbox compression handler.
+            archiveHandle->SetCompressionHandler( &imgExt->xboxCompressionHandler );
+        }
+    }
+
+    return archiveHandle;
+}
+
+CIMGArchiveTranslatorHandle* CFileSystem::CreateCompressedIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
+{
+    CIMGArchiveTranslatorHandle *archiveHandle = this->CreateIMGArchive( srcRoot, srcPath );
+
+    if ( archiveHandle )
+    {
+        imgExtension *imgExt = imgExtension::Get( this );
+
+        if ( imgExt )
+        {
+            // Set the xbox compression handler.
+            archiveHandle->SetCompressionHandler( &imgExt->xboxCompressionHandler );
+        }
+    }
+
+    return archiveHandle;
 }
 
 fileSystemFactory_t::pluginOffset_t imgExtension::_imgPluginOffset = fileSystemFactory_t::INVALID_PLUGIN_OFFSET;

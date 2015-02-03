@@ -92,7 +92,15 @@ public:
     {
         allocatedStruct->slice = info.slice;
 
-        LIST_APPEND( *info.blockToAppendAt, allocatedStruct->node );
+        LIST_INSERT( *info.blockToAppendAt, allocatedStruct->node );
+
+        LIST_FOREACH_BEGIN( block_t, blockList.root, node )
+
+            block_t *block = item;
+
+            __asm nop
+
+        LIST_FOREACH_END
     }
 
     inline void RemoveBlock( block_t *theBlock )
@@ -105,6 +113,8 @@ template <size_t memorySize>
 class StaticMemoryAllocator
 {
     typedef InfiniteCollisionlessBlockAllocator <size_t> blockAlloc_t;
+
+    typedef blockAlloc_t::memSlice_t memSlice_t;
 
     blockAlloc_t blockRegions;
 public:
@@ -146,7 +156,7 @@ public:
 
         // Make sure we allocate in the valid region.
         {
-            memSlice_t::eIntersectionResult intResult = newAllocSlice.intersectWith( validAllocationRegion );
+            memSlice_t::eIntersectionResult intResult = allocInfo.slice.intersectWith( validAllocationRegion );
 
             if ( intResult != memSlice_t::INTERSECT_EQUAL &&
                  intResult != memSlice_t::INTERSECT_INSIDE )
@@ -156,7 +166,7 @@ public:
         }
 
         // Create the allocation information structure and return it.
-        memoryEntry *entry = (memoryEntry*)( (char*)memData + newAllocSlice.GetSliceStartPoint() );
+        memoryEntry *entry = (memoryEntry*)( (char*)memData + allocInfo.slice.GetSliceStartPoint() );
 
         entry->blockSize = memSize;
 
@@ -180,7 +190,7 @@ public:
 private:
     blockAlloc_t::memSlice_t validAllocationRegion;
 
-    struct memoryEntry
+    struct memoryEntry : public blockAlloc_t::block_t
     {
         inline void* GetData( void )
         {

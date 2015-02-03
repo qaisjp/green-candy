@@ -14,6 +14,17 @@
 
 #include <vector>
 
+// Basic always inline definition.
+#ifndef AINLINE
+#ifdef _MSC_VER
+#define AINLINE __forceinline
+#elif __linux__
+#define AINLINE __attribute__((always_inline))
+#else
+#define AINLINE
+#endif
+#endif
+
 // Mathematically correct data slice logic.
 // It is one of the most important theorems in computing abstraction.
 template <typename numberType>

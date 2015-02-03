@@ -485,7 +485,7 @@ class filePath
             AppendANSI( ansiOut.c_str(), ansiOut.size() );
         }
 
-        static AINLINE bool IsCharacterEqual( char left, char right, bool caseSensitive )
+        static inline bool IsCharacterEqual( char left, char right, bool caseSensitive )
         {
             bool isEqual = false;
 
@@ -501,7 +501,7 @@ class filePath
             return isEqual;
         }
 
-        AINLINE bool CompareToANSIConst( const char *ansiStr, size_t strLen ) const
+        inline bool CompareToANSIConst( const char *ansiStr, size_t strLen ) const
         {
             size_t rightSize = strLen;
             size_t ourSize = this->stringLength;
@@ -533,7 +533,7 @@ class filePath
             return CompareToANSIConst( right.c_str(), right.size() );
         }
 
-        AINLINE bool CompareToUnicodeConst( const wchar_t *wideStr, size_t wideLen ) const
+        inline bool CompareToUnicodeConst( const wchar_t *wideStr, size_t wideLen ) const
         {
             std::wstring wstr( wideStr, wideLen );
             std::string ansiStr = ws2s( wstr );

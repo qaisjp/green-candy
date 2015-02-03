@@ -566,7 +566,7 @@ inline void _File_OnDirectoryFound( filePattern_t *pattern, const char *entryNam
     }
 }
 
-// Function for creating a OS native directory.
+// Function for creating an OS native directory.
 inline bool _File_CreateDirectory( const filePath& thePath )
 {
 #ifdef __linux__
