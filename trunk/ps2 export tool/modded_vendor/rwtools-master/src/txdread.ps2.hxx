@@ -503,7 +503,7 @@ struct NativeTexturePS2 : public PlatformTexture
         return false;
     }
 
-    void compress( void )
+    void compress( float quality )
     {
         // nothing to do here.
     }
