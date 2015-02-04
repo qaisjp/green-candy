@@ -507,19 +507,11 @@ bool NativeTextureD3D::decompressDxtNative(uint32 dxtType)
         // Update the raster format.
         parent->rasterFormat = targetRasterFormat;
 
-        // We need to update our D3DFORMAT field.
-        D3DFORMAT newD3DFormat;
-
-        bool hasD3DFormat = getD3DFormatFromRasterType(targetRasterFormat, PALETTE_NONE, colorOrder, rasterFormatDepth, newD3DFormat);
-
-        if (hasD3DFormat)
-        {
-            this->d3dFormat = newD3DFormat;
-        }
-        this->hasD3DFormat = hasD3DFormat;
-
         // We are not compressed anymore.
         this->dxtCompression = 0;
+
+        // We need to update our D3DFORMAT field.
+        this->updateD3DFormat();
     }
 
     return conversionSuccessful;
@@ -720,7 +712,7 @@ void NativeTextureD3D::compressDxt(uint32 dxtType)
         this->paletteSize = 0;
     }
 
-    // Update the D3DFMT field.
+    // Update the D3DFORMAT field.
     {
         D3DFORMAT newD3DFormat = D3DFMT_DXT1;
 

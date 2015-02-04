@@ -1340,17 +1340,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
     platformTex->paletteType = convPaletteFormat;
 
     // Update the D3DFORMAT field.
-    {
-        D3DFORMAT newD3DFormat;
-
-        bool gotNewFormat = getD3DFormatFromRasterType(rasterFormat, convPaletteFormat, dstColorOrder, newDepth, newD3DFormat);
-
-        if (gotNewFormat)
-        {
-            platformTex->d3dFormat = newD3DFormat;
-        }
-        platformTex->hasD3DFormat = gotNewFormat;
-    }
+    platformTex->updateD3DFormat();
 
     // Since we changed the colors, update the alpha flag.
     platformTex->hasAlpha = platformTex->doesHaveAlpha();

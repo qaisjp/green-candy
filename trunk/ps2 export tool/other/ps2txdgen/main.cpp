@@ -103,7 +103,11 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                     }
                     else if ( targetPlatform == PLATFORM_XBOX || targetPlatform == PLATFORM_PC )
                     {
-                        tex.platformData->compress( compressionQuality );
+                        // Compress if we are not already compressed.
+                        if ( tex.platformData->isCompressed() == false )
+                        {
+                            tex.platformData->compress( compressionQuality );
+                        }
                     }
                 }
 
