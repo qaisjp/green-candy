@@ -213,20 +213,6 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
         // Update the format.
         this->rasterFormat = newFormat;
 
-        // Make sure we update the d3dFormat.
-        {
-            D3DFORMAT newD3DFormat;
-
-            bool hasD3DFormat = getD3DFormatFromRasterType( newFormat, PALETTE_NONE, colorOrder, newDepth, newD3DFormat );
-
-            if ( hasD3DFormat )
-            {
-                platformTex->d3dFormat = newD3DFormat;
-            }
-
-            platformTex->hasD3DFormat = hasD3DFormat;
-        }
-
         // Delete unnecessary palette data.
 	    if (isPaletteRaster)
         {
@@ -237,6 +223,9 @@ void NativeTexture::convertToFormat(eRasterFormat newFormat)
 		    
             platformTex->paletteType = PALETTE_NONE;
 	    }
+
+        // Make sure we update the d3dFormat.
+        platformTex->updateD3DFormat();
 
         // Since we most likely changed colors, recalculate the alpha flag.
         platformTex->hasAlpha = platformTex->doesHaveAlpha();
@@ -382,20 +371,10 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
 
         platformTex->colorOrdering = newColorOrdering;
 
-        // Update generics.
-        {
-            D3DFORMAT newD3DFormat;
-
-            bool hasD3DFormat = getD3DFormatFromRasterType(newFormat, PALETTE_NONE, newColorOrdering, newDepth, newD3DFormat);
-
-            if (hasD3DFormat)
-            {
-                platformTex->d3dFormat = newD3DFormat;
-            }
-            platformTex->hasD3DFormat = hasD3DFormat;
-        }
-
         this->rasterFormat = newFormat;
+
+        // Update generics.
+        platformTex->updateD3DFormat();
 
         // We need to update the alpha flag.
         platformTex->hasAlpha = platformTex->doesHaveAlpha();
@@ -645,15 +624,355 @@ bool NativeTexture::isDirect3DWritable(void) const
 void NativeTexture::makeDirect3DCompatible(void)
 {
     // Only works if the texture is in Direct3D platform already.
+    // This routine is pretty complicated.
 
     if (this->platform == PLATFORM_D3D8 || this->platform == PLATFORM_D3D9)
     {
         NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
+        bool hasUpdated = false;
+
         // Make sure this texture has a Direct3D format.
         if ( !platformTex->hasD3DFormat )
         {
-            // TODO.
+            // Well, if we are compressed we usually have a D3DFORMAT.
+            // But things can go really wrong, so lets decompress anyway.
+            if ( platformTex->dxtCompression )
+            {
+                platformTex->decompressDxt();
+            }
+
+            // Get the color parameters of the source texels.
+            uint32 srcDepth = platformTex->depth;
+
+            eRasterFormat srcRasterFormat = this->rasterFormat;
+            ePaletteType srcPaletteType = platformTex->paletteType;
+
+            eColorOrdering srcColorOrder = platformTex->colorOrdering;
+
+            // If we are on D3D, we have to avoid typical configurations that may come from
+            // other hardware.
+            uint32 dstDepth = srcDepth;
+
+            eRasterFormat dstRasterFormat = srcRasterFormat;
+            ePaletteType dstPaletteType = srcPaletteType;
+
+            eColorOrdering dstColorOrder = srcColorOrder;
+
+            if ( dstPaletteType != PALETTE_NONE )
+            {
+                if ( dstPaletteType == PALETTE_4BIT || dstPaletteType == PALETTE_8BIT )
+                {
+                    dstDepth = 8;
+                }
+                else
+                {
+                    assert( 0 );
+                }
+
+                dstColorOrder = COLOR_RGBA;
+            }
+            else
+            {
+                if ( dstRasterFormat == RASTER_1555 )
+                {
+                    dstDepth = 16;
+                }
+                else if ( dstRasterFormat == RASTER_565 )
+                {
+                    dstDepth = 16;
+                }
+                else if ( dstRasterFormat == RASTER_4444 )
+                {
+                    dstDepth = 16;
+                }
+                else if ( dstRasterFormat == RASTER_8888 )
+                {
+                    dstDepth = 32;
+                }
+                else if ( dstRasterFormat == RASTER_888 )
+                {
+                    dstDepth = 32;
+                }
+                else if ( dstRasterFormat == RASTER_555 )
+                {
+                    dstDepth = 16;
+                }
+
+                dstColorOrder = COLOR_BGRA;
+            }
+
+            // Check whether we even have to update the texels.
+            if ( srcRasterFormat != dstRasterFormat || srcPaletteType != dstPaletteType || srcColorOrder != dstColorOrder || srcDepth != dstDepth )
+            {
+                // Grab palette parameters.
+                void *srcPaletteTexels = platformTex->palette;
+                uint32 srcPaletteSize = platformTex->paletteSize;
+
+                uint32 srcPalRasterDepth;
+
+                if ( srcPaletteType != PALETTE_NONE )
+                {
+                    srcPalRasterDepth = Bitmap::getRasterFormatDepth( srcRasterFormat );
+                }
+
+                void *dstPaletteTexels = srcPaletteTexels;
+                uint32 dstPaletteSize = srcPaletteSize;
+
+                uint32 dstPalRasterDepth;
+
+                if ( dstPaletteType != PALETTE_NONE )
+                {
+                    dstPalRasterDepth = Bitmap::getRasterFormatDepth( dstRasterFormat );
+                }
+
+                // Check whether we have to update the palette texels.
+                if ( dstPaletteType != PALETTE_NONE )
+                {
+                    // Make sure we had a palette before.
+                    assert( srcPaletteType != PALETTE_NONE );
+
+                    if ( dstPaletteType == PALETTE_4BIT )
+                    {
+                        dstPaletteSize = 16;
+                    }
+                    else if ( dstPaletteType == PALETTE_8BIT )
+                    {
+                        dstPaletteSize = 256;
+                    }
+                    else
+                    {
+                        assert( 0 );
+                    }
+
+                    // If the palette increased in size, allocate a new array for it.
+                    if ( srcPaletteSize != dstPaletteSize || srcPalRasterDepth != dstPalRasterDepth )
+                    {
+                        uint32 dstPalDataSize = getRasterDataSize( dstPaletteSize, dstPalRasterDepth );
+
+                        dstPaletteTexels = new uint8[ dstPalDataSize ];
+                    }
+                }
+                else
+                {
+                    dstPaletteTexels = NULL;
+                    dstPaletteSize = 0;
+                }
+
+                // If we have a palette, process it.
+                if ( srcPaletteType != PALETTE_NONE && dstPaletteType != PALETTE_NONE )
+                {
+                    // Process valid colors.
+                    uint32 canProcessCount = std::min( srcPaletteSize, dstPaletteSize );
+
+                    for ( uint32 n = 0; n < canProcessCount; n++ )
+                    {
+                        uint8 r, g, b, a;
+
+                        bool hasColor = browsetexelcolor(
+                            srcPaletteTexels, PALETTE_NONE, NULL, 0, n, srcRasterFormat, srcColorOrder, srcPalRasterDepth,
+                            r, g, b, a
+                        );
+
+                        if ( !hasColor )
+                        {
+                            r = 0;
+                            g = 0;
+                            b = 0;
+                            a = 0;
+                        }
+
+                        puttexelcolor(
+                            dstPaletteTexels, n, dstRasterFormat, dstColorOrder, dstPalRasterDepth,
+                            r, g, b, a
+                        );
+                    }
+
+                    // Zero out any remainder.
+                    for ( uint32 n = canProcessCount; n < dstPaletteSize; n++ )
+                    {
+                        puttexelcolor(
+                            dstPaletteTexels, n, dstRasterFormat, dstColorOrder, dstPalRasterDepth,
+                            0, 0, 0, 0
+                        );
+                    }
+                }
+
+                // Process mipmaps.
+                uint32 mipmapCount = platformTex->mipmapCount;
+
+                // Determine the depth of the items.
+                for ( uint32 n = 0; n < mipmapCount; n++ )
+                {
+                    // Grab the source parameters.
+                    void *srcTexels = platformTex->texels[ n ];
+
+                    uint32 srcTexelsDataSize = platformTex->dataSizes[ n ];
+
+                    uint32 srcWidth = platformTex->width[ n ];      // the dimensions will stay the same.
+                    uint32 srcHeight = platformTex->height[ n ];
+                    
+                    uint32 srcItemCount = ( srcWidth * srcHeight );
+
+                    // Check whether we need to reallocate the texels.
+                    void *dstTexels = srcTexels;
+
+                    uint32 dstTexelsDataSize = srcTexelsDataSize;
+
+                    if ( srcDepth != dstDepth )
+                    {
+                        dstTexelsDataSize = getRasterDataSize( srcItemCount, dstDepth );
+
+                        dstTexels = new uint8[ dstTexelsDataSize ];
+                    }
+
+                    if ( dstPaletteType != PALETTE_NONE )
+                    {
+                        // Make sure we came from a palette.
+                        assert( srcPaletteType != PALETTE_NONE );
+
+                        // We only have work to do if the depth changed or the pointers to the arrays changed.
+                        if ( srcDepth != dstDepth || srcTexels != dstTexels )
+                        {
+                            // Copy palette indice.
+                            for ( uint32 n = 0; n < srcItemCount; n++ )
+                            {
+                                uint32 palIndex;
+
+                                // Fetch the index
+                                if ( srcDepth == 4 )
+                                {
+                                    PixelFormat::palette4bit::trav_t travItem;
+                                    
+                                    ( (PixelFormat::palette4bit*)srcTexels )->getvalue(n, travItem);
+
+                                    palIndex = travItem;
+                                }
+                                else if ( srcDepth == 8 )
+                                {
+                                    PixelFormat::palette8bit::trav_t travItem;
+
+                                    ( (PixelFormat::palette8bit*)srcTexels )->getvalue(n, travItem);
+
+                                    palIndex = travItem;
+                                }
+                                else
+                                {
+                                    assert( 0 );
+                                }
+
+                                // Put the index.
+                                if ( dstDepth == 4 )
+                                {
+                                    ( (PixelFormat::palette4bit*)dstTexels )->setvalue(n, palIndex);
+                                }
+                                else if ( dstDepth == 8 )
+                                {
+                                    ( (PixelFormat::palette8bit*)dstTexels )->setvalue(n, palIndex);
+                                }
+                                else
+                                {
+                                    assert( 0 );
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // If we are not a palette, then we have to process colors.
+                        for ( uint32 n = 0; n < srcItemCount; n++ )
+                        {
+                            uint8 r, g, b, a;
+
+                            bool hasColor = browsetexelcolor(
+                                srcTexels, srcPaletteType, srcPaletteTexels, srcPaletteSize, n, srcRasterFormat, srcColorOrder, srcDepth,
+                                r, g, b, a
+                            );
+
+                            if ( !hasColor )
+                            {
+                                r = 0;
+                                g = 0;
+                                b = 0;
+                                a = 0;
+                            }
+
+                            // Just put the color inside.
+                            puttexelcolor(
+                                dstTexels, n, dstRasterFormat, dstColorOrder, dstDepth,
+                                r, g, b, a
+                            );
+                        }
+                    }
+
+                    // Update mipmap properties.
+                    if ( dstTexels != srcTexels )
+                    {
+                        // Delete old texels.
+                        // We always have texels allocated.
+                        delete [] srcTexels;
+
+                        // Replace stuff.
+                        platformTex->texels[ n ] = dstTexels;
+                    }
+
+                    if ( dstTexelsDataSize != srcTexelsDataSize )
+                    {
+                        // Update the data size.
+                        platformTex->dataSizes[ n ] = dstTexelsDataSize;
+                    }
+                }
+
+                // Update the palette if necessary.
+                if ( srcPaletteTexels != dstPaletteTexels )
+                {
+                    if ( srcPaletteTexels )
+                    {
+                        // Delete old palette texels.
+                        delete [] srcPaletteTexels;
+                    }
+
+                    // Put in the new ones.
+                    platformTex->palette = dstPaletteTexels;
+                }
+
+                if ( srcPaletteSize != dstPaletteSize )
+                {
+                    platformTex->paletteSize = dstPaletteSize;
+                }
+
+                // Update the D3DFORMAT field.
+                hasUpdated = true;
+            }
+
+            // Update texture properties that changed.
+            if ( srcRasterFormat != dstRasterFormat )
+            {
+                this->rasterFormat = dstRasterFormat;
+            }
+
+            if ( srcPaletteType != dstPaletteType )
+            {
+                platformTex->paletteType = dstPaletteType;
+            }
+
+            if ( srcColorOrder != dstColorOrder )
+            {
+                platformTex->colorOrdering = dstColorOrder;
+            }
+
+            if ( srcDepth != dstDepth )
+            {
+                platformTex->depth = dstDepth;
+            }
+        }
+
+        if ( hasUpdated )
+        {
+            // Alright, lets do it.
+            // If this produces a valid D3DFORMAT, we succeeded.
+            // Keep in mind that is process is allowed to fail.
+            platformTex->updateD3DFormat();
         }
     }
 }

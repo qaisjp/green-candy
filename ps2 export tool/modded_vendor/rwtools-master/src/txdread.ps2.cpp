@@ -1051,6 +1051,9 @@ void NativeTexture::convertFromPS2(void)
 
     // Execute managed methods now...
 
+    // Update the D3DFORMAT field.
+    d3dtex->updateD3DFormat();
+
     // Actually, since there is no alpha flag in PS2 textures, we should recalculate the alpha flag here.
     d3dtex->hasAlpha = d3dtex->doesHaveAlpha();
 }

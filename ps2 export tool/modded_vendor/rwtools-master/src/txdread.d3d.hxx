@@ -303,6 +303,20 @@ struct NativeTextureD3D : public PlatformTexture
 
     bool hasD3DFormat;
 
+    inline void updateD3DFormat( void )
+    {
+        // Execute it whenever the rasterFormat, the palette type, the color order or depth may change.
+        D3DFORMAT newD3DFormat;
+
+        bool hasD3DFormat = getD3DFormatFromRasterType( parent->rasterFormat, this->paletteType, this->colorOrdering, this->depth, newD3DFormat );
+
+        if ( hasD3DFormat )
+        {
+            this->d3dFormat = newD3DFormat;
+        }
+        this->hasD3DFormat = hasD3DFormat;
+    }
+
     bool hasAlpha;
 
     eColorOrdering colorOrdering;

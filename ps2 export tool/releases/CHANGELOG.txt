@@ -1,3 +1,12 @@
+r570
+- fixed parsing of PS2 GTA Vice City TXD files (maybe never tried them before) - added IMG compression support - made compressionQuality do something for DXT (if 1.0 then DXT5 is used) - various fixes
+---------------------
+r569
+- added GTA III and GTA VC IMG container decompression support - added license of the LZO library that we use for decompression - prepared imgimport so that it can later output compressed IMG files
+---------------------
+r566
+- fixed some embarrassing bug that was introduced when I removed the need for trailing slashes in txdgen and imgimport - fixed an oversight that caused color ordering issues when palettizing textures
+---------------------
 r565
 - added DXTn compression for PC and XBOX
 ---------------------
