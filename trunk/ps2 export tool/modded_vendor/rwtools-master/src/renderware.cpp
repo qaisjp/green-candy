@@ -19,6 +19,7 @@ LibraryVersion KnownVersions::getGameVersion( KnownVersions::eGameVersion gameVe
     if ( gameVer == GTA3 )
     {
         outVer.rwLibMinor = 1;
+        outVer.rwRevMinor = 1;
     }
     else if ( gameVer == VC_PS2 )
     {

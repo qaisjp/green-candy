@@ -36,6 +36,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         metaHeader.texFormat.filterMode = this->filterFlags;
         metaHeader.texFormat.uAddressing = this->uAddressing;
         metaHeader.texFormat.vAddressing = this->vAddressing;
+        metaHeader.texFormat.pad1 = 0;
 
         // Correctly write the name strings (for safety).
         // Even though we can read those name fields with zero-termination safety,
@@ -132,7 +133,9 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 	}
 	bytesWritten += writtenBytesReturn;
 
-	return bytesWritten;
+    WRITE_HEADER(CHUNK_TEXTURENATIVE);
+
+	return writtenBytesReturn;
 }
 
 }

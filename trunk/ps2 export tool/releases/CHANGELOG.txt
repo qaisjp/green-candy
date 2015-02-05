@@ -1,3 +1,6 @@
+r571
+- fixed an embarrassing bug where uncompressed PS2 textures were not output in a valid D3DFORMAT - implemented conversion to valid D3DFORMAT texture if not already - various fixes
+---------------------
 r570
 - fixed parsing of PS2 GTA Vice City TXD files (maybe never tried them before) - added IMG compression support - made compressionQuality do something for DXT (if 1.0 then DXT5 is used) - various fixes
 ---------------------

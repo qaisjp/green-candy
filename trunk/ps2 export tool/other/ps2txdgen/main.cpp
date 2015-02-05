@@ -93,7 +93,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
             // If the texture is prepared, do whatever.
             if ( isPrepared )
-            {
+            {   
                 // Palettize the texture to save space.
                 if ( doCompress )
                 {
@@ -289,6 +289,46 @@ void _term_handler( int msg )
         Sleep( 10000 );
     }
 }
+
+struct TxdGenExceptionHandler : public DbgTrace::IExceptionHandler
+{
+    virtual bool OnException( unsigned int error_code, DbgTrace::IEnvSnapshot *snapshot )
+    {
+        printf(
+            "\n\n\nTxdGen has crashed. Please report back to The_GTA so he can fix this issue.\n\n"
+        );
+
+        if ( snapshot )
+        {
+            printf( "callstack:\n" );
+
+            // Print out debug info for the user.
+            std::string callstackString = snapshot->ToString();
+
+            printf( "%s", callstackString.c_str() );
+        }
+        else
+        {
+            // There sadly is no debug information.
+            printf(
+                "no debug info available.\n"
+            );
+        }
+
+        printf( "\npress enter to get rekt..." );
+
+#ifndef _DEBUG
+        // Wait for the user to recognize this.
+        getchar();
+
+        // Terminate shit.
+        TerminateProcess( GetCurrentProcess(), -2 );
+#endif
+
+        // We want to get to the debugger.
+        return false;
+    }
+};
 
 bool ApplicationMain( void )
 {
@@ -691,7 +731,16 @@ int main( int argc, char *argv[] )
 {
     bool success = true;
 
+    // Register an exception handler for easier debugging.
+    TxdGenExceptionHandler _exceptHandler;
+
+    DbgTrace::RegisterExceptionHandler( &_exceptHandler );
+
+    // Launch the application.
     success = ApplicationMain();
+
+    // Unregister the exception handler again.
+    DbgTrace::UnregisterExceptionHandler( &_exceptHandler );
 
     _has_terminated = true;
 

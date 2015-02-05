@@ -76,6 +76,8 @@ int main( int argc, char *argv[] )
 
     bool c_imgArchivesCompressed = false;
 
+    eIMGArchiveVersion c_imgArchiveVersion = IMG_VERSION_2;
+
     if ( imgConfig )
     {
         if ( CINI::Entry *mainEntry = imgConfig->GetEntry( "Main" ) )
@@ -97,6 +99,21 @@ int main( int argc, char *argv[] )
             {
                 c_imgArchivesCompressed = mainEntry->GetBool( "imgArchivesCompressed" );
             }
+
+            // IMG archive version.
+            if ( mainEntry->Find( "imgArchiveVersion" ) )
+            {
+                int version = mainEntry->GetInt( "imgArchiveVersion" );
+
+                if ( version == 1 )
+                {
+                    c_imgArchiveVersion = IMG_VERSION_1;
+                }
+                else if ( version == 2 )
+                {
+                    c_imgArchiveVersion = IMG_VERSION_2;
+                }
+            }
         }
     }
 
@@ -115,6 +132,20 @@ int main( int argc, char *argv[] )
 
     std::cout
         << "* imgArchivesCompressed: " << ( c_imgArchivesCompressed ? "true" : "false" ) << std::endl;
+
+    const char *imgVersionString = "unknown";
+
+    if ( c_imgArchiveVersion == IMG_VERSION_1 )
+    {
+        imgVersionString = "1";
+    }
+    else if ( c_imgArchiveVersion == IMG_VERSION_2 )
+    {
+        imgVersionString = "2";
+    }
+
+    std::cout
+        << "* imgArchiveVersion: " << imgVersionString << std::endl;
 
     // Finish with an endline.
     std::cout << std::endl;
@@ -162,11 +193,11 @@ int main( int argc, char *argv[] )
 
                 if ( c_imgArchivesCompressed )
                 {
-                    outputArchive = fsHandle->CreateCompressedIMGArchive( absImgFileRoot, fileName.c_str() );
+                    outputArchive = fsHandle->CreateCompressedIMGArchive( absImgFileRoot, fileName.c_str(), c_imgArchiveVersion );
                 }
                 else
                 {
-                    outputArchive = fsHandle->CreateIMGArchive( absImgFileRoot, fileName.c_str() );
+                    outputArchive = fsHandle->CreateIMGArchive( absImgFileRoot, fileName.c_str(), c_imgArchiveVersion );
                 }
 
                 if ( !outputArchive )
