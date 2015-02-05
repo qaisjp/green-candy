@@ -616,18 +616,15 @@ extern "C" int APIENTRY _DebugInit( void )
 {
     DbgHeap_Init();
 
-#if 0
+#ifdef _DEBUG_TRACE_LIBRARY_
     DbgTraceStackSpace stackSpace;  // reserved memory; must be always allocated.
 
     DbgTrace_Init( stackSpace );
-
-    // Set up memory debugging routines.
-    DbgHeap_SetMemoryAllocationWatch( _DbgHeap_MemAllocWatch );
 #endif
 
     int ret = mainCRTStartup();
 
-#if 0
+#ifdef _DEBUG_TRACE_LIBRARY_
     DbgTrace_Shutdown();
 #endif
     DbgHeap_Shutdown();

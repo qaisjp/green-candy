@@ -30,15 +30,60 @@ void imgExtension::Shutdown( CFileSystemNative *sys )
     return;
 }
 
-CIMGArchiveTranslatorHandle* imgExtension::NewArchive( CFileTranslator *srcRoot, const char *srcPath )
+CIMGArchiveTranslatorHandle* imgExtension::NewArchive( CFileTranslator *srcRoot, const char *srcPath, eIMGArchiveVersion version )
 {
-    // Just create a version two archive.
-    CFile *contentFile = srcRoot->Open( srcPath, "wb" );
+    // Create an archive depending on version.
+    CIMGArchiveTranslator *resultArchive = NULL;
+    {
+        CFile *contentFile = NULL;
+        CFile *registryFile = NULL;
 
-    if ( !contentFile )
-        return NULL;
+        if ( version == IMG_VERSION_1 )
+        {
+            // Just open the content file.
+            contentFile = srcRoot->Open( srcPath, "wb" );
 
-    return new CIMGArchiveTranslator( *this, contentFile, contentFile, IMG_VERSION_2 );
+            // We need to create a seperate registry file.
+            std::string dirOfArchive;
+            std::string extention;
+
+            std::string nameItem = FileSystem::GetFileNameItem( srcPath, false, &dirOfArchive, &extention );
+
+            if ( nameItem.length() != 0 )
+            {
+                std::string regFilePath = dirOfArchive + nameItem + ".DIR";
+
+                // Open a seperate registry file.
+                registryFile = srcRoot->Open( regFilePath.c_str(), "wb" );
+            }
+        }
+        else if ( version == IMG_VERSION_2 )
+        {
+            // Just create a content file.
+            contentFile = srcRoot->Open( srcPath, "wb" );
+
+            registryFile = contentFile;
+        }
+
+        if ( contentFile && registryFile )
+        {
+            resultArchive = new CIMGArchiveTranslator( *this, contentFile, registryFile, version );
+        }
+
+        if ( !resultArchive )
+        {
+            if ( contentFile )
+            {
+                delete contentFile;
+            }
+
+            if ( registryFile && registryFile != contentFile )
+            {
+                delete registryFile;
+            }
+        }
+    }
+    return resultArchive;
 }
 
 CIMGArchiveTranslatorHandle* imgExtension::OpenArchive( CFileTranslator *srcRoot, const char *srcPath )
@@ -163,13 +208,13 @@ CIMGArchiveTranslatorHandle* CFileSystem::OpenIMGArchive( CFileTranslator *srcRo
     return NULL;
 }
 
-CIMGArchiveTranslatorHandle* CFileSystem::CreateIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
+CIMGArchiveTranslatorHandle* CFileSystem::CreateIMGArchive( CFileTranslator *srcRoot, const char *srcPath, eIMGArchiveVersion version )
 {
     imgExtension *imgExt = imgExtension::Get( this );
 
     if ( imgExt )
     {
-        return imgExt->NewArchive( srcRoot, srcPath );
+        return imgExt->NewArchive( srcRoot, srcPath, version );
     }
     return NULL;
 }
@@ -192,9 +237,9 @@ CIMGArchiveTranslatorHandle* CFileSystem::OpenCompressedIMGArchive( CFileTransla
     return archiveHandle;
 }
 
-CIMGArchiveTranslatorHandle* CFileSystem::CreateCompressedIMGArchive( CFileTranslator *srcRoot, const char *srcPath )
+CIMGArchiveTranslatorHandle* CFileSystem::CreateCompressedIMGArchive( CFileTranslator *srcRoot, const char *srcPath, eIMGArchiveVersion version )
 {
-    CIMGArchiveTranslatorHandle *archiveHandle = this->CreateIMGArchive( srcRoot, srcPath );
+    CIMGArchiveTranslatorHandle *archiveHandle = this->CreateIMGArchive( srcRoot, srcPath, version );
 
     if ( archiveHandle )
     {

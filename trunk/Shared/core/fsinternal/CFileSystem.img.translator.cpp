@@ -309,11 +309,18 @@ void CIMGArchiveTranslator::dataSectorStream::Flush( void )
 =======================================*/
 
 // Header of a file entry in the IMG archive.
-struct resourceFileHeader
+struct resourceFileHeader_ver1
 {
     size_t              offset;                         // 0
-    unsigned short      alignedBlockCount;              // 4
-    unsigned short      realBlockCount;                 // 6
+    unsigned int        fileDataSize;                   // 4
+    char                name[24];                       // 8
+};
+
+struct resourceFileHeader_ver2
+{
+    size_t              offset;                         // 0
+    unsigned short      fileDataSize;                   // 4
+    unsigned short      expandedSize;                   // 6
     char                name[24];                       // 8
 };
 
@@ -331,6 +338,7 @@ CIMGArchiveTranslator::CIMGArchiveTranslator( imgExtension& imgExt, CFile *conte
     // NULL the file root translator.
     this->m_fileRoot = NULL;
     this->m_unpackRoot = NULL;
+    this->m_compressRoot = NULL;
 
     // We have no compression handler by default.
     this->m_compressionHandler = NULL;
@@ -356,6 +364,13 @@ CIMGArchiveTranslator::~CIMGArchiveTranslator( void )
     }
 
     // Destroy the locks to our runtime management folders.
+    if ( m_compressRoot )
+    {
+        delete m_compressRoot;
+
+        m_compressRoot = NULL;
+    }
+
     if ( m_unpackRoot )
     {
         delete m_unpackRoot;
@@ -408,6 +423,27 @@ CFileTranslator* CIMGArchiveTranslator::GetUnpackRoot( void )
         }
     }
     return unpackRoot;
+}
+
+CFileTranslator* CIMGArchiveTranslator::GetCompressRoot( void )
+{
+    CFileTranslator *compressRoot = this->m_compressRoot;
+
+    if ( compressRoot == NULL )
+    {
+        CFileTranslator *fileRoot = this->GetFileRoot();
+
+        if ( fileRoot )
+        {
+            compressRoot = CRepository::AcquireDirectoryTranslator( fileRoot, "compress/" );
+
+            if ( compressRoot )
+            {
+                this->m_compressRoot = compressRoot;
+            }
+        }
+    }
+    return compressRoot;
 }
 
 bool CIMGArchiveTranslator::WriteData( const char *path, const char *buffer, size_t size )
@@ -862,6 +898,8 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
     }
 
     // Loop through all our files and generate their presence.
+    CIMGArchiveCompressionHandler *compressHandler = this->m_compressionHandler;
+
     for ( fileList::iterator iter = baseDir.files.begin(); iter != baseDir.files.end(); iter++ )
     {
         file *theFile = *iter;
@@ -874,6 +912,27 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
 
         const char *relativePath = theFile->relPath.c_str();
 
+        // Determine whether we need to compress this file.
+        bool requiresCompression = false;
+
+        if ( compressHandler != NULL )
+        {
+            // If we have a compression handler, we generarily compress everything.
+            requiresCompression = true;
+        }
+
+        bool hasCompressed = false;
+
+        // Grab the destination handle.
+        // We will calculate the blocksize depending on it.
+        CFile *destinationHandle = NULL;
+
+        CFile *srcHandle = NULL;
+
+        bool checkWhetherAlreadyCompressed = true;
+
+        bool isExtraction = false;
+
         if ( theFile->metaData.isExtracted )
         {
             CFileTranslator *fileRoot = this->GetUnpackRoot();
@@ -882,27 +941,80 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
             {
                 CFile *diskFile = fileRoot->Open( relativePath, "rb" );
 
-                if ( diskFile )
+                CFile *compressToHandle = NULL;
+
+                // If we need to compress the file, then compress it and query the block size from the compressed file.
+                if ( requiresCompression )
                 {
-                    fsOffsetNumber_t realFileSize = diskFile->GetSizeNative();
+                    CFileTranslator *compressRoot = this->GetCompressRoot();
 
-                    blockCount =
-                        (unsigned long)ALIGN_SIZE( realFileSize, (fsOffsetNumber_t)IMG_BLOCK_SIZE ) / IMG_BLOCK_SIZE;
+                    if ( compressRoot )
+                    {
+                        CFile *compressedOut = compressRoot->Open( relativePath, "wb+" );
 
-                    delete diskFile;
+                        if ( compressedOut )
+                        {
+                            // Return the handle to the compressed file.
+                            compressToHandle = compressedOut;
+
+                            // We are located in the compress root.
+                            hasCompressed = true;
+                        }
+                    }
                 }
+
+                if ( compressToHandle == NULL )
+                {
+                    // If the compression has failed or we dont have to compress, then just query the disk file.
+                    compressToHandle = diskFile;
+                }
+
+                if ( compressToHandle )
+                {
+                    srcHandle = diskFile;
+
+                    destinationHandle = compressToHandle;
+                }
+
+                // Since we are extracted, we cannot be compressed.
+                // We can optimize away the compression check.
+                checkWhetherAlreadyCompressed = false;
             }
         }
         else
         {
             // We need to dump the file to disk.
-            CFile *srcStream = this->OpenNativeFileStream( theFile, FILE_MODE_OPEN, FILE_ACCESS_READ );
+            CFile *srcStream = new dataSectorStream( this, theFile, theFile->relPath );
 
             if ( srcStream )
             {
-                // The routine may have extracted the file at this point.
-                // If it has, then we can terminate.
-                if ( theFile->metaData.isExtracted == false )
+                // If we need to compress, we need to dump a compressed copy.
+                CFile *destinationHandle = NULL;
+
+                if ( destinationHandle == NULL && requiresCompression )
+                {
+                    CFileTranslator *compressRoot = this->GetCompressRoot();
+
+                    if ( compressRoot )
+                    {
+                        CFile *dstStream = compressRoot->Open( relativePath, "wb" );
+
+                        if ( dstStream )
+                        {
+                            // The file we want is now located in the compress root.
+                            // Even if it may not be compressed already.
+                            hasCompressed = true;
+
+                            // Give the destination stream to the runtime.
+                            destinationHandle = dstStream;
+                        }
+                    }
+
+                    // If we have not successfully compressed, we need to put it into the unpack root at least.
+                }
+                
+                // If anything else failed, we just put it into the unpack root.
+                if ( destinationHandle == NULL )
                 {
                     CFileTranslator *fileRoot = this->GetUnpackRoot();
 
@@ -911,12 +1023,11 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
 
                     if ( dstStream )
                     {
-                        bool extractSuccess = this->ExtractStream( srcStream, dstStream, theFile );
+                        // We should extract the stream instead.
+                        isExtraction = true;
 
-                        assert( extractSuccess == true );
-
-                        // Close the destination stream.
-                        delete dstStream;
+                        // Give the destination handle to the runtime.
+                        destinationHandle = dstStream;
                     }
                     else
                     {
@@ -924,20 +1035,105 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
                     }
                 }
 
-                delete srcStream;
+                // Make sure we pass the source handle aswell.
+                srcHandle = srcStream;
             }
             else
             {
                 assert( 0 );
             }
+        }
 
-            // Grab the block count.
-            blockCount = theFile->metaData.resourceSize;
+        // Perform a parsing (if required).
+        if ( srcHandle && destinationHandle && destinationHandle != srcHandle )
+        {
+            bool processedParse = false;
+
+            if ( !processedParse && requiresCompression )
+            {
+                bool shouldCompress = true;
+
+                if ( checkWhetherAlreadyCompressed )
+                {
+                    bool isAlreadyCompressed = compressHandler->IsStreamCompressed( srcHandle );
+
+                    srcHandle->SeekNative( 0, SEEK_SET );
+
+                    if ( isAlreadyCompressed )
+                    {
+                        // If we are already compressed, there is no point in compressing.
+                        // We can just take the source stream and use it for processing.
+                        shouldCompress = false;
+                    }
+                }
+
+                if ( shouldCompress )
+                {
+                    bool hasSuccessfullyCompressed = compressHandler->Compress( srcHandle, destinationHandle );
+
+                    if ( hasSuccessfullyCompressed )
+                    {
+                        processedParse = true;
+                    }
+                    
+                    if ( !processedParse )
+                    {
+                        srcHandle->SeekNative( 0, SEEK_SET );
+                        destinationHandle->SeekNative( 0, SEEK_SET );
+                    }
+                }
+            }
+
+            if ( !processedParse && isExtraction )
+            {
+                // Do the extraction now.
+                bool extractSuccess = this->ExtractStream( srcHandle, destinationHandle, theFile );
+
+                if ( extractSuccess )
+                {
+                    processedParse = true;
+                }
+            }
+
+            if ( !processedParse )
+            {
+                // Just copy over the file.
+                FileSystem::StreamCopy( *srcHandle, *destinationHandle );
+
+                // Do not forget to trim it off at the end.
+                destinationHandle->SetSeekEnd();
+            }
+        }
+
+        // If we have a source handle, just close it.
+        if ( srcHandle && srcHandle != destinationHandle )
+        {
+            delete srcHandle;
+
+            srcHandle = NULL;
+        }
+
+        if ( !destinationHandle )
+        {
+            // If there could not even be a destination handle, we have got a problem.
+            assert( 0 );
+        }
+        else
+        {
+            // Query its size and calculate the block could depending on it.
+            fsOffsetNumber_t realFileSize = destinationHandle->GetSizeNative();
+
+            blockCount =
+                (unsigned long)ALIGN_SIZE( realFileSize, (fsOffsetNumber_t)IMG_BLOCK_SIZE ) / IMG_BLOCK_SIZE;
+
+            // Close it.
+            delete destinationHandle;
         }
 
         // Update the resource properties.
         theFile->metaData.resourceSize = blockCount;
         theFile->metaData.blockOffset = newBlockOffset;
+        theFile->metaData.hasCompressed = hasCompressed;
 
         // Update the generated block count.
         genOut.currentBlockCount += blockCount;
@@ -955,30 +1151,69 @@ void CIMGArchiveTranslator::WriteFileHeaders( CFile *targetStream, directory& ba
     }
 
     // Now write our files.
+    eIMGArchiveVersion theVersion = this->m_version;
+
     for ( fileList::iterator iter = baseDir.files.begin(); iter != baseDir.files.end(); iter++ )
     {
         file *theFile = *iter;
 
-        resourceFileHeader theHeader;
-        theHeader.offset = theFile->metaData.blockOffset;
-        theHeader.alignedBlockCount = theFile->metaData.resourceSize;
-        theHeader.realBlockCount = 0;
+        union
+        {
+            resourceFileHeader_ver1 _ver1Header;
+            resourceFileHeader_ver2 _ver2Header;
+        };
+
+        void *headerPointer = NULL;
+        size_t headerSize = 0;
+
+        char *namePointer = NULL;
+        size_t maxName = 0;
+
+        if ( theVersion == IMG_VERSION_1 )
+        {
+            headerPointer = &_ver1Header;
+            headerSize = sizeof( _ver1Header );
+
+            _ver1Header.offset = theFile->metaData.blockOffset;
+            _ver1Header.fileDataSize = theFile->metaData.resourceSize;
+
+            namePointer = _ver1Header.name;
+            maxName = sizeof( _ver1Header.name );
+        }
+        else
+        {
+            headerPointer = &_ver2Header;
+            headerSize = sizeof( _ver2Header );
+
+            _ver2Header.offset = theFile->metaData.blockOffset;
+            _ver2Header.fileDataSize = theFile->metaData.resourceSize;
+            _ver2Header.expandedSize = 0;   // always zero.
+
+            namePointer = _ver2Header.name;
+            maxName = sizeof( _ver2Header.name );
+        }
        
-        // Create a (trimmed) filename.
-        std::string ansiName = theFile->relPath.convert_ansi();
+        if ( namePointer )
+        {
+            // Create a (trimmed) filename.
+            std::string ansiName = theFile->relPath.convert_ansi();
 
-        size_t maxAllowedFilename = sizeof( theHeader.name );
-        size_t currentNumFilename = ansiName.size();
+            size_t maxAllowedFilename = maxName;
+            size_t currentNumFilename = ansiName.size();
 
-        size_t actualCopyCount = std::min( maxAllowedFilename - 1, currentNumFilename );
+            size_t actualCopyCount = std::min( maxAllowedFilename - 1, currentNumFilename );
 
-        memcpy( theHeader.name, ansiName.c_str(), actualCopyCount );
+            memcpy( namePointer, ansiName.c_str(), actualCopyCount );
 
-        // Zero terminate the name.
-        theHeader.name[ actualCopyCount ] = '\0';
+            // Zero terminate the name.
+            namePointer[ actualCopyCount ] = '\0';
+        }
 
-        // Write the header to the stream.
-        targetStream->WriteStruct( theHeader );
+        if ( headerPointer )
+        {
+            // Write the header to the stream.
+            targetStream->Write( headerPointer, 1, headerSize );
+        }
     }
 }
 
@@ -1005,21 +1240,35 @@ void CIMGArchiveTranslator::WriteFiles( CFile *targetStream, directory& baseDir 
         }
 
         // Write the data.
-        assert( theFile->metaData.isExtracted == true );
+        CFile *srcStream = NULL;
+
+        if ( theFile->metaData.hasCompressed )
+        {
+            CFileTranslator *fileRoot = this->GetCompressRoot();
+
+            if ( fileRoot )
+            {
+                srcStream = fileRoot->Open( theFile->relPath.c_str(), "rb" );
+            }
+        }
+        else if ( theFile->metaData.isExtracted )
         {
             CFileTranslator *fileRoot = this->GetUnpackRoot();
 
             if ( fileRoot )
             {
-                CFile *diskStream = fileRoot->Open( theFile->relPath.c_str(), "rb" );
-
-                if ( diskStream )
-                {
-                    FileSystem::StreamCopy( *diskStream, *targetStream );
-
-                    delete diskStream;
-                }
+                srcStream = fileRoot->Open( theFile->relPath.c_str(), "rb" );
             }
+        }
+
+        // It should never be NULL, but it can be, if something goes horribly wrong.
+        assert( srcStream != NULL );
+
+        if ( srcStream )
+        {
+            FileSystem::StreamCopy( *srcStream, *targetStream );
+
+            delete srcStream;
         }
     }
 }
@@ -1060,7 +1309,7 @@ void CIMGArchiveTranslator::Save( void )
 
         // If we are version two, then we prepend the file headers before the content blocks.
         // Take that into account.
-        if ( targetStream == registryStream )
+        if ( targetStream == registryStream )   // this is a pretty weak check tbh. but it works for the most part.
         {
             size_t headerSize = 0;
 
@@ -1071,12 +1320,23 @@ void CIMGArchiveTranslator::Save( void )
             }
 
             // Now come the file entries.
-            headerSize += sizeof(resourceFileHeader) * headerGenMetaData.numOfFiles;
+            size_t resourceFileHeaderSize = 0;
+
+            if (imgVersion == IMG_VERSION_1)
+            {
+                resourceFileHeaderSize = sizeof(resourceFileHeader_ver1);
+            }
+            else if (imgVersion == IMG_VERSION_2)
+            {
+                resourceFileHeaderSize = sizeof(resourceFileHeader_ver2);
+            }
+
+            headerSize += resourceFileHeaderSize * headerGenMetaData.numOfFiles;
 
             // Add this block count to the allocation.
             genMetaData.currentBlockCount += getDataBlockCount( headerSize );
         }
-       
+        
         GenerateArchiveStructure( m_virtualFS.GetRootDir(), genMetaData );
 
         // Preallocate required file space.
@@ -1105,6 +1365,33 @@ void CIMGArchiveTranslator::Save( void )
 
         // Now write all the files.
         WriteFiles( targetStream, m_virtualFS.GetRootDir() );
+    }
+
+    // Clean up the compressed files, since we do not need them anymore
+    // from here on.
+    if ( CFileTranslator *compressRoot = this->m_compressRoot )
+    {
+        filePath compressRootPath;
+
+        bool hasRootPath = compressRoot->GetFullPath( "@", false, compressRootPath );
+
+        // Delete the handle to the compress root and NULL it.
+        {
+            delete compressRoot;
+
+            this->m_compressRoot = NULL;
+        }
+
+        // Delete the disk contents.
+        if ( hasRootPath )
+        {
+            CFileTranslator *fileRoot = this->GetFileRoot();
+
+            if ( fileRoot )
+            {
+                fileRoot->Delete( compressRootPath.c_str() );
+            }
+        }
     }
 }
 
@@ -1135,6 +1422,8 @@ bool CIMGArchiveTranslator::ReadArchive( void )
 
     // Load every file block registration into memory.
     unsigned int n = 0;
+    
+    eIMGArchiveVersion theVersion = this->m_version;
 
     while ( true )
     {
@@ -1144,9 +1433,23 @@ bool CIMGArchiveTranslator::ReadArchive( void )
             break;
         }
 
-        resourceFileHeader entryHeader;
+        // Read the file header.
+        union
+        {
+            resourceFileHeader_ver1 _ver1Header;
+            resourceFileHeader_ver2 _ver2Header;
+        };
 
-        bool hasReadEntryHeader = this->m_registryFile->ReadStruct( entryHeader );
+        bool hasReadEntryHeader = false;
+
+        if ( theVersion == IMG_VERSION_1 )
+        {
+            hasReadEntryHeader = this->m_registryFile->ReadStruct( _ver1Header );
+        }
+        else if ( theVersion == IMG_VERSION_2 )
+        {
+            hasReadEntryHeader = this->m_registryFile->ReadStruct( _ver2Header );
+        }
 
         if ( !hasReadEntryHeader )
         {
@@ -1159,15 +1462,47 @@ bool CIMGArchiveTranslator::ReadArchive( void )
             break;
         }
 
+        // Read from the header.
+        unsigned long resourceSize = 0;
+        unsigned long resourceOffset = 0;
+        
+        const char *namePointer = NULL;
+        size_t maxName = 0;
+
+        if ( theVersion == IMG_VERSION_1 )
+        {
+            resourceOffset = _ver1Header.offset;
+            resourceSize = _ver1Header.fileDataSize;
+
+            namePointer = _ver1Header.name;
+            maxName = sizeof( _ver1Header.name );
+        }
+        else if ( theVersion == IMG_VERSION_2 )
+        {
+            resourceOffset = _ver2Header.offset;
+            resourceSize =
+                ( _ver2Header.expandedSize != 0 ) ? ( _ver2Header.expandedSize ) : ( _ver2Header.fileDataSize );
+
+            namePointer = _ver2Header.name;
+            maxName = sizeof( _ver2Header.name );
+        }
+
         // Register this into our archive struct.
         dirTree directories;
         bool isFile;
 
-        char newPath[ sizeof( entryHeader.name ) + 1 ];
+        char newPath[ sizeof( _ver1Header.name ) + 1 ];
 
-        memcpy( newPath, entryHeader.name, sizeof( entryHeader.name ) );
+        if ( namePointer )
+        {
+            memcpy( newPath, namePointer, maxName );
 
-        newPath[ sizeof( newPath ) - 1 ] = '\0';
+            newPath[ sizeof( newPath ) - 1 ] = '\0';
+        }
+        else
+        {
+            newPath[ 0 ] = '\0';
+        }
 
         bool validPath = this->GetRelativePathTree( newPath, directories, isFile );
 
@@ -1184,16 +1519,15 @@ bool CIMGArchiveTranslator::ReadArchive( void )
             // This operation will overwrite files if they are found double.
             if ( fileEntry )
             {
-                fileEntry->metaData.blockOffset = entryHeader.offset;
-                fileEntry->metaData.resourceSize =
-                    ( entryHeader.realBlockCount != 0 ) ? ( entryHeader.realBlockCount ) : ( entryHeader.alignedBlockCount );
+                fileEntry->metaData.blockOffset = resourceOffset;
+                fileEntry->metaData.resourceSize = resourceSize;
 
-                size_t maxName = sizeof( fileEntry->metaData.resourceName );
+                size_t maxFinalName = sizeof( fileEntry->metaData.resourceName );
 
-                assert( maxName == sizeof( newPath ) );
+                assert( maxFinalName == sizeof( newPath ) );
 
-                memcpy( fileEntry->metaData.resourceName, newPath, maxName );
-                fileEntry->metaData.resourceName[ maxName - 1 ] = '\0';
+                memcpy( fileEntry->metaData.resourceName, newPath, maxFinalName );
+                fileEntry->metaData.resourceName[ maxFinalName - 1 ] = '\0';
             }
         }
 

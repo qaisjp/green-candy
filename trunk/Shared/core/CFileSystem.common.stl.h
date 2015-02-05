@@ -145,4 +145,30 @@ namespace FileSystem
     };
 };
 
+#include <sstream>
+
+// Very basic definitions that are required all the time.
+namespace NumberUtil
+{
+    AINLINE std::string to_string( int num )
+    {
+        std::stringstream stream;
+
+        stream << num;
+
+        return stream.str();
+    }
+
+    AINLINE std::string to_string_hex( int num )
+    {
+        std::stringstream stream;
+        
+        stream << std::hex;
+
+        stream << num;
+
+        return stream.str();
+    }
+};
+
 #endif //_FILESYSTEM_STL_COMPAT_

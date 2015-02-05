@@ -2,7 +2,7 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        Shared/core/CFileSystem.img.translator.cpp
+*  FILE:        Shared/core/CFileSystem.img.translator.compress.cpp
 *  PURPOSE:     IMG R* Games archive management
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
@@ -382,9 +382,119 @@ bool xboxIMGCompression::Compress( CFile *input, CFile *output )
 
     bool hasCompressionBufferChanged = false;
 
-    if ( lzoCompressionWorkMemory )
+    // Make sure we have got something in the compression buffer.
+    // Since there is no safe compression, we must use the stuff that Oberhummer uses...
+    // His library is bad. We cannot ensure that our stuff does not crash. :/
+    uint32 requiredCompressionBufferSize = uncompressedFileData.GetSize() + uncompressedFileData.GetSize() / 16 + 64 + 3;
+
+    bool hasInitializedCompressBuffer = compressionBuffer.MinimumSize( requiredCompressionBufferSize );
+
+    if ( hasInitializedCompressBuffer )
     {
-        // TODO.
+        hasCompressionBufferChanged = true;
+    }
+
+    if ( lzoCompressionWorkMemory && compressionBuffer.IsReady() && uncompressedFileData.IsReady() )
+    {
+        // Do the stuff.
+        bool compressionSuccess = true;
+
+        unsigned long rawChecksum = 0;
+
+        checksumCallback_t _checksumCallback = this->_checksumCallback;
+
+        if ( _checksumCallback != NULL )
+        {
+            // Start with the root checksum.
+            rawChecksum = _checksumCallback( 0, NULL, 0 );
+        }
+
+        size_t streamSize = 0;
+
+        // Process the blocks.
+        while ( true )
+        {
+            // If we have reached the end of the stream, quit.
+            if ( input->IsEOF() )
+            {
+                // Safe exit.
+                break;
+            }
+
+            // Read from the file stream.
+            void *uncompressedDataBuffer = uncompressedFileData.GetPointer();
+
+            size_t compressionDataSize = input->Read( uncompressedDataBuffer, 1, uncompressedFileData.GetSize() );
+
+            // If we could not read anything, we kinda failed.
+            if ( compressionDataSize == 0 )
+            {
+                compressionSuccess = false;
+                break;
+            }
+
+            // Calculate the checksum of the raw data.
+            if ( _checksumCallback != NULL )
+            {
+                rawChecksum = _checksumCallback( rawChecksum, uncompressedDataBuffer, compressionDataSize );
+            }
+
+repeatCompression:
+            // Perform the compression.
+            void *compressedDataBuffer = compressionBuffer.GetPointer();
+
+            lzo_uint realCompressedSize = compressionBuffer.GetSize();
+
+            int lzoerr = lzo1x_999_compress(
+                (const unsigned char*)uncompressedDataBuffer, compressionDataSize,
+                (unsigned char*)compressedDataBuffer, &realCompressedSize,
+                lzoCompressionWorkMemory
+            );
+
+            // Process some valid errors.
+            if ( lzoerr == LZO_E_OUTPUT_OVERRUN )
+            {
+                // Increase buffer size.
+                compressionBuffer.Grow( realCompressedSize );
+
+                // Remember to update the decompressBuffer field.
+                hasCompressionBufferChanged = true;
+
+                // Repeat compression.
+                goto repeatCompression;
+            }
+
+            // Now if we get an error, we are screwed.
+            if ( lzoerr != LZO_E_OK )
+            {
+                compressionSuccess = false;
+                break;
+            }
+
+            // Write the block into the output stream.
+            perBlockHeader blockHeader;
+            blockHeader.compressedSize = realCompressedSize;
+            blockHeader.uncompressedSize = realCompressedSize;  // ???
+            blockHeader.unk = 4;                                // ???
+
+            output->WriteStruct( blockHeader );
+
+            // Now write the compressed data.
+            output->Write( compressedDataBuffer, 1, realCompressedSize );
+
+            // Increase the actual stream size.
+            streamSize += sizeof( blockHeader ) + realCompressedSize;
+        }
+
+        if ( compressionSuccess )
+        {
+            // Update the generic header.
+            mainHeader.blockSize = streamSize;
+            mainHeader.checksum = rawChecksum;
+
+            // If we succeeded in compressing the file, we succeeded in life :)
+            lzoSuccess = true;
+        }
     }
 
     // Clean up.

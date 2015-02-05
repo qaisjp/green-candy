@@ -146,7 +146,7 @@ struct imgExtension
     void                        Initialize      ( CFileSystemNative *sys );
     void                        Shutdown        ( CFileSystemNative *sys );
 
-    CIMGArchiveTranslatorHandle*    NewArchive  ( CFileTranslator *srcRoot, const char *srcPath );
+    CIMGArchiveTranslatorHandle*    NewArchive  ( CFileTranslator *srcRoot, const char *srcPath, eIMGArchiveVersion version );
     CIMGArchiveTranslatorHandle*    OpenArchive ( CFileTranslator *srcRoot, const char *srcPath );
 
     // Private extension methods.
@@ -169,12 +169,6 @@ struct imgExtension
 
 #pragma warning(push)
 #pragma warning(disable:4250)
-
-enum eIMGArchiveVersion
-{
-    IMG_VERSION_1,
-    IMG_VERSION_2
-};
 
 class CIMGArchiveTranslator : public CSystemPathTranslator, public CIMGArchiveTranslatorHandle
 {
@@ -208,6 +202,8 @@ public:
     void            Save();
 
     void            SetCompressionHandler( CIMGArchiveCompressionHandler *handler );
+
+    eIMGArchiveVersion  GetVersion( void ) const            { return m_version; }
 
     // Members.
     imgExtension&   m_imgExtension;
@@ -243,6 +239,7 @@ protected:
             this->resourceSize = 0;
             this->resourceName[0] = 0;
             this->isExtracted = false;
+            this->hasCompressed = false;
             this->lockCount = 0;
         }
 
@@ -266,6 +263,7 @@ protected:
         char resourceName[24 + 1];
 
         bool isExtracted;
+        bool hasCompressed;     // temporary parameter during archive building.
 
         unsigned long lockCount;
 
@@ -464,9 +462,11 @@ protected:
     // Root of this translator, so it can dump files for rebuilding.
     CFileTranslator *m_fileRoot;
     CFileTranslator *m_unpackRoot;
+    CFileTranslator *m_compressRoot;
 
     CFileTranslator*    GetFileRoot( void );
     CFileTranslator*    GetUnpackRoot( void );
+    CFileTranslator*    GetCompressRoot( void );
 
     // File stream using cached on-disk versions of the files.
     struct dataCachedStream : public streamBase
