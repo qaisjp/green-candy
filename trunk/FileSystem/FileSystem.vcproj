@@ -236,6 +236,10 @@
 					>
 				</File>
 				<File
+					RelativePath="..\Shared\core\fsinternal\CFileSystem.zip.public.h"
+					>
+				</File>
+				<File
 					RelativePath="..\Shared\core\fsinternal\CFileSystem.zip.utils.hxx"
 					>
 				</File>
@@ -265,6 +269,10 @@
 				</File>
 				<File
 					RelativePath="..\Shared\core\fsinternal\CFileSystem.img.internal.h"
+					>
+				</File>
+				<File
+					RelativePath="..\Shared\core\fsinternal\CFileSystem.img.public.h"
 					>
 				</File>
 			</Filter>
