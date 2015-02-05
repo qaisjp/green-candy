@@ -2,16 +2,16 @@
 *
 *  PROJECT:     Multi Theft Auto v1.2
 *  LICENSE:     See LICENSE in the top level directory
-*  FILE:        Shared/core/CFileSystem.img.h
-*  PURPOSE:     IMG R* Games archive management
+*  FILE:        Shared/core/CFileSystem.zip.public.h
+*  PURPOSE:     ZIP archive filesystem
 *
 *  Multi Theft Auto is available from http://www.multitheftauto.com/
 *
 *****************************************************************************/
 
-#ifndef _FILESYSTEM_IMG_ROCKSTAR_MANAGEMENT_
-#define _FILESYSTEM_IMG_ROCKSTAR_MANAGEMENT_
+#ifndef _FILESYSTEM_ZIP_PUBLIC_
+#define _FILESYSTEM_ZIP_PUBLIC_
 
 //todo.
 
-#endif //_FILESYSTEM_IMG_ROCKSTAR_MANAGEMENT_
+#endif //_FILESYSTEM_ZIP_PUBLIC_

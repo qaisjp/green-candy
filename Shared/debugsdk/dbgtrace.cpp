@@ -11,6 +11,29 @@
 
 #include <StdInc.h>
 
+#include <Dbghelp.h>
+
+// If you want to use this library, make sure to put /SAFESEH:NO in your command-line linker options!
+
+#define DBGHELP_DLL_NAME    "dbghelp.dll"
+
+// Prototype definitions of functions that we need from Dbghelp.dll
+typedef BOOL    (WINAPI*pfnSymInitialize)             ( HANDLE hProcess, PCSTR UserSearchPath, BOOL fInvadeProcess );
+typedef BOOL    (WINAPI*pfnSymCleanup)                ( HANDLE hProcess );
+typedef DWORD   (WINAPI*pfnSymSetOptions)             ( DWORD SymOptions );
+typedef BOOL    (WINAPI*pfnSymFromAddr)               ( HANDLE hProcess, DWORD64 Address, PDWORD64 Displacement, PSYMBOL_INFO Symbol );
+typedef BOOL    (WINAPI*pfnSymGetLineFromAddr)        ( HANDLE hProcess, DWORD dwAddr, PDWORD pdwDisplacement, PIMAGEHLP_LINE Line );
+typedef PVOID   (WINAPI*pfnSymFunctionTableAccess)    ( HANDLE hProcess, DWORD AddrBase );
+typedef DWORD   (WINAPI*pfnSymGetModuleBase)          ( HANDLE hProcess, DWORD dwAddr );
+typedef BOOL
+    (WINAPI*pfnStackWalk)(
+        DWORD MachineType, HANDLE hProcess, HANDLE hThread, LPSTACKFRAME StackFrame, PVOID ContextRecord,
+        PREAD_PROCESS_MEMORY_ROUTINE ReadMemoryRoutine,
+        PFUNCTION_TABLE_ACCESS_ROUTINE FunctionTableAccessRoutine,
+        PGET_MODULE_BASE_ROUTINE GetModuleBaseRoutine,
+        PTRANSLATE_ADDRESS_ROUTINE TranslateAddress
+    );
+
 // Include vendor libraries.
 #include "dbgtrace.vendor.hwbrk.hxx"
 
@@ -29,11 +52,34 @@ namespace DbgTrace
         CRITICAL_SECTION debugLock;
         volatile HANDLE contextProcess;
 
+        // Debug library pointers.
+        HMODULE hDebugHelpLib;
+        pfnSymInitialize            d_SymInitialize;
+        pfnSymCleanup               d_SymCleanup;
+        pfnSymSetOptions            d_SymSetOptions;
+        pfnSymFromAddr              d_SymFromAddr;
+        pfnSymGetLineFromAddr       d_SymGetLineFromAddr;
+        pfnSymFunctionTableAccess   d_SymFunctionTableAccess;
+        pfnSymGetModuleBase         d_SymGetModuleBase;
+        pfnStackWalk                d_StackWalk;
+
         AINLINE Win32DebugManager( void )
         {
             isInitialized = false;
             isInsideDebugPhase = false;
             contextProcess = NULL;
+
+            // Zero out debug pointers.
+            this->hDebugHelpLib = NULL;
+
+            this->d_SymInitialize = NULL;
+            this->d_SymCleanup = NULL;
+            this->d_SymSetOptions = NULL;
+            this->d_SymFromAddr = NULL;
+            this->d_SymGetLineFromAddr = NULL;
+            this->d_SymFunctionTableAccess = NULL;
+            this->d_SymGetModuleBase = NULL;
+            this->d_StackWalk = NULL;
 
             InitializeCriticalSection( &debugLock );
         }
@@ -41,6 +87,14 @@ namespace DbgTrace
         AINLINE ~Win32DebugManager( void )
         {
             Shutdown();
+
+            // Delete the debug library.
+            if ( HMODULE hDebugLib = this->hDebugHelpLib )
+            {
+                FreeLibrary( hDebugLib );
+
+                this->hDebugHelpLib = NULL;
+            }
 
             DeleteCriticalSection( &debugLock );
         }
@@ -50,26 +104,61 @@ namespace DbgTrace
             if ( isInitialized )
                 return true;
 
+            // We need the debug help library, if we do not have it already.
+            HMODULE hDebugHelp = this->hDebugHelpLib;
+
+            if ( hDebugHelp == NULL )
+            {
+                // Attempt to load it.
+                hDebugHelp = LoadLibrary( DBGHELP_DLL_NAME );
+
+                // Store it if we got a valid handle.
+                if ( hDebugHelp != NULL )
+                {
+                    this->hDebugHelpLib = hDebugHelp;
+                }
+            }
+
+            // Only proceed if we got the handle.
+            if ( hDebugHelp == NULL )
+                return false;
+
+            // Attempt to get the function handles.
+            this->d_SymInitialize =             (pfnSymInitialize)GetProcAddress( hDebugHelp, "SymInitialize" );
+            this->d_SymCleanup =                (pfnSymCleanup)GetProcAddress( hDebugHelp, "SymCleanup" );
+            this->d_SymSetOptions =             (pfnSymSetOptions)GetProcAddress( hDebugHelp, "SymSetOptions" );
+            this->d_SymFromAddr =               (pfnSymFromAddr)GetProcAddress( hDebugHelp, "SymFromAddr" );
+            this->d_SymGetLineFromAddr =        (pfnSymGetLineFromAddr)GetProcAddress( hDebugHelp, "SymGetLineFromAddr" );
+            this->d_SymFunctionTableAccess =    (pfnSymFunctionTableAccess)GetProcAddress( hDebugHelp, "SymFunctionTableAccess" );
+            this->d_SymGetModuleBase =          (pfnSymGetModuleBase)GetProcAddress( hDebugHelp, "SymGetModuleBase" );
+            this->d_StackWalk =                 (pfnStackWalk)GetProcAddress( hDebugHelp, "StackWalk" );
+
             bool successful = false;
 
-            contextProcess = GetCurrentProcess();
-
-            const char *debSymbPath = GetValidDebugSymbolPath();
-
-            __try
+            if ( pfnSymInitialize _SymInitialize = this->d_SymInitialize )
             {
-                BOOL initializeSuccessful =
-                    SymInitialize( contextProcess, debSymbPath, true );
+                contextProcess = GetCurrentProcess();
 
-                successful = ( initializeSuccessful == TRUE );
+                const char *debSymbPath = GetValidDebugSymbolPath();
+
+                __try
+                {
+                    BOOL initializeSuccessful =
+                        _SymInitialize( contextProcess, debSymbPath, true );
+
+                    successful = ( initializeSuccessful == TRUE );
+                }
+                __except( EXCEPTION_EXECUTE_HANDLER )
+                {
+                    // We are unsuccessful.
+                    successful = false;
+                }
             }
-            __except( EXCEPTION_EXECUTE_HANDLER )
+
+            if ( successful )
             {
-                // We are unsuccessful.
-                successful = false;
+                isInitialized = successful;
             }
-
-            isInitialized = successful;
 
             return successful;
         }
@@ -81,7 +170,10 @@ namespace DbgTrace
             if ( !isInitialized )
                 return;
 
-            SymCleanup( contextProcess );
+            if ( pfnSymCleanup _SymCleanup = this->d_SymCleanup )
+            {
+                _SymCleanup( contextProcess );
+            }
 
             isInitialized = false;
         }
@@ -101,12 +193,15 @@ namespace DbgTrace
             }
             else
             {
-                // If we successfully initialized the debug library, set it up properly.
-                SymSetOptions(
-                    SYMOPT_DEFERRED_LOADS |
-                    SYMOPT_LOAD_LINES |
-                    SYMOPT_UNDNAME
-                );
+                if ( pfnSymSetOptions _SymSetOptions = this->d_SymSetOptions )
+                {
+                    // If we successfully initialized the debug library, set it up properly.
+                    _SymSetOptions(
+                        SYMOPT_DEFERRED_LOADS |
+                        SYMOPT_LOAD_LINES |
+                        SYMOPT_UNDNAME
+                    );
+                }
 
                 isInsideDebugPhase = true;
             }
@@ -132,6 +227,7 @@ namespace DbgTrace
         {
             const DWORD addrAsOffset = (DWORD)addrPtr;
 
+            if ( pfnSymFromAddr _SymFromAddr = this->d_SymFromAddr )
             {
                 // Get Information about the stack frame contents.
                 InternalSymbolInfo addrSymbolInfo;
@@ -140,7 +236,7 @@ namespace DbgTrace
 
                 DWORD64 displacementPtr;
                 
-                BOOL symbolFetchResult = SymFromAddr( contextProcess, addrAsOffset, &displacementPtr, &addrSymbolInfo );
+                BOOL symbolFetchResult = _SymFromAddr( contextProcess, addrAsOffset, &displacementPtr, &addrSymbolInfo );
 
                 if ( symbolFetchResult == TRUE )
                 {
@@ -148,6 +244,7 @@ namespace DbgTrace
                 }
             }
 
+            if ( pfnSymGetLineFromAddr _SymGetLineFromAddr = this->d_SymGetLineFromAddr )
             {
                 // Get Information about the line and the file of the context.
                 IMAGEHLP_LINE symbolLineInfo;
@@ -155,7 +252,7 @@ namespace DbgTrace
 
                 DWORD displacementPtr;
 
-                BOOL symbolLineFetchResult = SymGetLineFromAddr( contextProcess, addrAsOffset, &displacementPtr, &symbolLineInfo );
+                BOOL symbolLineFetchResult = _SymGetLineFromAddr( contextProcess, addrAsOffset, &displacementPtr, &symbolLineInfo );
 
                 if ( symbolLineFetchResult == TRUE )
                 {
@@ -192,14 +289,28 @@ namespace DbgTrace
         {
             assert( hProcess == NULL );
 
-            return SymFunctionTableAccess( GetCurrentProcess(), addrBase );
+            PVOID result = NULL;
+
+            if ( pfnSymFunctionTableAccess _SymFunctionTableAccess = debugMan.d_SymFunctionTableAccess )
+            {
+                result = _SymFunctionTableAccess( GetCurrentProcess(), addrBase );
+            }
+
+            return result;
         }
 
         static DWORD CALLBACK GetModuleBaseFunction( HANDLE hProcess, DWORD Address )
         {
             assert( hProcess == NULL );
 
-            return SymGetModuleBase( GetCurrentProcess(), Address );
+            DWORD base = 0;
+
+            if ( pfnSymGetModuleBase _SymGetModuleBase = debugMan.d_SymGetModuleBase )
+            {
+                base = _SymGetModuleBase( GetCurrentProcess(), Address );
+            }
+
+            return base;
         }
 
         AINLINE Win32EnvSnapshot( const CONTEXT& theContext )
@@ -210,50 +321,57 @@ namespace DbgTrace
             // Construct the call-stack using debug information.
             bool isDebugLibraryInitialized = debugMan.Begin();
 
-            // Build the call stack.
-            CONTEXT walkContext = theContext;
-            
-            // Walk through the call frames.
-            STACKFRAME outputFrame;
-            memset( &outputFrame, 0, sizeof( outputFrame ) );
-
-            DWORD machineType;
-
-#ifdef _M_IX86
-            machineType = IMAGE_FILE_MACHINE_I386;
-
-            outputFrame.AddrPC.Offset =     runtimeContext.Eip;
-            outputFrame.AddrPC.Mode =       AddrModeFlat;
-            outputFrame.AddrFrame.Offset =  runtimeContext.Ebp;
-            outputFrame.AddrFrame.Mode =    AddrModeFlat;
-            outputFrame.AddrStack.Offset =  runtimeContext.Esp;
-            outputFrame.AddrStack.Mode =    AddrModeFlat;
-#endif
-
-            while (
-                StackWalk( machineType, NULL, NULL, &outputFrame, &walkContext,
-                    MemoryReadFunction,
-                    FunctionTableAccess,
-                    GetModuleBaseFunction,
-                    NULL ) )
-            {
-                // Get the offset as pointer.
-                void *offsetPtr = (void*)outputFrame.AddrPC.Offset;
-
-                // Construct a call stack entry.
-                CallStackEntry contextRuntimeInfo( offsetPtr );
-
-                if ( isDebugLibraryInitialized )
-                {
-                    debugMan.GetDebugInfoForAddress( offsetPtr, contextRuntimeInfo );
-                }
-
-                callstack.push_back( contextRuntimeInfo );
-            }
-
-            // If we have been using the symbol runtime, free its resources.
             if ( isDebugLibraryInitialized )
             {
+                if ( pfnStackWalk _StackWalk = debugMan.d_StackWalk )
+                {
+                    // Build the call stack.
+                    CONTEXT walkContext = theContext;
+                    
+                    // Walk through the call frames.
+                    STACKFRAME outputFrame;
+                    memset( &outputFrame, 0, sizeof( outputFrame ) );
+
+                    DWORD machineType;
+
+#ifdef _M_IX86
+                    machineType = IMAGE_FILE_MACHINE_I386;
+
+                    outputFrame.AddrPC.Offset =     runtimeContext.Eip;
+                    outputFrame.AddrPC.Mode =       AddrModeFlat;
+                    outputFrame.AddrFrame.Offset =  runtimeContext.Ebp;
+                    outputFrame.AddrFrame.Mode =    AddrModeFlat;
+                    outputFrame.AddrStack.Offset =  runtimeContext.Esp;
+                    outputFrame.AddrStack.Mode =    AddrModeFlat;
+#else
+
+#error Unsupported platform for DbgTrace!
+
+#endif
+
+                    while (
+                        _StackWalk( machineType, NULL, NULL, &outputFrame, &walkContext,
+                            MemoryReadFunction,
+                            FunctionTableAccess,
+                            GetModuleBaseFunction,
+                            NULL ) )
+                    {
+                        // Get the offset as pointer.
+                        void *offsetPtr = (void*)outputFrame.AddrPC.Offset;
+
+                        // Construct a call stack entry.
+                        CallStackEntry contextRuntimeInfo( offsetPtr );
+
+                        if ( isDebugLibraryInitialized )
+                        {
+                            debugMan.GetDebugInfoForAddress( offsetPtr, contextRuntimeInfo );
+                        }
+
+                        callstack.push_back( contextRuntimeInfo );
+                    }
+                }
+
+                // If we have been using the symbol runtime, free its resources.
                 debugMan.End();
             }
         }
@@ -276,6 +394,30 @@ namespace DbgTrace
         callStack_t GetCallStack( void )
         {
             return callstack;
+        }
+
+        inline std::string GetTrimmedString( const std::string& theString, size_t maxLen )
+        {
+            std::string output;
+
+            size_t stringLength = theString.length();
+
+            if ( stringLength > maxLen )
+            {
+                // Include the ending part.
+                const std::string endingPart = "...";
+
+                size_t newMaxLen = ( maxLen - endingPart.length() );
+
+                // Return a trimmed version.
+                output = endingPart + theString.substr( stringLength - newMaxLen, newMaxLen );
+            }
+            else
+            {
+                output = theString;
+            }
+
+            return output;
         }
 
         std::string ToString( void )
@@ -302,13 +444,23 @@ namespace DbgTrace
                     }
                     else
                     {
-                        outputBuffer += csInfo.GetSymbolName();
+                        outputBuffer += symbolName;
                         outputBuffer += " at 0x";
                         outputBuffer += NumberUtil::to_string_hex( (unsigned int)csInfo.codePtr );
                     }
                 }
                 outputBuffer += " (";
-                outputBuffer += csInfo.GetFileName();
+                {
+                    std::string fileName = csInfo.GetFileName();
+
+                    // Since the filename can be pretty long, it needs special attention.
+                    std::string directoryPart;
+                    
+                    std::string fileNameItem = FileSystem::GetFileNameItem( fileName.c_str(), true, &directoryPart, NULL );
+
+                    // Trim the directory.
+                    outputBuffer += GetTrimmedString( directoryPart, 20 ) + fileNameItem;
+                }
                 outputBuffer += ":";
                 outputBuffer += NumberUtil::to_string( csInfo.GetLineNumber() );
                 outputBuffer += ")\n";

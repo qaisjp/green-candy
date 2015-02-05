@@ -688,6 +688,10 @@ public:
     virtual void            Save( void ) = 0;
 };
 
+// Include public extension headers.
+#include "fsinternal/CFileSystem.zip.public.h"
+#include "fsinternal/CFileSystem.img.public.h"
+
 class CFileSystemInterface
 {
 public:
@@ -697,12 +701,13 @@ public:
     virtual CArchiveTranslator* OpenZIPArchive      ( CFile& file ) = 0;
     virtual CArchiveTranslator* CreateZIPArchive    ( CFile& file ) = 0;
 
-    virtual CArchiveTranslator* OpenIMGArchive      ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
-    virtual CArchiveTranslator* CreateIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
+    // Standard IMG archive functions that should be used.
+    virtual CIMGArchiveTranslatorHandle* OpenIMGArchive     ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
+    virtual CIMGArchiveTranslatorHandle* CreateIMGArchive   ( CFileTranslator *srcRoot, const char *srcPath, eIMGArchiveVersion version ) = 0;
 
     // Special functions for IMG archives that should support compression.
-    virtual CArchiveTranslator* OpenCompressedIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
-    virtual CArchiveTranslator* CreateCompressedIMGArchive  ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
+    virtual CIMGArchiveTranslatorHandle*    OpenCompressedIMGArchive    ( CFileTranslator *srcRoot, const char *srcPath ) = 0;
+    virtual CIMGArchiveTranslatorHandle*    CreateCompressedIMGArchive  ( CFileTranslator *srcRoot, const char *srcPath, eIMGArchiveVersion version ) = 0;
 
     // Insecure, use with caution!
     virtual bool                IsDirectory         ( const char *path ) = 0;
