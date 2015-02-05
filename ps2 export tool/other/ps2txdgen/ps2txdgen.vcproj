@@ -132,6 +132,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/SAFESEH:NO"
 				AdditionalDependencies="libfs.lib rwtools.lib"
 				OutputFile="$(ProjectDir)..\..\output\txdgen.exe"
 				AdditionalLibraryDirectories="&quot;../../modded_vendor/rwtools-master/output/&quot;;../../../FileSystem/lib/"
@@ -180,6 +181,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\Shared\debugsdk\dbgtrace.h"
+				>
+			</File>
+			<File
 				RelativePath=".\ide.h"
 				>
 			</File>
@@ -214,6 +219,10 @@
 		</File>
 		<File
 			RelativePath="..\..\..\Shared\debugsdk\dbgheap.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\..\..\Shared\debugsdk\dbgtrace.cpp"
 			>
 		</File>
 		<File

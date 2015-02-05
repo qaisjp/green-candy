@@ -145,7 +145,7 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
 
     WRITE_HEADER(CHUNK_TEXTURENATIVE);
 
-	return bytesWritten;
+	return writtenBytesReturn;
 }
 
 };

@@ -1,4 +1,4 @@
-TxdGen 0.8.1 by The_GTA. Beta release.
+TxdGen 0.8.2 by The_GTA. Beta release.
 ==================================
 
 TxdGen is the RW Texture Dictionary conversion tool. Its goal is to support
@@ -73,9 +73,9 @@ SOURCE CODE
 The source code to this project is located on the MTA:Eir respository under
 the "ps2 export tool" directory.
 
-https://www.assembla.com/code/green-candy/subversion/nodes/556/trunk/ps2%20export%20tool
+https://www.assembla.com/code/green-candy/subversion/nodes/571/trunk/ps2%20export%20tool
 
-- January 2015
+- February 2015
 
 PS: if you like a great community, give mtasa.com a try. when I get
 nice stuff to the GTAForums community, I will return to my MP project,

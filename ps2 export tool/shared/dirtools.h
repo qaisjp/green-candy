@@ -84,139 +84,146 @@ private:
                 {
                     printf( "processing %s ...\n", relPathFromRoot.c_str() );
 
-                    // If we have found an IMG archive, we perform the same stuff for files inside of it.
-                    CFileTranslator *outputRoot = NULL;
-                    CArchiveTranslator *outputRoot_archive = NULL;
+                    // Open the IMG archive.
+                    CIMGArchiveTranslatorHandle *srcIMGRoot = NULL;
 
-                    if ( info->reconstruct_archives )
+                    if ( info->use_compressed_img_archives )
                     {
-                        // We copy the files into a new IMG archive tho.
-                        CArchiveTranslator *newIMGRoot = NULL;
-
-                        if ( info->use_compressed_img_archives )
-                        {
-                            newIMGRoot = fileSystem->CreateCompressedIMGArchive( info->buildRoot, relPathFromRoot.c_str() );
-                        }
-                        else
-                        {
-                            newIMGRoot = fileSystem->CreateIMGArchive( info->buildRoot, relPathFromRoot.c_str() );
-                        }
-
-                        if ( newIMGRoot )
-                        {
-                            outputRoot = newIMGRoot;
-                            outputRoot_archive = newIMGRoot;
-                        }
+                        srcIMGRoot = fileSystem->OpenCompressedIMGArchive( info->discHandle, relPathFromRoot.c_str() );
                     }
                     else
                     {
-                        // Create a new directory in place of the archive.
-                        filePath srcPathToNewDir;
-
-                        info->discHandle->GetRelativePathFromRoot( discFilePathAbs.c_str(), false, srcPathToNewDir );
-
-                        filePath pathToNewDir;
-
-                        info->buildRoot->GetFullPathFromRoot( srcPathToNewDir.c_str(), false, pathToNewDir );
-
-                        pathToNewDir += fileName.c_str();
-                        pathToNewDir += "_archive/";
-
-                        bool createDirSuccess = info->buildRoot->CreateDir( pathToNewDir.c_str() );
-
-                        if ( createDirSuccess )
-                        {
-                            CFileTranslator *newDirRoot = fileSystem->CreateTranslator( pathToNewDir.c_str() );
-
-                            if ( newDirRoot )
-                            {
-                                outputRoot = newDirRoot;
-                            }
-                        }
+                        srcIMGRoot = fileSystem->OpenIMGArchive( info->discHandle, relPathFromRoot.c_str() );
                     }
 
-                    if ( outputRoot )
+                    if ( srcIMGRoot )
                     {
                         try
                         {
-                            CArchiveTranslator *srcIMGRoot = NULL;
+                            // If we have found an IMG archive, we perform the same stuff for files inside of it.
+                            CFileTranslator *outputRoot = NULL;
+                            CArchiveTranslator *outputRoot_archive = NULL;
 
-                            if ( info->use_compressed_img_archives )
+                            if ( info->reconstruct_archives )
                             {
-                                srcIMGRoot = fileSystem->OpenCompressedIMGArchive( info->discHandle, relPathFromRoot.c_str() );
+                                // Grab the version of the source IMG file.
+                                // We want to output rebuilt archives in the same version.
+                                eIMGArchiveVersion imgVersion = srcIMGRoot->GetVersion();
+
+                                // We copy the files into a new IMG archive tho.
+                                CArchiveTranslator *newIMGRoot = NULL;
+
+                                if ( info->use_compressed_img_archives )
+                                {
+                                    newIMGRoot = fileSystem->CreateCompressedIMGArchive( info->buildRoot, relPathFromRoot.c_str(), imgVersion );
+                                }
+                                else
+                                {
+                                    newIMGRoot = fileSystem->CreateIMGArchive( info->buildRoot, relPathFromRoot.c_str(), imgVersion );
+                                }
+
+                                if ( newIMGRoot )
+                                {
+                                    outputRoot = newIMGRoot;
+                                    outputRoot_archive = newIMGRoot;
+                                }
                             }
                             else
                             {
-                                srcIMGRoot = fileSystem->OpenIMGArchive( info->discHandle, relPathFromRoot.c_str() );
+                                // Create a new directory in place of the archive.
+                                filePath srcPathToNewDir;
+
+                                info->discHandle->GetRelativePathFromRoot( discFilePathAbs.c_str(), false, srcPathToNewDir );
+
+                                filePath pathToNewDir;
+
+                                info->buildRoot->GetFullPathFromRoot( srcPathToNewDir.c_str(), false, pathToNewDir );
+
+                                pathToNewDir += fileName.c_str();
+                                pathToNewDir += "_archive/";
+
+                                bool createDirSuccess = info->buildRoot->CreateDir( pathToNewDir.c_str() );
+
+                                if ( createDirSuccess )
+                                {
+                                    CFileTranslator *newDirRoot = fileSystem->CreateTranslator( pathToNewDir.c_str() );
+
+                                    if ( newDirRoot )
+                                    {
+                                        outputRoot = newDirRoot;
+                                    }
+                                }
                             }
 
-                            if ( srcIMGRoot )
+                            if ( outputRoot )
                             {
-                                // Run into shit.
-                                _discFileTraverse traverse;
-                                traverse.discHandle = srcIMGRoot;
-                                traverse.buildRoot = outputRoot;
-                                traverse.isInArchive = ( outputRoot_archive != NULL ) || info->isInArchive;
-                                traverse.sentry = info->sentry;
-                                traverse.reconstruct_archives = info->reconstruct_archives;
-                                traverse.use_compressed_img_archives = info->use_compressed_img_archives;
-
                                 try
                                 {
+                                    // Run into shit.
+                                    _discFileTraverse traverse;
+                                    traverse.discHandle = srcIMGRoot;
+                                    traverse.buildRoot = outputRoot;
+                                    traverse.isInArchive = ( outputRoot_archive != NULL ) || info->isInArchive;
+                                    traverse.sentry = info->sentry;
+                                    traverse.reconstruct_archives = info->reconstruct_archives;
+                                    traverse.use_compressed_img_archives = info->use_compressed_img_archives;
+
                                     srcIMGRoot->ScanDirectory( "@", "*", true, NULL, _discFileCallback, &traverse );
+
+                                    if ( outputRoot_archive != NULL )
+                                    {
+                                        printf( "writing " );
+
+                                        if ( !traverse.anyWork )
+                                        {
+                                            printf( "(no change)" );
+                                        }
+
+                                        printf( "... " );
+
+                                        outputRoot_archive->Save();
+
+                                        printf( "done.\n\n" );
+
+                                        anyWork = true;
+                                    }
+                                    else
+                                    {
+                                        printf( "finished.\n\n" );
+
+                                        anyWork = true;
+                                    }
+
+                                    hasPreprocessedFile = true;
                                 }
                                 catch( ... )
                                 {
-                                    delete srcIMGRoot;
+                                    delete outputRoot;
 
                                     throw;
                                 }
 
-                                if ( outputRoot_archive != NULL )
-                                {
-                                    printf( "writing " );
-
-                                    if ( !traverse.anyWork )
-                                    {
-                                        printf( "(no change)" );
-                                    }
-
-                                    printf( "... " );
-
-                                    outputRoot_archive->Save();
-
-                                    printf( "done.\n\n" );
-
-                                    anyWork = true;
-                                }
-                                else
-                                {
-                                    printf( "finished.\n\n" );
-
-                                    anyWork = true;
-                                }
-
-                                hasPreprocessedFile = true;
-                                
-                                delete srcIMGRoot;
+                                delete outputRoot;
                             }
                             else
                             {
-                                printf( "not an IMG archive.\n" );
+                                info->sentry->OnArchiveFail( fileName, extention );
                             }
                         }
                         catch( ... )
                         {
-                            delete outputRoot;
+                            // On exception, we must clean up after ourselves :)
+                            delete srcIMGRoot;
 
                             throw;
                         }
 
-                        delete outputRoot;
+                        // Clean up.
+                        delete srcIMGRoot;
                     }
                     else
                     {
-                        info->sentry->OnArchiveFail( fileName, extention );
+                        printf( "not an IMG archive.\n" );
                     }
                 }
             }

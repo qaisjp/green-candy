@@ -20,6 +20,7 @@ typedef struct quat_s
 #define USE_FULL_PAGE_HEAP
 #define PAGE_HEAP_INTEGRITY_CHECK
 #include <debugsdk/dbgheap.h>
+#include <debugsdk/dbgtrace.h>
 
 #include <SharedUtil.h>
 #include <core/CFileSystemInterface.h>
