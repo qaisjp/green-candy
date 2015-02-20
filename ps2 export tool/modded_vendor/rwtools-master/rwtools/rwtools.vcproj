@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;"
+				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;;../../../vendor/xdk/"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -110,7 +110,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;"
+				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;;../../../vendor/xdk/"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -189,6 +189,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\rwconf.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\StdInc.h"
 				>
 			</File>
@@ -197,7 +201,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\txdread.d3d.dxt.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\txdread.d3d.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\src\txdread.palette.hxx"
 				>
 			</File>
 			<File
@@ -270,11 +282,19 @@
 			>
 		</File>
 		<File
+			RelativePath="..\src\txdread.d3d.bitmap.cpp"
+			>
+		</File>
+		<File
 			RelativePath="..\src\txdread.d3d.cpp"
 			>
 		</File>
 		<File
 			RelativePath="..\src\txdread.d3d.dxt.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdread.mipmaps.cpp"
 			>
 		</File>
 		<File
@@ -295,6 +315,10 @@
 		</File>
 		<File
 			RelativePath="..\src\txdread.xbox.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdread.xbox.swizzle.cpp"
 			>
 		</File>
 		<File

@@ -45,7 +45,10 @@ void NativeTexture::readD3d(std::istream &rw)
 
     uint32 texNativeStructSize = header.getLength();
 
-	uint32 platform = readUInt32(rw);
+    textureMetaHeaderStructGeneric metaHeader;
+    rw.read((char*)&metaHeader, sizeof(metaHeader));
+
+	uint32 platform = metaHeader.platformDescriptor;
 
 	if (platform != PLATFORM_D3D8 && platform != PLATFORM_D3D9)
     {
@@ -72,9 +75,6 @@ void NativeTexture::readD3d(std::istream &rw)
     // Attempt to read the texture.
     try
     {
-        textureMetaHeaderStructGeneric metaHeader;
-        rw.read((char*)&metaHeader, sizeof(metaHeader));
-
 	    this->filterFlags = metaHeader.texFormat.filterMode;
         this->uAddressing = metaHeader.texFormat.uAddressing;
         this->vAddressing = metaHeader.texFormat.vAddressing;
@@ -414,9 +414,27 @@ void NativeTexture::readD3d(std::istream &rw)
                 // We cannot fix an invalid depth.
             }
         }
+        // - Verify auto mipmap
+        {
+            bool hasAutoMipmaps = platformTex->autoMipmaps;
+
+            if ( hasAutoMipmaps )
+            {
+                bool canHaveAutoMipmaps = ( platformTex->mipmapCount == 1 );
+
+                if ( !canHaveAutoMipmaps )
+                {
+                    rw::rwInterface.PushWarning( "texture " + this->name + " has an invalid auto-mipmap flag (fixing)" );
+
+                    platformTex->autoMipmaps = false;
+                }
+            }
+        }
 
 	    if (platformTex->paletteType != PALETTE_NONE)
         {
+            // TODO: PAL4 has 32 items.
+
             uint32 reqPalItemCount = getPaletteItemCount( platformTex->paletteType );
 
             uint32 palDepth = Bitmap::getRasterFormatDepth( this->rasterFormat );
@@ -632,9 +650,9 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
             {
                 uint8 r, g, b, a;
 
-                browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, palFormatDepth, r, g, b, a);
+                bool hasColor = browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, palFormatDepth, r, g, b, a);
 
-                if (a != 255)
+                if (hasColor && a != 255)
                 {
                     hasAlpha = true;
                     break;
@@ -658,9 +676,9 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
             {
                 uint8 r, g, b, a;
 
-                browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, mipDepth, r, g, b, a);
+                bool hasColor = browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, mipDepth, r, g, b, a);
 
-                if (a != 255)
+                if (hasColor && a != 255)
                 {
                     hasAlpha = true;
                     break;
@@ -670,6 +688,143 @@ bool NativeTextureD3D::doesHaveAlpha(void) const
     }
 
     return hasAlpha;
+}
+
+bool NativeTextureD3D::getDebugBitmap( Bitmap& bmpOut ) const
+{
+    // Return a debug bitmap which contains all mipmap layers.
+    uint32 requiredBitmapWidth = 0;
+    uint32 requiredBitmapHeight = 0;
+
+    uint32 mipmapCount = this->mipmapCount;
+
+    if ( mipmapCount == 0 )
+        return false;
+
+    for ( uint32 n = 0; n < mipmapCount; n++ )
+    {
+        uint32 mipWidth = this->width[ n ];
+        uint32 mipHeight = this->height[ n ];
+
+        // We allocate all mipmaps from top left to top right.
+        requiredBitmapWidth += mipWidth;
+
+        if ( requiredBitmapHeight < mipHeight )
+        {
+            requiredBitmapHeight = mipHeight;
+        }
+    }
+
+    if ( requiredBitmapWidth == 0 || requiredBitmapHeight == 0 )
+        return false;
+
+    // Allocate bitmap space.
+    bmpOut.setSize( requiredBitmapWidth, requiredBitmapHeight );
+
+    // Cursor for the drawing operation.
+    uint32 cursor_x = 0;
+    uint32 cursor_y = 0;
+
+    // Draw them.
+    for ( uint32 n = 0; n < mipmapCount; n++ )
+    {
+        rawBitmapFetchResult rawBmp;
+
+        bool gotRawBitmap = this->getRawBitmap( n, true, rawBmp );
+
+        if ( gotRawBitmap )
+        {
+            // Fetch colors from this mipmap layer.
+            struct mipmapColorSourcePipeline : public Bitmap::sourceColorPipeline
+            {
+                uint32 mipWidth, mipHeight;
+                uint32 depth;
+                const void *texelSource;
+                eRasterFormat rasterFormat;
+                eColorOrdering colorOrder;
+                const void *paletteData;
+                uint32 paletteSize;
+                ePaletteType paletteType;
+
+                inline mipmapColorSourcePipeline(
+                    uint32 mipWidth, uint32 mipHeight, uint32 depth,
+                    const void *texelSource,
+                    eRasterFormat rasterFormat, eColorOrdering colorOrder,
+                    const void *paletteData, uint32 paletteSize, ePaletteType paletteType
+                )
+                {
+                    this->mipWidth = mipWidth;
+                    this->mipHeight = mipHeight;
+                    this->depth = depth;
+                    this->texelSource = texelSource;
+                    this->rasterFormat = rasterFormat;
+                    this->colorOrder = colorOrder;
+                    this->paletteData = paletteData;
+                    this->paletteSize = paletteSize;
+                    this->paletteType = paletteType;
+                }
+
+                uint32 getWidth( void ) const
+                {
+                    return this->mipWidth;
+                }
+
+                uint32 getHeight( void ) const
+                {
+                    return this->mipHeight;
+                }
+
+                void fetchcolor( uint32 colorIndex, double& red, double& green, double& blue, double& alpha )
+                {
+                    uint8 r, g, b, a;
+
+                    bool hasColor = browsetexelcolor(
+                        this->texelSource, this->paletteType, this->paletteData, this->paletteSize,
+                        colorIndex, this->rasterFormat, this->colorOrder, this->depth,
+                        r, g, b, a
+                    );
+
+                    if ( !hasColor )
+                    {
+                        r = 0;
+                        g = 0;
+                        b = 0;
+                        a = 0;
+                    }
+
+                    red = unpackcolor( r );
+                    green = unpackcolor( g );
+                    blue = unpackcolor( b );
+                    alpha = unpackcolor( a );
+                }
+            };
+
+            mipmapColorSourcePipeline colorPipe(
+                rawBmp.width, rawBmp.height, rawBmp.depth,
+                rawBmp.texelData,
+                rawBmp.rasterFormat, rawBmp.colorOrder,
+                rawBmp.paletteData, rawBmp.paletteSize, rawBmp.paletteType
+            );
+
+            // Draw it at its position.
+            bmpOut.draw(
+                colorPipe, cursor_x, cursor_y,
+                rawBmp.width, rawBmp.height,
+                Bitmap::SHADE_SRCALPHA, Bitmap::SHADE_ONE, Bitmap::BLEND_ADDITIVE
+            );
+
+            // Delete if necessary.
+            if ( rawBmp.isNewlyAllocated )
+            {
+                delete [] rawBmp.texelData;
+            }
+
+            // Increase cursor.
+            cursor_x += rawBmp.width;
+        }
+    }
+
+    return true;
 }
 
 };

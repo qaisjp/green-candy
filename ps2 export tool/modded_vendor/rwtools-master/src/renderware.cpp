@@ -64,6 +64,7 @@ void HeaderInfo::setVersion(const LibraryVersion& version)
 {
     this->packedVersion.buildNumber = version.buildNumber;
     this->packedVersion.packedMajor = version.rwLibMinor;
+    this->packedVersion.pad = 0;
     this->packedVersion.packedMinor = version.rwRevMinor;
 }
 

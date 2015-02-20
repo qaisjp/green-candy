@@ -21,9 +21,24 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
     NativeTextureXBOX *platformTex = (NativeTextureXBOX*)this->platformData;
 
     // Debug some essentials.
-    if ( platformTex->colorOrder != COLOR_BGRA )
+    ePaletteType paletteType = platformTex->paletteType;
+
+    uint32 compressionType = platformTex->dxtCompression;
+
+    // If we are not compressed, then the color order matters.
+    if ( compressionType == 0 )
     {
-        throw RwException( "texture " + this->name + " has an invalid color ordering for writing (requires BGRA)" );
+        eColorOrdering requiredColorOrder = COLOR_BGRA;
+
+        if ( paletteType != PALETTE_NONE )
+        {
+            requiredColorOrder = COLOR_RGBA;
+        }
+
+        if ( platformTex->colorOrder != requiredColorOrder )
+        {
+            throw RwException( "texture " + this->name + " has an invalid color ordering for writing" );
+        }
     }
 
     // Texture Native.
@@ -53,7 +68,7 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
             writeStringIntoBufferSafe( this->maskName, metaInfo.maskName, sizeof( metaInfo.maskName ), this->name, "mask name" );
 
             // Construct raster flags.
-            uint32 rasterFlags = generateRasterFormatFlags(this->rasterFormat, platformTex->paletteType, mipmapCount > 1, platformTex->autoMipmaps);
+            uint32 rasterFlags = generateRasterFormatFlags(this->rasterFormat, paletteType, mipmapCount > 1, platformTex->autoMipmaps);
 
             // Store the flags.
             metaInfo.rasterFormat = rasterFlags;
@@ -64,7 +79,7 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
 
             metaInfo.rasterType = platformTex->rasterType;
 
-            metaInfo.dxtCompression = platformTex->dxtCompression;
+            metaInfo.dxtCompression = compressionType;
 
             // Write the dimensions.
             metaInfo.width = platformTex->width[ 0 ];
@@ -89,16 +104,16 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
         }
 
         // Write palette data (if available).
-        if (platformTex->paletteType != PALETTE_NONE)
+        if (paletteType != PALETTE_NONE)
         {
             // Make sure we write as much data as the system expects.
             uint32 reqPalCount = 0;
 
-            if (platformTex->paletteType == PALETTE_4BIT)
+            if (paletteType == PALETTE_4BIT)
             {
                 reqPalCount = 32;
             }
-            else if (platformTex->paletteType == PALETTE_8BIT)
+            else if (paletteType == PALETTE_8BIT)
             {
                 reqPalCount = 256;
             }

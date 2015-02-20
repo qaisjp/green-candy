@@ -963,7 +963,16 @@ void NativeTexture::convertFromPS2(void)
 
     d3dtex->depth = depth;
 
-    d3dtex->autoMipmaps = platformTex->autoMipmaps;
+    // Fix wrong auto mipmap property.
+    bool hasAutoMipmaps = false;
+
+    if ( mipmapCount == 1 )
+    {
+        // Direct3D textures can only have mipmaps if they dont come with mipmaps.
+        hasAutoMipmaps = platformTex->autoMipmaps;
+    }
+
+    d3dtex->autoMipmaps = hasAutoMipmaps;
     d3dtex->rasterType = platformTex->rasterType;
 
     d3dtex->hasAlpha = platformTex->hasAlpha;
@@ -1154,9 +1163,9 @@ void NativeTexture::convertToPS2( void )
         // Prepare mipmap data.
         eColorOrdering d3dColorOrder = platformTex->colorOrdering;
         eColorOrdering ps2ColorOrder = ps2tex->colorOrdering;
-        {
-            uint32 mipmapCount = platformTex->mipmapCount;
 
+        uint32 mipmapCount = platformTex->mipmapCount;
+        {
             uint32 mipProcessCount = std::min( maxMipmaps, mipmapCount );
 
             ps2tex->mipmaps.resize( mipProcessCount );
@@ -1284,7 +1293,16 @@ void NativeTexture::convertToPS2( void )
 
         // Copy over general attributes.
         ps2tex->depth = dstItemDepth;
-        ps2tex->autoMipmaps = platformTex->autoMipmaps;
+
+        // Make sure we apply autoMipmap property just like the R* converter.
+        bool hasAutoMipmaps = platformTex->autoMipmaps;
+
+        if ( mipmapCount > 1 )
+        {
+            hasAutoMipmaps = true;
+        }
+
+        ps2tex->autoMipmaps = hasAutoMipmaps;
         ps2tex->rasterType = platformTex->rasterType;
 
         ps2tex->hasAlpha = platformTex->hasAlpha;

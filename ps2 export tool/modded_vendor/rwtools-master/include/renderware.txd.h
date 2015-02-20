@@ -39,19 +39,24 @@ struct ps2MipmapTransmissionData
     uint16 destX, destY;
 };
 
+// Native GTA:SA feature map:
+// no RASTER_PAL4 support at all.
+// if RASTER_PAL8, then only RASTER_8888 and RASTER_888
+// else 
+
 enum eRasterFormat
 {
     RASTER_DEFAULT,
     RASTER_1555,
     RASTER_565,
     RASTER_4444,
-    RASTER_LUM8,
+    RASTER_LUM8,        // D3DFMT_A4L4
     RASTER_8888,
     RASTER_888,
-    RASTER_16,
-    RASTER_24,
-    RASTER_32,
-    RASTER_555
+    RASTER_16,          // D3DFMT_D16
+    RASTER_24,          // D3DFMT_D24X8
+    RASTER_32,          // D3DFMT_D32
+    RASTER_555          // D3DFMT_X1R5G5B5
 };
 
 inline bool isValidRasterFormat(eRasterFormat rasterFormat)
@@ -144,6 +149,9 @@ inline uint32 generateRasterFormatFlags( eRasterFormat rasterFormat, ePaletteTyp
 {
     uint32 rasterFlags = 0;
 
+    // bits 0..3 can be (alternatively) used for the raster type
+    // bits 4..8 are stored in the raster private flags.
+
     rasterFlags |= ( (uint32)rasterFormat << 8 );
 
     if ( paletteType == PALETTE_4BIT )
@@ -190,6 +198,21 @@ inline void readRasterFormatFlags( uint32 rasterFormatFlags, eRasterFormat& rast
     autoMipmaps = ( rasterFormatFlags & RASTER_AUTOMIPMAP ) != 0;
 }
 
+enum eMipmapGenerationMode
+{
+    MIPMAPGEN_DEFAULT,
+    MIPMAPGEN_CONTRAST,
+    MIPMAPGEN_BRIGHTEN,
+    MIPMAPGEN_DARKEN,
+    MIPMAPGEN_SELECTCLOSE
+};
+
+enum eRasterType
+{
+    RASTERTYPE_DEFAULT,     // same as 4
+    RASTERTYPE_BITMAP = 4
+};
+
 struct NativeTexture
 {
 	uint32 platform;
@@ -214,6 +237,7 @@ struct NativeTexture
     uint32 writePs2(std::ostream &txd);
     uint32 writeXbox(std::ostream &txd);
     void writeTGA(const char *path, bool optimized = false);
+    void writeTGAStream(std::ostream& tga, bool optimized = false);
 
     Bitmap getBitmap(void) const;
     void setImageData(const Bitmap& srcImage);
@@ -240,6 +264,11 @@ struct NativeTexture
 
     // Optimization routines.
     void optimizeForLowEnd(float quality);
+
+    // Mipmap utilities.
+    uint32 getMipmapCount( void ) const;
+    void clearMipmaps( void );
+    void generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode mipGenMode = MIPMAPGEN_DEFAULT, bool safeMipmaps = false );
 
 	NativeTexture(void);
 	NativeTexture(const NativeTexture &orig);

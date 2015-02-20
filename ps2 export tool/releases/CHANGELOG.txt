@@ -1,3 +1,6 @@
+r574
+- fixed a crash that happened when building IMG archives - added support for IMG_VERSION_1 IMG archive building - added a new version parameter to imgimport.exe, so you can now create IMG_VERSION_1 archives - fixed a bug in TxdGen that caus...
+---------------------
 r571
 - fixed an embarrassing bug where uncompressed PS2 textures were not output in a valid D3DFORMAT - implemented conversion to valid D3DFORMAT texture if not already - various fixes
 ---------------------

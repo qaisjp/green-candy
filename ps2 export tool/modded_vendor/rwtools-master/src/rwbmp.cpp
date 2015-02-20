@@ -6,16 +6,6 @@
 namespace rw
 {
 
-static inline double unpackcolor( uint8 color )
-{
-    return ( (double)color / 255.0 );
-}
-
-static uint8 packcolor( double color )
-{
-    return (uint8)( color * 255.0 );
-}
-
 void Bitmap::setSize( uint32 width, uint32 height )
 {
     uint32 oldWidth = this->width;
@@ -139,6 +129,23 @@ static inline void getblendfactor(
         blendBlue = 1;
         blendAlpha = 1;
     }
+}
+
+bool Bitmap::browsecolor(uint32 x, uint32 y, uint8& redOut, uint8& greenOut, uint8& blueOut, uint8& alphaOut) const
+{
+    bool hasColor = false;
+
+    if ( x < this->width && y < this->height )
+    {
+        uint32 colorIndex = PixelFormat::coord2index( x, y, this->width );
+
+        hasColor = browsetexelcolor(
+            this->texels, PALETTE_NONE, NULL, 0, colorIndex, this->rasterFormat, this->colorOrder, this->depth,
+            redOut, greenOut, blueOut, alphaOut
+        );
+    }
+
+    return hasColor;
 }
 
 void Bitmap::draw(

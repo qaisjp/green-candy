@@ -19,9 +19,34 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
     NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
     // Make sure the texture has some qualities before it can even be written.
-    if ( !platformTex->hasD3DFormat )
+    ePaletteType paletteType = platformTex->paletteType;
+
+    uint32 compressionType = platformTex->dxtCompression;
+
+    if ( platform == PLATFORM_D3D8 )
     {
-        throw RwException( "texture " + this->name + " has no representation in Direct3D" );
+        // Check the color order if we are not compressed.
+        if ( compressionType == 0 )
+        {
+            eColorOrdering requiredColorOrder = COLOR_BGRA;
+
+            if ( paletteType != PALETTE_NONE )
+            {
+                requiredColorOrder = COLOR_RGBA;
+            }
+
+            if ( platformTex->colorOrdering != requiredColorOrder )
+            {
+                throw RwException( "texture " + this->name + " has an invalid color order for writing" );
+            }
+        }
+    }
+    else
+    {
+        if ( !platformTex->hasD3DFormat )
+        {
+            throw RwException( "texture " + this->name + " has no representation in Direct3D 9" );
+        }
     }
 
     // Texture Native.
@@ -30,9 +55,9 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 	// Struct
 	{
 		SKIP_HEADER();
-		bytesWritten += writeUInt32(platform, rw);
 
         textureMetaHeaderStructGeneric metaHeader;
+        metaHeader.platformDescriptor = this->platform;
         metaHeader.texFormat.filterMode = this->filterFlags;
         metaHeader.texFormat.uAddressing = this->uAddressing;
         metaHeader.texFormat.vAddressing = this->vAddressing;
@@ -46,7 +71,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         writeStringIntoBufferSafe( this->maskName, metaHeader.maskName, sizeof( metaHeader.maskName ), this->name, "mask name" );
 
         // Construct raster flags.
-        metaHeader.rasterFormat = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, platformTex->mipmapCount > 1, platformTex->autoMipmaps );
+        metaHeader.rasterFormat = generateRasterFormatFlags( this->rasterFormat, paletteType, platformTex->mipmapCount > 1, platformTex->autoMipmaps );
 
         rw.write((const char*)&metaHeader, sizeof(metaHeader));
 
@@ -67,6 +92,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         dimInfo.depth = platformTex->depth;
         dimInfo.mipmapCount = platformTex->mipmapCount;
         dimInfo.rasterType = platformTex->rasterType;
+        dimInfo.pad1 = 0;
 
         rw.write((const char*)&dimInfo, sizeof(dimInfo));
 
@@ -74,7 +100,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 
 		if (platform == PLATFORM_D3D8)
         {
-			bytesWritten += writeUInt8( platformTex->dxtCompression, rw );
+			bytesWritten += writeUInt8( compressionType, rw );
         }
 		else
         {
@@ -82,7 +108,8 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
             contentInfo.hasAlpha = platformTex->hasAlpha;
             contentInfo.isCubeTexture = platformTex->isCubeTexture;
             contentInfo.autoMipMaps = platformTex->autoMipmaps;
-            contentInfo.isCompressed = ( platformTex->dxtCompression != 0 );
+            contentInfo.isCompressed = ( compressionType != 0 );
+            contentInfo.pad = 0;
 
             rw.write((const char*)&contentInfo, sizeof(contentInfo));
 
@@ -90,10 +117,10 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
         }
 
 		/* Palette */
-		if (platformTex->paletteType != PALETTE_NONE)
+		if (paletteType != PALETTE_NONE)
         {
             // Make sure we write as much data as the system expects.
-            uint32 reqPalCount = getPaletteItemCount(platformTex->paletteType);
+            uint32 reqPalCount = getPaletteItemCount(paletteType);
 
             uint32 palItemCount = platformTex->paletteSize;
 
@@ -116,7 +143,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 
 			bytesWritten += writeUInt32(texDataSize, rw);
 
-            uint8 *texelData = (uint8*)platformTex->texels[i];
+            void *texelData = platformTex->texels[i];
 
 			rw.write(reinterpret_cast <char *> (texelData), texDataSize);
 			bytesWritten += texDataSize;

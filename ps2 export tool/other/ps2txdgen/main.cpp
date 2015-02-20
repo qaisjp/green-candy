@@ -56,7 +56,14 @@ struct RwWarningBuffer : public rw::WarningManagerInterface
 
 static RwWarningBuffer _warningMan;
 
-static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, eTargetPlatform targetPlatform, bool doCompress, float compressionQuality, rw::KnownVersions::eGameVersion gameVersion, std::string& errMsg )
+static bool ProcessTXDArchive(
+    CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, eTargetPlatform targetPlatform,
+    bool generateMipmaps, rw::eMipmapGenerationMode mipGenMode, uint32 mipGenMaxLevel, bool mipGenSafe,
+    bool doCompress, float compressionQuality,
+    bool outputDebug, CFileTranslator *debugRoot,
+    rw::KnownVersions::eGameVersion gameVersion,
+    std::string& errMsg
+)
 {
     bool hasProcessed = false;
 
@@ -93,7 +100,52 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
             // If the texture is prepared, do whatever.
             if ( isPrepared )
-            {   
+            {
+                // Generate mipmaps on demand.
+                if ( generateMipmaps )
+                {
+                    // We generate as many mipmaps as we can.
+                    tex.generateMipmaps( mipGenMaxLevel + 1, mipGenMode, mipGenSafe );
+                }
+
+                // Output debug stuff.
+                if ( outputDebug && debugRoot != NULL )
+                {
+                    const filePath& srcPath = srcStream->GetPath();
+
+                    filePath relSrcPath;
+
+                    bool hasRelSrcPath = srcRoot->GetRelativePathFromRoot( srcPath.c_str(), true, relSrcPath );
+
+                    if ( hasRelSrcPath )
+                    {
+                        // Create a unique filename for this texture.
+                        std::string directoryPart;
+
+                        std::string fileNamePart = FileSystem::GetFileNameItem( relSrcPath.c_str(), false, &directoryPart, NULL );
+
+                        if ( fileNamePart.size() != 0 )
+                        {
+                            std::string uniqueTextureNameTGA = directoryPart + fileNamePart + "_" + tex.name + ".tga";
+
+                            CFile *debugOutputStream = debugRoot->Open( uniqueTextureNameTGA.c_str(), "wb" );
+
+                            if ( debugOutputStream )
+                            {
+                                // Write the texture to it.
+                                FileSystem::fileStreamBuf stlWrapper( debugOutputStream );
+
+                                std::ostream outStream( &stlWrapper );
+
+                                tex.writeTGAStream( outStream, false );
+
+                                // Free the stream handle.
+                                delete debugOutputStream;
+                            }
+                        }
+                    }
+                }
+
                 // Palettize the texture to save space.
                 if ( doCompress )
                 {
@@ -118,16 +170,17 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                 }
                 else if ( targetPlatform == PLATFORM_XBOX )
                 {
+                    // If we are trying to convert to XBOX, its the same as if converting to
+                    // Direct3D 8. Hence we want to ensure its writable in that.
+                    tex.convertToDirect3D8();
+
+                    // Make sure we can write it.
+                    tex.makeDirect3DCompatible();
+
                     tex.convertToXbox();
                 }
                 else if ( targetPlatform == PLATFORM_PC )
                 {
-                    // Make sure that we have a D3DFORMAT field.
-                    if ( !tex.isDirect3DWritable() )
-                    {
-                        tex.makeDirect3DCompatible();
-                    }
-
                     // Depends on the game.
                     if (gameVersion == rw::KnownVersions::SA)
                     {
@@ -137,6 +190,9 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                     {
                         tex.convertToDirect3D8();
                     }
+
+                    // Make sure that we have a D3DFORMAT field.
+                    tex.makeDirect3DCompatible();
                 }
                 else
                 {
@@ -180,9 +236,15 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 struct _discFileSentry
 {
     eTargetPlatform targetPlatform;
+    bool generateMipmaps;
+    rw::eMipmapGenerationMode mipGenMode;
+    uint32 mipGenMaxLevel;
+    bool mipGenSafe;
     bool doCompress;
     float compressionQuality;
     rw::KnownVersions::eGameVersion gameVersion;
+    bool outputDebug;
+    CFileTranslator *debugTranslator;
 
     inline bool OnSingletonFile(
         CFileTranslator *sourceRoot, CFileTranslator *buildRoot, const filePath& relPathFromRoot,
@@ -225,7 +287,14 @@ struct _discFileSentry
 
                     std::string errorMessage;
 
-                    bool couldProcessTXD = ProcessTXDArchive( sourceRoot, sourceStream, targetStream, this->targetPlatform, this->doCompress, this->compressionQuality, this->gameVersion, errorMessage );
+                    bool couldProcessTXD = ProcessTXDArchive(
+                        sourceRoot, sourceStream, targetStream,
+                        this->targetPlatform, this->generateMipmaps, this->mipGenMode, this->mipGenMaxLevel, this->mipGenSafe,
+                        this->doCompress, this->compressionQuality,
+                        this->outputDebug, this->debugTranslator,
+                        this->gameVersion,
+                        errorMessage
+                    );
 
                     if ( couldProcessTXD )
                     {
@@ -359,6 +428,14 @@ bool ApplicationMain( void )
 
     eTargetPlatform c_targetPlatform = PLATFORM_PC;
 
+    bool c_generateMipmaps = false;
+
+    rw::eMipmapGenerationMode c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
+
+    uint32 c_mipGenMaxLevel = 0;
+
+    bool c_mipGenSafe = false;
+
     bool compressTextures = false;
 
     rw::ePaletteRuntimeType c_palRuntimeType = rw::PALRUNTIME_NATIVE;
@@ -373,6 +450,8 @@ bool ApplicationMain( void )
     bool c_imgArchivesCompressed = false;
 
     float c_compressionQuality = 0.5f;
+
+    bool c_outputDebug = false;
 
     if ( configFile )
     {
@@ -459,6 +538,54 @@ bool ApplicationMain( void )
                 }
             }
 
+            // Mipmap Generation enable.
+            if ( mainEntry->Find( "generateMipmaps" ) )
+            {
+                c_generateMipmaps = mainEntry->GetBool( "generateMipmaps" );
+            }
+
+            // Mipmap Generation Mode.
+            if ( const char *mipGenMode = mainEntry->Get( "mipGenMode" ) )
+            {
+                if ( stricmp( mipGenMode, "default" ) == 0 )
+                {
+                    c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
+                }
+                else if ( stricmp( mipGenMode, "contrast" ) == 0 )
+                {
+                    c_mipGenMode = rw::MIPMAPGEN_CONTRAST;
+                }
+                else if ( stricmp( mipGenMode, "brighten" ) == 0 )
+                {
+                    c_mipGenMode = rw::MIPMAPGEN_BRIGHTEN;
+                }
+                else if ( stricmp( mipGenMode, "darken" ) == 0 )
+                {
+                    c_mipGenMode = rw::MIPMAPGEN_DARKEN;
+                }
+                else if ( stricmp( mipGenMode, "selectclose" ) == 0 )
+                {
+                    c_mipGenMode = rw::MIPMAPGEN_SELECTCLOSE;
+                } 
+            }
+
+            // Mipmap generation maximum level.
+            if ( mainEntry->Find( "mipGenMaxLevel" ) )
+            {
+                int mipGenMaxLevelInt = mainEntry->GetInt( "mipGenMaxLevel" );
+
+                if ( mipGenMaxLevelInt >= 0 )
+                {
+                    c_mipGenMaxLevel = (uint32)mipGenMaxLevelInt;
+                }
+            }
+
+            // Mipmap generation safety.
+            if ( mainEntry->Find( "mipGenSafe" ) )
+            {
+                c_mipGenSafe = mainEntry->GetBool( "mipGenSafe" );
+            }
+
             // Compression.
             if ( mainEntry->Find( "compressTextures" ) )
             {
@@ -535,6 +662,12 @@ bool ApplicationMain( void )
             {
                 c_imgArchivesCompressed = mainEntry->GetBool( "imgArchivesCompressed" );
             }
+
+            // Debug output flag.
+            if ( mainEntry->Find( "outputDebug" ) )
+            {
+                c_outputDebug = mainEntry->GetBool( "outputDebug" );
+            }
         }
 
         // Kill the configuration.
@@ -596,6 +729,41 @@ bool ApplicationMain( void )
 
     std::cout
         << "* targetPlatform: " << strTargetPlatform << std::endl;
+
+    std::cout
+        << "* generateMipmaps: " << ( c_generateMipmaps ? "true" : "false" ) << std::endl;
+
+    const char *mipGenModeString = "unknown";
+
+    if ( c_mipGenMode == rw::MIPMAPGEN_DEFAULT )
+    {
+        mipGenModeString = "default";
+    }
+    else if ( c_mipGenMode == rw::MIPMAPGEN_CONTRAST )
+    {
+        mipGenModeString = "contrast";
+    }
+    else if ( c_mipGenMode == rw::MIPMAPGEN_BRIGHTEN )
+    {
+        mipGenModeString = "brighten";
+    }
+    else if ( c_mipGenMode == rw::MIPMAPGEN_DARKEN )
+    {
+        mipGenModeString = "darken";
+    }
+    else if ( c_mipGenMode == rw::MIPMAPGEN_SELECTCLOSE )
+    {
+        mipGenModeString = "selectclose";
+    }
+
+    std::cout
+        << "* mipGenMode: " << mipGenModeString << std::endl;
+
+    std::cout
+        << "* mipGenMaxLevel: " << c_mipGenMaxLevel << std::endl;
+
+    std::cout
+        << "* mipGenSafe: " << ( c_mipGenSafe ? "true" : "false" ) << std::endl;
 
     std::cout
         << "* compressTextures: " << ( compressTextures ? "true" : "false" ) << std::endl;
@@ -660,6 +828,16 @@ bool ApplicationMain( void )
         bool hasGameRoot = obtainAbsolutePath( c_gameRoot.c_str(), absGameRootTranslator, false, true );
         bool hasOutputRoot = obtainAbsolutePath( c_outputRoot.c_str(), absOutputRootTranslator, true, true );
 
+        // Create a debug directory if we want to output debug.
+        CFileTranslator *absDebugOutputTranslator = NULL;
+
+        bool hasDebugRoot = false;
+
+        if ( c_outputDebug )
+        {
+            hasDebugRoot = obtainAbsolutePath( "debug_output/", absDebugOutputTranslator, true, true );
+        }
+
         if ( hasGameRoot && hasOutputRoot )
         {
             try
@@ -674,9 +852,15 @@ bool ApplicationMain( void )
 
                 _discFileSentry sentry;
                 sentry.targetPlatform = c_targetPlatform;
+                sentry.generateMipmaps = c_generateMipmaps;
+                sentry.mipGenMode = c_mipGenMode;
+                sentry.mipGenMaxLevel = c_mipGenMaxLevel;
+                sentry.mipGenSafe = c_mipGenSafe;
                 sentry.doCompress = compressTextures;
                 sentry.compressionQuality = c_compressionQuality;
                 sentry.gameVersion = c_gameVersion;
+                sentry.outputDebug = c_outputDebug;
+                sentry.debugTranslator = absDebugOutputTranslator;
 
                 fileProc.process( &sentry, absGameRootTranslator, absOutputRootTranslator );
 
@@ -708,6 +892,11 @@ bool ApplicationMain( void )
         }
 
         // Clean up resources.
+        if ( hasDebugRoot )
+        {
+            delete absDebugOutputTranslator;
+        }
+
         if ( hasGameRoot )
         {
             delete absGameRootTranslator;

@@ -36,6 +36,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
     const filePath& texPath = srcStream->GetPath();
 
     bool canOutputDebug = false;
+    bool canOutputDebugSpecial = false;
 
     filePath fileNameItem;
 
@@ -44,18 +45,33 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
     if ( hasDebugName && debugOutputRoot )
     {
         // Create a directory to save textures in (in TGA format).
-        std::string dirName( "conv_tga/" );
-
-        bool createDirectorySuccess = debugOutputRoot->CreateDir( dirName.c_str() );
-
-        if ( createDirectorySuccess )
         {
-            canOutputDebug = true;
+            std::string dirName( "conv_tga/" );
+
+            bool createDirectorySuccess = debugOutputRoot->CreateDir( dirName.c_str() );
+
+            if ( createDirectorySuccess )
+            {
+                canOutputDebug = true;
+            }
+        }
+
+        {
+            std::string specialDirName = "special_txd/";
+
+            bool createDirectorySuccess = debugOutputRoot->CreateDir( specialDirName.c_str() );
+
+            if ( createDirectorySuccess )
+            {
+                canOutputDebugSpecial = true;
+            }
         }
     }
 
     // Process all textures.
     bool processSuccessful = true;
+
+    bool isSpecialTXD = false;
 
     try
     {
@@ -85,7 +101,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
                 if ( canOutputDebug )
                 {
-                    //if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
+                    if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
                     {
                         // Create a path to store the textures to.
                         std::string textureSaveName( justFileName );
@@ -101,6 +117,8 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
                         {
                             tex.writeTGA( absTexPath.c_str(), _outputOptimizedTGA );
                         }
+
+                        isSpecialTXD = true;
                     }
                 }
 
@@ -180,6 +198,25 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
             {
                 hasProcessed = false;
             }
+        }
+    }
+
+    // Also write a raw version to the debug folder if we are a special TXD.
+    if ( isSpecialTXD && canOutputDebugSpecial )
+    {
+        filePath outPath = filePath( "special_txd/" ) + fileNameItem;
+
+        CFile *outFile = debugOutputRoot->Open( outPath.c_str(), "wb" );
+
+        if ( outFile )
+        {
+            srcStream->Seek( 0, SEEK_SET );
+
+            FileSystem::StreamCopy( *srcStream, *outFile );
+
+            outFile->SetSeekEnd();
+
+            delete outFile;
         }
     }
 
@@ -500,8 +537,8 @@ int main( int argc, char *argv[] )
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtavc\\" );
-        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa_xbox\\" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/xbox_swizzle_samples/" );
 
         if ( discHandle )
         {
@@ -546,6 +583,7 @@ int main( int argc, char *argv[] )
 
                     // Change this if required!
                     fileProc.setUseCompressedIMGArchives( true );
+                    fileProc.setArchiveReconstruction( false );
 
                     _discFileSentry sentry;
                     sentry.debugRoot = debugRoot;

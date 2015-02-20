@@ -1,7 +1,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <fstream>
-#include <StdInc.h>
 #include <assert.h>
 #include <bitset>
 #define _USE_MATH_DEFINES
@@ -9,6 +8,8 @@
 #include <map>
 #include <algorithm>
 #include <cmath>
+
+#include "StdInc.h"
 
 #include "pixelformat.hxx"
 
@@ -241,66 +242,41 @@ Bitmap NativeTexture::getBitmap(void) const
     {
         NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
-        // If the texture is compressed, we must decompress it.
-        if ( platformTex->dxtCompression )
-        {
-            platformTex->decompressDxt();
-        }
-
         // If it has any mipmap at all.
         if ( platformTex->mipmapCount > 0 )
         {
-            uint32 width = platformTex->width[ 0 ];
-            uint32 height = platformTex->height[ 0 ];
-            uint32 depth = platformTex->depth;
-            uint32 dataSize = platformTex->dataSizes[ 0 ];
-            eRasterFormat theFormat = this->rasterFormat;
-            eColorOrdering theOrder = platformTex->colorOrdering;
+            uint32 width;
+            uint32 height;
+            uint32 depth;
+            eRasterFormat theFormat;
+            eColorOrdering theOrder;
             
             // Get the color data.
             bool hasAllocatedNewPixelData = false;
             void *pixelData = NULL;
 
-            // If the image is palletized, it has to be converted to raw colors.
-            if ( platformTex->paletteType != PALETTE_NONE )
             {
-                hasAllocatedNewPixelData = true;
+                rawBitmapFetchResult rawBitmap;
 
-                uint32 rasterFormatDepth = Bitmap::getRasterFormatDepth(theFormat);
+                bool gotPixelData = platformTex->getRawBitmap(0, false, rawBitmap);
 
-                uint32 texelCount = ( width * height );
-
-                uint32 newDataSize = getRasterDataSize(texelCount, rasterFormatDepth);
-
-                pixelData = new uint8[ newDataSize ];
-
-                // Unpack the texels.
-                void *texelSource = platformTex->texels[ 0 ];
-                void *palData = platformTex->palette;
-                uint32 palSize = platformTex->paletteSize;
-
-                for ( uint32 n = 0; n < texelCount; n++ )
+                if ( gotPixelData )
                 {
-                    uint8 r, g, b, a;
-                    browsetexelcolor(texelSource, platformTex->paletteType, palData, palSize, n, theFormat, theOrder, depth, r, g, b, a);
-
-                    puttexelcolor(pixelData, n, theFormat, theOrder, rasterFormatDepth, r, g, b, a);
+                    width = rawBitmap.width;
+                    height = rawBitmap.height;
+                    depth = rawBitmap.depth;
+                    theFormat = rawBitmap.rasterFormat;
+                    theOrder = rawBitmap.colorOrder;
+                    hasAllocatedNewPixelData = rawBitmap.isNewlyAllocated;
+                    pixelData = rawBitmap.texelData;
                 }
-
-                // Update bitmap parameters.
-                depth = rasterFormatDepth;
-                dataSize = newDataSize;
-            }
-            else
-            {
-                pixelData = platformTex->texels[ 0 ];
             }
 
             if ( pixelData != NULL )
             {
                 // Set the data into the bitmap.
                 resultBitmap.setImageData(
-                    pixelData, theFormat, theOrder, depth, width, height, dataSize
+                    pixelData, theFormat, theOrder, depth, width, height
                 );
 
                 if ( hasAllocatedNewPixelData )
@@ -341,9 +317,6 @@ void NativeTexture::setImageData(const Bitmap& srcImage)
             }
             platformTex->paletteType = PALETTE_NONE;
             platformTex->paletteSize = 0;
-
-            // Since we have no more mipmaps, we also dont have automatically generated mipmaps.
-            platformTex->autoMipmaps = false;
         }
 
         // Resize mipmap containers.
@@ -409,6 +382,8 @@ void NativeTexture::newDirect3D(void)
 {
     if ( this->platform != 0 )
         return;
+
+    assert( this->platformData == NULL );
 
     // Create new platform data.
     NativeTextureD3D *d3dtex = new NativeTextureD3D();
@@ -607,14 +582,36 @@ bool NativeTexture::isDirect3DWritable(void) const
 {
     bool isWritable = false;
 
-    if (this->platform == PLATFORM_D3D8 || this->platform == PLATFORM_D3D9)
+    uint32 platform = this->platform;
+
+    if (platform == PLATFORM_D3D8 || platform == PLATFORM_D3D9)
     {
         NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
-        // We can write the texture if it has a Direct3D format.
-        if (platformTex->hasD3DFormat == true)
+        if ( platform == PLATFORM_D3D9 )
         {
-            isWritable = true;
+            // We can write the texture if it has a Direct3D format.
+            if (platformTex->hasD3DFormat == true)
+            {
+                isWritable = true;
+            }
+        }
+        else
+        {
+            bool isCompressed = ( platformTex->dxtCompression != 0 );
+
+            if ( isCompressed )
+            {
+                // If we are compressed, then we definately are writable.
+                isWritable = true;
+            }
+            else
+            {
+                // I can be a bit lazy here.
+                // Returning false here means that "makeDirect3DCompatible" has to be called.
+                // That routine will sort things out.
+                isWritable = false;
+            }
         }
     }
 
@@ -626,14 +623,36 @@ void NativeTexture::makeDirect3DCompatible(void)
     // Only works if the texture is in Direct3D platform already.
     // This routine is pretty complicated.
 
-    if (this->platform == PLATFORM_D3D8 || this->platform == PLATFORM_D3D9)
+    uint32 platform = this->platform;
+
+    if (platform == PLATFORM_D3D8 || platform == PLATFORM_D3D9)
     {
         NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
+        bool requiresCheck = false;
+
+        // On the Direct3D 8 platform, we should check for compatibility, aswell.
+        // But it requires different checks than the Direct3D 9 platform.
+        if ( platform == PLATFORM_D3D8 )
+        {
+            bool isCompressed = ( platformTex->dxtCompression != 0 );
+
+            // Being DXT compressed means that we are writable.
+            if ( !isCompressed )
+            {
+                requiresCheck = true;
+            }
+        }
+        else if ( platform == PLATFORM_D3D9 )
+        {
+            // Otherwise, we only update if we have no Direct3D format.
+            requiresCheck = ( platformTex->hasD3DFormat == false );
+        }
+
         bool hasUpdated = false;
 
-        // Make sure this texture has a Direct3D format.
-        if ( !platformTex->hasD3DFormat )
+        // Make sure this texture is writable.
+        if ( requiresCheck )
         {
             // Well, if we are compressed we usually have a D3DFORMAT.
             // But things can go really wrong, so lets decompress anyway.
@@ -971,7 +990,7 @@ void NativeTexture::makeDirect3DCompatible(void)
         {
             // Alright, lets do it.
             // If this produces a valid D3DFORMAT, we succeeded.
-            // Keep in mind that is process is allowed to fail.
+            // Keep in mind that this process is allowed to fail.
             platformTex->updateD3DFormat();
         }
     }
@@ -1052,14 +1071,6 @@ void NativeTexture::writeTGA(const char *path, bool optimized)
     if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
         return;
 
-    NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
-
-    // If the texture is compressed, decompress it.
-    if ( platformTex->dxtCompression )
-    {
-        platformTex->decompressDxt();
-    }
-
 	std::ofstream tga(path, std::ios::binary);
 	if (tga.fail())
     {
@@ -1067,10 +1078,30 @@ void NativeTexture::writeTGA(const char *path, bool optimized)
 		return;
 	}
 
+    writeTGAStream(tga, optimized);
+
+	tga.close();
+}
+
+void NativeTexture::writeTGAStream(std::ostream& tga, bool optimized)
+{
+    if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
+        return;
+
+    NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+
+    // Get the raw bitmap from layer 0.
+    rawBitmapFetchResult rawBmp;
+
+    bool gotRawBmp = platformTex->getRawBitmap(0, true, rawBmp);
+
+    if ( !gotRawBmp )
+        return;
+
     // Decide how to write the raster.
-    eRasterFormat srcRasterFormat = this->rasterFormat;
-    ePaletteType srcPaletteType = platformTex->paletteType;
-    uint32 srcItemDepth = platformTex->depth;
+    eRasterFormat srcRasterFormat = rawBmp.rasterFormat;
+    ePaletteType srcPaletteType = rawBmp.paletteType;
+    uint32 srcItemDepth = rawBmp.depth;
 
     eRasterFormat dstRasterFormat;
     uint32 dstColorDepth;
@@ -1141,123 +1172,128 @@ void NativeTexture::writeTGA(const char *path, bool optimized)
     if ( !hasDstRasterFormat )
     {
         rw::rwInterface.PushWarning( "could not find a raster format to write TGA image with" );
-        return;
-    }
-
-    // Prepare the TGA header.
-    TgaHeader header;
-
-    uint32 maxpalette = platformTex->paletteSize;
-
-    bool isPalette = (dstPaletteType != PALETTE_NONE);
-
-    header.IDLength = 0;
-    header.ColorMapType = ( isPalette ? 1 : 0 );
-    header.ImageType = ( isPalette ? 1 : 2 );
-
-    // The pixel depth is the number of bits a color entry is going to take (real RGBA color).
-    uint32 pixelDepth = 0;
-
-    if (isPalette)
-    {
-        pixelDepth = Bitmap::getRasterFormatDepth(dstRasterFormat);
     }
     else
     {
-        pixelDepth = dstColorDepth;
-    }
-    
-    header.CMapStart = 0;
-    header.CMapLength = ( isPalette ? maxpalette : 0 );
-    header.CMapDepth = ( isPalette ? pixelDepth : 0 );
+        // Prepare the TGA header.
+        TgaHeader header;
 
-    header.XOffset = 0;
-    header.YOffset = 0;
+        uint32 maxpalette = rawBmp.paletteSize;
 
-    uint32 width = platformTex->width[0];
-    uint32 height = platformTex->height[0];
+        bool isPalette = (dstPaletteType != PALETTE_NONE);
 
-    header.Width = width;
-    header.Height = height;
-    header.PixelDepth = ( isPalette ? srcItemDepth : dstColorDepth );
+        header.IDLength = 0;
+        header.ColorMapType = ( isPalette ? 1 : 0 );
+        header.ImageType = ( isPalette ? 1 : 2 );
 
-    header.ImageDescriptor.numAttrBits = dstAlphaBits;
-    header.ImageDescriptor.imageOrdering = 2;
-    header.ImageDescriptor.reserved = 0;
+        // The pixel depth is the number of bits a color entry is going to take (real RGBA color).
+        uint32 pixelDepth = 0;
 
-    // Write the header.
-    tga.write((const char*)&header, sizeof(header));
-
-    void *texelSource = platformTex->texels[0];
-    void *paletteData = platformTex->palette;
-    eColorOrdering colorOrder = platformTex->colorOrdering;
-
-    // Write the palette if we require.
-    if (isPalette)
-    {
-        writeTGAPixels(
-            paletteData, maxpalette,
-            srcRasterFormat, pixelDepth, PALETTE_NONE, NULL, 0,
-            dstRasterFormat, pixelDepth,
-            colorOrder, tga
-        );
-    }
-
-    // Now write image information.
-    // If we are a palette, we simply write the color indice.
-    uint32 colorUnitCount = ( width * height );
-
-    if (isPalette)
-    {
-        assert( srcPaletteType != PALETTE_NONE );
-
-        // Write a fixed version of the palette indice.
-        uint32 texelDataSize = platformTex->dataSizes[ 0 ]; // for palette items its the same size.
-
-        void *fixedPalItems = new uint8[ texelDataSize ];
-
-        for (uint32 n = 0; n < colorUnitCount; n++)
+        if (isPalette)
         {
-            uint8 palIndex;
+            pixelDepth = Bitmap::getRasterFormatDepth(dstRasterFormat);
+        }
+        else
+        {
+            pixelDepth = dstColorDepth;
+        }
+        
+        header.CMapStart = 0;
+        header.CMapLength = ( isPalette ? maxpalette : 0 );
+        header.CMapDepth = ( isPalette ? pixelDepth : 0 );
 
-            bool couldGetPalIndex = getpaletteindex(texelSource, srcPaletteType, maxpalette, srcItemDepth, n, palIndex);
+        header.XOffset = 0;
+        header.YOffset = 0;
 
-            if ( !couldGetPalIndex )
-            {
-                palIndex = 0;
-            }
+        uint32 width = rawBmp.width;
+        uint32 height = rawBmp.height;
 
-            // Put the palette index.
-            if (srcItemDepth == 4)
-            {
-                ( (PixelFormat::palette4bit*)fixedPalItems )->setvalue(n, palIndex);
-            }
-            else if (srcItemDepth == 8)
-            {
-                ( (PixelFormat::palette8bit*)fixedPalItems )->setvalue(n, palIndex);
-            }
-            else
-            {
-                assert( 0 );
-            }
+        header.Width = width;
+        header.Height = height;
+        header.PixelDepth = ( isPalette ? srcItemDepth : dstColorDepth );
+
+        header.ImageDescriptor.numAttrBits = dstAlphaBits;
+        header.ImageDescriptor.imageOrdering = 2;
+        header.ImageDescriptor.reserved = 0;
+
+        // Write the header.
+        tga.write((const char*)&header, sizeof(header));
+
+        const void *texelSource = rawBmp.texelData;
+        const void *paletteData = rawBmp.paletteData;
+        eColorOrdering colorOrder = rawBmp.colorOrder;
+
+        // Write the palette if we require.
+        if (isPalette)
+        {
+            writeTGAPixels(
+                paletteData, maxpalette,
+                srcRasterFormat, pixelDepth, PALETTE_NONE, NULL, 0,
+                dstRasterFormat, pixelDepth,
+                colorOrder, tga
+            );
         }
 
-        tga.write((const char*)fixedPalItems, texelDataSize);
+        // Now write image information.
+        // If we are a palette, we simply write the color indice.
+        uint32 colorUnitCount = ( width * height );
 
-        // Clean up memory.
-        delete [] fixedPalItems;
+        if (isPalette)
+        {
+            assert( srcPaletteType != PALETTE_NONE );
+
+            // Write a fixed version of the palette indice.
+            uint32 texelDataSize = rawBmp.dataSize; // for palette items its the same size.
+
+            void *fixedPalItems = new uint8[ texelDataSize ];
+
+            for (uint32 n = 0; n < colorUnitCount; n++)
+            {
+                uint8 palIndex;
+
+                bool couldGetPalIndex = getpaletteindex(texelSource, srcPaletteType, maxpalette, srcItemDepth, n, palIndex);
+
+                if ( !couldGetPalIndex )
+                {
+                    palIndex = 0;
+                }
+
+                // Put the palette index.
+                if (srcItemDepth == 4)
+                {
+                    ( (PixelFormat::palette4bit*)fixedPalItems )->setvalue(n, palIndex);
+                }
+                else if (srcItemDepth == 8)
+                {
+                    ( (PixelFormat::palette8bit*)fixedPalItems )->setvalue(n, palIndex);
+                }
+                else
+                {
+                    assert( 0 );
+                }
+            }
+
+            tga.write((const char*)fixedPalItems, texelDataSize);
+
+            // Clean up memory.
+            delete [] fixedPalItems;
+        }
+        else
+        {
+            writeTGAPixels(
+                texelSource, colorUnitCount,
+                srcRasterFormat, srcItemDepth, srcPaletteType, paletteData, maxpalette,
+                dstRasterFormat, dstColorDepth,
+                colorOrder, tga
+            );
+        }
     }
-    else
+
+    // Free raw bitmap resources.
+    if ( rawBmp.isNewlyAllocated )
     {
-        writeTGAPixels(
-            texelSource, colorUnitCount,
-            srcRasterFormat, srcItemDepth, srcPaletteType, paletteData, maxpalette,
-            dstRasterFormat, dstColorDepth,
-            colorOrder, tga
-        );
+        delete [] rawBmp.texelData;
     }
-
-	tga.close();
 }
 
 NativeTexture::NativeTexture(void)
