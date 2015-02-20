@@ -133,6 +133,7 @@ enum
 #pragma warning(push)
 #pragma warning(disable: 4996)
 
+// Decoded RenderWare version management struct.
 struct LibraryVersion
 {
     uint16 buildNumber;

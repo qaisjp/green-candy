@@ -120,7 +120,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 		if (paletteType != PALETTE_NONE)
         {
             // Make sure we write as much data as the system expects.
-            uint32 reqPalCount = getPaletteItemCount(paletteType);
+            uint32 reqPalCount = getD3DPaletteCount(paletteType);
 
             uint32 palItemCount = platformTex->paletteSize;
 

@@ -139,20 +139,7 @@ void NativeTexture::readXbox(std::istream &rw)
 
 	    if (paletteType != PALETTE_NONE)
         {
-            uint32 palItemCount = 0;
-
-            if (paletteType == PALETTE_4BIT)
-            {
-                palItemCount = 32;
-            }
-            else if (paletteType == PALETTE_8BIT)
-            {
-                palItemCount = 256;
-            }
-            else
-            {
-                assert( 0 );
-            }
+            uint32 palItemCount = getD3DPaletteCount(paletteType);
 
             uint32 palDepth = Bitmap::getRasterFormatDepth( rasterFormat );
 
