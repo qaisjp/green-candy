@@ -371,6 +371,26 @@ inline uint32 getDXTRasterDataSize(uint32 dxtType, uint32 texUnitCount)
     return ( texBlockCount * blockSize );
 }
 
+inline uint32 getD3DPaletteCount(ePaletteType paletteType)
+{
+    uint32 reqPalCount = 0;
+
+    if (paletteType == PALETTE_4BIT)
+    {
+        reqPalCount = 32;
+    }
+    else if (paletteType == PALETTE_8BIT)
+    {
+        reqPalCount = 256;
+    }
+    else
+    {
+        assert( 0 );
+    }
+
+    return reqPalCount;
+}
+
 #pragma pack(1)
 struct textureMetaHeaderStructGeneric
 {

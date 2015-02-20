@@ -433,9 +433,7 @@ void NativeTexture::readD3d(std::istream &rw)
 
 	    if (platformTex->paletteType != PALETTE_NONE)
         {
-            // TODO: PAL4 has 32 items.
-
-            uint32 reqPalItemCount = getPaletteItemCount( platformTex->paletteType );
+            uint32 reqPalItemCount = getD3DPaletteCount( platformTex->paletteType );
 
             uint32 palDepth = Bitmap::getRasterFormatDepth( this->rasterFormat );
 

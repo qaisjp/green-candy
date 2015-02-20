@@ -107,20 +107,7 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
         if (paletteType != PALETTE_NONE)
         {
             // Make sure we write as much data as the system expects.
-            uint32 reqPalCount = 0;
-
-            if (paletteType == PALETTE_4BIT)
-            {
-                reqPalCount = 32;
-            }
-            else if (paletteType == PALETTE_8BIT)
-            {
-                reqPalCount = 256;
-            }
-            else
-            {
-                assert( 0 );
-            }
+            uint32 reqPalCount = getD3DPaletteCount(paletteType);
 
             uint32 palItemCount = platformTex->paletteSize;
 
