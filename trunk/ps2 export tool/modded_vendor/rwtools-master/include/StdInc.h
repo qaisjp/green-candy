@@ -12,6 +12,10 @@
 
 #include "renderware.h"
 
+// Include the RenderWare configuration file.
+// This one should be private to the rwtools project, hence we reject including it in "renderware.h"
+#include "../rwconf.h"
+
 #pragma warning(push)
 #pragma warning(disable: 4290)
 

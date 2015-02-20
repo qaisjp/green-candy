@@ -226,6 +226,8 @@ struct Bitmap
         blue = this->bgBlue;
     }
 
+    bool browsecolor(uint32 x, uint32 y, uint8& redOut, uint8& greenOut, uint8& blueOut, uint8& alphaOut) const;
+
     enum eBlendMode
     {
         BLEND_MODULATE,

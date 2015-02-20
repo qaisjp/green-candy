@@ -128,6 +128,22 @@ inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, ePalette
     return hasFormat;
 }
 
+// This data can be returned by the NativeTextureD3D texture.
+// It will contain newly allocated texels to be used in a bitmap.
+struct rawBitmapFetchResult
+{
+    void *texelData;
+    uint32 dataSize;
+    uint32 width, height;
+    bool isNewlyAllocated;
+    uint32 depth;
+    eRasterFormat rasterFormat;
+    eColorOrdering colorOrder;
+    const void *paletteData;
+    uint32 paletteSize;
+    ePaletteType paletteType;
+};
+
 struct NativeTextureD3D : public PlatformTexture
 {
     NativeTextureD3D( void )
@@ -276,6 +292,9 @@ struct NativeTextureD3D : public PlatformTexture
         return newTex;
     }
 
+    // Function to return a raw bitmap from this texture.
+    bool getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitmapFetchResult& bitmapOut ) const;
+
     // Backlink to original texture container.
     NativeTexture *parent;
 
@@ -328,6 +347,9 @@ struct NativeTextureD3D : public PlatformTexture
     // Check whether this texture has alpha.
     // Use this to update/calculate the alpha flag when required.
     bool doesHaveAlpha(void) const;
+
+    // Debug stuff.
+    bool getDebugBitmap( Bitmap& bmpOut ) const;
 };
 
 inline uint32 getDXTRasterDataSize(uint32 dxtType, uint32 texUnitCount)
@@ -352,6 +374,8 @@ inline uint32 getDXTRasterDataSize(uint32 dxtType, uint32 texUnitCount)
 #pragma pack(1)
 struct textureMetaHeaderStructGeneric
 {
+    uint32 platformDescriptor;
+
     rw::texFormatInfo texFormat;
     
     char name[32];
@@ -362,11 +386,12 @@ struct textureMetaHeaderStructGeneric
 
 struct textureMetaHeaderStructDimInfo
 {
-    uint16 width;
-    uint16 height;
-    uint8 depth;
-    uint8 mipmapCount;
-    uint8 rasterType;
+    uint16 width;               // 0
+    uint16 height;              // 2
+    uint8 depth;                // 4
+    uint8 mipmapCount;          // 5
+    uint8 rasterType : 3;       // 6
+    uint8 pad1 : 5;
 };
 
 struct textureContentInfoStruct
@@ -375,6 +400,7 @@ struct textureContentInfoStruct
     uint8 isCubeTexture : 1;
     uint8 autoMipMaps : 1;
     uint8 isCompressed : 1;
+    uint8 pad : 4;
 };
 #pragma pack()
 

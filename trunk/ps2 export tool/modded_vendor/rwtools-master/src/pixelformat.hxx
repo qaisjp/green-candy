@@ -433,4 +433,14 @@ static inline bool puttexelcolor(
     return setColor;
 }
 
+inline double unpackcolor( uint8 color )
+{
+    return ( (double)color / 255.0 );
+}
+
+inline uint8 packcolor( double color )
+{
+    return (uint8)( color * 255.0 );
+}
+
 };

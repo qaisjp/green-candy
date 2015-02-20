@@ -784,7 +784,15 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
             }
 
             // Create raster format flags.
-            uint32 formatFlags = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, mipmapCount > 1, platformTex->autoMipmaps );
+            bool hasAutoMipmaps = platformTex->autoMipmaps;
+
+            // If we have any mipmaps, then the R* converter set the autoMipmaps flag.
+            if ( mipmapCount > 1 )
+            {
+                hasAutoMipmaps = true;
+            }
+
+            uint32 formatFlags = generateRasterFormatFlags( this->rasterFormat, platformTex->paletteType, mipmapCount > 1, hasAutoMipmaps );
 
             // Apply special flags.
             if ( requiresHeaders )

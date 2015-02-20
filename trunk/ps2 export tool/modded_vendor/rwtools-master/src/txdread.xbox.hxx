@@ -154,6 +154,9 @@ struct NativeTextureXBOX : public PlatformTexture
 
 	// PC/XBOX
 	uint32 dxtCompression;
+
+    void swizzleMipmaps( void );
+    void unswizzleMipmaps( void );
 };
 
 #pragma pack(1)

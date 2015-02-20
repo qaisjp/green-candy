@@ -118,6 +118,22 @@ void NativeTexture::readXbox(std::istream &rw)
                 throw RwException( "texture " + this->name + " has an invalid depth" );
             }
         }
+        // - auto mipmap flag
+        {
+            bool hasAutoMipmaps = platformTex->autoMipmaps;
+
+            if ( hasAutoMipmaps )
+            {
+                bool canHaveAutoMipmaps = ( platformTex->mipmapCount == 1 );
+
+                if ( !canHaveAutoMipmaps )
+                {
+                    rw::rwInterface.PushWarning( "texture " + this->name + " has an invalid auto-mipmap flag (fixing)" );
+
+                    platformTex->autoMipmaps = false;
+                }
+            }
+        }
 
         uint32 remainingImageSectionData = metaInfo.imageDataSectionSize;
 
@@ -313,167 +329,6 @@ void NativeTexture::readXbox(std::istream &rw)
     }
 }
 
-enum eBlockOrder
-{
-    BLOCK_XYZW,
-    BLOCK_XZYW
-};
-
-// http://gtaforums.com/topic/213907-unswizzle-tool/
-// TODO: make this function a template.
-template <typename arrayType>
-static inline void unswizzleXboxBlock
-(
-    const arrayType *srcData, arrayType *outData,
-    uint32& srcDataOffset, uint32 outDataOffset,
-    uint32 imWidth, uint32 imHeight, uint32 imStride,
-    uint32 depthIter = 0
-)
-{
-    // srcData must be a different array than outData.
-
-    bool hasSubBlocks = true;
-
-	if (imWidth == 2 && imHeight == 2 ||
-        imWidth == 1 && imHeight == 2 ||
-        imWidth == 2 && imHeight == 1 ||
-        imWidth == 1 || imHeight == 1)
-    {
-        uint32 curDecodePos = srcDataOffset;
-
-        for (uint32 y = 0; y < imHeight; y++)
-        {
-            uint32 seekOutOffsetHeight = ( y * imStride );
-
-            for (uint32 x = 0; x < imWidth; x++)
-            {
-                uint32 seekOutOffset = seekOutOffsetHeight + x;
-
-                arrayType::trav_t srcVal;
-
-                srcData->getvalue(curDecodePos++, srcVal);
-
-                outData->setvalue(outDataOffset+seekOutOffset, srcVal);
-            }
-        }
-
-        // Go to the next block.
-		srcDataOffset += ( imWidth * imHeight );
-
-        hasSubBlocks = false;
-	}
-
-    if ( hasSubBlocks )
-    {
-        // Catch an exception.
-        if (imWidth == 1 || imHeight == 1)
-        {
-            __asm nop
-
-            assert( 0 );
-        }
-
-        // We split the picture into four parts, recursively.
-        uint32 subImWidth = ( imWidth / 2 );
-        uint32 subImHeight = ( imHeight / 2 );
-
-        // Get the block ordering.
-        eBlockOrder blockOrder;
-        bool hasOrder = false;
-
-        if ( imWidth == imHeight ||
-             imWidth == imHeight * 4 ||
-             imWidth * 4 == imHeight)
-        {
-            blockOrder = BLOCK_XYZW;
-        }
-        else
-        {
-            blockOrder = BLOCK_XZYW;
-        }
-
-        uint32 nextDepthIter = depthIter + 1;
-
-        // Calculate the block coordinates to use.
-        bool hasValidConfiguration = true;
-
-        // Top left.
-        uint32 topLeftOutOffset = outDataOffset;
-
-        // Top right.
-        uint32 topRightOutOffset = 0;
-
-        if (blockOrder == BLOCK_XYZW)
-        {
-            topRightOutOffset = outDataOffset + subImWidth;
-        }
-        else if (blockOrder == BLOCK_XZYW)
-        {
-            topRightOutOffset = outDataOffset + subImHeight*imStride;
-        }
-        else
-        {
-            hasValidConfiguration = false;
-        }
-
-        // Bottom left.
-        uint32 bottomLeftOutOffset = 0;
-
-        if (blockOrder == BLOCK_XYZW)
-        {
-            bottomLeftOutOffset = outDataOffset + subImHeight*imStride;
-        }
-        else if (blockOrder == BLOCK_XZYW)
-        {
-            bottomLeftOutOffset = outDataOffset + subImWidth;
-        }
-        else
-        {
-            hasValidConfiguration = false;
-        }
-
-        // Bottom right.
-        uint32 bottomRightOutOffset = outDataOffset + subImHeight*imStride + subImWidth;
-
-        /*===============================*/
-
-        if (hasValidConfiguration)
-        {
-            // Top left.
-	        unswizzleXboxBlock(
-                srcData, outData, srcDataOffset,
-                topLeftOutOffset,
-                subImWidth, subImHeight, imStride,
-                nextDepthIter
-            );
-
-            // Top right.
-	        unswizzleXboxBlock(
-                srcData, outData, srcDataOffset,
-                topRightOutOffset,
-                subImWidth, subImHeight, imStride,
-                nextDepthIter
-            );
-
-            // Bottom left.
-	        unswizzleXboxBlock(
-                srcData, outData, srcDataOffset,
-                bottomLeftOutOffset,
-                subImWidth, subImHeight, imStride,
-                nextDepthIter
-            );
-
-            // Bottom right.
-	        unswizzleXboxBlock(
-                srcData, outData, srcDataOffset,
-                bottomRightOutOffset,
-                subImWidth, subImHeight, imStride,
-                nextDepthIter
-            );
-        }
-	}
-}
-
 void NativeTexture::convertFromXbox(void)
 {
     if ( platform != PLATFORM_XBOX )
@@ -540,6 +395,8 @@ void NativeTexture::convertFromXbox(void)
         {
 		    targetCompression = 4;
 
+            this->rasterFormat = RASTER_4444;
+
             theD3DFormat = D3DFMT_DXT4;
 
             hasD3DFormat = true;
@@ -557,87 +414,8 @@ void NativeTexture::convertFromXbox(void)
 
         hasD3DFormat = getD3DFormatFromRasterType(this->rasterFormat, platformTex->paletteType, platformTex->colorOrder, depth, theD3DFormat);
 
-        if ( true )
-        {
-            // Unswizzle the mipmaps.
-            for ( uint32 n = 0; n < platformTex->mipmapCount; n++ )
-            {
-                uint32 mipWidth = platformTex->width[ n ];
-                uint32 mipHeight = platformTex->height[ n ];
-
-                uint32 texelCount = ( mipWidth * mipHeight );
-
-                uint32 dataSize = getRasterDataSize(texelCount, depth);
-                
-                // Let's try allocating a new array for the unswizzled texels.
-                void *newtexels = new uint8[ dataSize ];
-
-                void *srcTexels = platformTex->texels[ n ];
-
-                uint32 offOut = 0;
-
-                if (depth == 4)
-                {
-                    unswizzleXboxBlock(
-                        (const PixelFormat::palette4bit*)srcTexels,
-                        (PixelFormat::palette4bit*)newtexels,
-                        offOut, 0, mipWidth, mipHeight, mipWidth
-                    );
-                }
-                else if (depth == 8)
-                {
-                    unswizzleXboxBlock(
-                        (const PixelFormat::palette8bit*)srcTexels,
-                        (PixelFormat::palette8bit*)newtexels,
-                        offOut, 0, mipWidth, mipHeight, mipWidth
-                    );
-                }
-                else if (depth == 16)
-                {
-                    typedef PixelFormat::typedcolor <uint16> theColor;
-
-                    unswizzleXboxBlock(
-                        (const theColor*)srcTexels,
-                        (theColor*)newtexels,
-                        offOut, 0, mipWidth, mipHeight, mipWidth
-                    );
-                }
-                else if (depth == 24)
-                {
-                    struct colorStruct
-                    {
-                        uint8 x, y, z;
-                    };
-
-                    typedef PixelFormat::typedcolor <colorStruct> theColor;
-
-                    unswizzleXboxBlock(
-                        (const theColor*)srcTexels,
-                        (theColor*)newtexels,
-                        offOut, 0, mipWidth, mipHeight, mipWidth
-                    );
-                }
-                else if (depth == 32)
-                {
-                    typedef PixelFormat::typedcolor <uint32> theColor;
-
-                    unswizzleXboxBlock(
-                        (const theColor*)srcTexels,
-                        (theColor*)newtexels,
-                        offOut, 0, mipWidth, mipHeight, mipWidth
-                    );
-                }
-                else
-                {
-                    assert( 0 );
-                }
-
-                // Replace texels.
-                delete [] srcTexels;
-
-                platformTex->texels[ n ] = newtexels;
-            }
-        }
+        // Transform the mipmaps into a linear format.
+        platformTex->unswizzleMipmaps();
     }
 
     // Move our texel information.
@@ -738,18 +516,6 @@ void NativeTexture::convertToXbox(void)
         // Compressed rasters are what they are.
         // They do not need swizzling.
     }
-    else
-    {
-        // We are a raw raster; take care about swizzling.
-        for ( uint32 n = 0; n < mipmapCount; n++ )
-        {
-            uint32 mipWidth = platformTex->width[ n ];
-            uint32 mipHeight = platformTex->height[ n ];
-            void *srcTexels = platformTex->texels[ n ];
-
-            
-        }
-    }
 
     // Store texel data.
     xboxTex->texels = platformTex->texels;
@@ -772,6 +538,9 @@ void NativeTexture::convertToXbox(void)
 
     // Delete the old container.
     delete platformTex;
+
+    // Unlinearize the texture mipmaps, if necessary.
+    xboxTex->swizzleMipmaps();
 
     platform = PLATFORM_XBOX;
 }
