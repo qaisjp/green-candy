@@ -4,6 +4,8 @@
 
 #include "pixelformat.hxx"
 
+#include "txdread.common.hxx"
+
 namespace rw
 {
 
@@ -75,9 +77,8 @@ void NativeTexture::readD3d(std::istream &rw)
     // Attempt to read the texture.
     try
     {
-	    this->filterFlags = metaHeader.texFormat.filterMode;
-        this->uAddressing = metaHeader.texFormat.uAddressing;
-        this->vAddressing = metaHeader.texFormat.vAddressing;
+        // Read texture format.
+        metaHeader.texFormat.parse( *this );
 
         // Read the texture names.
         {
@@ -450,8 +451,12 @@ void NativeTexture::readD3d(std::istream &rw)
             platformTex->paletteSize = reqPalItemCount;
 	    }
 
-        uint32 currentMipWidth = dimInfo.width;
-        uint32 currentMipHeight = dimInfo.height;
+        mipGenLevelGenerator mipLevelGen( dimInfo.width, dimInfo.height );
+
+        if ( !mipLevelGen.isValidLevel() )
+        {
+            throw RwException( "texture " + this->name + " has invalid dimensions" );
+        }
 
         uint32 mipmapCount = 0;
 
@@ -463,19 +468,20 @@ void NativeTexture::readD3d(std::istream &rw)
 
 	    for (uint32 i = 0; i < maybeMipmapCount; i++)
         {
+            bool couldEstablishLevel = true;
+
 		    if (i > 0)
             {
-                currentMipWidth /= 2;
-                currentMipHeight /= 2;
+                couldEstablishLevel = mipLevelGen.incrementLevel();
             }
 
-            if (currentMipWidth == 0 || currentMipHeight == 0)
+            if (!couldEstablishLevel)
             {
                 break;
             }
 
-            uint32 texWidth = currentMipWidth;
-            uint32 texHeight = currentMipHeight;
+            uint32 texWidth = mipLevelGen.getLevelWidth();
+            uint32 texHeight = mipLevelGen.getLevelHeight();
 
             // Process dimensions.
             {
@@ -526,9 +532,9 @@ void NativeTexture::readD3d(std::istream &rw)
                     {
                         rw::rwInterface.PushWarning( "texture " + this->name + " has damaged mipmaps (ignoring)" );
                     }
-                }
 
-                hasDamagedMipmaps = true;
+                    hasDamagedMipmaps = true;
+                }
 
                 // Skip the damaged bytes.
                 if (texDataSize != 0)
@@ -597,6 +603,9 @@ void NativeTexture::readD3d(std::istream &rw)
         }
 
         platformTex->mipmapCount = mipmapCount;
+
+        // Fix filtering mode.
+        fixFilteringMode( *this );
 
         // Make sure we go to the end of the texture native struct.
         {
@@ -808,7 +817,7 @@ bool NativeTextureD3D::getDebugBitmap( Bitmap& bmpOut ) const
             bmpOut.draw(
                 colorPipe, cursor_x, cursor_y,
                 rawBmp.width, rawBmp.height,
-                Bitmap::SHADE_SRCALPHA, Bitmap::SHADE_ONE, Bitmap::BLEND_ADDITIVE
+                Bitmap::SHADE_ZERO, Bitmap::SHADE_ONE, Bitmap::BLEND_ADDITIVE
             );
 
             // Delete if necessary.

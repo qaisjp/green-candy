@@ -201,6 +201,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\txdread.common.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\txdread.d3d.dxt.hxx"
 				>
 			</File>

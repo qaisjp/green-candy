@@ -56,9 +56,16 @@ struct RwWarningBuffer : public rw::WarningManagerInterface
 
 static RwWarningBuffer _warningMan;
 
+inline bool _meetsDebugCriteria( const rw::NativeTexture& tex )
+{
+    return ( tex.getMipmapCount() > 1 );
+}
+
 static bool ProcessTXDArchive(
     CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, eTargetPlatform targetPlatform,
+    bool clearMipmaps,
     bool generateMipmaps, rw::eMipmapGenerationMode mipGenMode, uint32 mipGenMaxLevel, bool mipGenSafe,
+    bool improveFiltering,
     bool doCompress, float compressionQuality,
     bool outputDebug, CFileTranslator *debugRoot,
     rw::KnownVersions::eGameVersion gameVersion,
@@ -101,6 +108,17 @@ static bool ProcessTXDArchive(
             // If the texture is prepared, do whatever.
             if ( isPrepared )
             {
+                if ( tex.getMipmapCount() > 1 )
+                {
+                    __asm nop
+                }
+
+                // Clear mipmaps if requested.
+                if ( clearMipmaps )
+                {
+                    tex.clearMipmaps();
+                }
+
                 // Generate mipmaps on demand.
                 if ( generateMipmaps )
                 {
@@ -111,36 +129,62 @@ static bool ProcessTXDArchive(
                 // Output debug stuff.
                 if ( outputDebug && debugRoot != NULL )
                 {
-                    const filePath& srcPath = srcStream->GetPath();
-
-                    filePath relSrcPath;
-
-                    bool hasRelSrcPath = srcRoot->GetRelativePathFromRoot( srcPath.c_str(), true, relSrcPath );
-
-                    if ( hasRelSrcPath )
+                    // We want to debug mipmap generation, so output debug textures only using mipmaps.
+                    if ( _meetsDebugCriteria( tex ) )
                     {
-                        // Create a unique filename for this texture.
-                        std::string directoryPart;
+                        const filePath& srcPath = srcStream->GetPath();
 
-                        std::string fileNamePart = FileSystem::GetFileNameItem( relSrcPath.c_str(), false, &directoryPart, NULL );
+                        filePath relSrcPath;
 
-                        if ( fileNamePart.size() != 0 )
+                        bool hasRelSrcPath = srcRoot->GetRelativePathFromRoot( srcPath.c_str(), true, relSrcPath );
+
+                        if ( hasRelSrcPath )
                         {
-                            std::string uniqueTextureNameTGA = directoryPart + fileNamePart + "_" + tex.name + ".tga";
+                            // Create a unique filename for this texture.
+                            std::string directoryPart;
 
-                            CFile *debugOutputStream = debugRoot->Open( uniqueTextureNameTGA.c_str(), "wb" );
+                            std::string fileNamePart = FileSystem::GetFileNameItem( relSrcPath.c_str(), false, &directoryPart, NULL );
 
-                            if ( debugOutputStream )
+                            if ( fileNamePart.size() != 0 )
                             {
-                                // Write the texture to it.
-                                FileSystem::fileStreamBuf stlWrapper( debugOutputStream );
+                                std::string uniqueTextureNameTGA = directoryPart + fileNamePart + "_" + tex.name + ".tga";
 
-                                std::ostream outStream( &stlWrapper );
+                                CFile *debugOutputStream = debugRoot->Open( uniqueTextureNameTGA.c_str(), "wb" );
 
-                                tex.writeTGAStream( outStream, false );
+                                if ( debugOutputStream )
+                                {
+                                    // Create a debug texture.
+                                    rw::NativeTexture debugTex;
 
-                                // Free the stream handle.
-                                delete debugOutputStream;
+                                    debugTex.newDirect3D();
+
+                                    // Put the debug content into it.
+                                    {
+                                        rw::Bitmap debugTexContent;
+
+                                        debugTexContent.setBgColor( 1, 1, 1 );
+
+                                        bool gotDebugContent = tex.platformData->getDebugBitmap( debugTexContent );
+
+                                        if ( gotDebugContent )
+                                        {
+                                            debugTex.setImageData( debugTexContent );
+                                        }
+                                    }
+
+                                    if ( debugTex.getMipmapCount() > 0 )
+                                    {
+                                        // Write the debug texture to it.
+                                        FileSystem::fileStreamBuf stlWrapper( debugOutputStream );
+
+                                        std::ostream outStream( &stlWrapper );
+
+                                        debugTex.writeTGAStream( outStream, false );
+
+                                        // Free the stream handle.
+                                        delete debugOutputStream;
+                                    }
+                                }
                             }
                         }
                     }
@@ -161,6 +205,18 @@ static bool ProcessTXDArchive(
                             tex.platformData->compress( compressionQuality );
                         }
                     }
+                }
+
+                // If we want safe mipmaps, process them so we have only have safe ones around.
+                if ( generateMipmaps && mipGenSafe )
+                {
+                    tex.safeMipmaps();
+                }
+
+                // Improve the filtering mode if the user wants us to.
+                if ( improveFiltering )
+                {
+                    tex.improveFiltering();
                 }
 
                 // Convert it into the target platform.
@@ -236,10 +292,12 @@ static bool ProcessTXDArchive(
 struct _discFileSentry
 {
     eTargetPlatform targetPlatform;
+    bool clearMipmaps;
     bool generateMipmaps;
     rw::eMipmapGenerationMode mipGenMode;
     uint32 mipGenMaxLevel;
     bool mipGenSafe;
+    bool improveFiltering;
     bool doCompress;
     float compressionQuality;
     rw::KnownVersions::eGameVersion gameVersion;
@@ -288,8 +346,10 @@ struct _discFileSentry
                     std::string errorMessage;
 
                     bool couldProcessTXD = ProcessTXDArchive(
-                        sourceRoot, sourceStream, targetStream,
-                        this->targetPlatform, this->generateMipmaps, this->mipGenMode, this->mipGenMaxLevel, this->mipGenSafe,
+                        sourceRoot, sourceStream, targetStream, this->targetPlatform,
+                        this->clearMipmaps,
+                        this->generateMipmaps, this->mipGenMode, this->mipGenMaxLevel, this->mipGenSafe,
+                        this->improveFiltering,
                         this->doCompress, this->compressionQuality,
                         this->outputDebug, this->debugTranslator,
                         this->gameVersion,
@@ -428,6 +488,8 @@ bool ApplicationMain( void )
 
     eTargetPlatform c_targetPlatform = PLATFORM_PC;
 
+    bool c_clearMipmaps = false;
+
     bool c_generateMipmaps = false;
 
     rw::eMipmapGenerationMode c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
@@ -435,6 +497,8 @@ bool ApplicationMain( void )
     uint32 c_mipGenMaxLevel = 0;
 
     bool c_mipGenSafe = false;
+
+    bool c_improveFiltering = true;
 
     bool compressTextures = false;
 
@@ -538,6 +602,12 @@ bool ApplicationMain( void )
                 }
             }
 
+            // Mipmap clear flag.
+            if ( mainEntry->Find( "clearMipmaps" ) )
+            {
+                c_clearMipmaps = mainEntry->GetBool( "clearMipmaps" );
+            }
+
             // Mipmap Generation enable.
             if ( mainEntry->Find( "generateMipmaps" ) )
             {
@@ -584,6 +654,12 @@ bool ApplicationMain( void )
             if ( mainEntry->Find( "mipGenSafe" ) )
             {
                 c_mipGenSafe = mainEntry->GetBool( "mipGenSafe" );
+            }
+
+            // Filter mode improvement.
+            if ( mainEntry->Find( "improveFiltering" ) )
+            {
+                c_improveFiltering = mainEntry->GetBool( "improveFiltering" );
             }
 
             // Compression.
@@ -731,6 +807,9 @@ bool ApplicationMain( void )
         << "* targetPlatform: " << strTargetPlatform << std::endl;
 
     std::cout
+        << "* clearMipmaps: " << ( c_clearMipmaps ? "true" : "false" ) << std::endl;
+
+    std::cout
         << "* generateMipmaps: " << ( c_generateMipmaps ? "true" : "false" ) << std::endl;
 
     const char *mipGenModeString = "unknown";
@@ -764,6 +843,9 @@ bool ApplicationMain( void )
 
     std::cout
         << "* mipGenSafe: " << ( c_mipGenSafe ? "true" : "false" ) << std::endl;
+
+    std::cout
+        << "* improveFiltering: " << ( c_improveFiltering ? "true" : "false" ) << std::endl;
 
     std::cout
         << "* compressTextures: " << ( compressTextures ? "true" : "false" ) << std::endl;
@@ -852,10 +934,12 @@ bool ApplicationMain( void )
 
                 _discFileSentry sentry;
                 sentry.targetPlatform = c_targetPlatform;
+                sentry.clearMipmaps = c_clearMipmaps;
                 sentry.generateMipmaps = c_generateMipmaps;
                 sentry.mipGenMode = c_mipGenMode;
                 sentry.mipGenMaxLevel = c_mipGenMaxLevel;
                 sentry.mipGenSafe = c_mipGenSafe;
+                sentry.improveFiltering = c_improveFiltering;
                 sentry.doCompress = compressTextures;
                 sentry.compressionQuality = c_compressionQuality;
                 sentry.gameVersion = c_gameVersion;

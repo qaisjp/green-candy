@@ -22,14 +22,40 @@ struct Texture
 	Texture(void);
 };
 
+enum eRasterStageFilterMode
+{
+    RWFILTER_DISABLE,
+    RWFILTER_POINT,
+    RWFILTER_LINEAR,
+    RWFILTER_POINT_POINT,
+    RWFILTER_LINEAR_POINT,
+    RWFILTER_POINT_LINEAR,
+    RWFILTER_LINEAR_LINEAR,
+    RWFILTER_ANISOTROPY
+};
+enum eRasterStageAddressMode
+{
+    RWTEXADDRESS_WRAP = 1,
+    RWTEXADDRESS_MIRROR,
+    RWTEXADDRESS_CLAMP,
+    RWTEXADDRESS_BORDER
+};
+
 // I do not know why I did this a union!
 // I must have been drunk or something.
+struct NativeTexture;
+
 struct texFormatInfo
 {
+private:
     uint32 filterMode : 8;
     uint32 uAddressing : 4;
     uint32 vAddressing : 4;
     uint32 pad1 : 16;
+
+public:
+    void parse(NativeTexture& theTexture) const;
+    void set(const NativeTexture& inTex);
 };
 
 #include "renderware.txd.pixelformat.h"
@@ -218,10 +244,10 @@ struct NativeTexture
 	uint32 platform;
 	std::string name;
 	std::string maskName;
-	uint32 filterFlags;
+	eRasterStageFilterMode filterMode;
 
-    uint8 uAddressing : 4;
-    uint8 vAddressing : 4;
+    eRasterStageAddressMode uAddressing;
+    eRasterStageAddressMode vAddressing;
 
     eRasterFormat rasterFormat;
 
@@ -246,6 +272,8 @@ struct NativeTexture
 
     void getSize(uint32& width, uint32& height) const;
 
+    void improveFiltering(void);
+
     void newDirect3D(void);
 
 	void convertFromPS2(void);
@@ -269,6 +297,7 @@ struct NativeTexture
     uint32 getMipmapCount( void ) const;
     void clearMipmaps( void );
     void generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode mipGenMode = MIPMAPGEN_DEFAULT, bool safeMipmaps = false );
+    void safeMipmaps( void );
 
 	NativeTexture(void);
 	NativeTexture(const NativeTexture &orig);

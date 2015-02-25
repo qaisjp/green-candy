@@ -1,4 +1,4 @@
-TxdGen 0.8.3 by The_GTA. Beta release.
+TxdGen 0.9 by The_GTA. Beta release.
 ==================================
 
 TxdGen is the RW Texture Dictionary conversion tool. Its goal is to support
@@ -12,6 +12,10 @@ tools to the GTA community. This is for you, modders!
 Never has the conversion between TXD formats been so easy and bugfree.
 Simply put the TXD containers in one folder and the tool will generate
 the output into another folder.
+
+Fix problems that the Rockstar development team has overlooked! The parser
+comes with rich debugging output to inform you about any problems that
+lurk inside of official and community TXD files.
 
 ==================================
 HOW TO USE TXDGEN
@@ -73,7 +77,7 @@ SOURCE CODE
 The source code to this project is located on the MTA:Eir respository under
 the "ps2 export tool" directory.
 
-https://www.assembla.com/code/green-candy/subversion/nodes/571/trunk/ps2%20export%20tool
+https://www.assembla.com/code/green-candy/subversion/nodes/576/trunk/ps2%20export%20tool
 
 - February 2015
 

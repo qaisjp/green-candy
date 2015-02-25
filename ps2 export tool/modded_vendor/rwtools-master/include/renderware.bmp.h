@@ -10,7 +10,7 @@ struct Bitmap
     {
         this->width = 0;
         this->height = 0;
-        this->depth = 0;
+        this->depth = 32;
         this->rasterFormat = RASTER_8888;
         this->texels = NULL;
         this->dataSize = 0;

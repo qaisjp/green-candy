@@ -4,6 +4,8 @@
 
 #include "txdread.d3d.hxx"
 
+#include "txdread.common.hxx"
+
 namespace rw
 {
 
@@ -44,9 +46,8 @@ void NativeTexture::readXbox(std::istream &rw)
         textureMetaHeaderStructXbox metaInfo;
         rw.read((char*)&metaInfo, sizeof(metaInfo));
 
-	    this->filterFlags = metaInfo.formatInfo.filterMode;
-        this->uAddressing = metaInfo.formatInfo.uAddressing;
-        this->vAddressing = metaInfo.formatInfo.vAddressing;
+        // Read format info.
+	    metaInfo.formatInfo.parse( *this );
 
         // Read the texture names.
         {
@@ -156,8 +157,12 @@ void NativeTexture::readXbox(std::istream &rw)
         // Read all the textures.
         uint32 actualMipmapCount = 0;
 
-        uint32 currentMipWidth = metaInfo.width;
-        uint32 currentMipHeight = metaInfo.height;
+        mipGenLevelGenerator mipLevelGen( metaInfo.width, metaInfo.height );
+
+        if ( !mipLevelGen.isValidLevel() )
+        {
+            throw RwException( "texture " + this->name + " has invalid dimensions" );
+        }
 
         uint32 dxtCompression = platformTex->dxtCompression;
 
@@ -170,21 +175,27 @@ void NativeTexture::readXbox(std::istream &rw)
                 break;
             }
 
+            bool couldIncrementLevel = true;
+
 		    if (i > 0)
             {
-                currentMipWidth /= 2;
-                currentMipHeight /= 2;
+                couldIncrementLevel = mipLevelGen.incrementLevel();
             }
 
-            uint32 texWidth = currentMipWidth;
-            uint32 texHeight = currentMipHeight;
+            if ( !couldIncrementLevel )
+            {
+                break;
+            }
 
             // If any dimension is zero, ignore that mipmap.
-            if ( texWidth == 0 || texHeight == 0 )
+            if ( !mipLevelGen.isValidLevel() )
             {
                 hasZeroSizedMipmaps = true;
                 break;
             }
+
+            uint32 texWidth = mipLevelGen.getLevelWidth();
+            uint32 texHeight = mipLevelGen.getLevelHeight();
 
             // Process dimensions.
             {
@@ -291,14 +302,15 @@ void NativeTexture::readXbox(std::istream &rw)
         // Store remaining mipmap info.
         platformTex->mipmapCount = actualMipmapCount;
 
+        // Fix filtering mode.
+        fixFilteringMode( *this );
+
         // Check whether we reached the end of the texture native struct.
         {
             uint32 curTexNativeOffset = rw.tellg() - texNativeStructOff;
 
             if ( curTexNativeOffset != texNativeStructSize )
             {
-                __asm nop
-
                 // Readjust so we are at the end of it.
                 rw.seekg( texNativeStructOff + texNativeStructSize, std::ios_base::beg );
             }

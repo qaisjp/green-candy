@@ -57,10 +57,7 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
             textureMetaHeaderStructXbox metaInfo;
 
             // Write addressing information.
-            metaInfo.formatInfo.filterMode = this->filterFlags;
-            metaInfo.formatInfo.uAddressing = this->uAddressing;
-            metaInfo.formatInfo.vAddressing = this->vAddressing;
-            metaInfo.formatInfo.pad1 = 0;
+            metaInfo.formatInfo.set( *this );
 
             // Write texture names.
             // These need to be written securely.
