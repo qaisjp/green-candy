@@ -58,10 +58,7 @@ uint32 NativeTexture::writeD3d(std::ostream &rw)
 
         textureMetaHeaderStructGeneric metaHeader;
         metaHeader.platformDescriptor = this->platform;
-        metaHeader.texFormat.filterMode = this->filterFlags;
-        metaHeader.texFormat.uAddressing = this->uAddressing;
-        metaHeader.texFormat.vAddressing = this->vAddressing;
-        metaHeader.texFormat.pad1 = 0;
+        metaHeader.texFormat.set( *this );
 
         // Correctly write the name strings (for safety).
         // Even though we can read those name fields with zero-termination safety,

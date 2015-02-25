@@ -255,6 +255,8 @@ Bitmap NativeTexture::getBitmap(void) const
             bool hasAllocatedNewPixelData = false;
             void *pixelData = NULL;
 
+            uint32 texDataSize;
+
             {
                 rawBitmapFetchResult rawBitmap;
 
@@ -264,6 +266,7 @@ Bitmap NativeTexture::getBitmap(void) const
                 {
                     width = rawBitmap.width;
                     height = rawBitmap.height;
+                    texDataSize = rawBitmap.dataSize;
                     depth = rawBitmap.depth;
                     theFormat = rawBitmap.rasterFormat;
                     theOrder = rawBitmap.colorOrder;
@@ -276,7 +279,7 @@ Bitmap NativeTexture::getBitmap(void) const
             {
                 // Set the data into the bitmap.
                 resultBitmap.setImageData(
-                    pixelData, theFormat, theOrder, depth, width, height
+                    pixelData, theFormat, theOrder, depth, width, height, texDataSize
                 );
 
                 if ( hasAllocatedNewPixelData )
@@ -376,6 +379,29 @@ void NativeTexture::getSize(uint32& width, uint32& height) const
 
     width = platformTex->getWidth();
     height = platformTex->getHeight();
+}
+
+void NativeTexture::improveFiltering(void)
+{
+    // Handle stuff depending on our current settings.
+    eRasterStageFilterMode currentFilterMode = this->filterMode;
+
+    eRasterStageFilterMode newFilterMode = currentFilterMode;
+
+    if ( currentFilterMode == RWFILTER_POINT )
+    {
+        newFilterMode = RWFILTER_LINEAR;
+    }
+    else if ( currentFilterMode == RWFILTER_POINT_POINT )
+    {
+        newFilterMode = RWFILTER_POINT_LINEAR;
+    }
+
+    // Update our texture fields.
+    if ( currentFilterMode != newFilterMode )
+    {
+        this->filterMode = newFilterMode;
+    }
 }
 
 void NativeTexture::newDirect3D(void)
@@ -1297,7 +1323,7 @@ void NativeTexture::writeTGAStream(std::ostream& tga, bool optimized)
 }
 
 NativeTexture::NativeTexture(void)
-: platform(0), name(""), maskName(""), filterFlags(0), uAddressing(1), vAddressing(1), rasterFormat(rw::RASTER_DEFAULT)
+: platform(0), name(""), maskName(""), filterMode(rw::RWFILTER_DISABLE), uAddressing(rw::RWTEXADDRESS_WRAP), vAddressing(rw::RWTEXADDRESS_WRAP), rasterFormat(rw::RASTER_DEFAULT)
 {
     this->platformData = NULL;
 }
@@ -1306,7 +1332,7 @@ NativeTexture::NativeTexture(const NativeTexture &orig)
 : platform(orig.platform),
   name(orig.name),
   maskName(orig.maskName),
-  filterFlags(orig.filterFlags),
+  filterMode(orig.filterMode),
   uAddressing(orig.uAddressing),
   vAddressing(orig.vAddressing),
   rasterFormat(orig.rasterFormat)
@@ -1328,7 +1354,7 @@ NativeTexture &NativeTexture::operator=(const NativeTexture &that)
 		platform = that.platform;
 		name = that.name;
 		maskName = that.maskName;
-		filterFlags = that.filterFlags;
+		filterMode = that.filterMode;
         uAddressing = that.uAddressing;
         vAddressing = that.vAddressing;
 		rasterFormat = that.rasterFormat;
@@ -1353,6 +1379,90 @@ NativeTexture::~NativeTexture(void)
 
         this->platformData = NULL;
     }
+}
+
+inline bool isValidFilterMode( uint32 binaryFilterMode )
+{
+    if ( binaryFilterMode == RWFILTER_POINT ||
+         binaryFilterMode == RWFILTER_LINEAR ||
+         binaryFilterMode == RWFILTER_POINT_POINT ||
+         binaryFilterMode == RWFILTER_LINEAR_POINT ||
+         binaryFilterMode == RWFILTER_POINT_LINEAR ||
+         binaryFilterMode == RWFILTER_LINEAR_LINEAR ||
+         binaryFilterMode == RWFILTER_ANISOTROPY )
+    {
+        return true;
+    }
+
+    return false;
+}
+
+inline bool isValidTexAddressingMode( uint32 binary_addressing )
+{
+    if ( binary_addressing == RWTEXADDRESS_WRAP ||
+         binary_addressing == RWTEXADDRESS_MIRROR ||
+         binary_addressing == RWTEXADDRESS_CLAMP ||
+         binary_addressing == RWTEXADDRESS_BORDER )
+    {
+        return true;
+    }
+
+    return false;
+}
+
+void texFormatInfo::parse(NativeTexture& outTex) const
+{
+    eRasterStageFilterMode rwFilterMode = RWFILTER_LINEAR;
+
+    eRasterStageAddressMode rw_uAddressing = RWTEXADDRESS_WRAP;
+    eRasterStageAddressMode rw_vAddressing = RWTEXADDRESS_WRAP;
+
+    // Read our fields, which are from a binary stream.
+    uint32 binaryFilterMode = this->filterMode;
+
+    uint32 binary_uAddressing = this->uAddressing;
+    uint32 binary_vAddressing = this->vAddressing;
+
+    // Make sure they are valid.
+    if ( isValidFilterMode( binaryFilterMode ) )
+    {
+        rwFilterMode = (eRasterStageFilterMode)binaryFilterMode;
+    }
+    else
+    {
+        rw::rwInterface.PushWarning( "texture " + outTex.name + " has an invalid filter mode; defaulting to linear" );
+    }
+
+    if ( isValidTexAddressingMode( binary_uAddressing ) )
+    {
+        rw_uAddressing = (eRasterStageAddressMode)binary_uAddressing;
+    }
+    else
+    {
+        rw::rwInterface.PushWarning( "texture " + outTex.name + " has an invalid uAddressing mode; defaulting to wrap" );
+    }
+
+    if ( isValidTexAddressingMode( binary_vAddressing ) )
+    {
+        rw_vAddressing = (eRasterStageAddressMode)binary_vAddressing;
+    }
+    else
+    {
+        rw::rwInterface.PushWarning( "texture " + outTex.name + " has an invalid vAddressing mode; defaulting to wrap" );
+    }
+
+    // Put the fields.
+    outTex.filterMode = rwFilterMode;
+    outTex.uAddressing = rw_uAddressing;
+    outTex.vAddressing = rw_vAddressing;
+}
+
+void texFormatInfo::set(const NativeTexture& inTex)
+{
+    this->filterMode = (uint32)inTex.filterMode;
+    this->uAddressing = (uint32)inTex.uAddressing;
+    this->vAddressing = (uint32)inTex.vAddressing;
+    this->pad1 = 0;
 }
 
 }

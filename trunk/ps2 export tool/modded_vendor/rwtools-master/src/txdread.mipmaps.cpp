@@ -9,6 +9,8 @@
 
 #include "txdread.palette.hxx"
 
+#include "txdread.common.hxx"
+
 namespace rw
 {
 
@@ -53,6 +55,22 @@ void NativeTexture::clearMipmaps( void )
         platformTex->width.resize( 1 );
         platformTex->height.resize( 1 );
         platformTex->dataSizes.resize( 1 );
+
+        // Adjust the filtering.
+        {
+            eRasterStageFilterMode currentFilterMode = this->filterMode;
+
+            if ( currentFilterMode == RWFILTER_POINT_POINT ||
+                 currentFilterMode == RWFILTER_POINT_LINEAR )
+            {
+                this->filterMode = RWFILTER_POINT;
+            }
+            else if ( currentFilterMode == RWFILTER_LINEAR_POINT ||
+                      currentFilterMode == RWFILTER_LINEAR_LINEAR )
+            {
+                this->filterMode = RWFILTER_LINEAR;
+            }
+        }
     }
 
     // Now we can have automatically generated mipmaps!
@@ -74,7 +92,7 @@ inline uint32 pow2( uint32 val )
 
 inline void performMipmapFiltering(
     eMipmapGenerationMode mipGenMode,
-    Bitmap& srcBitmap, uint32 srcPosX, uint32 srcPosY, uint32 mipProcessDimm,
+    Bitmap& srcBitmap, uint32 srcPosX, uint32 srcPosY, uint32 mipProcessWidth, uint32 mipProcessHeight,
     uint8& redOut, uint8& greenOut, uint8& blueOut, uint8& alphaOut
 )
 {
@@ -93,9 +111,9 @@ inline void performMipmapFiltering(
         // Loop through the texels and calculate a blur.
         uint32 addCount = 0;
 
-        for ( uint32 y = 0; y < mipProcessDimm; y++ )
+        for ( uint32 y = 0; y < mipProcessHeight; y++ )
         {
-            for ( uint32 x = 0; x < mipProcessDimm; x++ )
+            for ( uint32 x = 0; x < mipProcessWidth; x++ )
             {
                 uint8 r, g, b, a;
 
@@ -156,7 +174,7 @@ void NativeTexture::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMod
 
     NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
 
-    // We cannot do anything if we do not have a first level.
+    // We cannot do anything if we do not have a first level (base texture).
     if ( platformTex->mipmapCount == 0 )
         return;
 
@@ -184,179 +202,215 @@ void NativeTexture::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMod
     eRasterFormat tmpRasterFormat = textureBitmap.getFormat();
     eColorOrdering tmpColorOrder = textureBitmap.getColorOrder();
 
-    double doubleFirstLevelWidth = (double)firstLevelWidth;
-    double doubleFirstLevelHeight = (double)firstLevelHeight;
+    mipGenLevelGenerator mipLevelGen( firstLevelWidth, firstLevelHeight );
 
-    uint32 curMipIndex = oldMipmapCount;
+    if ( !mipLevelGen.isValidLevel() )
+    {
+        throw RwException( "invalid texture dimensions in mipmap generation (" + this->name + ")" );
+    }
+
+    uint32 curMipProcessWidth = 1;
+    uint32 curMipProcessHeight = 1;
+
+    uint32 curMipIndex = 0;
 
     uint32 actualNewMipmapCount = oldMipmapCount;
 
     while ( true )
     {
-        // Check whether the current gen index does not overshoot the max gen count.
-        if ( curMipIndex >= maxMipmapCount )
+        bool canProcess = false;
+
+        if ( !canProcess )
         {
-            break;
+            if ( curMipIndex >= oldMipmapCount )
+            {
+                canProcess = true;
+            }
         }
 
-        // Get the processing dimensions.
-        uint32 mipProcessDimm = pow2( curMipIndex );
-        double doubleMipProcessDimm = (double)mipProcessDimm;
-
-        double doubleMipWidth = doubleFirstLevelWidth / doubleMipProcessDimm;
-        double doubleMipHeight = doubleFirstLevelHeight / doubleMipProcessDimm;
-
-        // If we want safe mipmaps, then only generate mipmaps until we reach width or height == 4, in case we use compression.
-        if ( safeMipmaps && dxtType != 0 )
+        if ( canProcess )
         {
-            if ( doubleMipWidth < 4.0 || doubleMipHeight < 4.0 )
+            // Check whether the current gen index does not overshoot the max gen count.
+            if ( curMipIndex >= maxMipmapCount )
             {
                 break;
             }
-        }
 
-        // Terminate if any dimension is smaller than one.
-        if ( doubleMipWidth < 1.0 || doubleMipHeight < 1.0 )
-        {
-            break;
-        }
+            // Get the processing dimensions.
+            uint32 mipWidth = mipLevelGen.getLevelWidth();
+            uint32 mipHeight = mipLevelGen.getLevelHeight();
 
-        uint32 mipWidth = (uint32)ceil( doubleMipWidth );
-        uint32 mipHeight = (uint32)ceil( doubleMipHeight );
-
-        // Allocate the new bitmap.
-        uint32 texItemCount = ( mipWidth * mipHeight );
-
-        uint32 texDataSize = getRasterDataSize( texItemCount, firstLevelDepth );
-
-        void *newtexels = new uint8[ texDataSize ];
-
-        // Process the pixels.
-        for ( uint32 mip_y = 0; mip_y < mipHeight; mip_y++ )
-        {
-            for ( uint32 mip_x = 0; mip_x < mipWidth; mip_x++ )
+            // If we want safe mipmaps, then only generate mipmaps until we reach width or height == 4, in case we use compression.
+            if ( safeMipmaps && dxtType != 0 )
             {
-                // Get the color for this pixel.
-                uint8 r, g, b, a;
-
-                r = 0;
-                g = 0;
-                b = 0;
-                a = 0;
-
-                // Perform a filter operation on the currently selected texture block.
-                performMipmapFiltering(
-                    mipGenMode,
-                    textureBitmap,
-                    mip_x * mipProcessDimm, mip_y * mipProcessDimm, mipProcessDimm,
-                    r, g, b, a
-                );
-
-                // Put the color.
-                uint32 colorIndex = PixelFormat::coord2index( mip_x, mip_y, mipWidth );
-
-                puttexelcolor(
-                    newtexels, colorIndex, tmpRasterFormat, tmpColorOrder, firstLevelDepth,
-                    r, g, b, a
-                );
-            }
-        }
-
-        // Pack the pixels into the required format.
-        // That means compress if the texture is compressed and palettize if the texture is palettized.
-        void *actualTexelArray = NULL;
-        uint32 actualDataSize = 0;
-
-        // Compress if required.
-        if ( dxtType != 0 )
-        {
-            compressTexelsUsingDXT(
-                dxtType, newtexels, mipWidth, mipHeight,
-                tmpRasterFormat, NULL, PALETTE_NONE, 0, tmpColorOrder, firstLevelDepth,
-                actualTexelArray, actualDataSize
-            );
-        }
-        else
-        {
-            // Palettize if required.
-            ePaletteType paletteType = platformTex->paletteType;
-
-            if ( paletteType != PALETTE_NONE )
-            {
-                const void *paletteData = platformTex->palette;
-                uint32 paletteSize = platformTex->paletteSize;
-
-                // Do some complex remapping.
-                // Since libimagequant does not support just remapping, we need to map it with the native algorithm.
-                palettizer remapper;
-
-                // Create an array with all the palette colors.
-                palettizer::texelContainer_t paletteContainer;
-
-                paletteContainer.resize( paletteSize );
-
-                for ( uint32 n = 0; n < paletteSize; n++ )
+                if ( mipWidth < 4.0 || mipHeight < 4.0 )
                 {
+                    break;
+                }
+            }
+
+            // Allocate the new bitmap.
+            uint32 texItemCount = ( mipWidth * mipHeight );
+
+            uint32 texDataSize = getRasterDataSize( texItemCount, firstLevelDepth );
+
+            void *newtexels = new uint8[ texDataSize ];
+
+            // Process the pixels.
+            for ( uint32 mip_y = 0; mip_y < mipHeight; mip_y++ )
+            {
+                for ( uint32 mip_x = 0; mip_x < mipWidth; mip_x++ )
+                {
+                    // Get the color for this pixel.
                     uint8 r, g, b, a;
 
-                    bool hasColor = browsetexelcolor(
-                        paletteData, PALETTE_NONE, NULL, 0, n, srcRasterFormat, srcColorOrder, srcItemDepth,
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                    a = 0;
+
+                    // Perform a filter operation on the currently selected texture block.
+                    uint32 mipProcessWidth = curMipProcessWidth;
+                    uint32 mipProcessHeight = curMipProcessHeight;
+
+                    performMipmapFiltering(
+                        mipGenMode,
+                        textureBitmap,
+                        mip_x * mipProcessWidth, mip_y * mipProcessHeight,
+                        mipProcessWidth, mipProcessHeight,
                         r, g, b, a
                     );
 
-                    if ( !hasColor )
-                    {
-                        r = 0;
-                        g = 0;
-                        b = 0;
-                        a = 0;
-                    }
+                    // Put the color.
+                    uint32 colorIndex = PixelFormat::coord2index( mip_x, mip_y, mipWidth );
 
-                    palettizer::texel_t inTexel;
-                    inTexel.red = r;
-                    inTexel.green = g;
-                    inTexel.blue = b;
-                    inTexel.alpha = a;
-
-                    paletteContainer[ n ] = inTexel;
+                    puttexelcolor(
+                        newtexels, colorIndex, tmpRasterFormat, tmpColorOrder, firstLevelDepth,
+                        r, g, b, a
+                    );
                 }
+            }
 
-                // Put the palette texels into the remapper.
-                remapper.texelElimData = paletteContainer;
+            // Pack the pixels into the required format.
+            // That means compress if the texture is compressed and palettize if the texture is palettized.
+            void *actualTexelArray = NULL;
+            uint32 actualDataSize = 0;
 
-                // Do the remap.
-                nativePaletteRemap(
-                    remapper, paletteType, srcItemDepth,
-                    newtexels, texItemCount, PALETTE_NONE, NULL, 0,
-                    srcRasterFormat, srcColorOrder, srcItemDepth,
-                    actualTexelArray, actualDataSize
+            // Compress if required.
+            uint32 realMipWidth = mipWidth;
+            uint32 realMipHeight = mipHeight;
+
+            if ( dxtType != 0 )
+            {
+                compressTexelsUsingDXT(
+                    dxtType, newtexels, mipWidth, mipHeight,
+                    tmpRasterFormat, NULL, PALETTE_NONE, 0, tmpColorOrder, firstLevelDepth,
+                    actualTexelArray, actualDataSize,
+                    realMipWidth, realMipHeight
                 );
             }
             else
             {
-                // Do a raw copy.
-                actualTexelArray = newtexels;
-                actualDataSize = texDataSize;
+                // Palettize if required.
+                ePaletteType paletteType = platformTex->paletteType;
+
+                if ( paletteType != PALETTE_NONE )
+                {
+                    const void *paletteData = platformTex->palette;
+                    uint32 paletteSize = platformTex->paletteSize;
+
+                    // Do some complex remapping.
+                    // Since libimagequant does not support just remapping, we need to map it with the native algorithm.
+                    palettizer remapper;
+
+                    // Create an array with all the palette colors.
+                    palettizer::texelContainer_t paletteContainer;
+
+                    paletteContainer.resize( paletteSize );
+
+                    for ( uint32 n = 0; n < paletteSize; n++ )
+                    {
+                        uint8 r, g, b, a;
+
+                        bool hasColor = browsetexelcolor(
+                            paletteData, PALETTE_NONE, NULL, 0, n, srcRasterFormat, srcColorOrder, srcItemDepth,
+                            r, g, b, a
+                        );
+
+                        if ( !hasColor )
+                        {
+                            r = 0;
+                            g = 0;
+                            b = 0;
+                            a = 0;
+                        }
+
+                        palettizer::texel_t inTexel;
+                        inTexel.red = r;
+                        inTexel.green = g;
+                        inTexel.blue = b;
+                        inTexel.alpha = a;
+
+                        paletteContainer[ n ] = inTexel;
+                    }
+
+                    // Put the palette texels into the remapper.
+                    remapper.texelElimData = paletteContainer;
+
+                    // Do the remap.
+                    nativePaletteRemap(
+                        remapper, paletteType, srcItemDepth,
+                        newtexels, texItemCount, PALETTE_NONE, NULL, 0,
+                        srcRasterFormat, srcColorOrder, srcItemDepth,
+                        actualTexelArray, actualDataSize
+                    );
+                }
+                else
+                {
+                    // Do a raw copy.
+                    actualTexelArray = newtexels;
+                    actualDataSize = texDataSize;
+                }
             }
+
+            // Delete old or temporary texels.
+            if ( actualTexelArray != newtexels )
+            {
+                delete [] newtexels;
+            }
+
+            // Store the texels.
+            ensurePutIntoArray( actualTexelArray, platformTex->texels, curMipIndex );
+            ensurePutIntoArray( actualDataSize, platformTex->dataSizes, curMipIndex );
+            ensurePutIntoArray( realMipWidth, platformTex->width, curMipIndex );
+            ensurePutIntoArray( realMipHeight, platformTex->height, curMipIndex );
+
+            // We have a new mipmap.
+            actualNewMipmapCount++;
         }
 
-        // Delete old or temporary texels.
-        if ( actualTexelArray != newtexels )
-        {
-            delete [] newtexels;
-        }
-
-        // Store the texels.
-        ensurePutIntoArray( actualTexelArray, platformTex->texels, curMipIndex );
-        ensurePutIntoArray( actualDataSize, platformTex->dataSizes, curMipIndex );
-        ensurePutIntoArray( mipWidth, platformTex->width, curMipIndex );
-        ensurePutIntoArray( mipHeight, platformTex->height, curMipIndex );
-
-        // Increment the mip index.
+        // Increment mip index.
         curMipIndex++;
 
-        // We have a new mipmap.
-        actualNewMipmapCount++;
+        // Process parameters.
+        bool shouldContinue = mipLevelGen.incrementLevel();
+
+        if ( shouldContinue )
+        {
+            if ( mipLevelGen.didIncrementWidth() )
+            {
+                curMipProcessWidth *= 2;
+            }
+
+            if ( mipLevelGen.didIncrementHeight() )
+            {
+                curMipProcessHeight *= 2;
+            }
+        }
+        else
+        {
+            break;
+        }
     }
 
     if ( oldMipmapCount != actualNewMipmapCount )
@@ -379,6 +433,112 @@ void NativeTexture::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMod
     if ( actualNewMipmapCount > 1 )
     {
         platformTex->autoMipmaps = false;
+    }
+
+    // Adjust filtering mode.
+    {
+        eRasterStageFilterMode currentFilterMode = this->filterMode;
+
+        if ( actualNewMipmapCount > 1 )
+        {
+            if ( currentFilterMode == RWFILTER_POINT )
+            {
+                this->filterMode = RWFILTER_POINT_POINT;
+            }
+            else if ( currentFilterMode == RWFILTER_LINEAR )
+            {
+                this->filterMode = RWFILTER_LINEAR_LINEAR;
+            }
+        }
+        else
+        {
+            if ( currentFilterMode == RWFILTER_POINT_POINT ||
+                 currentFilterMode == RWFILTER_POINT_LINEAR )
+            {
+                this->filterMode = RWFILTER_POINT;
+            }
+            else if ( currentFilterMode == RWFILTER_LINEAR_POINT ||
+                      currentFilterMode == RWFILTER_LINEAR_LINEAR )
+            {
+                this->filterMode = RWFILTER_LINEAR;
+            }
+        }
+    }
+}
+
+void NativeTexture::safeMipmaps( void )
+{
+    // Trims off mipmaps that easily cause misinterpretations in engines.
+    // Only works for Direct3D textures (for now).
+    if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
+        return;
+
+    NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+
+    // Process the mipmaps based on their dimensions.
+    // If the mip dimensions do not match what they should be, remove the mipmap.
+    uint32 mipmapCount = platformTex->mipmapCount;
+
+    mipGenLevelGenerator mipLevelGen( platformTex->width[ 0 ], platformTex->height[ 0 ] );
+
+    bool shouldTrimOff = false;
+
+    uint32 newMipmapCount = mipmapCount;
+    bool hasNewMipmapCount = false;
+
+    for ( uint32 n = 0; n < mipmapCount; n++ )
+    {
+        if ( shouldTrimOff == false )
+        {
+            // Get properties of what the current texture should have.
+            uint32 currentRequiredLevelWidth = mipLevelGen.getLevelWidth();
+            uint32 currentRequiredLevelHeight = mipLevelGen.getLevelHeight();
+
+            uint32 mipWidth = platformTex->width[ n ];
+            uint32 mipHeight = platformTex->height[ n ];
+
+            if ( currentRequiredLevelWidth != mipWidth || currentRequiredLevelHeight != mipHeight )
+            {
+                shouldTrimOff = true;
+            }
+        }
+
+        if ( shouldTrimOff == true )
+        {
+            // Set the new mipmap count.
+            if ( hasNewMipmapCount == false )
+            {
+                newMipmapCount = n;
+
+                hasNewMipmapCount = true;
+            }
+
+            // Remove this mipmap.
+            delete [] platformTex->texels[ n ];
+        }
+
+        // Advance the properties for the next mipmap layer.
+        if ( shouldTrimOff == false )
+        {
+            bool couldIncrementLayer = mipLevelGen.incrementLevel();
+
+            if ( !couldIncrementLayer )
+            {
+                shouldTrimOff = true;
+            }
+        }
+    }
+
+    // Update texture properties.
+    if ( newMipmapCount != mipmapCount )
+    {
+        platformTex->mipmapCount = newMipmapCount;
+
+        // Resize the data arrays.
+        platformTex->width.resize( newMipmapCount );
+        platformTex->height.resize( newMipmapCount );
+        platformTex->texels.resize( newMipmapCount );
+        platformTex->dataSizes.resize( newMipmapCount );
     }
 }
 

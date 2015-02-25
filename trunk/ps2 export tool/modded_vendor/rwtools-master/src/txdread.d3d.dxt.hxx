@@ -371,7 +371,8 @@ inline bool decompressDXTBlock(
 inline void compressTexelsUsingDXT(
     uint32 dxtType, const void *texelSource, uint32 mipWidth, uint32 mipHeight,
     eRasterFormat rasterFormat, const void *paletteData, ePaletteType paletteType, uint32 maxpalette, eColorOrdering colorOrder, uint32 itemDepth,
-    void*& texelsOut, uint32& dataSizeOut
+    void*& texelsOut, uint32& dataSizeOut,
+    uint32& realWidthOut, uint32& realHeightOut
 )
 {
     // Make sure the texture dimensions are aligned by 4.
@@ -491,6 +492,9 @@ inline void compressTexelsUsingDXT(
     // Give the new texels to the runtime, along with the data size.
     texelsOut = dxtArray;
     dataSizeOut = dxtDataSize;
+
+    realWidthOut = alignedMipWidth;
+    realHeightOut = alignedMipHeight;
 }
 
 }

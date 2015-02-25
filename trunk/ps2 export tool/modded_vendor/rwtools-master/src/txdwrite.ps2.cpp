@@ -625,10 +625,7 @@ uint32 NativeTexture::writePs2(std::ostream& rw)
         bytesWritten += writeUInt32(PLATFORM_PS2FOURCC, rw);
 
         texFormatInfo formatInfo;
-        formatInfo.filterMode = this->filterFlags;
-        formatInfo.uAddressing = this->uAddressing;
-        formatInfo.vAddressing = this->vAddressing;
-        formatInfo.pad1 = 0;
+        formatInfo.set( *this );
 
         rw.write((char*)&formatInfo, sizeof(formatInfo));
 

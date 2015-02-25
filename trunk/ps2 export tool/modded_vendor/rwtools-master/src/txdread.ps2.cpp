@@ -14,6 +14,8 @@
 
 #include "txdread.ps2gsman.hxx"
 
+#include "txdread.common.hxx"
+
 namespace rw
 {
 
@@ -284,9 +286,8 @@ void NativeTexture::readPs2(std::istream &rw)
         texFormatInfo formatInfo;
         rw.read((char*)&formatInfo, sizeof(formatInfo));
 
-        this->filterFlags = formatInfo.filterMode;
-        this->uAddressing = formatInfo.uAddressing;
-        this->vAddressing = formatInfo.vAddressing;
+        // Read texture format.
+        formatInfo.parse( *this );
     	
         // Read the name chunk section.
         {
@@ -456,9 +457,13 @@ void NativeTexture::readPs2(std::istream &rw)
 	    uint32 i = 0;
 
         long remainingImageData = dataSize;
-        
-        uint32 currentMipWidth = textureMeta.width;
-        uint32 currentMipHeight = textureMeta.height;
+
+        mipGenLevelGenerator mipLevelGen( textureMeta.width, textureMeta.height );
+
+        if ( !mipLevelGen.isValidLevel() )
+        {
+            throw RwException( "texture " + this->name + " has invalid dimensions" );
+        }
 
 	    while (rw.tellg() < end)
         {
@@ -474,10 +479,16 @@ void NativeTexture::readPs2(std::istream &rw)
             }
 
 	        // half dimensions if we have mipmaps
+            bool couldEstablishMipmap = true;
+
             if (i > 0)
             {
-                currentMipWidth /= 2;
-                currentMipHeight /= 2;
+                couldEstablishMipmap = mipLevelGen.incrementLevel();
+            }
+
+            if ( !couldEstablishMipmap )
+            {
+                break;
             }
 
             // Create a new mipmap.
@@ -485,8 +496,8 @@ void NativeTexture::readPs2(std::istream &rw)
 
             NativeTexturePS2::GSMipmap& newMipmap = platformTex->mipmaps[i];
 
-            newMipmap.width = currentMipWidth;
-            newMipmap.height = currentMipHeight;
+            newMipmap.width = mipLevelGen.getLevelWidth();
+            newMipmap.height = mipLevelGen.getLevelHeight();
 
             // Calculate the encoded dimensions.
             {
@@ -733,6 +744,9 @@ void NativeTexture::readPs2(std::istream &rw)
                 rw::rwInterface.PushWarning( "texture " + this->name + " has invalid CLUT transmission offset" );
             }
         }
+
+        // Fix filtering mode.
+        fixFilteringMode( *this );
     }
     catch( ... )
     {

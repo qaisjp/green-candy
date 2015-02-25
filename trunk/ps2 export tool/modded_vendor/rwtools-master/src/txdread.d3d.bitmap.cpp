@@ -209,6 +209,7 @@ bool NativeTextureD3D::getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitm
         if ( couldFetchBitmap )
         {
             bitmapOut.texelData = texelsOut;
+            bitmapOut.dataSize = dataSizeOut;
             bitmapOut.width = widthOut;
             bitmapOut.height = heightOut;
             bitmapOut.isNewlyAllocated = isNewlyAllocated;

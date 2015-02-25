@@ -215,14 +215,27 @@ void NativeTextureD3D::compressDxt(uint32 dxtType)
         size_t dxtDataSize = 0;
 
         // Create the new DXT array.
+        uint32 realMipWidth, realMipHeight;
+
         compressTexelsUsingDXT(
             dxtType, texelSource, mipWidth, mipHeight,
             rasterFormat, paletteData, paletteType, maxpalette, colorOrder, itemDepth,
-            dxtArray, dxtDataSize
+            dxtArray, dxtDataSize,
+            realMipWidth, realMipHeight
         );
 
         // Delete the raw texels.
         delete [] texelSource;
+
+        if ( mipWidth != realMipWidth )
+        {
+            this->width[ n ] = realMipWidth;
+        }
+
+        if ( mipHeight != realMipHeight )
+        {
+            this->height[ n ] = realMipHeight;
+        }
 
         // Put in the new DXTn texels.
         this->texels[ n ] = dxtArray;
