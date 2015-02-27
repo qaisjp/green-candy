@@ -284,8 +284,12 @@ inline void performXBOXSwizzle(
 
         uint32 texelCount = ( mipWidth * mipHeight );
 
+        swizzler.SetV( 0 );
+
         for ( uint32 y = 0; y < mipHeight; y++, swizzler.IncV() )
         {
+            swizzler.SetU( 0 );
+
             for ( uint32 x = 0; x < mipWidth; x++, swizzler.IncU() )
             {
                 SWIZNUM swizzleIndex = swizzler.Get2D();
