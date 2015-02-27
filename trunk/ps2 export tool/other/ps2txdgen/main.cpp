@@ -108,11 +108,6 @@ static bool ProcessTXDArchive(
             // If the texture is prepared, do whatever.
             if ( isPrepared )
             {
-                if ( tex.getMipmapCount() > 1 )
-                {
-                    __asm nop
-                }
-
                 // Clear mipmaps if requested.
                 if ( clearMipmaps )
                 {

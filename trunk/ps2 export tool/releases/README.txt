@@ -77,7 +77,7 @@ SOURCE CODE
 The source code to this project is located on the MTA:Eir respository under
 the "ps2 export tool" directory.
 
-https://www.assembla.com/code/green-candy/subversion/nodes/576/trunk/ps2%20export%20tool
+https://www.assembla.com/code/green-candy/subversion/nodes/577/trunk/ps2%20export%20tool
 
 - February 2015
 

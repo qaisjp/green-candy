@@ -1,3 +1,12 @@
+r577
+- added a fix for the black-roads bug in San Andreas textures to TxdGen - added the "improveFiltering" flag to TxdGen so textures can be made to use linear filtering - fixed some bugs in the DXT decompression logic - fixed some bugs in the ...
+---------------------
+r576
+- fixed a bug in PAL4 texture reading and writing in Direct3D
+---------------------
+r575
+- removed deprecated files from rwtools - fixed an initialization problem in HeaderInfo that sometimes corrupted stream section version information and caused TXD archives to be rejected - fixed the autoMipmap flag management (it now remove...
+---------------------
 r574
 - fixed a crash that happened when building IMG archives - added support for IMG_VERSION_1 IMG archive building - added a new version parameter to imgimport.exe, so you can now create IMG_VERSION_1 archives - fixed a bug in TxdGen that caus...
 ---------------------

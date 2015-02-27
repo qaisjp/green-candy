@@ -101,7 +101,7 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
                 if ( canOutputDebug )
                 {
-                    if ( ( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) && tex.platformData->isCompressed() == false )
+                    //if ( /*( tex.platformData->getWidth() != tex.platformData->getHeight() || tex.platformData->getDepth() != 8 ) &&*/ tex.platformData->isCompressed() == false )
                     {
                         // Create a path to store the textures to.
                         std::string textureSaveName( justFileName );
@@ -120,13 +120,6 @@ static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile
 
                         isSpecialTXD = true;
                     }
-                }
-
-                if ( tex.platformData->getPaletteType() != rw::PALETTE_NONE )
-                {
-                    __asm nop
-
-                    DbgHeap_Validate();
                 }
 
                 tex.convertToPS2();
@@ -537,8 +530,9 @@ int main( int argc, char *argv[] )
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gtasa_xbox\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/xbox_swizzle_samples/" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTAIII\\" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gta3_xbox\\" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/xbox_swizzle_samples/" );
 
         if ( discHandle )
         {
