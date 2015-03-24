@@ -1,15 +1,20 @@
+#include "txdread.d3d.genmip.hxx"
+
 namespace rw
 {
 
 struct NativeTextureXBOX : public PlatformTexture
 {
-    NativeTextureXBOX( void )
+    Interface *engineInterface;
+
+    inline NativeTextureXBOX( Interface *engineInterface )
     {
         // Initialize the texture object.
+        this->engineInterface = engineInterface;
         this->palette = NULL;
         this->paletteSize = 0;
         this->paletteType = PALETTE_NONE;
-        this->mipmapCount = 0;
+        this->rasterFormat = RASTER_DEFAULT;
         this->depth = 0;
         this->dxtCompression = 0;
         this->hasAlpha = false;
@@ -18,31 +23,77 @@ struct NativeTextureXBOX : public PlatformTexture
         this->autoMipmaps = false;
     }
 
-    void Delete( void )
+    inline NativeTextureXBOX( const NativeTextureXBOX& right )
+    {
+        Interface *engineInterface = right.engineInterface;
+
+        this->engineInterface = right.engineInterface;
+
+        // Copy palette information.
+        {
+	        if (right.palette)
+            {
+                uint32 palRasterDepth = Bitmap::getRasterFormatDepth(right.rasterFormat);
+
+                size_t wholeDataSize = getRasterDataSize( right.paletteSize, palRasterDepth );
+
+		        this->palette = engineInterface->PixelAllocate( wholeDataSize );
+
+		        memcpy(this->palette, right.palette, wholeDataSize);
+	        }
+            else
+            {
+		        this->palette = NULL;
+	        }
+
+            this->paletteSize = right.paletteSize;
+            this->paletteType = right.paletteType;
+        }
+
+        // Copy image texel information.
+        {
+            copyMipmapLayers( engineInterface, right.mipmaps, this->mipmaps );
+
+            // Copy over attributes.
+            this->rasterFormat = right.rasterFormat;
+            this->depth = right.depth;
+        }
+
+        this->dxtCompression = right.dxtCompression;
+        this->hasAlpha = right.hasAlpha;
+
+        this->colorOrder = right.colorOrder;
+        this->rasterType = right.rasterType;
+        this->autoMipmaps = right.autoMipmaps;
+    }
+
+    inline void clearTexelData( void )
     {
         if ( this->palette )
         {
-	        delete[] palette;
+	        this->engineInterface->PixelFree( palette );
 
 	        palette = NULL;
         }
-	    for (uint32 i = 0; i < texels.size(); i++)
-        {
-		    delete[] texels[i];
-		    texels[i] = 0;
-	    }
 
-        delete this;
+	    deleteMipmapLayers( this->engineInterface, this->mipmaps );
+
+        this->mipmaps.clear();
+    }
+
+    inline ~NativeTextureXBOX( void )
+    {
+        this->clearTexelData();
     }
 
     uint32 getWidth( void ) const
     {
-        return this->width[0];
+        return this->mipmaps[ 0 ].layerWidth;
     }
 
     uint32 getHeight( void ) const
     {
-        return this->height[0];
+        return this->mipmaps[ 0 ].layerHeight;
     }
 
     uint32 getDepth( void ) const
@@ -52,7 +103,7 @@ struct NativeTextureXBOX : public PlatformTexture
 
     uint32 getMipmapCount( void ) const
     {
-        return this->mipmapCount;
+        return this->mipmaps.size();
     }
 
     ePaletteType getPaletteType( void ) const
@@ -71,74 +122,14 @@ struct NativeTextureXBOX : public PlatformTexture
         // you have to convert to D3D first to be able to compress (to DXT).
     }
 
-    PlatformTexture* Clone( void ) const
-    {
-        NativeTextureXBOX *newTex = new NativeTextureXBOX();
-
-        // Copy over attributes.
-        newTex->width = this->width;
-        newTex->height = this->height;
-        newTex->depth = this->depth;
-        newTex->dataSizes = this->dataSizes;
-        
-        // Copy palette information.
-        {
-	        if (this->palette)
-            {
-                size_t wholeDataSize = this->paletteSize * sizeof(uint32);
-
-		        newTex->palette = new uint8[wholeDataSize];
-		        memcpy(newTex->palette, this->palette, wholeDataSize);
-	        }
-            else
-            {
-		        newTex->palette = 0;
-	        }
-
-            newTex->paletteSize = this->paletteSize;
-            newTex->paletteType = this->paletteType;
-        }
-
-        // Copy image texel information.
-        {
-            size_t numTexels = this->texels.size();
-
-	        for (uint32 i = 0; i < numTexels; i++)
-            {
-		        uint32 dataSize = this->dataSizes[i];
-		        uint8 *newtexels = new uint8[dataSize];
-
-                const uint8 *srctexels = (const uint8*)this->texels[i];
-
-		        memcpy(newtexels, srctexels, dataSize);
-
-		        newTex->texels.push_back(newtexels);
-	        }
-        }
-
-        newTex->mipmapCount = this->mipmapCount;
-        newTex->dxtCompression = this->dxtCompression;
-        newTex->hasAlpha = this->hasAlpha;
-
-        newTex->colorOrder = this->colorOrder;
-        newTex->rasterType = this->rasterType;
-        newTex->autoMipmaps = this->autoMipmaps;
-
-        return newTex;
-    }
-
-    // Backlink to original texture container.
-    NativeTexture *parent;
-
-	uint32 mipmapCount;
+    eRasterFormat rasterFormat;
 
     uint32 depth;
 
-	std::vector<uint32> width;	// store width & height
-	std::vector<uint32> height;	// for each mipmap
-	std::vector<uint32> dataSizes;
-	std::vector<void*> texels;	// holds either indices or color values
-					// (also per mipmap)
+    typedef genmip::mipmapLayer mipmapLayer;
+
+    std::vector <mipmapLayer> mipmaps;
+
 	void *palette;
 	uint32 paletteSize;
 
@@ -155,8 +146,75 @@ struct NativeTextureXBOX : public PlatformTexture
 	// PC/XBOX
 	uint32 dxtCompression;
 
-    void swizzleMipmaps( void );
-    void unswizzleMipmaps( void );
+    struct swizzleMipmapTraversal
+    {
+        // Input.
+        uint32 mipWidth, mipHeight;
+        uint32 depth;
+        void *texels;
+        uint32 dataSize;
+
+        // Output.
+        uint32 newWidth, newHeight;
+        void *newtexels;
+        uint32 newDataSize;
+    };
+
+    static void swizzleMipmap( Interface *engineInterface, swizzleMipmapTraversal& pixelData );
+    static void unswizzleMipmap( Interface *engineInterface, swizzleMipmapTraversal& pixelData );
+};
+
+struct xboxNativeTextureTypeProvider : public texNativeTypeProvider
+{
+    void ConstructTexture( Interface *engineInterface, void *objMem, size_t memSize )
+    {
+        new (objMem) NativeTextureXBOX( engineInterface );
+    }
+
+    void CopyConstructTexture( Interface *engineInterface, void *objMem, const void *srcObjMem, size_t memSize )
+    {
+        new (objMem) NativeTextureXBOX( *(const NativeTextureXBOX*)srcObjMem );
+    }
+    
+    void DestroyTexture( Interface *engineInterface, void *objMem, size_t memSize )
+    {
+        ( *(NativeTextureXBOX*)objMem ).~NativeTextureXBOX();
+    }
+
+    eTexNativeCompatibility IsCompatibleTextureBlock( BlockProvider& inputProvider ) const;
+
+    void SerializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& outputProvider ) const;
+    void DeserializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& inputProvider ) const;
+
+    void GetPixelCapabilities( pixelCapabilities& capsOut ) const
+    {
+        capsOut.supportsDXT1 = true;
+        capsOut.supportsDXT2 = true;
+        capsOut.supportsDXT3 = true;
+        capsOut.supportsDXT4 = true;
+        capsOut.supportsDXT5 = true;
+        capsOut.supportsPalette = true;
+    }
+
+    void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
+    void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
+    void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    uint32 GetDriverIdentifier( void *objMem ) const
+    {
+        // Always the generic XBOX driver.
+        return 8;
+    }
+
+    inline void Initialize( Interface *engineInterface )
+    {
+
+    }
+
+    inline void Shutdown( Interface *engineInterface )
+    {
+
+    }
 };
 
 #pragma pack(1)

@@ -2,8 +2,14 @@
  * TXDs
  */
 
-struct Texture
+struct Texture : public RwObject
 {
+    inline Texture( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
+    {
+        this->filterFlags = 0;
+        this->hasSkyMipmap = false;
+    }
+
 	uint32 filterFlags;
 	std::string name;
 	std::string maskName;
@@ -18,8 +24,6 @@ struct Texture
 	uint32 write(std::ostream &dff);
 	void readExtension(std::istream &dff);
 	void dump(std::string ind = "");
-
-	Texture(void);
 };
 
 enum eRasterStageFilterMode
@@ -41,9 +45,7 @@ enum eRasterStageAddressMode
     RWTEXADDRESS_BORDER
 };
 
-// I do not know why I did this a union!
-// I must have been drunk or something.
-struct NativeTexture;
+struct TextureBase;
 
 struct texFormatInfo
 {
@@ -54,8 +56,8 @@ private:
     uint32 pad1 : 16;
 
 public:
-    void parse(NativeTexture& theTexture) const;
-    void set(const NativeTexture& inTex);
+    void parse(TextureBase& theTexture) const;
+    void set(const TextureBase& inTex);
 };
 
 #include "renderware.txd.pixelformat.h"
@@ -155,19 +157,12 @@ struct PlatformTexture abstract
 
     virtual ePaletteType getPaletteType( void ) const = 0;
 
-    virtual bool isCompressed( void ) const = 0;
-    virtual void compress( float quality ) = 0;
-
-    virtual PlatformTexture* Clone( void ) const = 0;
-
     // Virtual function that can be overwritten so that the
     // runtime can obtain a debug image that displays internals.
     virtual bool getDebugBitmap( Bitmap& bmpOut ) const
     {
         return false;
     }
-
-    virtual void Delete( void ) = 0;
 };
 
 // Useful routine to generate generic raster format flags.
@@ -239,29 +234,22 @@ enum eRasterType
     RASTERTYPE_BITMAP = 4
 };
 
-struct NativeTexture
+struct Raster
 {
-	uint32 platform;
-	std::string name;
-	std::string maskName;
-	eRasterStageFilterMode filterMode;
+    inline Raster( Interface *engineInterface, void *construction_params )
+    {
+        this->engineInterface = engineInterface;
+        this->platformData = NULL;
+        this->refCount = 1;
+    }
 
-    eRasterStageAddressMode uAddressing;
-    eRasterStageAddressMode vAddressing;
+    Raster( const Raster& right );
+    ~Raster( void );
 
-    eRasterFormat rasterFormat;
+    void SetEngineVersion( LibraryVersion version );
+    LibraryVersion GetEngineVersion( void ) const;
 
-    // Platform texture type.
-    // If it is NULL, then this texture has no platform representation.
-    PlatformTexture *platformData;
-
-	/* functions */
-	void readD3d(std::istream &txd);
-	void readPs2(std::istream &txd);
-	void readXbox(std::istream &txd);
-	uint32 writeD3d(std::ostream &txd);
-    uint32 writePs2(std::ostream &txd);
-    uint32 writeXbox(std::ostream &txd);
+    // TODO: add conversion functions into this struct (instead of NativeTexture).
     void writeTGA(const char *path, bool optimized = false);
     void writeTGAStream(std::ostream& tga, bool optimized = false);
 
@@ -272,20 +260,10 @@ struct NativeTexture
 
     void getSize(uint32& width, uint32& height) const;
 
-    void improveFiltering(void);
-
     void newDirect3D(void);
 
-	void convertFromPS2(void);
-    void convertToPS2(void);
-	void convertFromXbox(void);
-    void convertToXbox(void);
 	void convertToFormat(eRasterFormat format);
-    void convertToPalette(ePaletteType paletteFormat);
 
-    bool convertToDirect3D8(void);
-    bool convertToDirect3D9(void);
-    
     // Check whether a texture is Direct3D compatible.
     bool isDirect3DWritable(void) const;
     void makeDirect3DCompatible(void);
@@ -295,33 +273,363 @@ struct NativeTexture
 
     // Mipmap utilities.
     uint32 getMipmapCount( void ) const;
-    void clearMipmaps( void );
-    void generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode mipGenMode = MIPMAPGEN_DEFAULT, bool safeMipmaps = false );
-    void safeMipmaps( void );
 
-	NativeTexture(void);
-	NativeTexture(const NativeTexture &orig);
-	NativeTexture &operator=(const NativeTexture &that);
-	~NativeTexture(void);
+    // Data members.
+    Interface *engineInterface;
 
-    static void StartDebug( void );
-    static void DebugParameters( void );
+    PlatformTexture *platformData;
+
+    uint32 refCount;
 };
 
-struct TextureDictionary
+struct TexDictionary;
+
+struct TextureBase : public RwObject
 {
-    inline TextureDictionary( void )
+    inline TextureBase( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
+    {
+        this->texRaster = NULL;
+        this->filterMode = RWFILTER_DISABLE;
+        this->uAddressing = RWTEXADDRESS_WRAP;
+        this->vAddressing = RWTEXADDRESS_WRAP;
+        this->texDict = NULL;
+    }
+
+    TextureBase( const TextureBase& right );
+    ~TextureBase( void );
+
+    void OnVersionChange( const LibraryVersion& oldVer, const LibraryVersion& newVer )
+    {
+        // If we have a raster, set its version aswell.
+        if ( Raster *texRaster = this->texRaster )
+        {
+            texRaster->SetEngineVersion( newVer );
+        }
+    }
+
+    void AddToDictionary( TexDictionary *dict );
+    void RemoveFromDictionary( void );
+    TexDictionary* GetTexDictionary( void ) const;
+
+    void improveFiltering(void);
+
+    // Mipmap utilities.
+    void clearMipmaps( void );
+    void generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode mipGenMode = MIPMAPGEN_DEFAULT );
+
+    Raster* GetRaster( void ) const
+    {
+        return this->texRaster;
+    }
+
+    // Pointer to the pixel data storage.
+    Raster *texRaster;
+
+	std::string name;
+	std::string maskName;
+	eRasterStageFilterMode filterMode;
+
+    eRasterStageAddressMode uAddressing;
+    eRasterStageAddressMode vAddressing;
+
+    TexDictionary *texDict;
+
+    RwListEntry <TextureBase> texDictNode;
+};
+
+template <typename structType, size_t nodeOffset>
+struct rwListIterator
+{
+    inline rwListIterator( RwList <structType>& rootNode )
+    {
+        this->rootNode = &rootNode.root;
+
+        list_iterator = this->rootNode->next;
+    }
+
+    inline bool IsEnd( void ) const
+    {
+        return ( rootNode == list_iterator );
+    }
+
+    inline void Increment( void )
+    {
+        list_iterator = list_iterator->next;
+    }
+
+    inline structType* Resolve( void ) const
+    {
+        return (structType*)( (char*)list_iterator - nodeOffset );
+    }
+
+    RwListEntry <structType> *rootNode;
+    RwListEntry <structType> *list_iterator;
+};
+
+#define DEF_LIST_ITER( newName, structType, nodeName )   typedef rwListIterator <structType, offsetof(structType, nodeName)> newName;
+
+struct TexDictionary : public RwObject
+{
+    inline TexDictionary( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
     {
         this->hasRecommendedPlatform = false;
+
+        this->numTextures = 0;
+
+        LIST_CLEAR( textures.root );
     }
+
+    TexDictionary( const TexDictionary& right );
+	~TexDictionary( void );
 
     bool hasRecommendedPlatform;
 
-	std::vector<NativeTexture> texList;
+    uint32 numTextures;
+
+    RwList <TextureBase> textures;
+
+    DEF_LIST_ITER( texIter_t, TextureBase, texDictNode );
 
 	/* functions */
-	void read(std::istream &txd);
-	uint32 write(std::ostream &txd);
-	void clear(void);
-	~TextureDictionary(void);
+	void clear( void );
+
+    inline texIter_t GetTextureIterator( void )
+    {
+        return texIter_t( this->textures );
+    }
+
+    inline uint32 GetTextureCount( void ) const
+    {
+        return this->numTextures;
+    }
 };
+
+enum eCompressionType
+{
+    RWCOMPRESS_NONE,
+    RWCOMPRESS_DXT1,
+    RWCOMPRESS_DXT2,
+    RWCOMPRESS_DXT3,
+    RWCOMPRESS_DXT4,
+    RWCOMPRESS_DXT5,
+    RWCOMPRESS_NUM
+};
+
+// Pixel capabilities are required for transporting data properly.
+struct pixelCapabilities
+{
+    inline pixelCapabilities( void )
+    {
+        this->supportsDXT1 = false;
+        this->supportsDXT2 = false;
+        this->supportsDXT3 = false;
+        this->supportsDXT4 = false;
+        this->supportsDXT5 = false;
+        this->supportsPalette = false;
+    }
+
+    bool supportsDXT1;
+    bool supportsDXT2;
+    bool supportsDXT3;
+    bool supportsDXT4;
+    bool supportsDXT5;
+    bool supportsPalette;
+};
+
+struct pixelFormat
+{
+    inline pixelFormat( void )
+    {
+        this->rasterFormat = RASTER_DEFAULT;
+        this->depth = 0;
+        this->colorOrder = COLOR_RGBA;
+        this->paletteType = PALETTE_NONE;
+        this->compressionType = RWCOMPRESS_NONE;
+    }
+
+    eRasterFormat rasterFormat;
+    uint32 depth;
+    eColorOrdering colorOrder;
+    ePaletteType paletteType;
+    eCompressionType compressionType;
+};
+
+struct pixelDataTraversal
+{
+    inline pixelDataTraversal( void )
+    {
+        this->isNewlyAllocated = false;
+        this->rasterFormat = RASTER_DEFAULT;
+        this->depth = 0;
+        this->colorOrder = COLOR_RGBA;
+        this->paletteType = PALETTE_NONE;
+        this->paletteData = NULL;
+        this->paletteSize = 0;
+        this->compressionType = RWCOMPRESS_NONE;
+        this->hasAlpha = false;
+        this->autoMipmaps = false;
+        this->cubeTexture = false;
+        this->rasterType = 4;
+    }
+
+    void CloneFrom( Interface *engineInterface, const pixelDataTraversal& right );
+
+    void FreePixels( Interface *engineInterface );
+
+    inline void SetStandalone( void )
+    {
+        // Standalone pixels mean that they do not belong to any texture container anymore.
+        // If we are the only owner, we must make sure that we free them.
+        // This function was introduced to defeat a memory leak.
+        this->isNewlyAllocated = true;
+    }
+
+    inline void DetachPixels( void )
+    {
+        if ( this->isNewlyAllocated )
+        {
+            this->mipmaps.clear();
+            this->paletteData = NULL;
+
+            this->isNewlyAllocated = false;
+        }
+    }
+
+    // Mipmaps.
+    struct mipmapResource
+    {
+        inline mipmapResource( void )
+        {
+            // Debug fill the mipmap struct.
+            this->texels = NULL;
+            this->width = 0;
+            this->height = 0;
+            this->mipWidth = 0;
+            this->mipHeight = 0;
+            this->dataSize = 0;
+        }
+
+        void Free( Interface *engineInterface );
+
+        void *texels;
+        uint32 width, height;
+        uint32 mipWidth, mipHeight; // do not update these fields.
+
+        uint32 dataSize;
+    };
+
+    typedef std::vector <mipmapResource> mipmaps_t;
+
+    mipmaps_t mipmaps;
+
+    bool isNewlyAllocated;          // counts for all mipmap layers and palette data.
+    eRasterFormat rasterFormat;
+    uint32 depth;
+    eColorOrdering colorOrder;
+    ePaletteType paletteType;
+    void *paletteData;
+    uint32 paletteSize;
+    eCompressionType compressionType;
+
+    // More advanced properties.
+    bool hasAlpha;
+    bool autoMipmaps;
+    bool cubeTexture;
+    uint8 rasterType;
+};
+
+enum eTexNativeCompatibility
+{
+    RWTEXCOMPAT_NONE,
+    RWTEXCOMPAT_MAYBE,
+    RWTEXCOMPAT_ABSOLUTE
+};
+
+struct RwUnsupportedOperationException : public RwException
+{
+    inline RwUnsupportedOperationException( const char *msg ) : RwException( msg )
+    {
+        return;
+    }
+};
+
+struct texNativeTypeProvider abstract
+{
+    inline texNativeTypeProvider( void )
+    {
+        this->managerData.rwTexType = NULL;
+        this->managerData.isRegistered = false;
+    }
+
+    inline ~texNativeTypeProvider( void )
+    {
+        if ( this->managerData.isRegistered )
+        {
+            LIST_REMOVE( this->managerData.managerNode );
+
+            this->managerData.isRegistered = false;
+        }
+    }
+
+    // Type management.
+    virtual void            ConstructTexture( Interface *engineInterface, void *objMem, size_t memSize ) = 0;
+    virtual void            CopyConstructTexture( Interface *engineInterface, void *objMem, const void *srcObjMem, size_t memSize ) = 0;
+    virtual void            DestroyTexture( Interface *engineInterface, void *objMem, size_t memSize ) = 0;
+
+    // Serialization functions.
+    virtual eTexNativeCompatibility IsCompatibleTextureBlock( BlockProvider& inputProvider ) const throw( ... ) = 0;
+
+    virtual void            SerializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& outputProvider ) const throw( ... ) = 0;
+    virtual void            DeserializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& inputProvider ) const throw( ... ) = 0;
+
+    // Conversion parameters.
+    // TODO: split these operations up into set, get and unset (maybe)
+    virtual void            GetPixelCapabilities( pixelCapabilities& capsOut ) const = 0;
+
+    struct acquireFeedback_t
+    {
+        inline acquireFeedback_t( void )
+        {
+            this->hasDirectlyAcquired = true;
+        }
+
+        bool hasDirectlyAcquired;
+    };
+
+    virtual void            GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut ) throw( ... ) = 0;
+    virtual void            SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut ) throw( ... ) = 0;
+    virtual void            UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate ) = 0;
+
+    // Driver identification functions.
+    virtual uint32          GetDriverIdentifier( void *objMem ) const
+    {
+        // By returning 0, this texture type does not recommend a particular driver.
+        return 0;
+    }
+
+    struct
+    {
+        RwTypeSystem::typeInfoBase *rwTexType;
+
+        RwListEntry <texNativeTypeProvider> managerNode;
+
+        bool isRegistered;
+    } managerData;
+};
+
+// Plugin methods.
+TexDictionary* CreateTexDictionary( Interface *engineInterface );
+TexDictionary* ToTexDictionary( Interface *engineInterface, RwObject *rwObj );
+
+TextureBase* CreateTexture( Interface *engineInterface, Raster *theRaster );
+TextureBase* ToTexture( Interface *engineInterface, RwObject *rwObj );
+
+// Complex native texture API.
+bool RegisterNativeTextureType( Interface *engineInterface, const char *nativeName, texNativeTypeProvider *typeProvider, size_t memSize );
+bool UnregisterNativeTextureType( Interface *engineInterface, const char *nativeName );
+bool ConvertRasterTo( Raster *theRaster, const char *nativeName );
+
+// Raster API.
+Raster* CreateRaster( Interface *engineInterface );
+Raster* AcquireRaster( Raster *theRaster );
+void DeleteRaster( Raster *theRaster );

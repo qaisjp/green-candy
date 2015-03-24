@@ -13,13 +13,13 @@
 	writtenBytesReturn = bytesWritten;\
     rw.seekp(oldPos, std::ios::beg);
 
-inline void writeStringIntoBufferSafe( const std::string& theString, char *buf, size_t bufSize, const std::string& texName, const std::string& dbgName )
+inline void writeStringIntoBufferSafe( rw::Interface *engineInterface, const std::string& theString, char *buf, size_t bufSize, const std::string& texName, const std::string& dbgName )
 {
     size_t nameLen = theString.size();
 
     if (nameLen >= bufSize)
     {
-        rw::rwInterface.PushWarning( "texture " + texName + " has been written using truncated " + dbgName );
+        engineInterface->PushWarning( "texture " + texName + " has been written using truncated " + dbgName );
 
         nameLen = bufSize - 1;
     }
@@ -30,11 +30,11 @@ inline void writeStringIntoBufferSafe( const std::string& theString, char *buf, 
     memset( buf + nameLen, 0, bufSize - nameLen );
 }
 
-inline rw::uint32 writePartialBlockSafe( std::ostream& rw, const void *srcData, rw::uint32 srcDataSize, rw::uint32 streamSize )
+inline rw::uint32 writePartialBlockSafe( rw::BlockProvider& outputProvider, const void *srcData, rw::uint32 srcDataSize, rw::uint32 streamSize )
 {
     rw::uint32 streamWriteCount = std::min(srcDataSize, streamSize);
 
-    rw.write((const char*)srcData, streamWriteCount);
+    outputProvider.write( srcData, streamWriteCount );
 
     rw::uint32 writeCount = streamWriteCount;
 
@@ -45,7 +45,7 @@ inline rw::uint32 writePartialBlockSafe( std::ostream& rw, const void *srcData, 
 
         for ( rw::uint32 n = 0; n < leftDataSize; n++ )
         {
-            rw::writeUInt8(0, rw);
+            outputProvider.writeUInt8( 0 );
         }
 
         writeCount += leftDataSize;

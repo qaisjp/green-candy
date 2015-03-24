@@ -13,7 +13,7 @@ bool NativeTextureD3D::getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitm
 {
     bool couldFetchBitmap = false;
 
-    uint32 mipmapCount = this->mipmapCount;
+    uint32 mipmapCount = this->mipmaps.size();
 
     if ( mipLayer < mipmapCount )
     {
@@ -31,22 +31,26 @@ bool NativeTextureD3D::getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitm
 
         // Get raw colors from this texture.
         {
+            const NativeTextureD3D::mipmapLayer& mipLayerData = this->mipmaps[ mipLayer ];
+
             uint32 compressionType = this->dxtCompression;
 
-            void *theTexels = this->texels[ mipLayer ];
-            uint32 dataSize = this->dataSizes[ mipLayer ];
-            uint32 mipWidth = this->width[ mipLayer ];
-            uint32 mipHeight = this->height[ mipLayer ];
+            void *theTexels = mipLayerData.texels;
+            uint32 dataSize = mipLayerData.dataSize;
+            uint32 mipWidth = mipLayerData.width;
+            uint32 mipHeight = mipLayerData.height;
+            uint32 mipLayerWidth = mipLayerData.layerWidth;
+            uint32 mipLayerHeight = mipLayerData.layerHeight;
             uint32 depth = this->depth;
-            eRasterFormat rasterFormat = parent->rasterFormat;
+            eRasterFormat rasterFormat = this->rasterFormat;
             eColorOrdering colorOrder = this->colorOrdering;
 
             if ( compressionType != 0 )
             {
                 // Decompress the texels.
-                uint32 texItemCount = ( mipWidth * mipHeight );
+                uint32 texCompressedItemCount = ( mipWidth * mipHeight );
 
-                uint32 compressedBlockCount = ( texItemCount / 16 );
+                uint32 compressedBlockCount = ( texCompressedItemCount / 16 );
 
                 uint32 y = 0;
                 uint32 x = 0;
@@ -54,11 +58,13 @@ bool NativeTextureD3D::getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitm
                 // Allocate a new texture array.
                 rasterFormatOut = RASTER_8888;
                 colorOrderOut = COLOR_RGBA;
-                widthOut = mipWidth;
-                heightOut = mipHeight;
+                widthOut = mipLayerWidth;
+                heightOut = mipLayerHeight;
                 depthOut = 32;
+
+                uint32 texRawItemCount = ( mipLayerWidth * mipLayerHeight );
                 
-                uint32 texDataSize = getRasterDataSize( texItemCount, depthOut );
+                uint32 texDataSize = getRasterDataSize( texRawItemCount, depthOut );
 
                 texelsOut = new uint8[ texDataSize ];
 
@@ -67,7 +73,7 @@ bool NativeTextureD3D::getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitm
                 isNewlyAllocated = true;
 
                 // Get decompression properties.
-                eDXTCompressionMethod compressionMethod = rwInterface.GetDXTRuntime();
+                eDXTCompressionMethod compressionMethod = this->engineInterface->GetDXTRuntime();
 
                 for ( uint32 n = 0; n < compressedBlockCount; n++ )
                 {
@@ -88,20 +94,23 @@ bool NativeTextureD3D::getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitm
                         {
                             for ( uint32 x_block = 0; x_block < 4; x_block++ )
                             {
-                                // Get the color that we want to write.
-                                const PixelFormat::pixeldata32bit& theColor = colors[ y_block ][ x_block ];
-
                                 // Calculate the destination position.
                                 uint32 dest_x = ( x + x_block );
                                 uint32 dest_y = ( y + y_block );
 
-                                // Put the color.
-                                uint32 colorIndex = PixelFormat::coord2index( dest_x, dest_y, mipWidth );
+                                if ( dest_x < mipLayerWidth && dest_y < mipLayerHeight )
+                                {
+                                    // Get the color that we want to write.
+                                    const PixelFormat::pixeldata32bit& theColor = colors[ y_block ][ x_block ];
 
-                                puttexelcolor(
-                                    texelsOut, colorIndex, rasterFormatOut, colorOrderOut, depthOut,
-                                    theColor.red, theColor.green, theColor.blue, theColor.alpha
-                                );
+                                    // Put the color.
+                                    uint32 colorIndex = PixelFormat::coord2index( dest_x, dest_y, mipLayerWidth );
+
+                                    puttexelcolor(
+                                        texelsOut, colorIndex, rasterFormatOut, colorOrderOut, depthOut,
+                                        theColor.red, theColor.green, theColor.blue, theColor.alpha
+                                    );
+                                }
                             }
                         }
                     }

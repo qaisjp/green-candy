@@ -443,4 +443,114 @@ inline uint8 packcolor( double color )
     return (uint8)( color * 255.0 );
 }
 
+inline bool calculateHasAlpha( const pixelDataTraversal& pixelData )
+{
+    assert( pixelData.compressionType == RWCOMPRESS_NONE );
+
+    bool hasAlpha = false;
+
+    // Decide whether we even can have alpha.
+    // Otherwise there is no point in going through the pixels.
+    eRasterFormat rasterFormat = pixelData.rasterFormat;
+    ePaletteType paletteType = pixelData.paletteType;
+    eColorOrdering colorOrder = pixelData.colorOrder;
+
+    if (rasterFormat == RASTER_1555 || rasterFormat == RASTER_4444 || rasterFormat == RASTER_8888)
+    {
+        // Alright, the raster can have alpha.
+        // If we are palettized, we can just check the palette colors.
+        if (paletteType != PALETTE_NONE)
+        {
+            // Determine whether we REALLY use all palette indice.
+            uint32 palItemCount = pixelData.paletteSize;
+
+            bool *usageFlags = new bool[ palItemCount ];
+
+            for ( uint32 n = 0; n < palItemCount; n++ )
+            {
+                usageFlags[ n ] = false;
+            }
+
+            // Loop through all pixels of the image.
+            {
+                const pixelDataTraversal::mipmapResource& mipLayer = pixelData.mipmaps[ 0 ];
+
+                uint32 texWidth = mipLayer.width;
+                uint32 texHeight = mipLayer.height;
+
+                uint32 texItemCount = ( texWidth * texHeight );
+
+                const void *texelData = mipLayer.texels;
+
+                uint32 depth = pixelData.depth;
+
+                for ( uint32 n = 0; n < texItemCount; n++ )
+                {
+                    uint8 palIndex;
+
+                    bool hasIndex = getpaletteindex(texelData, paletteType, palItemCount, depth, n, palIndex);
+
+                    if ( hasIndex && palIndex < palItemCount )
+                    {
+                        usageFlags[ palIndex ] = true;
+                    }
+                }
+            }
+
+            const void *palColorSource = pixelData.paletteData;
+
+            uint32 palFormatDepth = Bitmap::getRasterFormatDepth(rasterFormat);
+
+            for (uint32 n = 0; n < palItemCount; n++)
+            {
+                if ( usageFlags[ n ] == true )
+                {
+                    uint8 r, g, b, a;
+
+                    bool hasColor = browsetexelcolor(palColorSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, palFormatDepth, r, g, b, a);
+
+                    if (hasColor && a != 255)
+                    {
+                        hasAlpha = true;
+                        break;
+                    }
+                }
+            }
+
+            // Free memory.
+            delete [] usageFlags;
+        }
+        else
+        {
+            // We have to process the entire image. Oh boy.
+            // For that, we decide based on the main raster only.
+            const pixelDataTraversal::mipmapResource& mipLayer = pixelData.mipmaps[ 0 ];
+
+            const void *texelSource = mipLayer.texels;
+
+            uint32 mipWidth = mipLayer.width;
+            uint32 mipHeight = mipLayer.height;
+
+            uint32 mipDepth = pixelData.depth;
+
+            uint32 imageItemCount = ( mipWidth * mipHeight );
+
+            for (uint32 n = 0; n < imageItemCount; n++)
+            {
+                uint8 r, g, b, a;
+
+                bool hasColor = browsetexelcolor(texelSource, PALETTE_NONE, NULL, 0, n, rasterFormat, colorOrder, mipDepth, r, g, b, a);
+
+                if (hasColor && a != 255)
+                {
+                    hasAlpha = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    return hasAlpha;
+}
+
 };

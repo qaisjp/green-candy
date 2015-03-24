@@ -15,7 +15,7 @@ namespace rw
 
 struct _fetch_texel_libquant_traverse
 {
-    NativeTextureD3D *platformTex;
+    pixelDataTraversal *pixelData;
 
     uint32 mipIndex;
 };
@@ -24,20 +24,22 @@ static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int w
 {
     _fetch_texel_libquant_traverse *info = (_fetch_texel_libquant_traverse*)user_info;
 
-    NativeTextureD3D *platformTex = info->platformTex;
+    pixelDataTraversal *pixelData = info->pixelData;
 
     // Fetch the color row.
-    void *texelSource = platformTex->texels[ info->mipIndex ];
+    pixelDataTraversal::mipmapResource& mipLayer = pixelData->mipmaps[ info->mipIndex ];
 
-    eRasterFormat rasterFormat = platformTex->parent->rasterFormat;
-    ePaletteType paletteType = platformTex->paletteType;
+    const void *texelSource = mipLayer.texels;
 
-    uint32 itemDepth = platformTex->depth;
+    eRasterFormat rasterFormat = pixelData->rasterFormat;
+    ePaletteType paletteType = pixelData->paletteType;
 
-    eColorOrdering colorOrder = platformTex->colorOrdering;
+    uint32 itemDepth = pixelData->depth;
 
-    void *palColors = platformTex->palette;
-    uint32 palColorCount = platformTex->paletteSize;
+    eColorOrdering colorOrder = pixelData->colorOrder;
+
+    void *palColors = pixelData->paletteData;
+    uint32 palColorCount = pixelData->paletteSize;
 
     for (int n = 0; n < width; n++)
     {
@@ -58,61 +60,77 @@ static void _fetch_image_data_libquant(liq_color row_out[], int row_index, int w
 }
 
 // Custom algorithm for palettizing image data.
-void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
+// This routine is called by ConvertPixelData. It should not be called from anywhere else.
+void PalettizePixelData( Interface *engineInterface, pixelDataTraversal& pixelData, const pixelFormat& dstPixelFormat )
 {
-    if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
-        return;
+    // Make sure the pixelData is not compressed.
+    assert( pixelData.compressionType == RWCOMPRESS_NONE );
+    assert( dstPixelFormat.compressionType == RWCOMPRESS_NONE );
 
-    NativeTextureD3D *platformTex = (NativeTextureD3D*)this->platformData;
+    ePaletteType convPaletteFormat = dstPixelFormat.paletteType;
 
     if (convPaletteFormat != PALETTE_8BIT && convPaletteFormat != PALETTE_4BIT)
-        return;
-
-    // If the texture is DXT compressed, decompress it.
-    if ( platformTex->dxtCompression )
     {
-        platformTex->decompressDxt();
+        throw RwException( "unknown palette type target in palettization routine" );
     }
 
-    eRasterFormat rasterFormat = this->rasterFormat;
-    ePaletteType paletteType = platformTex->paletteType;
+    ePaletteType srcPaletteType = pixelData.paletteType;
 
-    if (paletteType == convPaletteFormat)
+    // The reason for this shortcut is because the purpose of this algorithm is palettization.
+    // If you want to change the raster format or anything, use ConvertPixelData!
+    if (srcPaletteType == convPaletteFormat)
         return;
 
-    eColorOrdering srcColorOrder = platformTex->colorOrdering;
-    eColorOrdering dstColorOrder = srcColorOrder;
+    // Get the source format.
+    eRasterFormat srcRasterFormat = pixelData.rasterFormat;
+    eColorOrdering srcColorOrder = pixelData.colorOrder;
+    uint32 srcDepth = pixelData.depth;
 
-    // We prefer COLOR_RGBA, since all architectures seem to use it.
-    if ( dstColorOrder != COLOR_RGBA )
-    {
-        dstColorOrder = COLOR_RGBA;
-    }
+    // Get the format that we want to output in.
+    eRasterFormat dstRasterFormat = dstPixelFormat.rasterFormat;
+    uint32 dstDepth = dstPixelFormat.depth;
+    eColorOrdering dstColorOrder = dstPixelFormat.colorOrder;
 
-    void *srcPaletteData = platformTex->palette;
-    uint32 srcPaletteCount = platformTex->paletteSize;
+    void *srcPaletteData = pixelData.paletteData;
+    uint32 srcPaletteCount = pixelData.paletteSize;
 
     // Get palette maximums.
     uint32 maxPaletteEntries = 0;
     uint8 newDepth = 0;
 
-    if (convPaletteFormat == PALETTE_8BIT)
+    bool hasValidPaletteTarget = false;
+
+    if (dstDepth == 8)
     {
-        maxPaletteEntries = 256;
-        newDepth = 8;
+        if (convPaletteFormat == PALETTE_8BIT)
+        {
+            maxPaletteEntries = 256;
+
+            hasValidPaletteTarget = true;
+        }
     }
-    else if (convPaletteFormat == PALETTE_4BIT)
+    else if (dstDepth == 4)
     {
-        maxPaletteEntries = 16;
-        newDepth = 4;
+        if (convPaletteFormat == PALETTE_4BIT || convPaletteFormat == PALETTE_8BIT)
+        {
+            maxPaletteEntries = 16;
+
+            hasValidPaletteTarget = true;
+        }
+    }
+   
+    if ( hasValidPaletteTarget == false )
+    {
+        throw RwException( "invalid palette depth in palettization routine" );
     }
 
     // Do the palettization.
+    bool palettizeSuccess = false;
     {
-        uint32 mipmapCount = platformTex->mipmapCount;
+        uint32 mipmapCount = pixelData.mipmaps.size();
 
         // Decide what palette system to use.
-        ePaletteRuntimeType useRuntime = rw::rwInterface.GetPaletteRuntime();
+        ePaletteRuntimeType useRuntime = engineInterface->GetPaletteRuntime();
 
         if (useRuntime == PALRUNTIME_NATIVE)
         {
@@ -122,10 +140,12 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
             // Use only the first texture.
             if ( mipmapCount > 0 )
             {
-                uint32 srcWidth = platformTex->width[0];
-                uint32 srcHeight = platformTex->height[0];
-                void *texelSource = platformTex->texels[0];
-                uint32 srcDepth = platformTex->depth;
+                pixelDataTraversal::mipmapResource& mainLayer = pixelData.mipmaps[ 0 ];
+
+                uint32 srcWidth = mainLayer.mipWidth;
+                uint32 srcHeight = mainLayer.mipHeight;
+                uint32 srcStride = mainLayer.width;
+                void *texelSource = mainLayer.texels;
 
 #if 0
                 // First define properties to use for linear elimination.
@@ -154,10 +174,10 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 {
                     for (uint32 x = 0; x < srcWidth; x++)
                     {
-                        uint32 colorIndex = PixelFormat::coord2index(x, y, srcWidth);
+                        uint32 colorIndex = PixelFormat::coord2index(x, y, srcStride);
 
                         uint8 red, green, blue, alpha;
-                        bool hasColor = browsetexelcolor(texelSource, paletteType, srcPaletteData, srcPaletteCount, colorIndex, rasterFormat, srcColorOrder, srcDepth, red, green, blue, alpha);
+                        bool hasColor = browsetexelcolor(texelSource, srcPaletteType, srcPaletteData, srcPaletteCount, colorIndex, srcRasterFormat, srcColorOrder, srcDepth, red, green, blue, alpha);
 
                         if ( hasColor )
                         {
@@ -171,14 +191,14 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
             conv.constructpalette(maxPaletteEntries);
 
             // Point each color from the original texture to the palette.
-            uint32 itemDepth = platformTex->depth;
-
             for (uint32 n = 0; n < mipmapCount; n++)
             {
                 // Create palette index memory for each mipmap.
-                uint32 srcWidth = platformTex->width[n];
-                uint32 srcHeight = platformTex->height[n];
-                void *texelSource = platformTex->texels[n];
+                pixelDataTraversal::mipmapResource& mipLayer = pixelData.mipmaps[ n ];
+
+                uint32 srcWidth = mipLayer.width;
+                uint32 srcHeight = mipLayer.height;
+                void *texelSource = mipLayer.texels;
 
                 uint32 itemCount = ( srcWidth * srcHeight );
                 
@@ -187,35 +207,38 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
                 // Remap the texels.
                 nativePaletteRemap(
-                    conv, convPaletteFormat, newDepth,
+                    engineInterface,
+                    conv, convPaletteFormat, dstDepth,
                     texelSource, itemCount,
-                    paletteType, srcPaletteData, srcPaletteCount, rasterFormat, srcColorOrder, itemDepth,
+                    srcPaletteType, srcPaletteData, srcPaletteCount, srcRasterFormat, srcColorOrder, srcDepth,
                     newTexelData, dataSize
                 );
 
                 // Replace texture data.
-                if ( texelSource )
+                if ( newTexelData != texelSource )
                 {
-                    delete [] texelSource;
+                    if ( texelSource )
+                    {
+                        engineInterface->PixelFree( texelSource );
+                    }
+
+                    mipLayer.texels = newTexelData;
                 }
 
-                platformTex->texels[n] = newTexelData;
-
-                platformTex->dataSizes[n] = dataSize;
+                mipLayer.dataSize = dataSize;
             }
-
-            // Set the new depth of the texture.
-            platformTex->depth = newDepth;
 
             // Delete the old palette data (if available).
             if (srcPaletteData != NULL)
             {
-                delete [] srcPaletteData;
+                engineInterface->PixelFree( srcPaletteData );
             }
 
             // Store the new palette texels.
-            platformTex->palette = conv.makepalette(rasterFormat, dstColorOrder);
-            platformTex->paletteSize = conv.texelElimData.size();
+            pixelData.paletteData = conv.makepalette(engineInterface, dstRasterFormat, dstColorOrder);
+            pixelData.paletteSize = conv.texelElimData.size();
+
+            palettizeSuccess = true;
         }
         else if (useRuntime == PALRUNTIME_PNGQUANT)
         {
@@ -227,12 +250,14 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
             _fetch_texel_libquant_traverse main_traverse;
 
-            main_traverse.platformTex = platformTex;
+            main_traverse.pixelData = &pixelData;
             main_traverse.mipIndex = 0;
+
+            pixelDataTraversal::mipmapResource& mainLayer = pixelData.mipmaps[ 0 ];
 
             liq_image *quant_image = liq_image_create_custom(
                 quant_attr, _fetch_image_data_libquant, &main_traverse,
-                platformTex->width[0], platformTex->height[0],
+                mainLayer.width, mainLayer.height,
                 1.0
             );
 
@@ -246,12 +271,14 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                 // Get the palette and remap all mipmaps.
                 for (uint32 n = 0; n < mipmapCount; n++)
                 {
-                    uint32 mipWidth = platformTex->width[n];
-                    uint32 mipHeight = platformTex->height[n];
+                    pixelDataTraversal::mipmapResource& mipLayer = pixelData.mipmaps[ n ];
+
+                    uint32 mipWidth = mipLayer.width;
+                    uint32 mipHeight = mipLayer.height;
 
                     uint32 palItemCount = ( mipWidth * mipHeight );
 
-                    unsigned char *newPalItems = new unsigned char[ palItemCount ];
+                    unsigned char *newPalItems = (unsigned char*)engineInterface->PixelAllocate( palItemCount );
 
                     assert( newPalItems != NULL );
 
@@ -267,7 +294,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                     else
                     {
                         // Create a new image.
-                        thisTraverse.platformTex = platformTex;
+                        thisTraverse.pixelData = &pixelData;
                         thisTraverse.mipIndex = n;
 
                         srcImage = liq_image_create_custom(
@@ -289,7 +316,7 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                     }
 
                     // Update the texels.
-                    delete [] platformTex->texels[ n ];
+                    engineInterface->PixelFree( mipLayer.texels );
 
                     bool hasUsedArray = false;
 
@@ -297,11 +324,11 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                         uint32 dataSize = 0;
                         void *newTexelArray = NULL;
 
-                        if (convPaletteFormat == PALETTE_4BIT)
+                        if (dstDepth == 4)
                         {
                             dataSize = PixelFormat::palette4bit::sizeitems( palItemCount );
                         }
-                        else if (convPaletteFormat == PALETTE_8BIT)
+                        else if (dstDepth == 8)
                         {
                             dataSize = palItemCount;
 
@@ -312,18 +339,18 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
                         if ( !hasUsedArray )
                         {
-                            newTexelArray = new uint8[ dataSize ];
+                            newTexelArray = engineInterface->PixelAllocate( dataSize );
 
                             // Copy over the items.
                             for ( uint32 n = 0; n < palItemCount; n++ )
                             {
                                 uint32 resVal = newPalItems[ n ];
 
-                                if (convPaletteFormat == PALETTE_4BIT)
+                                if (dstDepth == 4)
                                 {
                                     ( (PixelFormat::palette4bit*)newTexelArray )->setvalue(n, resVal);
                                 }
-                                else if (convPaletteFormat == PALETTE_8BIT)
+                                else if (dstDepth == 8)
                                 {
                                     ( (PixelFormat::palette8bit*)newTexelArray)->setvalue(n, resVal);
                                 }
@@ -331,24 +358,21 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
                         }
 
                         // Set the texels.
-                        platformTex->texels[ n ] = newTexelArray;
-                        platformTex->dataSizes[ n ] = dataSize;
+                        mipLayer.texels = newTexelArray;
+                        mipLayer.dataSize = dataSize;
                     }
 
                     if ( !hasUsedArray )
                     {
-                        delete [] newPalItems;
+                        engineInterface->PixelFree( newPalItems );
                     }
                 }
 
                 // Delete the old palette data.
-                if (void *srcPalData = platformTex->palette)
+                if (srcPaletteData != NULL)
                 {
-                    delete [] srcPalData;
+                    engineInterface->PixelFree( srcPaletteData );
                 }
-
-                // Update the texture depth.
-                platformTex->depth = newDepth;
 
                 // Update the texture palette data.
                 {
@@ -356,22 +380,22 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
 
                     uint32 newPalItemCount = palData->count;
 
-                    uint32 palDepth = Bitmap::getRasterFormatDepth(rasterFormat);
+                    uint32 palDepth = Bitmap::getRasterFormatDepth(dstRasterFormat);
 
                     uint32 palDataSize = getRasterDataSize( newPalItemCount, palDepth );
 
-                    void *newPalArray = new uint8[ palDataSize ];
+                    void *newPalArray = engineInterface->PixelAllocate( palDataSize );
 
                     for ( unsigned int n = 0; n < newPalItemCount; n++ )
                     {
                         const liq_color& srcColor = palData->entries[ n ];
 
-                        puttexelcolor(newPalArray, n, rasterFormat, dstColorOrder, palDepth, srcColor.r, srcColor.g, srcColor.b, srcColor.a);
+                        puttexelcolor(newPalArray, n, dstRasterFormat, dstColorOrder, palDepth, srcColor.r, srcColor.g, srcColor.b, srcColor.a);
                     }
 
                     // Update texture properties.
-                    platformTex->palette = newPalArray;
-                    platformTex->paletteSize = newPalItemCount;
+                    pixelData.paletteData = newPalArray;
+                    pixelData.paletteSize = newPalItemCount;
                 }
             }
             else
@@ -385,6 +409,8 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
             liq_attr_destroy( quant_attr );
 
             liq_result_destroy( quant_result );
+
+            palettizeSuccess = true;
         }
         else
         {
@@ -392,17 +418,28 @@ void NativeTexture::convertToPalette(ePaletteType convPaletteFormat)
         }
     }
 
-    // Update our color order.
-    platformTex->colorOrdering = dstColorOrder;
+    // If the palettization was a success, we update the pixelData raster format fields.
+    if ( palettizeSuccess )
+    {
+        if ( srcRasterFormat != dstRasterFormat )
+        {
+            pixelData.rasterFormat = dstRasterFormat;
+        }
 
-    // Notify the raster about its new format.
-    platformTex->paletteType = convPaletteFormat;
+        if ( srcColorOrder != dstColorOrder )
+        {
+            pixelData.colorOrder = dstColorOrder;
+        }
 
-    // Update the D3DFORMAT field.
-    platformTex->updateD3DFormat();
+        // Set the new depth of the texture.
+        if ( srcDepth != dstDepth )
+        {
+            pixelData.depth = dstDepth;
+        }
 
-    // Since we changed the colors, update the alpha flag.
-    platformTex->hasAlpha = platformTex->doesHaveAlpha();
+        // Notify the raster about its new format.
+        pixelData.paletteType = convPaletteFormat;
+    }
 }
 
 };

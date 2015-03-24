@@ -50,7 +50,7 @@ eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(LibraryVersion
 {
     eFormatEncodingType imageEncodingType = FORMAT_UNKNOWN;
 
-    eRasterFormat rasterFormat = parent->rasterFormat;
+    eRasterFormat rasterFormat = this->rasterFormat;
     ePaletteType paletteType = this->paletteType;
 
     if (paletteType == PALETTE_4BIT)
@@ -97,125 +97,6 @@ eFormatEncodingType NativeTexturePS2::getHardwareRequiredEncoding(LibraryVersion
     }
 
     return imageEncodingType;
-}
-
-bool NativeTexturePS2::swizzleEncryptPS2(uint32 i)
-{
-    NativeTexturePS2::GSMipmap& gsTex = this->mipmaps[i];
-
-    // Determine the encoding formats so it can be stored into PS2 GS memory correctly.
-    eFormatEncodingType currentEncoding = gsTex.swizzleEncodingType;
-
-    eFormatEncodingType encodeTo = this->getHardwareRequiredEncoding(rw::rwInterface.GetVersion());
-
-    if ( currentEncoding == FORMAT_UNKNOWN || encodeTo == FORMAT_UNKNOWN )
-        return false;
-
-    bool operationSuccessful = false;
-   
-    // Get picture meta information.
-    uint32 realImageWidth = gsTex.width;
-    uint32 realImageHeight = gsTex.height;
-    uint32 realImageDepth = this->depth;
-
-    if ( currentEncoding != encodeTo )
-    {
-        uint32 newDataSize;
-        void *newtexels;
-
-        uint32 encryptedWidth;
-        uint32 encryptedHeight;
-
-        newtexels =
-            ps2GSPixelEncodingFormats::packImageData(
-                currentEncoding, encodeTo,
-                realImageDepth,
-                gsTex.texels,
-                realImageWidth, realImageHeight,
-                newDataSize, encryptedWidth, encryptedHeight
-            );
-
-        if ( newtexels != NULL )
-        {
-            operationSuccessful = true;
-        }
-
-        if ( operationSuccessful )
-        {
-            gsTex.dataSize = newDataSize;
-
-	        delete[] gsTex.texels;
-	        gsTex.texels = newtexels;
-
-            gsTex.swizzleEncodingType = encodeTo;
-
-            gsTex.swizzleWidth = encryptedWidth;
-            gsTex.swizzleHeight = encryptedHeight;
-        }
-    }
-    else
-    {
-        operationSuccessful = true;
-    }
-
-    return operationSuccessful;
-}
-
-bool NativeTexturePS2::swizzleDecryptPS2(uint32 i)
-{
-    NativeTexturePS2::GSMipmap& gsTex = this->mipmaps[i];
-
-    eFormatEncodingType currentEncoding = gsTex.swizzleEncodingType;
-
-    // Obtain the format that we should decode to.
-    eFormatEncodingType decodeTo = getFormatEncodingFromRasterFormat(parent->rasterFormat, this->paletteType);
-
-    if ( currentEncoding == FORMAT_UNKNOWN || decodeTo == FORMAT_UNKNOWN )
-        return false;
-
-    bool operationSuccessful = false;
-
-    // Get picture meta information.
-    uint32 realImageWidth = gsTex.width;
-    uint32 realImageHeight = gsTex.height;
-    uint32 realImageDepth = this->depth;
-
-    if ( currentEncoding != decodeTo )
-    {
-        uint32 newDataSize;
-        void *newtexels;
-
-        newtexels =
-            ps2GSPixelEncodingFormats::unpackImageData(
-                currentEncoding, decodeTo,
-                realImageDepth,
-                gsTex.texels,
-                gsTex.swizzleWidth, gsTex.swizzleHeight,
-                newDataSize,
-                realImageWidth, realImageHeight
-            );
-
-        if ( newtexels != NULL )
-        {
-            operationSuccessful = true;
-        }
-
-        if ( operationSuccessful )
-        {
-            gsTex.dataSize = newDataSize;
-
-	        delete[] gsTex.texels;
-	        gsTex.texels = newtexels;
-
-            gsTex.swizzleEncodingType = decodeTo;
-        }
-    }
-    else
-    {
-        operationSuccessful = true;
-    }
-
-    return operationSuccessful;
 }
 
 struct ps2GSMemoryLayoutManager
@@ -1293,12 +1174,12 @@ bool NativeTexturePS2::allocateTextureMemoryNative(
 ) const
 {
     // Get the memory layout of the encoded texture.
-    eFormatEncodingType encodingMemLayout = this->mipmaps[0].swizzleEncodingType;
+    eFormatEncodingType encodingMemLayout = this->swizzleEncodingType;
 
     if ( encodingMemLayout == FORMAT_UNKNOWN )
         return false;
 
-    eFormatEncodingType encodingPixelMemLayoutType = getFormatEncodingFromRasterFormat( this->parent->rasterFormat, this->paletteType );
+    eFormatEncodingType encodingPixelMemLayoutType = getFormatEncodingFromRasterFormat( this->rasterFormat, this->paletteType );
 
     if ( encodingPixelMemLayoutType == FORMAT_UNKNOWN )
         return false;
@@ -1643,12 +1524,12 @@ bool NativeTexturePS2::getDebugBitmap( Bitmap& bmpOut ) const
     singleColorSourcePipeline colorSrcPipe;
 
     // Get the memory layout of the encoded texture.
-    eFormatEncodingType encodingMemLayout = this->mipmaps[0].swizzleEncodingType;
+    eFormatEncodingType encodingMemLayout = this->swizzleEncodingType;
 
     if ( encodingMemLayout == FORMAT_UNKNOWN )
         return false;
 
-    eFormatEncodingType encodingPixelMemLayoutType = getFormatEncodingFromRasterFormat( this->parent->rasterFormat, this->paletteType );
+    eFormatEncodingType encodingPixelMemLayoutType = getFormatEncodingFromRasterFormat( this->rasterFormat, this->paletteType );
 
     if ( encodingPixelMemLayoutType == FORMAT_UNKNOWN )
         return false;

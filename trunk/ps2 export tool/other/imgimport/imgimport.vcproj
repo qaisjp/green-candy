@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;../../../Shared/;../../../Shared/sdk/;../../shared/"
+				AdditionalIncludeDirectories=".;../../../Shared/;../../../Shared/sdk/;../../shared/;../../../gtaconfig/include/"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -58,9 +58,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libfs_d.lib"
+				AdditionalDependencies="libfs_d.lib gtaconfig_d.lib"
 				OutputFile="$(ProjectDir)/../../output/imgimport_d.exe"
-				AdditionalLibraryDirectories="../../../FileSystem/lib/"
+				AdditionalLibraryDirectories="../../../FileSystem/lib/;../../../gtaconfig/lib/"
 				GenerateDebugInformation="true"
 				TargetMachine="1"
 			/>
@@ -116,7 +116,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories=".;../../../Shared/;../../../Shared/sdk/;../../shared/"
+				AdditionalIncludeDirectories=".;../../../Shared/;../../../Shared/sdk/;../../shared/;../../../gtaconfig/include/"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -133,9 +133,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libfs.lib"
+				AdditionalDependencies="libfs.lib gtaconfig.lib"
 				OutputFile="$(ProjectDir)/../../output/imgimport.exe"
-				AdditionalLibraryDirectories="../../../FileSystem/lib/"
+				AdditionalLibraryDirectories="../../../FileSystem/lib/;../../../gtaconfig/lib/"
 				GenerateDebugInformation="true"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
@@ -171,15 +171,7 @@
 			Name="include"
 			>
 			<File
-				RelativePath=".\ini.h"
-				>
-			</File>
-			<File
 				RelativePath=".\StdInc.h"
-				>
-			</File>
-			<File
-				RelativePath=".\syntax.h"
 				>
 			</File>
 		</Filter>
@@ -192,15 +184,7 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath=".\ini.cpp"
-			>
-		</File>
-		<File
 			RelativePath=".\main.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\syntax.cpp"
 			>
 		</File>
 	</Files>

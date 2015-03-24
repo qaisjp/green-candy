@@ -855,7 +855,7 @@ struct palettizer
         }
     }
 
-    inline void* makepalette(eRasterFormat rasterFormat, eColorOrdering colorOrder)
+    inline void* makepalette(Interface *engineInterface, eRasterFormat rasterFormat, eColorOrdering colorOrder)
     {
         uint32 palDepth = Bitmap::getRasterFormatDepth(rasterFormat);
 
@@ -864,7 +864,7 @@ struct palettizer
         uint32 palDataSize = getRasterDataSize( palItemCount, palDepth );
 
         // Allocate a container for the palette.
-        void *paletteData = new uint8[ palDataSize ];
+        void *paletteData = engineInterface->PixelAllocate( palDataSize );
 
         uint32 n = 0;
 
@@ -922,6 +922,7 @@ struct palettizer
 };
 
 inline void nativePaletteRemap(
+    Interface *engineInterface,
     palettizer& conv, ePaletteType convPaletteFormat, uint32 convItemDepth,
     const void *texelSource, uint32 itemCount, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteCount,
     eRasterFormat srcRasterFormat, eColorOrdering srcColorOrder, uint32 srcItemDepth,
@@ -944,13 +945,21 @@ inline void nativePaletteRemap(
         assert( 0 );
     }
 
-    void *newTexelData = new uint8[ dataSize ];
+    void *newTexelData = engineInterface->PixelAllocate( dataSize );
 
     for ( uint32 colorIndex = 0; colorIndex < itemCount; colorIndex++ )
     {
         // Browse each texel of the original image and link it to a palette entry.
         uint8 red, green, blue, alpha;
-        browsetexelcolor(texelSource, srcPaletteType, srcPaletteData, srcPaletteCount, colorIndex, srcRasterFormat, srcColorOrder, srcItemDepth, red, green, blue, alpha);
+        bool hasColor = browsetexelcolor(texelSource, srcPaletteType, srcPaletteData, srcPaletteCount, colorIndex, srcRasterFormat, srcColorOrder, srcItemDepth, red, green, blue, alpha);
+
+        if ( !hasColor )
+        {
+            red = 0;
+            green = 0;
+            blue = 0;
+            alpha = 0;
+        }
 
         uint32 paletteIndex = conv.getclosestlink(red, green, blue, alpha);
 
@@ -973,5 +982,8 @@ inline void nativePaletteRemap(
     texelsOut = newTexelData;
     dataSizeOut = dataSize;
 }
+
+// Main palettization function for the pixel conversion framework.
+void PalettizePixelData( Interface *engineInterface, pixelDataTraversal& pixelData, const pixelFormat& dstPixelFormat );
 
 }

@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories=".;&quot;../../modded_vendor/rwtools-master/include/&quot;;../../../Shared/;../../../Shared/sdk/;../../shared/"
+				AdditionalIncludeDirectories=".;&quot;../../modded_vendor/rwtools-master/include/&quot;;../../../Shared/;../../../Shared/sdk/;../../shared/;../../../gtaconfig/include/"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -58,11 +58,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libfs_d.lib rwtools_d.lib"
+				AdditionalDependencies="libfs_d.lib rwtools_d.lib gtaconfig_d.lib"
 				OutputFile="$(ProjectDir)..\..\output\txdgen_d.exe"
-				AdditionalLibraryDirectories="&quot;../../modded_vendor/rwtools-master/output/&quot;;../../../FileSystem/lib/"
+				AdditionalLibraryDirectories="&quot;../../modded_vendor/rwtools-master/output/&quot;;../../../FileSystem/lib/;../../../gtaconfig/lib/"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				LargeAddressAware="2"
 				EntryPointSymbol="_DebugInit"
 				TargetMachine="1"
 			/>
@@ -115,7 +116,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories=".;&quot;../../modded_vendor/rwtools-master/include/&quot;;../../../Shared/;../../../Shared/sdk/;../../shared/"
+				AdditionalIncludeDirectories=".;&quot;../../modded_vendor/rwtools-master/include/&quot;;../../../Shared/;../../../Shared/sdk/;../../shared/;../../../gtaconfig/include/"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				WarningLevel="3"
@@ -133,11 +134,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/SAFESEH:NO"
-				AdditionalDependencies="libfs.lib rwtools.lib"
+				AdditionalDependencies="libfs.lib rwtools.lib gtaconfig.lib"
 				OutputFile="$(ProjectDir)..\..\output\txdgen.exe"
-				AdditionalLibraryDirectories="&quot;../../modded_vendor/rwtools-master/output/&quot;;../../../FileSystem/lib/"
+				AdditionalLibraryDirectories="&quot;../../modded_vendor/rwtools-master/output/&quot;;../../../FileSystem/lib/;../../../gtaconfig/lib/"
 				GenerateDebugInformation="true"
 				SubSystem="1"
+				LargeAddressAware="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"
 				EntryPointSymbol="_DebugInit"
@@ -173,27 +175,11 @@
 			Name="include"
 			>
 			<File
-				RelativePath=".\csv.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\Shared\debugsdk\dbgheap.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\..\Shared\debugsdk\dbgtrace.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ide.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ini.h"
-				>
-			</File>
-			<File
-				RelativePath=".\ipl.h"
 				>
 			</File>
 			<File
@@ -214,10 +200,6 @@
 			</File>
 		</Filter>
 		<File
-			RelativePath=".\csv.cpp"
-			>
-		</File>
-		<File
 			RelativePath="..\..\..\Shared\debugsdk\dbgheap.cpp"
 			>
 		</File>
@@ -226,23 +208,7 @@
 			>
 		</File>
 		<File
-			RelativePath=".\ide.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\ini.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\ipl.cpp"
-			>
-		</File>
-		<File
 			RelativePath=".\main.cpp"
-			>
-		</File>
-		<File
-			RelativePath=".\syntax.cpp"
 			>
 		</File>
 	</Files>

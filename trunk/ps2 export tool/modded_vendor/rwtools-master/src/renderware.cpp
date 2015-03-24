@@ -31,52 +31,12 @@ LibraryVersion KnownVersions::getGameVersion( KnownVersions::eGameVersion gameVe
         outVer.rwLibMinor = 4;
         outVer.rwRevMinor = 3;
     }
-    else if ( gameVer == SA )
+    else if ( gameVer == SA ||
+              gameVer == MANHUNT )
     {
         outVer.rwLibMinor = 6;
         outVer.rwRevMinor = 3;
     }
-
-    return outVer;
-}
-
-void HeaderInfo::read(istream& rw)
-{
-	type = readUInt32(rw);
-	length = readUInt32(rw);
-	
-    // Read the packed version.
-    rw.read((char*)&this->packedVersion, sizeof(this->packedVersion));
-}
-
-uint32 HeaderInfo::write(ostream &rw)
-{
-	writeUInt32(type, rw);
-	writeUInt32(length, rw);
-	
-    // Write the packed version.
-    rw.write((const char*)&this->packedVersion, sizeof(this->packedVersion));
-
-	return 3*sizeof(uint32);
-}
-
-void HeaderInfo::setVersion(const LibraryVersion& version)
-{
-    this->packedVersion.buildNumber = version.buildNumber;
-    this->packedVersion.packedMajor = version.rwLibMinor;
-    this->packedVersion.pad = 0;
-    this->packedVersion.packedMinor = version.rwRevMinor;
-}
-
-LibraryVersion HeaderInfo::getVersion(void) const
-{
-    LibraryVersion outVer;
-
-    outVer.buildNumber = this->packedVersion.buildNumber;
-    outVer.rwLibMajor = 3;
-    outVer.rwLibMinor = this->packedVersion.packedMajor;
-    outVer.rwRevMajor = 0;
-    outVer.rwRevMinor = this->packedVersion.packedMinor;
 
     return outVer;
 }

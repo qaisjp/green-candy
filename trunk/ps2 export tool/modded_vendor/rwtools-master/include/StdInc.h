@@ -16,6 +16,81 @@
 // This one should be private to the rwtools project, hence we reject including it in "renderware.h"
 #include "../rwconf.h"
 
+namespace rw
+{
+
+struct EngineInterface : public Interface
+{
+    inline EngineInterface( void )
+    {
+        // We default to the San Andreas engine.
+        this->version = KnownVersions::getGameVersion( KnownVersions::SA );
+    }
+
+    inline ~EngineInterface( void )
+    {
+        // We are done.
+        return;
+    }
+};
+
+// Factory for global RenderWare interfaces.
+typedef StaticPluginClassFactory <EngineInterface> RwInterfaceFactory_t;
+
+typedef RwInterfaceFactory_t::pluginOffset_t RwInterfacePluginOffset_t;
+
+extern RwInterfaceFactory_t engineFactory;
+
+// Environment initializations.
+void initializeTXDEnvironment( Interface *theInterface );
+void shutdownTXDEnvironment( Interface *theInterface );
+
+void initializeNativeTextureEnvironment( Interface *engineInterface );
+void shutdownNativeTextureEnvironment( Interface *engineInterface );
+
+// Private native texture API.
+texNativeTypeProvider* GetNativeTextureTypeProvider( Interface *engineInterface, void *platformData );
+
+// Private pixel manipulation API.
+void ConvertMipmapLayer(
+    Interface *engineInterface,
+    const pixelDataTraversal::mipmapResource& mipLayer,
+    eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize,
+    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, ePaletteType dstPaletteType,
+    void*& dstTexelsOut, uint32& dstDataSizeOut
+);
+
+bool ConvertMipmapLayerEx(
+    Interface *engineInterface,
+    const pixelDataTraversal::mipmapResource& mipLayer,
+    eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize, eCompressionType srcCompressionType,
+    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, eCompressionType dstCompressionType,
+    uint32& dstPlaneWidthOut, uint32& dstPlaneHeightOut,
+    void*& dstTexelsOut, uint32& dstDataSizeOut
+);
+
+// Automatic optimal compression decision algorithm for RenderWare extensions.
+bool DecideBestDXTCompressionFormat(
+    Interface *engineInterface,
+    bool srcHasAlpha,
+    bool supportsDXT1, bool supportsDXT2, bool supportsDXT3, bool supportsDXT4, bool supportsDXT5,
+    eCompressionType& dstCompressionTypeOut
+);
+
+bool ConvertPixelData( Interface *engineInterface, pixelDataTraversal& pixelsToConvert, const pixelFormat pixFormat );
+bool ConvertPixelDataDeferred( Interface *engineInterface, const pixelDataTraversal& srcPixels, pixelDataTraversal& dstPixels, const pixelFormat pixFormat );
+
+// Internal warning dispatcher class.
+struct WarningHandler abstract
+{
+    virtual void OnWarningMessage( const std::string& theMessage ) = 0;
+};
+
+void GlobalPushWarningHandler( Interface *engineInterface, WarningHandler *theHandler );
+void GlobalPopWarningHandler( Interface *engineInterface );
+
+}
+
 #pragma warning(push)
 #pragma warning(disable: 4290)
 

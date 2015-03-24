@@ -12,6 +12,8 @@
 #include <bitset>
 #include <assert.h>
 
+#include <DynamicTypeSystem.h>
+
 #ifdef DEBUG
 	#define READ_HEADER(x)\
 	header.read(rw);\
@@ -30,27 +32,59 @@ namespace rw
 // Forward declaration.
 struct Interface;
 
-//typedef unsigned int uint;
-typedef char int8;
-typedef short int16;
-typedef int int32;
-typedef long long int64;
-typedef unsigned char uint8;
-typedef unsigned short uint16;
-typedef unsigned int uint32;
-typedef unsigned long long uint64;
-typedef float float32;
+// Type system declaration for type abstraction.
+// This is where atomics, frames, geometries register to.
+struct RwMemoryAllocator
+{
+public:
+    inline RwMemoryAllocator( void )
+    {
+        return;
+    }
+
+    inline ~RwMemoryAllocator( void )
+    {
+        return;
+    }
+    
+    inline void* Allocate( size_t memSize )
+    {
+        return new unsigned char[ memSize ];
+    }
+
+    inline void Free( void *memPtr, size_t memSize )
+    {
+        return delete [] memPtr;
+    }
+};
+
+typedef DynamicTypeSystem <RwMemoryAllocator, Interface> RwTypeSystem;
+
+// Common types used in this library.
+// These are defined against MSVC++ 32bit.
+typedef char int8;                      // 1 byte
+typedef short int16;                    // 2 bytes
+typedef int int32;                      // 4 bytes
+typedef long long int64;                // 8 bytes
+typedef unsigned char uint8;            // 1 byte
+typedef unsigned short uint16;          // 2 bytes
+typedef unsigned int uint32;            // 4 bytes
+typedef unsigned long long uint64;      // 8 bytes
+typedef float float32;                  // 4 bytes
 
 enum PLATFORM_ID
 {
-	PLATFORM_OGL = 2,
+	PLATFORM_OGL    = 2,
 	PLATFORM_PS2    = 4,
 	PLATFORM_XBOX   = 5,
 	PLATFORM_D3D8   = 8,
 	PLATFORM_D3D9   = 9,
+    PLATFORM_PVR    = 10,
+    PLATFORM_ATC    = 11,
+    PLATFORM_UNC    = 12,   // you can send your hatemail to Wardrum Studios, today!
+    PLATFORM_MOBILE_DXT = 13,   // quite the abomination, as it uses the same platform id as d3d9.
 	PLATFORM_PS2FOURCC = 0x00325350 /* "PS2\0" */
 };
-typedef enum PLATFORM_ID PLATFORM_ID;
 
 enum CHUNK_TYPE
 {
@@ -120,7 +154,6 @@ enum CHUNK_TYPE
     CHUNK_MESHEXTENSION    = 0x253F2FD,
     CHUNK_FRAME            = 0x253F2FE
 };
-typedef enum CHUNK_TYPE CHUNK_TYPE;
 
 enum
 {
@@ -136,6 +169,15 @@ enum
 // Decoded RenderWare version management struct.
 struct LibraryVersion
 {
+    inline LibraryVersion( void )
+    {
+        this->buildNumber = 0xFFFF;
+        this->rwLibMajor = 3;
+        this->rwLibMinor = 0;
+        this->rwRevMajor = 0;
+        this->rwRevMinor = 0;
+    }
+
     uint16 buildNumber;
     
     union
@@ -155,6 +197,11 @@ struct LibraryVersion
         return
             this->buildNumber == right.buildNumber &&
             this->version == right.version;
+    }
+
+    inline bool operator !=( const LibraryVersion& right ) const
+    {
+        return !( *this == right );
     }
 
     std::string toString(void) const
@@ -203,10 +250,6 @@ struct LibraryVersion
 
 struct HeaderInfo
 {
-private:
-	uint32 type;
-	uint32 length;
-	
     // Packed library version.
     struct PackedLibraryVersion
     {
@@ -216,6 +259,10 @@ private:
         uint16 pad : 2;
         uint16 packedMajor : 6;
     };
+
+private:
+	uint32 type;
+	uint32 length;
 
     PackedLibraryVersion packedVersion;
 
@@ -293,14 +340,81 @@ namespace KnownVersions
         GTA3,
         VC_PS2,
         VC_PC,
-        SA
+        SA,
+        MANHUNT
     };
 
     LibraryVersion  getGameVersion( eGameVersion gameVer );
 };
 
-struct Frame
+// Main RenderWare abstraction type.
+struct RwObject abstract
 {
+    Interface *engineInterface;
+
+    inline RwObject( Interface *engineInterface, void *construction_params );
+
+    inline RwObject( const RwObject& right )
+    {
+        // Constructor that is called for cloning.
+        this->engineInterface = right.engineInterface;
+        this->objVersion = right.objVersion;
+    }
+
+    inline ~RwObject( void )
+    {
+        return;
+    }
+
+    inline void SetEngineVersion( const LibraryVersion& version )
+    {
+        if ( version != this->objVersion )
+        {
+            // Notify the object about this change.
+            this->OnVersionChange( this->objVersion, version );
+
+            // Update our version.
+            this->objVersion = version;
+        }
+    }
+
+    inline const LibraryVersion& GetEngineVersion( void ) const
+    {
+        return this->objVersion;
+    }
+
+    virtual void OnVersionChange( const LibraryVersion& oldVer, const LibraryVersion& newVer )
+    {
+        return;
+    }
+
+private:
+    LibraryVersion objVersion;
+};
+
+struct Frame : public RwObject
+{
+    inline Frame( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
+    {
+        this->parent = -1;
+        this->hasHAnim = false;
+        this->hAnimUnknown1 = 0;
+        this->hAnimBoneId = -1;
+        this->hAnimBoneCount = 0;
+        this->hAnimUnknown2 = 0;
+        this->hAnimUnknown3 = 0;
+
+	    for (int i = 0; i < 3; i++)
+        {
+		    position[i] = 0.0f;
+
+		    for ( int j = 0; j < 3; j++ )
+            {
+			    rotationMatrix[ i*3 + j ] = (i == j) ? 1.0f : 0.0f;
+            }
+	    }
+    }
+
 	float32 rotationMatrix[9];
 	float32 position[3];
 	int32 parent;
@@ -328,19 +442,6 @@ struct Frame
 	uint32 writeExtension(std::ostream &dff);
 
 	void dump(uint32 index, std::string ind = "");
-
-	Frame(void);
-};
-
-#include "renderware.txd.h"
-#include "renderware.material.h"
-#include "renderware.dff.h"
-#include "renderware.file.h"
-
-// Warning manager interface.
-struct WarningManagerInterface abstract
-{
-    virtual void OnWarning( const std::string& message ) = 0;
 };
 
 struct RwException
@@ -351,6 +452,19 @@ struct RwException
     }
 
     std::string message;
+};
+
+#include "renderware.stream.h"
+#include "renderware.blockapi.h"
+#include "renderware.txd.h"
+#include "renderware.material.h"
+#include "renderware.dff.h"
+#include "renderware.file.h"
+
+// Warning manager interface.
+struct WarningManagerInterface abstract
+{
+    virtual void OnWarning( const std::string& message ) = 0;
 };
 
 // Palettization configuration.
@@ -367,19 +481,82 @@ enum eDXTCompressionMethod
     DXTRUNTIME_SQUISH       // prefer squish
 };
 
+enum eSerializationTypeMode
+{
+    RWSERIALIZE_INHERIT,
+    RWSERIALIZE_ISOF
+};
+
+struct serializationProvider abstract
+{
+    inline serializationProvider( void )
+    {
+        this->managerData.isRegistered = false;
+    }
+
+    inline ~serializationProvider( void )
+    {
+        if ( this->managerData.isRegistered )
+        {
+            LIST_REMOVE( this->managerData.managerNode );
+        }
+    }
+
+    // This interface is used to save the contents of the RenderWare engine to disk.
+    virtual void            Serialize( Interface *engineInterface, BlockProvider& outputProvider, RwObject *objectToSerialize ) const = 0;
+    virtual void            Deserialize( Interface *engineInterface, BlockProvider& inputProvider, RwObject *objectToDeserialize ) const = 0;
+
+    struct
+    {
+        RwListEntry <serializationProvider> managerNode;
+
+        uint32 chunkID;
+        eSerializationTypeMode mode;
+        RwTypeSystem::typeInfoBase *rwType;
+
+        bool isRegistered;
+    } managerData;
+};
+
 struct Interface
 {
+protected:
     Interface( void );
     ~Interface( void );
 
+public:
     void                SetVersion              ( LibraryVersion version );
     LibraryVersion      GetVersion              ( void ) const     { return this->version; }
 
-    void                BeginDebug              ( void );
-    void                ProcessDebug            ( void );
-
     void                SetFileInterface        ( FileInterface *fileIntf );
     FileInterface*      GetFileInterface        ( void );
+
+    bool                RegisterStream          ( const char *typeName, size_t memBufSize, customStreamInterface *streamInterface );
+    Stream*             CreateStream            ( eBuiltinStreamType streamType, eStreamMode streamMode, streamConstructionParam_t *param );
+    void                DeleteStream            ( Stream *theStream );
+
+    // Serialization interface.
+    bool                RegisterSerialization   ( uint32 chunkID, RwTypeSystem::typeInfoBase *rwType, serializationProvider *serializer, eSerializationTypeMode mode );
+    bool                UnregisterSerialization ( uint32 chunkID, RwTypeSystem::typeInfoBase *rtType, serializationProvider *serializer );
+
+    void                SerializeBlock          ( RwObject *objectToStore, BlockProvider& outputProvider );
+    void                Serialize               ( RwObject *objectToStore, Stream *outputStream );
+    RwObject*           DeserializeBlock        ( BlockProvider& inputProvider );
+    RwObject*           Deserialize             ( Stream *inputStream );
+
+    // RwObject general API.
+    RwObject*           CloneRwObject           ( const RwObject *srcObj );     // creates a new copy of an object
+    void                DeleteRwObject          ( RwObject *obj );              // force kills an object
+
+    void                SerializeExtensions     ( const RwObject *rwObj, BlockProvider& outputProvider );
+    void                DeserializeExtensions   ( RwObject *rwObj, BlockProvider& inputProvider );
+
+    // Memory management.
+    void*               MemAllocate             ( size_t memSize );
+    void                MemFree                 ( void *ptr );
+
+    void*               PixelAllocate           ( size_t memSize );
+    void                PixelFree               ( void *pixels );
 
     void                SetWarningManager       ( WarningManagerInterface *warningMan );
     void                SetWarningLevel         ( int level );
@@ -402,9 +579,24 @@ struct Interface
     void                SetDXTPackedDecompression   ( bool packedDecompress );
     bool                GetDXTPackedDecompression   ( void ) const;
 
-private:
-    LibraryVersion version;     // version of the output files (III, VC, SA)
+    void                SetIgnoreSerializationBlockRegions  ( bool doIgnore );
+    bool                GetIgnoreSerializationBlockRegions  ( void ) const;
 
+    LibraryVersion version;     // version of the output files (III, VC, SA, Manhunt, ...)
+
+    // General type system.
+    RwMemoryAllocator memAlloc;
+
+    RwTypeSystem typeSystem;
+
+    // Types that should be registered by all RenderWare implementations.
+    // These can be NULL, tho.
+    RwTypeSystem::typeInfoBase *streamTypeInfo;
+    RwTypeSystem::typeInfoBase *rasterTypeInfo;
+    RwTypeSystem::typeInfoBase *rwobjTypeInfo;
+    RwTypeSystem::typeInfoBase *textureTypeInfo;
+
+protected:
     FileInterface *customFileInterface;
 
     WarningManagerInterface *warningManager;
@@ -417,11 +609,13 @@ private:
 
     bool fixIncompatibleRasters;
     bool dxtPackedDecompression;
+
+    bool ignoreSerializationBlockRegions;
 };
 
-// Global RenderWare interface.
-// There is only one per library.
-extern Interface rwInterface;
+// To create a RenderWare interface, you have to go through a constructor.
+Interface*  CreateEngine( LibraryVersion engine_version );
+void        DeleteEngine( Interface *theEngine );
 
 }
 

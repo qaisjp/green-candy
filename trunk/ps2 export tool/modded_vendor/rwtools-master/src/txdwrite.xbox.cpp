@@ -9,16 +9,45 @@
 namespace rw
 {
 
-uint32 NativeTexture::writeXbox(std::ostream& rw)
+eTexNativeCompatibility xboxNativeTextureTypeProvider::IsCompatibleTextureBlock( BlockProvider& inputProvider ) const
 {
-	HeaderInfo header;
-    header.setVersion( rw::rwInterface.GetVersion() );
-	uint32 writtenBytesReturn;
+    eTexNativeCompatibility texCompat = RWTEXCOMPAT_NONE;
 
-	if (platform != PLATFORM_XBOX)
-		return 0;
+    BlockProvider texNativeImageBlock( &inputProvider );
 
-    NativeTextureXBOX *platformTex = (NativeTextureXBOX*)this->platformData;
+    texNativeImageBlock.EnterContext();
+
+    try
+    {
+        if ( texNativeImageBlock.getBlockID() == CHUNK_STRUCT )
+        {
+            // Here we can check the platform descriptor, since we know it is unique.
+            uint32 platformDescriptor = texNativeImageBlock.readUInt32();
+
+            if ( platformDescriptor == PLATFORM_XBOX )
+            {
+                texCompat = RWTEXCOMPAT_ABSOLUTE;
+            }
+        }
+    }
+    catch( ... )
+    {
+        texNativeImageBlock.LeaveContext();
+
+        throw;
+    }
+
+    texNativeImageBlock.LeaveContext();
+
+    return texCompat;
+}
+
+void xboxNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& outputProvider ) const
+{
+    Interface *engineInterface = theTexture->engineInterface;
+
+    // Cast the texture to our native type.
+    NativeTextureXBOX *platformTex = (NativeTextureXBOX*)nativeTex;
 
     // Debug some essentials.
     ePaletteType paletteType = platformTex->paletteType;
@@ -37,114 +66,110 @@ uint32 NativeTexture::writeXbox(std::ostream& rw)
 
         if ( platformTex->colorOrder != requiredColorOrder )
         {
-            throw RwException( "texture " + this->name + " has an invalid color ordering for writing" );
+            throw RwException( "texture " + theTexture->name + " has an invalid color ordering for writing" );
         }
     }
-
-    // Texture Native.
-	SKIP_HEADER();
 
     // Write the struct.
     {
-        SKIP_HEADER();
+        BlockProvider texImageDataBlock( &outputProvider );
 
-        // First comes the platform id.
-        bytesWritten += writeUInt32(PLATFORM_XBOX, rw);
+        texImageDataBlock.EnterContext();
 
-        // Write the header.
-        uint32 mipmapCount = platformTex->mipmapCount;
+        try
         {
-            textureMetaHeaderStructXbox metaInfo;
+            // First comes the platform id.
+            texImageDataBlock.writeUInt32( PLATFORM_XBOX );
 
-            // Write addressing information.
-            metaInfo.formatInfo.set( *this );
-
-            // Write texture names.
-            // These need to be written securely.
-            writeStringIntoBufferSafe( this->name, metaInfo.name, sizeof( metaInfo.name ), this->name, "name" );
-            writeStringIntoBufferSafe( this->maskName, metaInfo.maskName, sizeof( metaInfo.maskName ), this->name, "mask name" );
-
-            // Construct raster flags.
-            uint32 rasterFlags = generateRasterFormatFlags(this->rasterFormat, paletteType, mipmapCount > 1, platformTex->autoMipmaps);
-
-            // Store the flags.
-            metaInfo.rasterFormat = rasterFlags;
-
-            metaInfo.hasAlpha = platformTex->hasAlpha;
-
-            metaInfo.mipmapCount = platformTex->mipmapCount;
-
-            metaInfo.rasterType = platformTex->rasterType;
-
-            metaInfo.dxtCompression = compressionType;
-
-            // Write the dimensions.
-            metaInfo.width = platformTex->width[ 0 ];
-            metaInfo.height = platformTex->height[ 0 ];
-
-            metaInfo.depth = platformTex->depth;
-
-            // Calculate the size of all the texture data combined.
-            uint32 imageDataSectionSize = 0;
-
-            for (uint32 n = 0; n < mipmapCount; n++)
+            // Write the header.
+            uint32 mipmapCount = platformTex->mipmaps.size();
             {
-                imageDataSectionSize += platformTex->dataSizes[ n ];
+                textureMetaHeaderStructXbox metaInfo;
+
+                // Write addressing information.
+                metaInfo.formatInfo.set( *theTexture );
+
+                // Write texture names.
+                // These need to be written securely.
+                writeStringIntoBufferSafe( engineInterface, theTexture->name, metaInfo.name, sizeof( metaInfo.name ), theTexture->name, "name" );
+                writeStringIntoBufferSafe( engineInterface, theTexture->maskName, metaInfo.maskName, sizeof( metaInfo.maskName ), theTexture->name, "mask name" );
+
+                // Construct raster flags.
+                uint32 rasterFlags = generateRasterFormatFlags(platformTex->rasterFormat, paletteType, mipmapCount > 1, platformTex->autoMipmaps);
+
+                // Store the flags.
+                metaInfo.rasterFormat = rasterFlags;
+
+                metaInfo.hasAlpha = platformTex->hasAlpha;
+
+                metaInfo.mipmapCount = mipmapCount;
+
+                metaInfo.rasterType = platformTex->rasterType;
+
+                metaInfo.dxtCompression = compressionType;
+
+                // Write the dimensions.
+                metaInfo.width = platformTex->mipmaps[ 0 ].layerWidth;
+                metaInfo.height = platformTex->mipmaps[ 0 ].layerHeight;
+
+                metaInfo.depth = platformTex->depth;
+
+                // Calculate the size of all the texture data combined.
+                uint32 imageDataSectionSize = 0;
+
+                for (uint32 n = 0; n < mipmapCount; n++)
+                {
+                    imageDataSectionSize += platformTex->mipmaps[ n ].dataSize;
+                }
+
+                metaInfo.imageDataSectionSize = imageDataSectionSize;
+
+                // Write the generic header.
+                texImageDataBlock.write( &metaInfo, sizeof( metaInfo ) );
             }
 
-            metaInfo.imageDataSectionSize = imageDataSectionSize;
+            // Write palette data (if available).
+            if (paletteType != PALETTE_NONE)
+            {
+                // Make sure we write as much data as the system expects.
+                uint32 reqPalCount = getD3DPaletteCount(paletteType);
 
-            // Write the generic header.
-            rw.write((const char*)&metaInfo, sizeof( metaInfo ));
+                uint32 palItemCount = platformTex->paletteSize;
 
-            bytesWritten += sizeof( metaInfo );
+                // Get the real data size of the palette.
+                uint32 palRasterDepth = Bitmap::getRasterFormatDepth(platformTex->rasterFormat);
+
+                uint32 paletteDataSize = getRasterDataSize( palItemCount, palRasterDepth );
+
+                uint32 palByteWriteCount = writePartialBlockSafe(texImageDataBlock, platformTex->palette, paletteDataSize, getRasterDataSize(reqPalCount, palRasterDepth));
+        
+                assert( palByteWriteCount * 8 / palRasterDepth == reqPalCount );
+            }
+
+            // Write mipmap data.
+            for ( uint32 n = 0; n < mipmapCount; n++ )
+            {
+                const NativeTextureXBOX::mipmapLayer& mipLayer = platformTex->mipmaps[ n ];
+
+			    uint32 texDataSize = mipLayer.dataSize;
+
+                const void *texelData = mipLayer.texels;
+
+			    texImageDataBlock.write( texelData, texDataSize );
+            }
         }
-
-        // Write palette data (if available).
-        if (paletteType != PALETTE_NONE)
+        catch( ... )
         {
-            // Make sure we write as much data as the system expects.
-            uint32 reqPalCount = getD3DPaletteCount(paletteType);
+            texImageDataBlock.LeaveContext();
 
-            uint32 palItemCount = platformTex->paletteSize;
-
-            // Get the real data size of the palette.
-            uint32 palRasterDepth = Bitmap::getRasterFormatDepth(this->rasterFormat);
-
-            uint32 paletteDataSize = getRasterDataSize( palItemCount, palRasterDepth );
-
-            uint32 palByteWriteCount = writePartialBlockSafe(rw, platformTex->palette, paletteDataSize, getRasterDataSize(reqPalCount, palRasterDepth));
-    
-            assert( palByteWriteCount * 8 / palRasterDepth == reqPalCount );
-
-            bytesWritten += palByteWriteCount;
+            throw;
         }
 
-        // Write mipmap data.
-        for ( uint32 n = 0; n < mipmapCount; n++ )
-        {
-			uint32 texDataSize = platformTex->dataSizes[ n ];
-
-            uint8 *texelData = (uint8*)platformTex->texels[ n ];
-
-			rw.write((const char*)texelData, texDataSize);
-			bytesWritten += texDataSize;
-        }
-
-        WRITE_HEADER(CHUNK_STRUCT);
+        texImageDataBlock.LeaveContext();
     }
-    bytesWritten += writtenBytesReturn;
 
 	// Extension
-	{
-		SKIP_HEADER();
-		WRITE_HEADER(CHUNK_EXTENSION);
-	}
-	bytesWritten += writtenBytesReturn;
-
-    WRITE_HEADER(CHUNK_TEXTURENATIVE);
-
-	return writtenBytesReturn;
+	engineInterface->SerializeExtensions( theTexture, outputProvider );
 }
 
 };

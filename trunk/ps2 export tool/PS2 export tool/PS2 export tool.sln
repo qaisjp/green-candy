@@ -4,6 +4,7 @@ Microsoft Visual Studio Solution File, Format Version 10.00
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PS2 export tool", "PS2 export tool.vcproj", "{6047812D-E55A-4E09-8390-5A8DF055531D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3D409405-B557-4BB6-B9E1-43215019E381} = {3D409405-B557-4BB6-B9E1-43215019E381}
+		{8A99E697-80DE-4F63-81ED-86DB648A3F6B} = {8A99E697-80DE-4F63-81ED-86DB648A3F6B}
 		{6E793DA8-5641-4BBB-BCB0-43BF10682E14} = {6E793DA8-5641-4BBB-BCB0-43BF10682E14}
 	EndProjectSection
 EndProject
@@ -14,6 +15,7 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ps2txdgen", "..\other\ps2txdgen\ps2txdgen.vcproj", "{31E63D18-2B04-41D3-9A0C-23AFD8F01C8D}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3D409405-B557-4BB6-B9E1-43215019E381} = {3D409405-B557-4BB6-B9E1-43215019E381}
+		{8A99E697-80DE-4F63-81ED-86DB648A3F6B} = {8A99E697-80DE-4F63-81ED-86DB648A3F6B}
 		{6E793DA8-5641-4BBB-BCB0-43BF10682E14} = {6E793DA8-5641-4BBB-BCB0-43BF10682E14}
 	EndProjectSection
 EndProject
@@ -27,6 +29,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "squish", "..\vendor\squish-1.11\vs9\squish\squish.vcproj", "{6A8518C3-D81A-4428-BD7F-C37933088AC1}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "streamingopt", "..\other\streamingopt\streamingopt.vcproj", "{CB20F630-48BB-4B81-B116-6614796EED4F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gtaconfig", "..\..\gtaconfig\gtaconfig\gtaconfig.vcproj", "{8A99E697-80DE-4F63-81ED-86DB648A3F6B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -66,6 +70,10 @@ Global
 		{CB20F630-48BB-4B81-B116-6614796EED4F}.Debug|Win32.Build.0 = Debug|Win32
 		{CB20F630-48BB-4B81-B116-6614796EED4F}.Release|Win32.ActiveCfg = Release|Win32
 		{CB20F630-48BB-4B81-B116-6614796EED4F}.Release|Win32.Build.0 = Release|Win32
+		{8A99E697-80DE-4F63-81ED-86DB648A3F6B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{8A99E697-80DE-4F63-81ED-86DB648A3F6B}.Debug|Win32.Build.0 = Debug|Win32
+		{8A99E697-80DE-4F63-81ED-86DB648A3F6B}.Release|Win32.ActiveCfg = Release|Win32
+		{8A99E697-80DE-4F63-81ED-86DB648A3F6B}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

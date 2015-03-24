@@ -391,76 +391,70 @@ inline void performXBOXSwizzle(
 #endif //_USE_XBOX_SDK_
 }
 
-void NativeTextureXBOX::swizzleMipmaps( void )
+void NativeTextureXBOX::swizzleMipmap( Interface *engineInterface, swizzleMipmapTraversal& pixelData )
 {
     // We are a raw raster; take care about swizzling.
-    uint32 mipmapCount = this->mipmapCount;
-    uint32 depth = this->depth;
+    uint32 depth = pixelData.depth;
     
-    for ( uint32 n = 0; n < mipmapCount; n++ )
-    {
-        uint32 mipWidth = this->width[ n ];
-        uint32 mipHeight = this->height[ n ];
+    uint32 mipWidth = pixelData.mipWidth;
+    uint32 mipHeight = pixelData.mipHeight;
 
-        uint32 texelCount = ( mipWidth * mipHeight );
+    uint32 texelCount = ( mipWidth * mipHeight );
 
-        // The dataSize will not change.
-        uint32 dataSize = this->dataSizes[ n ];
+    // The dataSize will not change.
+    uint32 dataSize = pixelData.dataSize;
 
-        // Let's try allocating a new array for the unswizzled texels.
-        void *newtexels = new uint8[ dataSize ];
+    // Let's try allocating a new array for the swizzled texels.
+    void *newtexels = engineInterface->PixelAllocate( dataSize );
 
-        const void *srcTexels = this->texels[ n ];
+    const void *srcTexels = pixelData.texels;
 
-        // Do the permutation.
-        performXBOXSwizzle(
-            srcTexels, newtexels,
-            mipWidth, mipHeight,
-            depth,
-            false
-        );
+    // Do the permutation.
+    performXBOXSwizzle(
+        srcTexels, newtexels,
+        mipWidth, mipHeight,
+        depth,
+        false
+    );
 
-        // Replace texels.
-        delete [] srcTexels;
-
-        this->texels[ n ] = newtexels;
-    }
+    // Give new stuff to the runtime.
+    pixelData.newWidth = mipWidth;
+    pixelData.newHeight = mipHeight;
+    pixelData.newtexels = newtexels;
+    pixelData.newDataSize = dataSize;
 }
 
-void NativeTextureXBOX::unswizzleMipmaps( void )
+void NativeTextureXBOX::unswizzleMipmap( Interface *engineInterface, swizzleMipmapTraversal& pixelData )
 {
-    // Unswizzle the mipmaps.
-    uint32 mipmapCount = this->mipmapCount;
-    uint32 depth = this->depth;
+    // unswizzle the mipmap layer.
+    uint32 depth = pixelData.depth;
+    
+    uint32 mipWidth = pixelData.mipWidth;
+    uint32 mipHeight = pixelData.mipHeight;
 
-    for ( uint32 n = 0; n < mipmapCount; n++ )
-    {
-        uint32 mipWidth = this->width[ n ];
-        uint32 mipHeight = this->height[ n ];
+    uint32 texelCount = ( mipWidth * mipHeight );
 
-        uint32 texelCount = ( mipWidth * mipHeight );
+    // The dataSize will not change.
+    uint32 dataSize = pixelData.dataSize;
 
-        // The dataSize will not change.
-        uint32 dataSize = this->dataSizes[ n ];
-        
-        // Let's try allocating a new array for the unswizzled texels.
-        void *newtexels = new uint8[ dataSize ];
+    // Let's try allocating a new array for the unswizzled texels.
+    void *newtexels = engineInterface->PixelAllocate( dataSize );
 
-        const void *srcTexels = this->texels[ n ];
+    const void *srcTexels = pixelData.texels;
 
-        // Do the permutation.
-        performXBOXSwizzle(
-            srcTexels, newtexels,
-            mipWidth, mipHeight,
-            depth,
-            true
-        );
+    // Do the permutation.
+    performXBOXSwizzle(
+        srcTexels, newtexels,
+        mipWidth, mipHeight,
+        depth,
+        true
+    );
 
-        // Replace texels.
-        delete [] srcTexels;
-
-        this->texels[ n ] = newtexels;
-    }
+    // Give new stuff to the runtime.
+    pixelData.newWidth = mipWidth;
+    pixelData.newHeight = mipHeight;
+    pixelData.newtexels = newtexels;
+    pixelData.newDataSize = dataSize;
 }
 
 }

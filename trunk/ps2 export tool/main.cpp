@@ -11,6 +11,10 @@ static CFileSystem *fsHandle = NULL;
 
 static bool _outputOptimizedTGA = false;
 
+static rw::Interface *engineInterface = NULL;
+
+#if 0
+
 static bool ProcessTXDArchive( CFileTranslator *srcRoot, CFile *srcStream, CFile *targetStream, CFileTranslator *debugOutputRoot )
 {
     bool hasProcessed = false;
@@ -286,12 +290,54 @@ struct _discFileSentry
     }
 };
 
+#endif
+
 static void DebugFuncs( CFileTranslator *discHandle )
 {
+    // Debug deserialisation.
+    rw::streamConstructionFileParam_t fileParam( "txdgen_in/hq_roads/backroad_sfs.txd" );
+
+    rw::Stream *rwStream = engineInterface->CreateStream( rw::RWSTREAMTYPE_FILE, rw::RWSTREAMMODE_READONLY, &fileParam );
+
+    if ( rwStream != NULL )
+    {
+        // Deserialize.
+        rw::RwObject *newObject = engineInterface->Deserialize( rwStream );
+
+        if ( newObject )
+        {
+            rw::TexDictionary *texDict = rw::ToTexDictionary( engineInterface, newObject );
+
+            // Do some stuff.
+            if ( texDict )
+            {
+                for ( rw::TexDictionary::texIter_t iter = texDict->GetTextureIterator(); !iter.IsEnd(); iter.Increment() )
+                {
+                    rw::TextureBase *texture = iter.Resolve();
+
+                    // Convert the texture to ATC.
+                    rw::Raster *texRaster = texture->GetRaster();
+
+                    if ( texRaster )
+                    {
+                        bool conversionSuccess = rw::ConvertRasterTo( texRaster, "ATI_Compress" );
+
+                        __asm nop
+                    }
+                }
+            }
+
+            __asm int 3
+        }
+
+        engineInterface->DeleteStream( rwStream );
+    }
+
+#if 0
     // Debug a weird txd container...
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC/VEHICLE.TXD", "rb" );
     //CFile *txdChat = discHandle->Open( "MODELS/GENERIC.TXD", "rb" );
-    CFile *txdChat = discHandle->Open( "TAXI.TXD", "rb" );
+    CFile *txdChat = discHandle->Open( "generic_PVR.txd", "rb" );
 
     if ( txdChat )
     {
@@ -397,6 +443,13 @@ static void DebugFuncs( CFileTranslator *discHandle )
                         {
                             tex.convertFromXbox();
                         }
+                        else if ( origPlatform == rw::PLATFORM_PVR )
+                        {
+                            tex.convertFromPVR();
+                        }
+
+                        tex.convertToPVR();
+                        tex.convertFromPVR();
 
                         // Write the texture somewhere.
                         std::string newName = std::string( "txdout/" ) + tex.name;
@@ -417,6 +470,10 @@ static void DebugFuncs( CFileTranslator *discHandle )
                         else if ( origPlatform == rw::PLATFORM_XBOX )
                         {
                             tex.convertToXbox();
+                        }
+                        else if ( origPlatform == rw::PLATFORM_PVR )
+                        {
+                            tex.convertToPVR();
                         }
                         // else we just keep it Direct3D/PC format.
                     }
@@ -439,6 +496,7 @@ static void DebugFuncs( CFileTranslator *discHandle )
 
         delete txdChat;
     }
+#endif
 }
 
 struct NEWFileInterface : public rw::FileInterface
@@ -515,31 +573,36 @@ int main( int argc, char *argv[] )
     if ( !fsHandle )
         return -1;
 
-    // Set the global RenderWare version.
-    rw::rwInterface.SetVersion( rw::KnownVersions::getGameVersion( rw::KnownVersions::SA ) );
+    // Create a RenderWare engine.
+    rw::LibraryVersion wantedVersion = rw::KnownVersions::getGameVersion( rw::KnownVersions::SA );
+
+    engineInterface = rw::CreateEngine( wantedVersion );
+
+    if ( engineInterface != NULL )
     {
         // Give the correct file interface to the interface.
         NEWFileInterface fInterface;
 
-        rw::rwInterface.SetFileInterface( &fInterface );
+        engineInterface->SetFileInterface( &fInterface );
 
-        rw::rwInterface.SetPaletteRuntime( rw::PALRUNTIME_PNGQUANT );
+        engineInterface->SetPaletteRuntime( rw::PALRUNTIME_PNGQUANT );
 
-        rw::rwInterface.SetDXTRuntime( rw::DXTRUNTIME_SQUISH );
+        engineInterface->SetDXTRuntime( rw::DXTRUNTIME_SQUISH );
 
         // Open a handle to the GTA:SA disc and browse for the IMG files.
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "E:/" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas\\" );
-        CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTAIII\\" );
+        //CFileTranslator *discHandle = fsHandle->CreateTranslator( "C:\\Program Files (x86)\\Rockstar Games\\GTAIII\\" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "D:\\gtaiso\\unpack\\gta3_xbox\\" );
         //CFileTranslator *discHandle = fsHandle->CreateTranslator( "txdgen_in/xbox_swizzle_samples/" );
+        CFileTranslator *discHandle = fsHandle->CreateTranslator( "debugtxd/" );
 
         if ( discHandle )
         {
             // Debug some obscurities.
-            //DebugFuncs( discHandle );
+            DebugFuncs( discHandle );
 
-            if ( true )
+            if ( false )
             {
                 // Create the build directory and get a link to it.
                 bool dirCreationSuccess = fileRoot->CreateDir( "BUILD_ROOT/" );
@@ -571,6 +634,7 @@ int main( int argc, char *argv[] )
 
                 if ( buildRoot )
                 {
+#if 0
                     // Iterate through every disc file and output it into the build directory.
                     // If necessary, perform conversions.
                     gtaFileProcessor <_discFileSentry> fileProc;
@@ -585,20 +649,23 @@ int main( int argc, char *argv[] )
                     fileProc.process( &sentry, discHandle, buildRoot );
 
                     delete buildRoot;
+#endif
                 }
 
                 if ( debugRoot )
                 {
                     delete debugRoot;
                 }
-
-                rw::NativeTexture::DebugParameters();
             }
 
             delete discHandle;
         }
 
-        rw::rwInterface.SetFileInterface( NULL );
+        // Clear engine links.
+        engineInterface->SetFileInterface( NULL );
+
+        // Destroy the RenderWare engine again.
+        rw::DeleteEngine( engineInterface );
     }
 
     // Shutdown the FileSystem environment.
