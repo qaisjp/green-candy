@@ -368,7 +368,27 @@ inline bool decompressDXTBlock(
     return hasDecompressed;
 }
 
+inline uint32 getDXTRasterDataSize(uint32 dxtType, uint32 texUnitCount)
+{
+    uint32 texBlockCount = texUnitCount / 16;
+
+    uint32 blockSize = 0;
+
+    if (dxtType == 1)
+    {
+        blockSize = 8;
+    }
+    else if (dxtType == 2 || dxtType == 3 ||
+             dxtType == 4 || dxtType == 5)
+    {
+        blockSize = 16;
+    }
+
+    return ( texBlockCount * blockSize );
+}
+
 inline void compressTexelsUsingDXT(
+    Interface *engineInterface,
     uint32 dxtType, const void *texelSource, uint32 mipWidth, uint32 mipHeight,
     eRasterFormat rasterFormat, const void *paletteData, ePaletteType paletteType, uint32 maxpalette, eColorOrdering colorOrder, uint32 itemDepth,
     void*& texelsOut, uint32& dataSizeOut,
@@ -383,7 +403,7 @@ inline void compressTexelsUsingDXT(
 
     uint32 dxtDataSize = getDXTRasterDataSize(dxtType, texUnitCount);
 
-    void *dxtArray = new uint8[ dxtDataSize ];
+    void *dxtArray = engineInterface->PixelAllocate( dxtDataSize );
 
     // Loop across the image.
     uint32 compressedBlockCount = 0;
@@ -495,6 +515,78 @@ inline void compressTexelsUsingDXT(
 
     realWidthOut = alignedMipWidth;
     realHeightOut = alignedMipHeight;
+}
+
+inline bool IsDXTCompressionType( eCompressionType compressionType, uint32& dxtType )
+{
+    if ( compressionType == RWCOMPRESS_DXT1 ||
+         compressionType == RWCOMPRESS_DXT2 ||
+         compressionType == RWCOMPRESS_DXT3 ||
+         compressionType == RWCOMPRESS_DXT4 ||
+         compressionType == RWCOMPRESS_DXT5 )
+    {
+        if ( compressionType == RWCOMPRESS_DXT1 )
+        {
+            dxtType = 1;
+        }
+        else if ( compressionType == RWCOMPRESS_DXT2 )
+        {
+            dxtType = 2;
+        }
+        else if ( compressionType == RWCOMPRESS_DXT3 )
+        {
+            dxtType = 3;
+        }
+        else if ( compressionType == RWCOMPRESS_DXT4 )
+        {
+            dxtType = 4;
+        }
+        else if ( compressionType == RWCOMPRESS_DXT5 )
+        {
+            dxtType = 5;
+        }
+        else
+        {
+            assert( 0 );
+
+            dxtType = 0;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+inline eRasterFormat getDXTDecompressionRasterFormat( Interface *engineInterface, uint32 dxtType, bool hasAlpha )
+{
+    bool doPackedDecompress = engineInterface->GetDXTPackedDecompression();
+
+    eRasterFormat targetRasterFormat;
+
+    if (hasAlpha)
+    {
+        eRasterFormat packedAlphaRasterFormat = RASTER_8888;
+
+        if (dxtType == 1)
+        {
+            packedAlphaRasterFormat = RASTER_1555;
+        }
+        else if (dxtType == 2 || dxtType == 3)
+        {
+            packedAlphaRasterFormat = RASTER_4444;
+        }
+
+        targetRasterFormat = ( doPackedDecompress ) ? packedAlphaRasterFormat : RASTER_8888;
+    }
+    else
+    {
+        eRasterFormat packedRasterFormat = RASTER_565;
+
+        targetRasterFormat = ( doPackedDecompress ) ? packedRasterFormat : RASTER_888;
+    }
+
+    return targetRasterFormat;
 }
 
 }

@@ -436,9 +436,13 @@ inline uint32 getFormatEncodingDepth(eFormatEncodingType encodingType)
 
 struct NativeTexturePS2 : public PlatformTexture
 {
-    NativeTexturePS2( void )
+    Interface *engineInterface;
+
+    inline NativeTexturePS2( Interface *engineInterface )
     {
         // Initialize the texture object.
+        this->engineInterface = engineInterface;
+        this->rasterFormat = RASTER_DEFAULT;
         this->depth = 0;
         this->paletteType = PALETTE_NONE;
         this->autoMipmaps = false;
@@ -446,6 +450,8 @@ struct NativeTexturePS2 : public PlatformTexture
         this->hasSwizzle = false;
         this->skyMipMapVal = 4032;
         this->recommendedBufferBasePointer = 0;
+        this->swizzleEncodingType = FORMAT_UNKNOWN;
+        this->paletteSwizzleEncodingType = FORMAT_UNKNOWN;
 
         // Set default values for PS2 GS parameters.
         gsParams.maxMIPLevel = 7;
@@ -468,9 +474,72 @@ struct NativeTexturePS2 : public PlatformTexture
         this->colorOrdering = COLOR_RGBA;
     }
 
-    void Delete( void )
+    inline NativeTexturePS2( const NativeTexturePS2& right )
     {
-        delete this;
+        Interface *engineInterface = right.engineInterface;
+
+        this->engineInterface = engineInterface;
+
+        // Copy palette information.
+        this->paletteTex.CopyTexture( engineInterface, right.paletteTex );
+        this->paletteType = right.paletteType;
+
+        // Copy image texel information.
+        this->rasterFormat = right.rasterFormat;
+        this->depth = right.depth;
+
+        {
+            uint32 mipmapCount = right.mipmaps.size();
+
+            this->mipmaps.resize( mipmapCount );
+
+            for ( uint32 n = 0; n < mipmapCount; n++ )
+            {
+                GSMipmap& thisLayer = this->mipmaps[ n ];
+
+                const GSMipmap& srcLayer = right.mipmaps[ n ];
+
+                thisLayer.CopyMipmap( engineInterface, srcLayer );
+            }
+        }
+        
+        // Copy PS2 data.
+        this->autoMipmaps = right.autoMipmaps;
+        this->requiresHeaders = right.requiresHeaders;
+        this->hasSwizzle = right.hasSwizzle;
+        this->skyMipMapVal = right.skyMipMapVal;
+        this->gsParams = right.gsParams;
+        this->recommendedBufferBasePointer = right.recommendedBufferBasePointer;
+        this->swizzleEncodingType = right.swizzleEncodingType;
+        this->paletteSwizzleEncodingType = right.paletteSwizzleEncodingType;
+
+        this->rasterType = right.rasterType;
+
+        this->hasAlpha = right.hasAlpha;
+        this->colorOrdering = right.colorOrdering;
+    }
+
+    inline void clearImageData( void )
+    {
+        Interface *engineInterface = this->engineInterface;
+
+        // Free all mipmaps.
+        uint32 mipmapCount = this->mipmaps.size();
+
+        for ( uint32 n = 0; n < mipmapCount; n++ )
+        {
+            GSMipmap& mipLayer = this->mipmaps[ n ];
+
+            mipLayer.FreeTexels( engineInterface );
+        }
+
+        // Free the palette texture.
+        this->paletteTex.FreeTexels( engineInterface );
+    }
+
+    inline ~NativeTexturePS2( void )
+    {
+        this->clearImageData();
     }
 
     uint32 getWidth( void ) const
@@ -508,37 +577,6 @@ struct NativeTexturePS2 : public PlatformTexture
         // nothing to do here.
     }
 
-    PlatformTexture* Clone( void ) const
-    {
-        NativeTexturePS2 *newTex = new NativeTexturePS2();
-        
-        // Copy palette information.
-        newTex->paletteTex = this->paletteTex;
-        newTex->paletteType = this->paletteType;
-
-        // Copy image texel information.
-        newTex->depth = this->depth;
-        newTex->mipmaps = this->mipmaps;
-        
-        // Copy PS2 data.
-        newTex->autoMipmaps = this->autoMipmaps;
-        newTex->requiresHeaders = this->requiresHeaders;
-        newTex->hasSwizzle = this->hasSwizzle;
-        newTex->skyMipMapVal = this->skyMipMapVal;
-        newTex->gsParams = this->gsParams;
-        newTex->recommendedBufferBasePointer = this->recommendedBufferBasePointer;
-
-        newTex->rasterType = this->rasterType;
-
-        newTex->hasAlpha = this->hasAlpha;
-        newTex->colorOrdering = this->colorOrdering;
-
-        return newTex;
-    }
-
-    // Backlink to original texture container.
-    const NativeTexture *parent;
-
     struct GSTexture
     {
         inline GSTexture( void )
@@ -546,19 +584,8 @@ struct NativeTexturePS2 : public PlatformTexture
             this->dataSize = 0;
             this->texels = NULL;
 
-            this->swizzleEncodingType = FORMAT_UNKNOWN;
             this->swizzleWidth = 0;
             this->swizzleHeight = 0;
-        }
-
-        inline ~GSTexture( void )
-        {
-            if ( void *texels = this->texels )
-            {
-                delete texels;
-
-                this->texels = NULL;
-            }
         }
 
         inline GSTexture( const GSTexture& right )
@@ -566,7 +593,28 @@ struct NativeTexturePS2 : public PlatformTexture
             *this = right;
         }
 
+        inline void FreeTexels( Interface *engineInterface )
+        {
+            if ( void *texels = this->texels )
+            {
+                engineInterface->PixelFree( texels );
+
+                this->texels = NULL;
+            }
+        }
+
+        inline void DetachTexels( void )
+        {
+            this->texels = NULL;
+        }
+
         inline void operator = ( const GSTexture& right )
+        {
+            return;
+        }
+
+    public:
+        inline void CopyTexture( Interface *engineInterface, const GSTexture& right )
         {
             // Copy over image data.
             void *newTexels = NULL;
@@ -577,15 +625,17 @@ struct NativeTexturePS2 : public PlatformTexture
             {
                 const void *srcTexels = right.texels;
 
-                newTexels = new uint8[ dataSize ];
+                newTexels = engineInterface->PixelAllocate( dataSize );
 
                 memcpy( newTexels, srcTexels, dataSize );
             }
             this->texels = newTexels;
             this->dataSize = dataSize;
 
+            // Copy registers.
+            this->storedRegs = right.storedRegs;
+
             // Copy over encoding properties.
-            this->swizzleEncodingType = right.swizzleEncodingType;
             this->swizzleWidth = right.swizzleWidth;
             this->swizzleHeight = right.swizzleHeight;
         }
@@ -620,11 +670,11 @@ struct NativeTexturePS2 : public PlatformTexture
             }
         }
 
-        uint32 getDataSize( void ) const
+        uint32 getDataSize( eFormatEncodingType swizzleEncodingType ) const
         {
             uint32 encodedTexItems = ( this->swizzleWidth * this->swizzleHeight );
 
-            uint32 encodingDepth = getFormatEncodingDepth(this->swizzleEncodingType);
+            uint32 encodingDepth = getFormatEncodingDepth(swizzleEncodingType);
 
 			return ( encodedTexItems * encodingDepth/8 );
         }
@@ -647,14 +697,13 @@ struct NativeTexturePS2 : public PlatformTexture
             return streamSize;
         }
 
-        uint32 readGIFPacket(std::istream& rw, bool hasHeaders, bool& corruptedHeaders_out);
-        uint32 writeGIFPacket(std::ostream& rw, bool requiresHeaders) const;
+        uint32 readGIFPacket(Interface *engineInterface, BlockProvider& inputProvider, bool hasHeaders, bool& corruptedHeaders_out);
+        uint32 writeGIFPacket(Interface *engineInterface, BlockProvider& outputProvider, bool requiresHeaders) const;
 
         // Members.
         uint32 dataSize;
         void *texels;           // holds either indices or color values
 
-        eFormatEncodingType swizzleEncodingType;
         uint32 swizzleWidth, swizzleHeight;
 
         struct GSRegInfo
@@ -688,12 +737,18 @@ struct NativeTexturePS2 : public PlatformTexture
 
         inline void operator = ( const GSMipmap& right )
         {
+            return;
+        }
+
+    public:
+        inline void CopyMipmap( Interface *engineInterface, const GSMipmap& right )
+        {
             // Copy general attributes.
             this->width = right.width;
             this->height = right.height;
 
             // Copy texture stuff.
-            GSTexture::operator = ( right );
+            this->CopyTexture( engineInterface, right );
         }
 
         uint32 width, height;   // store width & height for each mipmap
@@ -702,6 +757,8 @@ struct NativeTexturePS2 : public PlatformTexture
     // mipmaps are GSTextures.
     std::vector <GSMipmap> mipmaps;
 
+    eRasterFormat rasterFormat;
+
     uint32 depth;
 
     GSTexture paletteTex;
@@ -709,6 +766,10 @@ struct NativeTexturePS2 : public PlatformTexture
     ePaletteType paletteType;
 
     uint32 recommendedBufferBasePointer;
+
+    // Encoding type of all mipmaps.
+    eFormatEncodingType swizzleEncodingType;
+    eFormatEncodingType paletteSwizzleEncodingType;
 
     bool requiresHeaders;
     bool hasSwizzle;
@@ -741,9 +802,6 @@ struct NativeTexturePS2 : public PlatformTexture
     gsParams_t gsParams;
 
     eFormatEncodingType getHardwareRequiredEncoding(LibraryVersion version) const;
-
-    bool swizzleEncryptPS2(uint32 mip);
-	bool swizzleDecryptPS2(uint32 mip);
 
 private:
     bool allocateTextureMemoryNative(
@@ -779,6 +837,59 @@ public:
     void PerformDebugChecks(const textureMetaDataHeader& textureMeta) const;
 
     bool getDebugBitmap( Bitmap& bmpOut ) const;
+};
+
+struct ps2NativeTextureTypeProvider : public texNativeTypeProvider
+{
+    void ConstructTexture( Interface *engineInterface, void *objMem, size_t memSize )
+    {
+        new (objMem) NativeTexturePS2( engineInterface );
+    }
+
+    void CopyConstructTexture( Interface *engineInterface, void *objMem, const void *srcObjMem, size_t memSize )
+    {
+        new (objMem) NativeTexturePS2( *(const NativeTexturePS2*)srcObjMem );
+    }
+    
+    void DestroyTexture( Interface *engineInterface, void *objMem, size_t memSize )
+    {
+        ( *(NativeTexturePS2*)objMem ).~NativeTexturePS2();
+    }
+
+    eTexNativeCompatibility IsCompatibleTextureBlock( BlockProvider& inputProvider ) const;
+
+    void SerializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& outputProvider ) const;
+    void DeserializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& inputProvider ) const;
+
+    void GetPixelCapabilities( pixelCapabilities& capsOut ) const
+    {
+        capsOut.supportsDXT1 = false;
+        capsOut.supportsDXT2 = false;
+        capsOut.supportsDXT3 = false;
+        capsOut.supportsDXT4 = false;
+        capsOut.supportsDXT5 = false;
+        capsOut.supportsPalette = true;
+    }
+
+    void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
+    void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
+    void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    uint32 GetDriverIdentifier( void *objMem ) const
+    {
+        // Always the generic PlayStation 2 driver.
+        return 6;
+    }
+
+    inline void Initialize( Interface *engineInterface )
+    {
+
+    }
+
+    inline void Shutdown( Interface *engineInterface )
+    {
+
+    }
 };
 
 inline eFormatEncodingType getFormatEncodingFromRasterFormat(eRasterFormat rasterFormat, ePaletteType paletteType)

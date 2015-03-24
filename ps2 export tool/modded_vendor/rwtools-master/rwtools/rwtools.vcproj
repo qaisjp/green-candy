@@ -40,7 +40,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;;../../../vendor/xdk/"
+				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;;../../../vendor/xdk/;../../../vendor/pvrtexlib/Include/;../../../vendor/atitc/"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -60,9 +60,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libimagequant_d.lib squishd.lib"
+				AdditionalDependencies="libimagequant_d.lib squishd.lib ATI_Compress_MT.lib PVRTexLib.lib"
 				OutputFile="$(OutDir)\rwtools_d.lib"
-				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib;&quot;..\..\..\vendor\squish-1.11\lib\vs9&quot;"
+				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib;&quot;..\..\..\vendor\squish-1.11\lib\vs9&quot;;..\..\..\vendor\pvrtexlib\Windows_x86_32\Dynamic;&quot;..\..\..\vendor\atitc\VS2008\MT Release\Win32&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -110,7 +110,7 @@
 				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
-				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;;../../../vendor/xdk/"
+				AdditionalIncludeDirectories="../include/;../../../../Shared/sdk/;../../../../Shared/;../../../vendor/libimagequant/;&quot;../../../vendor/squish-1.11/&quot;;../../../vendor/xdk/;../../../vendor/pvrtexlib/Include/;../../../vendor/atitc/"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="0"
@@ -129,9 +129,9 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				AdditionalDependencies="libimagequant.lib squish.lib"
+				AdditionalDependencies="libimagequant.lib squish.lib ATI_Compress_MT.lib PVRTexLib.lib"
 				OutputFile="$(OutDir)\rwtools.lib"
-				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib;&quot;..\..\..\vendor\squish-1.11\lib\vs9&quot;"
+				AdditionalLibraryDirectories="..\..\..\vendor\libimagequant\lib;&quot;..\..\..\vendor\squish-1.11\lib\vs9&quot;;..\..\..\vendor\pvrtexlib\Windows_x86_32\Dynamic;&quot;..\..\..\vendor\atitc\VS2008\MT Release\Win32&quot;"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -161,6 +161,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\pluginutil.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\include\renderware.blockapi.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\renderware.bmp.h"
 				>
 			</File>
@@ -178,6 +186,10 @@
 			</File>
 			<File
 				RelativePath="..\include\renderware.material.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\renderware.stream.h"
 				>
 			</File>
 			<File
@@ -201,6 +213,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\txdread.atc.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\txdread.common.hxx"
 				>
 			</File>
@@ -209,7 +225,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\txdread.d3d.genmip.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\txdread.d3d.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\src\txdread.dxtmobile.hxx"
 				>
 			</File>
 			<File
@@ -225,7 +249,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\txdread.pvr.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\src\txdread.unc.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\txdread.xbox.hxx"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="shared_api"
+			>
+			<File
+				RelativePath="..\..\..\..\Shared\sdk\DynamicTypeSystem.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\..\Shared\sdk\MemoryUtils.h"
 				>
 			</File>
 		</Filter>
@@ -270,6 +314,10 @@
 			>
 		</File>
 		<File
+			RelativePath="..\src\rwblockapi.cpp"
+			>
+		</File>
+		<File
 			RelativePath="..\src\rwbmp.cpp"
 			>
 		</File>
@@ -279,6 +327,22 @@
 		</File>
 		<File
 			RelativePath="..\src\rwinterface.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\rwmem.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\rwserialize.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\rwstream.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdread.atc.cpp"
 			>
 		</File>
 		<File
@@ -298,11 +362,19 @@
 			>
 		</File>
 		<File
+			RelativePath="..\src\txdread.dxtmobile.cpp"
+			>
+		</File>
+		<File
 			RelativePath="..\src\txdread.mipmaps.cpp"
 			>
 		</File>
 		<File
 			RelativePath="..\src\txdread.palette.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdread.pixelconv.cpp"
 			>
 		</File>
 		<File
@@ -318,11 +390,23 @@
 			>
 		</File>
 		<File
+			RelativePath="..\src\txdread.pvr.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdread.unc.cpp"
+			>
+		</File>
+		<File
 			RelativePath="..\src\txdread.xbox.cpp"
 			>
 		</File>
 		<File
 			RelativePath="..\src\txdread.xbox.swizzle.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdwrite.atc.cpp"
 			>
 		</File>
 		<File
@@ -334,7 +418,19 @@
 			>
 		</File>
 		<File
+			RelativePath="..\src\txdwrite.dxtmobile.cpp"
+			>
+		</File>
+		<File
 			RelativePath="..\src\txdwrite.ps2.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdwrite.pvr.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdwrite.unc.cpp"
 			>
 		</File>
 		<File

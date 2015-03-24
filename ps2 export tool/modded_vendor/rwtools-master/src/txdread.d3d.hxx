@@ -1,5 +1,7 @@
 #include <d3d9.h>
 
+#include "txdread.d3d.genmip.hxx"
+
 namespace rw
 {
 
@@ -146,13 +148,23 @@ struct rawBitmapFetchResult
 
 struct NativeTextureD3D : public PlatformTexture
 {
-    NativeTextureD3D( void )
+    enum ePlatformType
+    {
+        PLATFORM_D3D8,
+        PLATFORM_D3D9
+    };
+
+    Interface *engineInterface;
+
+    inline NativeTextureD3D( Interface *engineInterface )
     {
         // Initialize the texture object.
+        this->engineInterface = engineInterface;
+        this->platformType = PLATFORM_D3D9;
         this->palette = NULL;
         this->paletteSize = 0;
         this->paletteType = PALETTE_NONE;
-        this->mipmapCount = 0;
+        this->rasterFormat = RASTER_8888;
         this->depth = 0;
         this->isCubeTexture = false;
         this->autoMipmaps = false;
@@ -164,31 +176,77 @@ struct NativeTextureD3D : public PlatformTexture
         this->colorOrdering = COLOR_BGRA;
     }
 
-    void Delete( void )
+    inline NativeTextureD3D( const NativeTextureD3D& right )
+    {
+        Interface *engineInterface = right.engineInterface;
+
+        this->engineInterface = engineInterface;
+
+        // Copy palette information.
+        {
+	        if (right.palette)
+            {
+                uint32 palRasterDepth = Bitmap::getRasterFormatDepth(right.rasterFormat);
+
+                size_t wholeDataSize = getRasterDataSize( right.paletteSize, palRasterDepth );
+
+		        this->palette = engineInterface->PixelAllocate( wholeDataSize );
+
+		        memcpy(this->palette, right.palette, wholeDataSize);
+	        }
+            else
+            {
+		        this->palette = NULL;
+	        }
+
+            this->paletteSize = right.paletteSize;
+            this->paletteType = right.paletteType;
+        }
+
+        // Copy image texel information.
+        {
+            copyMipmapLayers( engineInterface, right.mipmaps, this->mipmaps );
+
+            this->rasterFormat = right.rasterFormat;
+            this->depth = right.depth;
+        }
+
+        this->platformType =        right.platformType;
+        this->isCubeTexture =       right.isCubeTexture;
+        this->autoMipmaps =         right.autoMipmaps;
+        this->d3dFormat =           right.d3dFormat;
+        this->hasD3DFormat =        right.hasD3DFormat;
+        this->dxtCompression =      right.dxtCompression;
+        this->rasterType =          right.rasterType;
+        this->hasAlpha =            right.hasAlpha;
+        this->colorOrdering =       right.colorOrdering;
+    }
+
+    inline void clearTexelData( void )
     {
         if ( this->palette )
         {
-	        delete[] palette;
+	        this->engineInterface->PixelFree( palette );
 
 	        palette = NULL;
         }
-	    for (uint32 i = 0; i < texels.size(); i++)
-        {
-		    delete[] texels[i];
-		    texels[i] = 0;
-	    }
 
-        delete this;
+        deleteMipmapLayers( this->engineInterface, this->mipmaps );
+    }
+
+    inline ~NativeTextureD3D( void )
+    {
+        this->clearTexelData();
     }
 
     uint32 getWidth( void ) const
     {
-        return this->width[0];
+        return this->mipmaps[ 0 ].layerWidth;
     }
 
     uint32 getHeight( void ) const
     {
-        return this->height[0];
+        return this->mipmaps[ 0 ].layerHeight;
     }
 
     uint32 getDepth( void ) const
@@ -198,7 +256,7 @@ struct NativeTextureD3D : public PlatformTexture
 
     uint32 getMipmapCount( void ) const
     {
-        return this->mipmapCount;
+        return this->mipmaps.size();
     }
 
     ePaletteType getPaletteType( void ) const
@@ -231,82 +289,23 @@ struct NativeTextureD3D : public PlatformTexture
 
         // This may not be the optimal routine for compressing to DXT.
         // A different method should be used if more accuracy is required.
-        compressDxt( dxtType );
-    }
-
-    PlatformTexture* Clone( void ) const
-    {
-        NativeTextureD3D *newTex = new NativeTextureD3D();
-
-        // Copy palette information.
-        {
-	        if (this->palette)
-            {
-                size_t wholeDataSize = this->paletteSize * sizeof(uint32);
-
-		        newTex->palette = new uint8[wholeDataSize];
-		        memcpy(newTex->palette, this->palette, wholeDataSize);
-	        }
-            else
-            {
-		        newTex->palette = 0;
-	        }
-
-            newTex->paletteSize = this->paletteSize;
-            newTex->paletteType = this->paletteType;
-        }
-
-        // Copy image texel information.
-        {
-            size_t numTexels = this->texels.size();
-
-	        for (uint32 i = 0; i < numTexels; i++)
-            {
-		        uint32 dataSize = this->dataSizes[i];
-		        uint8 *newtexels = new uint8[dataSize];
-
-                const uint8 *srctexels = (const uint8*)this->texels[i];
-
-		        memcpy(newtexels, srctexels, dataSize);
-
-		        newTex->texels.push_back(newtexels);
-	        }
-
-            newTex->width = this->width;
-            newTex->height = this->height;
-            newTex->dataSizes = this->dataSizes;
-
-            newTex->depth = this->depth;
-        }
-
-        newTex->mipmapCount = this->mipmapCount;
-        newTex->isCubeTexture = this->isCubeTexture;
-        newTex->autoMipmaps = this->autoMipmaps;
-        newTex->d3dFormat = this->d3dFormat;
-        newTex->hasD3DFormat = this->hasD3DFormat;
-        newTex->dxtCompression = this->dxtCompression;
-        newTex->rasterType = this->rasterType;
-        newTex->hasAlpha = this->hasAlpha;
-        newTex->colorOrdering = this->colorOrdering;
-
-        return newTex;
+        //compressDxt( dxtType );
     }
 
     // Function to return a raw bitmap from this texture.
     bool getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitmapFetchResult& bitmapOut ) const;
 
-    // Backlink to original texture container.
-    NativeTexture *parent;
+    typedef genmip::mipmapLayer mipmapLayer;
 
-	uint32 mipmapCount;
+    // Platform descriptor.
+    ePlatformType platformType;
+
+    eRasterFormat rasterFormat;
 
     uint32 depth;
 
-	std::vector<uint32> width;	// store width & height
-	std::vector<uint32> height;	// for each mipmap
-	std::vector<uint32> dataSizes;
-	std::vector<void*> texels;	// holds either indices or color values
-					// (also per mipmap)
+	std::vector <mipmapLayer> mipmaps;
+
 	void *palette;
 	uint32 paletteSize;
 
@@ -327,7 +326,47 @@ struct NativeTextureD3D : public PlatformTexture
         // Execute it whenever the rasterFormat, the palette type, the color order or depth may change.
         D3DFORMAT newD3DFormat;
 
-        bool hasD3DFormat = getD3DFormatFromRasterType( parent->rasterFormat, this->paletteType, this->colorOrdering, this->depth, newD3DFormat );
+        bool hasD3DFormat = false;
+
+        uint32 dxtType = this->dxtCompression;
+
+        if ( dxtType != 0 )
+        {
+            if ( dxtType == 1 )
+            {
+                newD3DFormat = D3DFMT_DXT1;
+
+                hasD3DFormat = true;
+            }
+            else if ( dxtType == 2 )
+            {
+                newD3DFormat = D3DFMT_DXT2;
+
+                hasD3DFormat = true;
+            }
+            else if ( dxtType == 3 )
+            {
+                newD3DFormat = D3DFMT_DXT3;
+
+                hasD3DFormat = true;
+            }
+            else if ( dxtType == 4 )
+            {
+                newD3DFormat = D3DFMT_DXT4;
+
+                hasD3DFormat = true;
+            }
+            else if ( dxtType == 5 )
+            {
+                newD3DFormat = D3DFMT_DXT5;
+
+                hasD3DFormat = true;
+            }
+        }
+        else
+        {
+            hasD3DFormat = getD3DFormatFromRasterType( this->rasterFormat, this->paletteType, this->colorOrdering, this->depth, newD3DFormat );
+        }
 
         if ( hasD3DFormat )
         {
@@ -340,36 +379,78 @@ struct NativeTextureD3D : public PlatformTexture
 
     eColorOrdering colorOrdering;
 
-    void compressDxt(uint32 dxtType);
-	void decompressDxt(void);
-	bool decompressDxtNative(uint32 dxtType);
-
-    // Check whether this texture has alpha.
-    // Use this to update/calculate the alpha flag when required.
-    bool doesHaveAlpha(void) const;
-
     // Debug stuff.
     bool getDebugBitmap( Bitmap& bmpOut ) const;
 };
 
-inline uint32 getDXTRasterDataSize(uint32 dxtType, uint32 texUnitCount)
+struct d3dNativeTextureTypeProvider : public texNativeTypeProvider
 {
-    uint32 texBlockCount = texUnitCount / 16;
-
-    uint32 blockSize = 0;
-
-    if (dxtType == 1)
+    void ConstructTexture( Interface *engineInterface, void *objMem, size_t memSize )
     {
-        blockSize = 8;
-    }
-    else if (dxtType == 2 || dxtType == 3 ||
-             dxtType == 4 || dxtType == 5)
-    {
-        blockSize = 16;
+        new (objMem) NativeTextureD3D( engineInterface );
     }
 
-    return ( texBlockCount * blockSize );
-}
+    void CopyConstructTexture( Interface *engineInterface, void *objMem, const void *srcObjMem, size_t memSize )
+    {
+        new (objMem) NativeTextureD3D( *(const NativeTextureD3D*)srcObjMem );
+    }
+    
+    void DestroyTexture( Interface *engineInterface, void *objMem, size_t memSize )
+    {
+        ( *(NativeTextureD3D*)objMem ).~NativeTextureD3D();
+    }
+
+    eTexNativeCompatibility IsCompatibleTextureBlock( BlockProvider& inputProvider ) const;
+
+    void SerializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& outputProvider ) const;
+    void DeserializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& inputProvider ) const;
+
+    void GetPixelCapabilities( pixelCapabilities& capsOut ) const
+    {
+        capsOut.supportsDXT1 = true;
+        capsOut.supportsDXT2 = true;
+        capsOut.supportsDXT3 = true;
+        capsOut.supportsDXT4 = true;
+        capsOut.supportsDXT5 = true;
+        capsOut.supportsPalette = true;
+    }
+
+    void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
+    void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
+    void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    uint32 GetDriverIdentifier( void *objMem ) const
+    {
+        // Depends on the platform type of our texture.
+        NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
+
+        NativeTextureD3D::ePlatformType platformType = nativeTex->platformType;
+
+        if ( platformType == NativeTextureD3D::PLATFORM_D3D8 )
+        {
+            // Direct3D 8 driver.
+            return 1;
+        }
+        else if ( platformType == NativeTextureD3D::PLATFORM_D3D9 )
+        {
+            // Direct3D 9 driver.
+            return 2;
+        }
+
+        // We do not know which driver.
+        return 0;
+    }
+
+    inline void Initialize( Interface *engineInterface )
+    {
+
+    }
+
+    inline void Shutdown( Interface *engineInterface )
+    {
+
+    }
+};
 
 inline uint32 getD3DPaletteCount(ePaletteType paletteType)
 {
@@ -390,6 +471,9 @@ inline uint32 getD3DPaletteCount(ePaletteType paletteType)
 
     return reqPalCount;
 }
+
+namespace d3d
+{
 
 #pragma pack(1)
 struct textureMetaHeaderStructGeneric
@@ -423,5 +507,7 @@ struct textureContentInfoStruct
     uint8 pad : 4;
 };
 #pragma pack()
+
+};
 
 };

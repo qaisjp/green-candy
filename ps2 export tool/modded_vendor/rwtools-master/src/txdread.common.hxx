@@ -1,10 +1,39 @@
 namespace rw
 {
 
-inline void fixFilteringMode(NativeTexture& inTex)
+struct texDictionaryStreamPlugin : public serializationProvider
 {
-    uint32 mipmapCount = inTex.getMipmapCount();
+    inline void Initialize( Interface *engineInterface )
+    {
+        txdTypeInfo = engineInterface->typeSystem.RegisterStructType <TexDictionary> ( "texture_dictionary" );
 
+        if ( txdTypeInfo )
+        {
+            engineInterface->typeSystem.SetTypeInfoInheritingClass( txdTypeInfo, engineInterface->rwobjTypeInfo );
+        }
+    }
+
+    inline void Shutdown( Interface *engineInterface )
+    {
+        if ( RwTypeSystem::typeInfoBase *txdTypeInfo = this->txdTypeInfo )
+        {
+            engineInterface->typeSystem.DeleteType( txdTypeInfo );
+        }
+    }
+
+    // Creation functions.
+    TexDictionary*  CreateTexDictionary( Interface *engineInterface ) const;
+    TexDictionary*  ToTexDictionary( Interface *engineInterface, RwObject *rwObj );
+
+    // Serialization functions.
+    void        Serialize( Interface *engineInterface, BlockProvider& outputProvider, RwObject *objectToSerialize ) const;
+    void        Deserialize( Interface *engineInterface, BlockProvider& inputProvider, RwObject *objectToDeserialize ) const;
+
+    RwTypeSystem::typeInfoBase *txdTypeInfo;
+};
+
+inline void fixFilteringMode(TextureBase& inTex, uint32 mipmapCount)
+{
     eRasterStageFilterMode currentFilterMode = inTex.filterMode;
 
     eRasterStageFilterMode newFilterMode = currentFilterMode;
@@ -37,16 +66,18 @@ inline void fixFilteringMode(NativeTexture& inTex)
     // If the texture requires a different filter mode, set it.
     if ( currentFilterMode != newFilterMode )
     {
-        bool ignoreSecureWarnings = rw::rwInterface.GetIgnoreSecureWarnings();
+        Interface *engineInterface = inTex.engineInterface;
 
-        int warningLevel = rw::rwInterface.GetWarningLevel();
+        bool ignoreSecureWarnings = engineInterface->GetIgnoreSecureWarnings();
+
+        int warningLevel = engineInterface->GetWarningLevel();
 
         if ( ignoreSecureWarnings == false )
         {
             // Since this is a really annoying message, put it on warning level 4.
             if ( warningLevel >= 4 )
             {
-                rw::rwInterface.PushWarning( "texture " + inTex.name + " has an invalid filtering mode (fixed)" );
+                engineInterface->PushWarning( "texture " + inTex.name + " has an invalid filtering mode (fixed)" );
             }
         }
 

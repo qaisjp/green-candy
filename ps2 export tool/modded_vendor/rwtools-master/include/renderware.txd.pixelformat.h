@@ -17,7 +17,7 @@ namespace PixelFormat
 
         static inline uint32 sizeitems( size_t itemCount )
         {
-            return ALIGN_SIZE( itemCount / 2, (size_t)2 );
+            return ALIGN_SIZE( itemCount, (size_t)2 ) / 2;
         }
 
         static inline palette4bit* allocate( size_t itemCount )

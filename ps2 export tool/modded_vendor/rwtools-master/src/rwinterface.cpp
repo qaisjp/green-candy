@@ -1,12 +1,29 @@
 #include <StdInc.h>
 
+#include "pluginutil.hxx"
+
 namespace rw
 {
 
+// Factory for interfaces.
+RwMemoryAllocator _engineMemAlloc;
+
+RwInterfaceFactory_t engineFactory;
+
 Interface::Interface( void )
 {
-    // Default to San Andreas version.
-    this->version = KnownVersions::getGameVersion( KnownVersions::SA );
+    // We set the version in a specialized constructor.
+
+    // Set up the type system.
+    this->typeSystem._memAlloc = &memAlloc;
+
+    // Register the main RenderWare types.
+    {
+        this->streamTypeInfo = this->typeSystem.RegisterAbstractType <Stream> ( "stream" );
+        this->rasterTypeInfo = this->typeSystem.RegisterStructType <Raster> ( "raster" );
+        this->rwobjTypeInfo = this->typeSystem.RegisterAbstractType <RwObject> ( "rwobj" );
+        this->textureTypeInfo = this->typeSystem.RegisterStructType <TextureBase> ( "texture", this->rwobjTypeInfo );
+    }
 
     // Setup standard members.
     this->customFileInterface = NULL;
@@ -23,11 +40,38 @@ Interface::Interface( void )
 
     this->fixIncompatibleRasters = true;
     this->dxtPackedDecompression = false;
+
+    this->ignoreSerializationBlockRegions = false;
+}
+
+RwObject::RwObject( Interface *engineInterface, void *construction_params )
+{
+    // Constructor that is called for creation.
+    this->engineInterface = engineInterface;
+    this->objVersion = engineInterface->GetVersion();   // when creating an object, we assign it the current version.
+}
+
+inline void SafeDeleteType( Interface *engineInterface, RwTypeSystem::typeInfoBase*& theType )
+{
+    RwTypeSystem::typeInfoBase *theTypeVal = theType;
+
+    if ( theTypeVal )
+    {
+        engineInterface->typeSystem.DeleteType( theTypeVal );
+
+        theType = NULL;
+    }
 }
 
 Interface::~Interface( void )
 {
-    return;
+    // Unregister all types again.
+    {
+        SafeDeleteType( this, this->textureTypeInfo );
+        SafeDeleteType( this, this->rwobjTypeInfo );
+        SafeDeleteType( this, this->rasterTypeInfo );
+        SafeDeleteType( this, this->streamTypeInfo );
+    }
 }
 
 void Interface::SetVersion( LibraryVersion version )
@@ -35,14 +79,87 @@ void Interface::SetVersion( LibraryVersion version )
     this->version = version;
 }
 
-void Interface::BeginDebug( void )
+RwObject* Interface::CloneRwObject( const RwObject *srcObj )
 {
-    rw::NativeTexture::StartDebug();
+    RwObject *newObj = NULL;
+
+    // We simply use our type system to do the job.
+    const GenericRTTI *rttiObj = this->typeSystem.GetTypeStructFromConstAbstractObject( srcObj );
+
+    if ( rttiObj )
+    {
+        GenericRTTI *newRtObj = this->typeSystem.Clone( rttiObj );
+
+        if ( newRtObj )
+        {
+            newObj = (RwObject*)RwTypeSystem::GetObjectFromTypeStruct( newRtObj );
+        }
+    }
+
+    return newObj;
 }
 
-void Interface::ProcessDebug( void )
+void Interface::DeleteRwObject( RwObject *obj )
 {
-    rw::NativeTexture::DebugParameters();
+    // Delete it using the type system.
+    GenericRTTI *rttiObj = this->typeSystem.GetTypeStructFromAbstractObject( obj );
+
+    if ( rttiObj )
+    {
+        this->typeSystem.Destroy( rttiObj );
+    }
+}
+
+void Interface::SerializeExtensions( const RwObject *rwObj, BlockProvider& outputProvider )
+{
+    BlockProvider extensionBlock( &outputProvider );
+
+    extensionBlock.EnterContext();
+
+    extensionBlock.setBlockID( CHUNK_EXTENSION );
+
+    // TODO.
+
+    extensionBlock.LeaveContext();
+}
+
+void Interface::DeserializeExtensions( RwObject *rwObj, BlockProvider& inputProvider )
+{
+    BlockProvider extensionBlock( &inputProvider );
+
+    extensionBlock.EnterContext();
+
+    try
+    {
+        if ( extensionBlock.getBlockID() == CHUNK_EXTENSION )
+        {
+            int64 end = extensionBlock.getBlockLength();
+            end += extensionBlock.tell();
+            
+            while ( extensionBlock.tell() < end )
+            {
+                BlockProvider subExtensionBlock( &extensionBlock, false );
+
+                subExtensionBlock.EnterContext();
+
+                // TODO.
+
+                subExtensionBlock.LeaveContext();
+            }
+        }
+        else
+        {
+            this->PushWarning( "could not find extension block; ignoring" );
+        }
+    }
+    catch( ... )
+    {
+        extensionBlock.LeaveContext();
+
+        throw;
+    }
+
+    extensionBlock.LeaveContext();
 }
 
 void Interface::SetWarningManager( WarningManagerInterface *warningMan )
@@ -60,14 +177,79 @@ int Interface::GetWarningLevel( void ) const
     return this->warningLevel;
 }
 
+struct warningHandlerPlugin
+{
+    // The purpose of the warning handler stack is to fetch warning output requests and to reroute them
+    // so that they make more sense.
+    std::vector <WarningHandler*> warningHandlerStack;
+
+    inline void Initialize( Interface *engineInterface )
+    {
+
+    }
+
+    inline void Shutdown( Interface *engineInterface )
+    {
+        // We unregister all warning handlers.
+        // The deallocation has to happen through the registree.
+    }
+};
+
+static PluginDependantStructRegister <warningHandlerPlugin, RwInterfaceFactory_t> warningHandlerPluginRegister( engineFactory );
+
 void Interface::PushWarning( const std::string& message )
 {
     if ( this->warningLevel > 0 )
     {
-        if ( WarningManagerInterface *warningMan = this->warningManager )
+        // If we have a warning handler, we redirect the message to it instead.
+        // The warning handler is supposed to be an internal class that only the library has access to.
+        WarningHandler *currentWarningHandler = NULL;
+
+        warningHandlerPlugin *whandlerEnv = warningHandlerPluginRegister.GetPluginStruct( (EngineInterface*)this );
+
+        if ( whandlerEnv )
         {
-            warningMan->OnWarning( message );
+            if ( !whandlerEnv->warningHandlerStack.empty() )
+            {
+                currentWarningHandler = whandlerEnv->warningHandlerStack.back();
+            }
         }
+
+        if ( currentWarningHandler )
+        {
+            // Give it the warning.
+            currentWarningHandler->OnWarningMessage( message );
+        }
+        else
+        {
+            // Else we just post the warning to the runtime.
+            if ( WarningManagerInterface *warningMan = this->warningManager )
+            {
+                warningMan->OnWarning( message );
+            }
+        }
+    }
+}
+
+void GlobalPushWarningHandler( Interface *engineInterface, WarningHandler *theHandler )
+{
+    warningHandlerPlugin *whandlerEnv = warningHandlerPluginRegister.GetPluginStruct( (EngineInterface*)engineInterface );
+
+    if ( whandlerEnv )
+    {
+        whandlerEnv->warningHandlerStack.push_back( theHandler );
+    }
+}
+
+void GlobalPopWarningHandler( Interface *engineInterface )
+{
+    warningHandlerPlugin *whandlerEnv = warningHandlerPluginRegister.GetPluginStruct( (EngineInterface*)engineInterface );
+
+    if ( whandlerEnv )
+    {
+        assert( whandlerEnv->warningHandlerStack.empty() == false );
+
+        whandlerEnv->warningHandlerStack.pop_back();
     }
 }
 
@@ -121,7 +303,49 @@ bool Interface::GetDXTPackedDecompression( void ) const
     return this->dxtPackedDecompression;
 }
 
-// Main interface of the engine.
-Interface rwInterface;
+void Interface::SetIgnoreSerializationBlockRegions( bool doIgnore )
+{
+    this->ignoreSerializationBlockRegions = doIgnore;
+}
+
+bool Interface::GetIgnoreSerializationBlockRegions( void ) const
+{
+    return this->ignoreSerializationBlockRegions;
+}
+
+// Interface creation for the RenderWare engine.
+Interface* CreateEngine( LibraryVersion theVersion )
+{
+    // Create a specialized engine depending on the version.
+    Interface *engineOut = engineFactory.Construct( _engineMemAlloc );
+
+    if ( engineOut )
+    {
+        engineOut->SetVersion( theVersion );
+
+        try
+        {
+            // Initialize all environments.
+            initializeTXDEnvironment( engineOut );
+            initializeNativeTextureEnvironment( engineOut );
+        }
+        catch( ... )
+        {
+            engineFactory.Destroy( _engineMemAlloc, (EngineInterface*)engineOut );
+            return NULL;
+        }
+    }
+
+    return engineOut;
+}
+
+void DeleteEngine( Interface *theEngine )
+{
+    shutdownNativeTextureEnvironment( theEngine );
+    shutdownTXDEnvironment( theEngine );
+
+    // Destroy the engine again.
+    engineFactory.Destroy( _engineMemAlloc, (EngineInterface*)theEngine );
+}
 
 };

@@ -19,16 +19,6 @@ typedef std::vector <texInfoReg> deblist_t;
 static std::map <uint32, deblist_t> addrSort;
 
 
-void NativeTexture::StartDebug( void )
-{
-    return;
-}
-
-void NativeTexture::DebugParameters( void )
-{
-    __asm nop
-}
-
 void NativeTexturePS2::PerformDebugChecks(const textureMetaDataHeader& textureMeta) const
 {
     if ( this->requiresHeaders == false )
@@ -36,7 +26,7 @@ void NativeTexturePS2::PerformDebugChecks(const textureMetaDataHeader& textureMe
 
     // PARAMETER DEBUG.
     texInfoReg info;
-    info.texName = this->parent->name;
+    //info.texName = this->parent->name;
     info.size = textureMeta.combinedGPUDataSize / 64;
 
     deblist_t& list = addrSort[ textureMeta.tex0.textureBasePointer ];

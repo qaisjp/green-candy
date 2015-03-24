@@ -13,7 +13,7 @@ namespace rw {
 
 uint32 Clump::write(ostream &rw)
 {
-    LibraryVersion version = rw::rwInterface.GetVersion();
+    LibraryVersion version = this->engineInterface->GetVersion();
 
 	HeaderInfo header;
     header.setVersion( version );
@@ -26,6 +26,8 @@ uint32 Clump::write(ostream &rw)
 
 	// Clump
 	SKIP_HEADER();
+
+#if 0
 
 	// Struct
 	{
@@ -85,7 +87,11 @@ uint32 Clump::write(ostream &rw)
 
 	// Atomics
 	for (uint32 i = 0; i < atomicList.size(); i++)
+    {
 		bytesWritten += atomicList[i].write(rw);
+    }
+
+#endif
 
 	// Extension
 	{
@@ -106,7 +112,7 @@ uint32 Clump::write(ostream &rw)
 uint32 Atomic::write(ostream &rw)
 {
 	HeaderInfo header;
-    header.setVersion( rw::rwInterface.GetVersion() );
+    header.setVersion( this->engineInterface->GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Atomic
@@ -194,7 +200,7 @@ uint32 Frame::writeStruct(ostream &rw)
 uint32 Frame::writeExtension(ostream &rw)
 {
     HeaderInfo header;
-    header.setVersion( rw::rwInterface.GetVersion() );
+    header.setVersion( this->engineInterface->GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Extension
@@ -240,7 +246,7 @@ uint32 Frame::writeExtension(ostream &rw)
 
 uint32 Geometry::write(ostream &rw)
 {
-    LibraryVersion version = rw::rwInterface.GetVersion();
+    LibraryVersion version = this->engineInterface->GetVersion();
 
     HeaderInfo header;
     header.setVersion( version );
@@ -336,9 +342,13 @@ uint32 Geometry::write(ostream &rw)
 		}
 		bytesWritten += writtenBytesReturn;
 
+#if 0
+
 		// Materials
 		for (uint32 i = 0; i < materialList.size(); i++)
 			bytesWritten += materialList[i].write(rw);
+
+#endif
 
 		WRITE_HEADER(CHUNK_MATLIST);
 	}
@@ -447,7 +457,7 @@ uint32 Geometry::write(ostream &rw)
 uint32 Geometry::writeMeshExtension(ostream &rw)
 {
     HeaderInfo header;
-    header.setVersion( rw::rwInterface.GetVersion() );
+    header.setVersion( this->engineInterface->GetVersion() );
 	uint32 writtenBytesReturn;
 
 	SKIP_HEADER();
@@ -520,7 +530,7 @@ uint32 Geometry::writeMeshExtension(ostream &rw)
 uint32 Material::write(ostream &rw)
 {
     HeaderInfo header;
-    header.setVersion( rw::rwInterface.GetVersion() );
+    header.setVersion( this->engineInterface->GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Material
@@ -542,9 +552,13 @@ uint32 Material::write(ostream &rw)
 	}
 	bytesWritten += writtenBytesReturn;
 
+#if 0
 	// Texture
 	if (hasTex)
+    {
 		bytesWritten += texture.write(rw);
+    }
+#endif
 
 	// Extensions
 	{
@@ -571,6 +585,8 @@ uint32 Material::write(ostream &rw)
 				bytesWritten += writeFloat32(
 				                  matFx->bumpCoefficient, rw);
 
+#if 0
+
 				bytesWritten += writeUInt32(matFx->hasTex1,rw);
 				if (matFx->hasTex1)
 					bytesWritten += matFx->tex1.write(rw);
@@ -578,6 +594,8 @@ uint32 Material::write(ostream &rw)
 				bytesWritten += writeUInt32(matFx->hasTex2,rw);
 				if (matFx->hasTex2)
 					bytesWritten += matFx->tex2.write(rw);
+
+#endif
 
 				bytesWritten += writeUInt32(0, rw);
 				break;
@@ -587,6 +605,8 @@ uint32 Material::write(ostream &rw)
 				bytesWritten += writeFloat32(
 				                  matFx->envCoefficient, rw);
 
+#if 0
+
 				bytesWritten += writeUInt32(matFx->hasTex1,rw);
 				if (matFx->hasTex1)
 					bytesWritten += matFx->tex1.write(rw);
@@ -595,43 +615,48 @@ uint32 Material::write(ostream &rw)
 				if (matFx->hasTex2)
 					bytesWritten += matFx->tex2.write(rw);
 
+#endif
+
 				bytesWritten += writeUInt32(0, rw);
 				break;
 			} case MATFX_BUMPENVMAP: {
-				bytesWritten += writeUInt32(MATFX_BUMPENVMAP,
-				                            rw);
+				bytesWritten += writeUInt32(MATFX_BUMPENVMAP,rw);
 
+#if 0
 				bytesWritten += writeUInt32(MATFX_BUMPMAP, rw);
-				bytesWritten += writeFloat32(
-				                  matFx->bumpCoefficient, rw);
+				bytesWritten += writeFloat32(matFx->bumpCoefficient, rw);
 				bytesWritten += writeUInt32(matFx->hasTex1,rw);
 				if (matFx->hasTex1)
 					bytesWritten += matFx->tex1.write(rw);
 				bytesWritten += writeUInt32(0, rw);
 
 				bytesWritten += writeUInt32(MATFX_ENVMAP, rw);
-				bytesWritten += writeFloat32(
-				                  matFx->envCoefficient, rw);
+				bytesWritten += writeFloat32(matFx->envCoefficient, rw);
 				bytesWritten += writeUInt32(0, rw);
 				bytesWritten += writeUInt32(matFx->hasTex2,rw);
 				if (matFx->hasTex2)
 					bytesWritten += matFx->tex2.write(rw);
 
+#endif
+
 				break;
 			} case MATFX_DUAL: {
 				bytesWritten += writeUInt32(MATFX_DUAL, rw);
 				bytesWritten += writeUInt32(MATFX_DUAL, rw);
-				bytesWritten += writeFloat32(matFx->srcBlend,
-				                              rw);
-				bytesWritten += writeFloat32(matFx->destBlend,
-				                              rw);
+				bytesWritten += writeFloat32(matFx->srcBlend,rw);
+				bytesWritten += writeFloat32(matFx->destBlend,rw);
 
-				bytesWritten += writeUInt32(
-				                  matFx->hasDualPassMap, rw);
+#if 0
+
+				bytesWritten += writeUInt32(matFx->hasDualPassMap, rw);
 				if (matFx->hasDualPassMap)
-					bytesWritten += 
-					       matFx->dualPassMap.write(rw);
+                {
+					bytesWritten += matFx->dualPassMap.write(rw);
+                }
 				bytesWritten += writeUInt32(0, rw);
+
+#endif
+
 				break;
 			} case MATFX_UVTRANSFORM: {
 				bytesWritten += writeUInt32(MATFX_UVTRANSFORM,	
@@ -700,7 +725,7 @@ uint32 Material::write(ostream &rw)
 uint32 Texture::write(ostream &rw)
 {
 	HeaderInfo header;
-    header.setVersion( rw::rwInterface.GetVersion() );
+    header.setVersion( this->engineInterface->GetVersion() );
 	uint32 writtenBytesReturn;
 
 	// Material

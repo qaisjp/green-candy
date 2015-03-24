@@ -36,6 +36,8 @@ void Clump::read(istream& rw)
 		numLights = readUInt32(rw);
 		rw.seekg(4, ios::cur); /* camera count, unused in gta */
 	}
+
+#if 0
 	atomicList.resize(numAtomics);
 
 	READ_HEADER(CHUNK_FRAMELIST);
@@ -77,6 +79,7 @@ void Clump::read(istream& rw)
 		READ_HEADER(CHUNK_LIGHT);
 		rw.seekg(header.getLength(), ios::cur);
 	}
+#endif
 
 	readExtension(rw);
 }
@@ -108,6 +111,8 @@ void Clump::readExtension(istream &rw)
 
 void Clump::dump(bool detailed)
 {
+#if 0
+
 	string ind = "";
 	cout << ind << "Clump {\n";
 	ind += "  ";
@@ -135,13 +140,17 @@ void Clump::dump(bool detailed)
 
 	ind = ind.substr(0, ind.size()-2);
 	cout << ind << "}\n";
+
+#endif
 }
 
 void Clump::clear(void)
 {
+#if 0
 	atomicList.clear();
 	geometryList.clear();
 	frameList.clear();
+#endif
 }
 
 /*
@@ -194,7 +203,6 @@ void Atomic::readExtension(istream &rw)
 		case CHUNK_PIPELINESET:
 			hasPipelineSet = true;
 			pipelineSetVal = readUInt32(rw);
-//cout << filename << " pipelineset " << hex << pipelineSetVal << endl;
 			break;
 		default:
 			rw.seekg(header.getLength(), ios::cur);
@@ -238,14 +246,6 @@ void Atomic::dump(uint32 index, string ind)
 
 	ind = ind.substr(0, ind.size()-2);
 	cout << ind << "}\n";
-}
-
-Atomic::Atomic(void)
-: frameIndex(-1), geometryIndex(-1), hasRightToRender(false),
-  rightToRenderVal1(0), rightToRenderVal2(0), hasParticles(false),
-  particlesVal(0), hasPipelineSet(false), pipelineSetVal(0),
-  hasMaterialFx(false), materialFxVal(0)
-{
 }
 
 /*
@@ -354,17 +354,6 @@ void Frame::dump(uint32 index, string ind)
 	cout << ind << "}\n";
 }
 
-Frame::Frame(void)
-: parent(-1), name(""), hasHAnim(false), hAnimUnknown1(0), hAnimBoneId(-1),
-  hAnimBoneCount(0), hAnimUnknown2(0), hAnimUnknown3(0)
-{
-	for (int i = 0; i < 3; i++) {
-		position[i] = 0.0f;
-		for (int j = 0; j < 3; j++)
-			rotationMatrix[i*3+j] = (i == j) ? 1.0f : 0.0f;
-	}
-}
-
 /*
  * Geometry
  */
@@ -450,12 +439,16 @@ void Geometry::read(istream &rw)
 	uint32 numMaterials = readUInt32(rw);
 	rw.seekg(numMaterials*4, ios::cur);	// constant
 
+#if 0
+
 	materialList.resize(numMaterials);
 
 	for (uint32 i = 0; i < numMaterials; i++)
     {
 		materialList[i].read(rw);
     }
+
+#endif
 
 	readExtension(rw);
 }
@@ -1190,112 +1183,21 @@ void Geometry::dump(uint32 index, string ind, bool detailed)
 
 	cout << ind << "numMaterials: " << materialList.size() << endl;
 
+#if 0
+
 	for ( uint32 i = 0; i < materialList.size(); i++ )
     {
 		materialList[i].dump(i, ind);
     }
 
-	ind = ind.substr(0, ind.size()-2);
-	cout << ind << "}\n";
+#endif
 
 	ind = ind.substr(0, ind.size()-2);
 	cout << ind << "}\n";
+
+	ind = ind.substr(0, ind.size()-2);
+	cout << ind << "}\n";
 }
-
-Geometry::Geometry(void)
-: flags(0), numUVs(0), hasNativeGeometry(false), vertexCount(0),
-  hasNormals(false), faceType(0), numIndices(0), hasSkin(false), boneCount(0),
-  specialIndexCount(0), unknown1(0), unknown2(0), hasMeshExtension(false),
-  meshExtension(0), hasNightColors(false), nightColorsUnknown(0),
-  hasMorph(false)
-{
-}
-
-Geometry::Geometry(const Geometry &orig)
-: flags(orig.flags), numUVs(orig.numUVs),
-  hasNativeGeometry(orig.hasNativeGeometry), vertexCount(orig.vertexCount),
-  faces(orig.faces), vertexColors(orig.vertexColors),
-  hasPositions(orig.hasPositions), hasNormals(orig.hasNormals),
-  vertices(orig.vertices), normals(orig.normals),
-  materialList(orig.materialList), faceType(orig.faceType),
-  numIndices(orig.numIndices), splits(orig.splits), hasSkin(orig.hasSkin),
-  boneCount(orig.boneCount), specialIndexCount(orig.specialIndexCount),
-  unknown1(orig.unknown1), unknown2(orig.unknown2),
-  specialIndices(orig.specialIndices),
-  vertexBoneIndices(orig.vertexBoneIndices),
-  vertexBoneWeights(orig.vertexBoneWeights),
-  inverseMatrices(orig.inverseMatrices),
-  hasMeshExtension(orig.hasMeshExtension), hasNightColors(orig.hasNightColors),
-  nightColorsUnknown(orig.nightColorsUnknown), nightColors(orig.nightColors),
-  hasMorph(orig.hasMorph)
-{
-	if (orig.meshExtension)
-		meshExtension = new MeshExtension(*orig.meshExtension);
-	else
-		meshExtension = 0;
-
-	for (uint32 i = 0; i < 8; i++)
-		texCoords[i] = orig.texCoords[i];
-	for (uint32 i = 0; i < 4; i++)
-		boundingSphere[i] = orig.boundingSphere[i];
-}
-
-Geometry &Geometry::operator=(const Geometry &that)
-{
-	if (this != &that) {
-		flags = that.flags;
-		numUVs = that.numUVs;
-		hasNativeGeometry = that.hasNativeGeometry;
-
-		vertexCount = that.vertexCount;
-		faces = that.faces;
-		vertexColors = that.vertexColors;
-		for (uint32 i = 0; i < 8; i++)
-			texCoords[i] = that.texCoords[i];
-
-		for (uint32 i = 0; i < 4; i++)
-			boundingSphere[i] = that.boundingSphere[i];
-
-		hasPositions = that.hasPositions;
-		hasNormals = that.hasNormals;
-		vertices = that.vertices;
-		normals = that.normals;
-		materialList = that.materialList;
-
-		faceType = that.faceType;
-		numIndices = that.numIndices;
-		splits = that.splits;
-
-		hasSkin = that.hasSkin;
-		boneCount = that.boneCount;
-		specialIndexCount = that.specialIndexCount;
-		unknown1 = that.unknown1;
-		unknown2 = that.unknown2;
-		specialIndices = that.specialIndices;
-		vertexBoneIndices = that.vertexBoneIndices;
-		vertexBoneWeights = that.vertexBoneWeights;
-		inverseMatrices = that.inverseMatrices;
-
-		hasMeshExtension = that.hasMeshExtension;
-		delete meshExtension;
-		meshExtension = 0;
-		if (that.meshExtension)
-			meshExtension = new MeshExtension(*that.meshExtension);
-
-		hasNightColors = that.hasNightColors;
-		nightColorsUnknown = that.nightColorsUnknown;
-		nightColors = that.nightColors;
-
-		hasMorph = that.hasMorph;
-	}
-	return *this;
-}
-
-Geometry::~Geometry(void)
-{
-	delete meshExtension;
-}
-
 
 /*
  * Material
@@ -1314,8 +1216,12 @@ void Material::read(istream &rw)
 	hasTex = ( readInt32(rw) != 0 );
 	rw.read((char *) (surfaceProps), 3*sizeof(float32));
 
+#if 0 
 	if (hasTex)
+    {
 		texture.read(rw);
+    }
+#endif
 
 	readExtension(rw);
 }
@@ -1351,6 +1257,8 @@ void Material::readExtension(istream &rw)
 				rw.seekg(4, ios::cur); // also MATFX_BUMPMAP
 				matFx->bumpCoefficient = readFloat32(rw);
 
+#if 0
+
 				matFx->hasTex1 = ( readUInt32(rw) != 0 );
 				if (matFx->hasTex1)
 					matFx->tex1.read(rw);
@@ -1358,6 +1266,8 @@ void Material::readExtension(istream &rw)
 				matFx->hasTex2 = ( readUInt32(rw) != 0 );
 				if (matFx->hasTex2)
 					matFx->tex2.read(rw);
+
+#endif
 
 				rw.seekg(4, ios::cur); // 0
 				break;
@@ -1365,6 +1275,8 @@ void Material::readExtension(istream &rw)
 				rw.seekg(4, ios::cur); // also MATFX_ENVMAP
 				matFx->envCoefficient = readFloat32(rw);
 
+#if 0
+
 				matFx->hasTex1 = ( readUInt32(rw) != 0 );
 				if (matFx->hasTex1)
 					matFx->tex1.read(rw);
@@ -1373,12 +1285,16 @@ void Material::readExtension(istream &rw)
 				if (matFx->hasTex2)
 					matFx->tex2.read(rw);
 
+#endif
+
 				rw.seekg(4, ios::cur); // 0
 				break;
 			} case MATFX_BUMPENVMAP: {
-//cout << filename << " BUMPENVMAP\n";
 				rw.seekg(4, ios::cur); // MATFX_BUMPMAP
 				matFx->bumpCoefficient = readFloat32(rw);
+
+#if 0
+
 				matFx->hasTex1 = ( readUInt32(rw) != 0 );
 				if (matFx->hasTex1)
 					matFx->tex1.read(rw);
@@ -1392,25 +1308,32 @@ void Material::readExtension(istream &rw)
 				matFx->hasTex2 = ( readUInt32(rw) != 0 );
 				if (matFx->hasTex2)
 					matFx->tex2.read(rw);
+
+#endif
+
 				break;
 			} case MATFX_DUAL: {
-//cout << filename << " DUAL\n";
+
 				rw.seekg(4, ios::cur); // also MATFX_DUAL
 				matFx->srcBlend = (float32)readUInt32(rw);
 				matFx->destBlend = (float32)readUInt32(rw);
+
+#if 0
 
 				matFx->hasDualPassMap = ( readUInt32(rw) != 0 );
 				if (matFx->hasDualPassMap)
 					matFx->dualPassMap.read(rw);
 				rw.seekg(4, ios::cur); // 0
+
+#endif
+            
 				break;
 			} case MATFX_UVTRANSFORM: {
-//cout << filename << " UVTRANSFORM\n";
+
 				rw.seekg(4, ios::cur);//also MATFX_UVTRANSFORM
 				rw.seekg(4, ios::cur); // 0
 				break;
 			} case MATFX_DUALUVTRANSFORM: {
-//cout << filename << " DUALUVTRANSFORM\n";
 				// never observed in gta
 				break;
 			} default:
@@ -1470,13 +1393,16 @@ void Material::dump(uint32 index, string ind)
 	                                << surfaceProps[1] << " "
 	                                << surfaceProps[2] << endl;
 
+#if 0
 	if(hasTex)
 		texture.dump(ind);
+#endif
 
 	if(hasMatFx)
 		matFx->dump(ind);
 
-	if(hasRightToRender){
+	if(hasRightToRender)
+    {
 		cout << hex;
 		cout << ind << "Right to Render {\n";
 		cout << ind+"  " << "val1: " << rightToRenderVal1<<endl;
@@ -1485,7 +1411,8 @@ void Material::dump(uint32 index, string ind)
 		cout << dec;
 	}
 
-	if(hasReflectionMat){
+	if(hasReflectionMat)
+    {
 		cout << ind << "Reflection Material {\n";
 		cout << ind+"  " << "amount: "
 		     << reflectionChannelAmount[0] << " "
@@ -1496,7 +1423,8 @@ void Material::dump(uint32 index, string ind)
 		cout << ind << "}\n";
 	}
 
-	if(hasSpecularMat){
+	if(hasSpecularMat)
+    {
 		cout << ind << "Specular Material {\n";
 		cout << ind+"  " << "level: " << specularLevel << endl;
 		cout << ind+"  " << "name: " << specularName << endl;
@@ -1505,110 +1433,6 @@ void Material::dump(uint32 index, string ind)
 
 	ind = ind.substr(0, ind.size()-2);
 	cout << ind << "}\n";
-}
-
-Material::Material(void)
-: flags(0), unknown(0), hasTex(false), hasRightToRender(false),
-  rightToRenderVal1(0), rightToRenderVal2(0), hasMatFx(false), matFx(0),
-  hasReflectionMat(false), reflectionIntensity(0.0f), hasSpecularMat(false),
-  specularLevel(0.0f)
-{
-	for (int i = 0; i < 4; i++)
-		color[i] = 0;
-	for (int i = 0; i < 3; i++) {
-		surfaceProps[i] = 0.0f;
-		reflectionChannelAmount[i] = 0.0f;
-	}
-}
-
-Material::Material(const Material& orig)
-: flags(orig.flags), unknown(orig.unknown),
-  hasTex(orig.hasTex), texture(orig.texture),
-  hasRightToRender(orig.hasRightToRender),
-  rightToRenderVal1(orig.rightToRenderVal1),
-  rightToRenderVal2(orig.rightToRenderVal2),
-  hasMatFx(orig.hasMatFx), hasReflectionMat(orig.hasReflectionMat),
-  reflectionIntensity(orig.reflectionIntensity),
-  hasSpecularMat(orig.hasSpecularMat), specularLevel(orig.specularLevel),
-  specularName(orig.specularName)
-{
-	if (orig.matFx)
-    {
-		matFx = new MatFx(*orig.matFx);
-    }
-	else
-    {
-		matFx = 0;
-    }
-
-	for (uint32 i = 0; i < 4; i++)
-    {
-		color[i] = orig.color[i];
-    }
-	for (uint32 i = 0; i < 3; i++)
-    {
-		surfaceProps[i] = orig.surfaceProps[i];
-    }
-	for (uint32 i = 0; i < 4; i++)
-    {
-		reflectionChannelAmount[i] = orig.reflectionChannelAmount[i];
-    }
-}
-
-Material &Material::operator=(const Material &that)
-{
-	if ( this != &that )
-    {
-		flags = that.flags;
-
-		for (uint32 i = 0; i < 4; i++)
-        {
-			color[i] = that.color[i];
-        }
-
-		unknown = that.unknown;
-		hasTex = that.hasTex;
-
-		for (uint32 i = 0; i < 3; i++)
-        {
-			surfaceProps[i] = that.surfaceProps[i];
-        }
-
-		texture = that.texture;
-
-		hasRightToRender = that.hasRightToRender;
-		rightToRenderVal1 = that.rightToRenderVal1;
-		rightToRenderVal2 = that.rightToRenderVal2;
-
-		hasMatFx = that.hasMatFx;
-
-		delete matFx;
-		matFx = 0;
-
-		if (that.matFx)
-        {
-			matFx = new MatFx(*that.matFx);
-        }
-
-		hasReflectionMat = that.hasReflectionMat;
-
-		for (uint32 i = 0; i < 4; i++)
-        {
-			reflectionChannelAmount[i] = that.reflectionChannelAmount[i];
-        }
-
-		reflectionIntensity = that.reflectionIntensity;
-
-		hasSpecularMat = that.hasSpecularMat;
-		specularLevel = that.specularLevel;
-		specularName = that.specularName;
-	}
-	return *this;
-}
-
-Material::~Material(void)
-{
-	delete matFx;
 }
 
 void MatFx::dump(string ind)
@@ -1644,6 +1468,8 @@ void MatFx::dump(string ind)
 
 	cout << ind << "textures: " << hasTex1 << " " << hasTex2 << " " << hasDualPassMap << endl;
 
+#if 0
+
 	if( hasTex1 )
     {
 		tex1.dump(ind);
@@ -1656,6 +1482,8 @@ void MatFx::dump(string ind)
     {
 		dualPassMap.dump(ind);
     }
+
+#endif
 
 	ind = ind.substr(0, ind.size()-2);
 	cout << ind << "}\n";
@@ -1751,11 +1579,6 @@ void Texture::dump(std::string ind)
 
 	ind = ind.substr(0, ind.size()-2);
 	cout << ind << "}\n";
-}
-
-Texture::Texture(void)
-: filterFlags(0), name(""), maskName(""), hasSkyMipmap(false)
-{
 }
 
 }

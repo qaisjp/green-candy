@@ -1,4 +1,4 @@
-TxdGen 0.9 by The_GTA. Beta release.
+TxdGen 0.9.1 PREVIEW by The_GTA. Beta release.
 ==================================
 
 TxdGen is the RW Texture Dictionary conversion tool. Its goal is to support

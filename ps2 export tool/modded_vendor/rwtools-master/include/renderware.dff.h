@@ -1,5 +1,20 @@
-struct Atomic
+struct Atomic : public RwObject
 {
+    Atomic( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
+    {
+        this->frameIndex = -1;
+        this->geometryIndex = -1;
+        this->hasRightToRender = false;
+        this->rightToRenderVal1 = 0;
+        this->rightToRenderVal2 = 0;
+        this->hasParticles = false;
+        this->particlesVal = 0;
+        this->hasPipelineSet = false;
+        this->pipelineSetVal = 0;
+        this->hasMaterialFx = false;
+        this->materialFxVal = 0;
+    }
+
 	int32 frameIndex;
 	int32 geometryIndex;
 
@@ -27,8 +42,6 @@ struct Atomic
 	void readExtension(std::istream &dff);
 	uint32 write(std::ostream &dff);
 	void dump(uint32 index, std::string ind = "");
-
-	Atomic(void);
 };
 
 struct MeshExtension
@@ -52,8 +65,37 @@ struct Split
 	std::vector<uint32> indices;	
 };
 
-struct Geometry
+struct Geometry : public RwObject
 {
+    inline Geometry( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
+    {
+        this->flags = 0;
+        this->numUVs = 0;
+        this->hasNativeGeometry = false;
+        this->vertexCount = 0;
+        this->hasNormals = false;
+        this->faceType = 0;
+        this->numIndices = 0;
+        this->hasSkin = false;
+        this->boneCount = 0;
+        this->specialIndexCount = 0;
+        this->unknown1 = 0;
+        this->unknown2 = 0;
+        this->hasMeshExtension = false;
+        this->meshExtension = 0;
+        this->hasNightColors = false;
+        this->nightColorsUnknown = 0;
+        this->hasMorph = false;
+    }
+
+    inline ~Geometry( void )
+    {
+        if ( this->meshExtension )
+        {
+            delete this->meshExtension;
+        }
+    }
+
 	uint32 flags;
 	uint32 numUVs;
 	bool hasNativeGeometry;
@@ -70,7 +112,7 @@ struct Geometry
 	std::vector<float32> vertices;
 	std::vector<float32> normals;
 
-	std::vector<Material> materialList;
+	std::vector<Material*> materialList;
 
 	/* Extensions */
 
@@ -115,11 +157,6 @@ struct Geometry
 	void cleanUp(void);
 
 	void dump(uint32 index, std::string ind = "", bool detailed = false);
-
-	Geometry(void);
-	Geometry(const Geometry &orig);
-	Geometry &operator= (const Geometry &other);
-	~Geometry(void);
 private:
 	void readPs2NativeData(std::istream &dff);
 	void readXboxNativeData(std::istream &dff);
@@ -135,11 +172,13 @@ private:
 	uint32 addTempVertexIfNew(uint32 index);
 };
 
-struct Clump
+struct Clump : public RwObject
 {
+#if 0
 	std::vector<Atomic> atomicList;
 	std::vector<Frame> frameList;
 	std::vector<Geometry> geometryList;
+#endif
 
 	/* Extensions */
 	/* collision file */

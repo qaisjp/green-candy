@@ -8,26 +8,63 @@ struct MatFx
 	float32 destBlend;
 
 	bool hasTex1;
-	Texture tex1;
+	Texture *tex1;
 	bool hasTex2;
-	Texture tex2;
+	Texture *tex2;
 	bool hasDualPassMap;
-	Texture dualPassMap;
+	Texture *dualPassMap;
 
 	void dump(std::string ind = "");
 
 	MatFx(void);
 };
 
-struct Material
+struct Material : public RwObject
 {
+    inline Material( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
+    {
+        this->flags = 0;
+        this->unknown = 0;
+        this->hasTex = false;
+        this->hasRightToRender = false;
+        this->rightToRenderVal1 = 0;
+        this->rightToRenderVal2 = 0;
+        this->hasMatFx = false;
+        this->matFx = 0;
+        this->hasReflectionMat = false;
+        this->reflectionIntensity = 0.0f;
+        this->hasSpecularMat = false;
+        this->specularLevel = 0.0f;
+
+        this->texture = NULL;
+
+        for (int i = 0; i < 4; i++)
+        {
+            color[i] = 0;
+        }
+
+        for (int i = 0; i < 3; i++)
+        {
+            surfaceProps[i] = 0.0f;
+            reflectionChannelAmount[i] = 0.0f;
+        }
+    }
+
+    inline ~Material( void )
+    {
+        if ( matFx )
+        {
+            delete matFx;
+        }
+    }
+
 	uint32 flags;
 	uint8 color[4];
 	uint32 unknown;
 	bool hasTex;
 	float32 surfaceProps[3]; /* ambient, specular, diffuse */
 
-	Texture texture;
+	Texture *texture;
 
 	/* Extensions */
 
@@ -59,9 +96,4 @@ struct Material
 	uint32 write(std::ostream &dff);
 
 	void dump(uint32 index, std::string ind = "");
-
-	Material(void);
-	Material(const Material &orig);
-	Material &operator=(const Material &that);
-	~Material(void);
 };
