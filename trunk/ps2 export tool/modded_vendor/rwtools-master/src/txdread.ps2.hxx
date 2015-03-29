@@ -434,14 +434,17 @@ inline uint32 getFormatEncodingDepth(eFormatEncodingType encodingType)
     return depth;
 }
 
-struct NativeTexturePS2 : public PlatformTexture
+struct NativeTexturePS2
 {
     Interface *engineInterface;
+
+    LibraryVersion texVersion;
 
     inline NativeTexturePS2( Interface *engineInterface )
     {
         // Initialize the texture object.
         this->engineInterface = engineInterface;
+        this->texVersion = engineInterface->GetVersion();
         this->rasterFormat = RASTER_DEFAULT;
         this->depth = 0;
         this->paletteType = PALETTE_NONE;
@@ -471,7 +474,7 @@ struct NativeTexturePS2 : public PlatformTexture
         this->rasterType = 4;
 
         this->hasAlpha = true;
-        this->colorOrdering = COLOR_RGBA;
+        this->colorOrdering = COLOR_RGBA;   // PlayStation 2 textures are always RGBA ordered.
     }
 
     inline NativeTexturePS2( const NativeTexturePS2& right )
@@ -479,6 +482,7 @@ struct NativeTexturePS2 : public PlatformTexture
         Interface *engineInterface = right.engineInterface;
 
         this->engineInterface = engineInterface;
+        this->texVersion = right.texVersion;
 
         // Copy palette information.
         this->paletteTex.CopyTexture( engineInterface, right.paletteTex );
@@ -540,41 +544,6 @@ struct NativeTexturePS2 : public PlatformTexture
     inline ~NativeTexturePS2( void )
     {
         this->clearImageData();
-    }
-
-    uint32 getWidth( void ) const
-    {
-        return this->mipmaps[0].width;
-    }
-
-    uint32 getHeight( void ) const
-    {
-        return this->mipmaps[0].height;
-    }
-
-    uint32 getDepth( void ) const
-    {
-        return this->depth;
-    }
-
-    uint32 getMipmapCount( void ) const
-    {
-        return this->mipmaps.size();
-    }
-
-    ePaletteType getPaletteType( void ) const
-    {
-        return this->paletteType;
-    }
-
-    bool isCompressed( void ) const
-    {
-        return false;
-    }
-
-    void compress( float quality )
-    {
-        // nothing to do here.
     }
 
     struct GSTexture
@@ -874,6 +843,29 @@ struct ps2NativeTextureTypeProvider : public texNativeTypeProvider
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    void SetTextureVersion( Interface *engineInterface, void *objMem, LibraryVersion version )
+    {
+        // TODO: track version changes and update contents.
+        // the swizzling changes depending on library version.
+
+        NativeTexturePS2 *nativeTex = (NativeTexturePS2*)objMem;
+
+        nativeTex->texVersion = version;
+    }
+
+    LibraryVersion GetTextureVersion( const void *objMem )
+    {
+        const NativeTexturePS2 *nativeTex = (const NativeTexturePS2*)objMem;
+
+        return nativeTex->texVersion;
+    }
+
+    bool GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut );
+    bool AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut );
+    void ClearMipmaps( Interface *engineInterface, void *objMem );
+
+    void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {

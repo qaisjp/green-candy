@@ -91,12 +91,12 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                     // Move over the texture name.
                     memcpy( tmpbuf, metaHeader.name, sizeof( metaHeader.name ) );
 
-                    theTexture->name = tmpbuf;
+                    theTexture->SetName( tmpbuf );
 
                     // Move over the texture mask name.
                     memcpy( tmpbuf, metaHeader.maskName, sizeof( metaHeader.maskName ) );
 
-                    theTexture->maskName = tmpbuf;
+                    theTexture->SetMaskName( tmpbuf );
                 }
 
                 // Read texture format.
@@ -214,7 +214,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                         if ( !hasFormat )
                         {
-                            throw RwException( "could not determine D3DFORMAT for texture " + theTexture->name );
+                            throw RwException( "could not determine D3DFORMAT for texture " + theTexture->GetName() );
                         }
                     }
 
@@ -230,7 +230,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                     if (actualCompression != platformTex->dxtCompression)
                     {
-                        engineInterface->PushWarning( "texture " + theTexture->name + " has invalid compression parameters (ignoring)" );
+                        engineInterface->PushWarning( "texture " + theTexture->GetName() + " has invalid compression parameters (ignoring)" );
 
                         platformTex->dxtCompression = actualCompression;
                     }
@@ -390,13 +390,13 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                     {
                         if ( isD3DFORMATImportant == true )
                         {
-                            throw RwException( "invalid D3DFORMAT in texture " + theTexture->name );
+                            throw RwException( "invalid D3DFORMAT in texture " + theTexture->GetName() );
                         }
                         else
                         {
                             if ( engineIgnoreSecureWarnings == false )
                             {
-                                engineInterface->PushWarning( "texture " + theTexture->name + " has a wrong D3DFORMAT field (ignoring)" );
+                                engineInterface->PushWarning( "texture " + theTexture->GetName() + " has a wrong D3DFORMAT field (ignoring)" );
                             }
                         }
 
@@ -421,7 +421,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                         {
                             if ( engineWarningLevel >= 3 )
                             {
-                                engineInterface->PushWarning( "texture " + theTexture->name + " has an invalid raster format (ignoring)" );
+                                engineInterface->PushWarning( "texture " + theTexture->GetName() + " has an invalid raster format (ignoring)" );
                             }
                         }
 
@@ -456,7 +456,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                     if (hasInvalidDepth == true)
                     {
-                        throw RwException( "texture " + theTexture->name + " has an invalid depth" );
+                        throw RwException( "texture " + theTexture->GetName() + " has an invalid depth" );
 
                         // We cannot fix an invalid depth.
                     }
@@ -497,7 +497,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                 if ( !mipLevelGen.isValidLevel() )
                 {
-                    throw RwException( "texture " + theTexture->name + " has invalid dimensions" );
+                    throw RwException( "texture " + theTexture->GetName() + " has invalid dimensions" );
                 }
 
                 uint32 mipmapCount = 0;
@@ -580,7 +580,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                         {
                             if ( !engineIgnoreSecureWarnings )
                             {
-                               engineInterface->PushWarning( "texture " + theTexture->name + " has damaged mipmaps (ignoring)" );
+                               engineInterface->PushWarning( "texture " + theTexture->GetName() + " has damaged mipmaps (ignoring)" );
                             }
 
                             hasDamagedMipmaps = true;
@@ -626,7 +626,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 
                 if ( mipmapCount == 0 )
                 {
-                    throw RwException( "texture " + theTexture->name + " is empty" );
+                    throw RwException( "texture " + theTexture->GetName() + " is empty" );
                 }
 
                 // mipmapCount can only be smaller than maybeMipmapCount.
@@ -655,11 +655,11 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                         // Print the debug message.
                         if ( !hasSkippedNonZeroSized )
                         {
-                            engineInterface->PushWarning( "texture " + theTexture->name + " has zero sized mipmaps" );
+                            engineInterface->PushWarning( "texture " + theTexture->GetName() + " has zero sized mipmaps" );
                         }
                         else
                         {
-                            engineInterface->PushWarning( "texture " + theTexture->name + " violates mipmap rules" );
+                            engineInterface->PushWarning( "texture " + theTexture->GetName() + " violates mipmap rules" );
                         }
                     }
                 }
@@ -677,7 +677,7 @@ void d3dNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                         if ( !canHaveAutoMipmaps )
                         {
-                            engineInterface->PushWarning( "texture " + theTexture->name + " has an invalid auto-mipmap flag (fixing)" );
+                            engineInterface->PushWarning( "texture " + theTexture->GetName() + " has an invalid auto-mipmap flag (fixing)" );
 
                             platformTex->autoMipmaps = false;
                         }
@@ -713,145 +713,6 @@ void registerD3DNativeTexture( Interface *engineInterface )
     {
         RegisterNativeTextureType( engineInterface, "Direct3D", d3dTexEnv, sizeof( NativeTextureD3D ) );
     }
-}
-
-bool NativeTextureD3D::getDebugBitmap( Bitmap& bmpOut ) const
-{
-    // Return a debug bitmap which contains all mipmap layers.
-    uint32 requiredBitmapWidth = 0;
-    uint32 requiredBitmapHeight = 0;
-
-    uint32 mipmapCount = this->mipmaps.size();
-
-    if ( mipmapCount == 0 )
-        return false;
-
-    for ( uint32 n = 0; n < mipmapCount; n++ )
-    {
-        const mipmapLayer& mipLayer = this->mipmaps[ n ];
-
-        uint32 mipLayerWidth = mipLayer.layerWidth;
-        uint32 mipLayerHeight = mipLayer.layerHeight;
-
-        // We allocate all mipmaps from top left to top right.
-        requiredBitmapWidth += mipLayerWidth;
-
-        if ( requiredBitmapHeight < mipLayerHeight )
-        {
-            requiredBitmapHeight = mipLayerHeight;
-        }
-    }
-
-    if ( requiredBitmapWidth == 0 || requiredBitmapHeight == 0 )
-        return false;
-
-    // Allocate bitmap space.
-    bmpOut.setSize( requiredBitmapWidth, requiredBitmapHeight );
-
-    // Cursor for the drawing operation.
-    uint32 cursor_x = 0;
-    uint32 cursor_y = 0;
-
-    // Draw them.
-    for ( uint32 n = 0; n < mipmapCount; n++ )
-    {
-        rawBitmapFetchResult rawBmp;
-
-        bool gotRawBitmap = this->getRawBitmap( n, true, rawBmp );
-
-        if ( gotRawBitmap )
-        {
-            // Fetch colors from this mipmap layer.
-            struct mipmapColorSourcePipeline : public Bitmap::sourceColorPipeline
-            {
-                uint32 mipWidth, mipHeight;
-                uint32 depth;
-                const void *texelSource;
-                eRasterFormat rasterFormat;
-                eColorOrdering colorOrder;
-                const void *paletteData;
-                uint32 paletteSize;
-                ePaletteType paletteType;
-
-                inline mipmapColorSourcePipeline(
-                    uint32 mipWidth, uint32 mipHeight, uint32 depth,
-                    const void *texelSource,
-                    eRasterFormat rasterFormat, eColorOrdering colorOrder,
-                    const void *paletteData, uint32 paletteSize, ePaletteType paletteType
-                )
-                {
-                    this->mipWidth = mipWidth;
-                    this->mipHeight = mipHeight;
-                    this->depth = depth;
-                    this->texelSource = texelSource;
-                    this->rasterFormat = rasterFormat;
-                    this->colorOrder = colorOrder;
-                    this->paletteData = paletteData;
-                    this->paletteSize = paletteSize;
-                    this->paletteType = paletteType;
-                }
-
-                uint32 getWidth( void ) const
-                {
-                    return this->mipWidth;
-                }
-
-                uint32 getHeight( void ) const
-                {
-                    return this->mipHeight;
-                }
-
-                void fetchcolor( uint32 colorIndex, double& red, double& green, double& blue, double& alpha )
-                {
-                    uint8 r, g, b, a;
-
-                    bool hasColor = browsetexelcolor(
-                        this->texelSource, this->paletteType, this->paletteData, this->paletteSize,
-                        colorIndex, this->rasterFormat, this->colorOrder, this->depth,
-                        r, g, b, a
-                    );
-
-                    if ( !hasColor )
-                    {
-                        r = 0;
-                        g = 0;
-                        b = 0;
-                        a = 0;
-                    }
-
-                    red = unpackcolor( r );
-                    green = unpackcolor( g );
-                    blue = unpackcolor( b );
-                    alpha = unpackcolor( a );
-                }
-            };
-
-            mipmapColorSourcePipeline colorPipe(
-                rawBmp.width, rawBmp.height, rawBmp.depth,
-                rawBmp.texelData,
-                rawBmp.rasterFormat, rawBmp.colorOrder,
-                rawBmp.paletteData, rawBmp.paletteSize, rawBmp.paletteType
-            );
-
-            // Draw it at its position.
-            bmpOut.draw(
-                colorPipe, cursor_x, cursor_y,
-                rawBmp.width, rawBmp.height,
-                Bitmap::SHADE_ZERO, Bitmap::SHADE_ONE, Bitmap::BLEND_ADDITIVE
-            );
-
-            // Delete if necessary.
-            if ( rawBmp.isNewlyAllocated )
-            {
-                delete [] rawBmp.texelData;
-            }
-
-            // Increase cursor.
-            cursor_x += rawBmp.width;
-        }
-    }
-
-    return true;
 }
 
 };

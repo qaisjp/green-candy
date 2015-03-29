@@ -57,16 +57,12 @@ void xboxNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, P
     // If we are not compressed, then the color order matters.
     if ( compressionType == 0 )
     {
+        // XBOX textures are always BGRA.
         eColorOrdering requiredColorOrder = COLOR_BGRA;
-
-        if ( paletteType != PALETTE_NONE )
-        {
-            requiredColorOrder = COLOR_RGBA;
-        }
 
         if ( platformTex->colorOrder != requiredColorOrder )
         {
-            throw RwException( "texture " + theTexture->name + " has an invalid color ordering for writing" );
+            throw RwException( "texture " + theTexture->GetName() + " has an invalid color ordering for writing" );
         }
     }
 
@@ -91,8 +87,8 @@ void xboxNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, P
 
                 // Write texture names.
                 // These need to be written securely.
-                writeStringIntoBufferSafe( engineInterface, theTexture->name, metaInfo.name, sizeof( metaInfo.name ), theTexture->name, "name" );
-                writeStringIntoBufferSafe( engineInterface, theTexture->maskName, metaInfo.maskName, sizeof( metaInfo.maskName ), theTexture->name, "mask name" );
+                writeStringIntoBufferSafe( engineInterface, theTexture->GetName(), metaInfo.name, sizeof( metaInfo.name ), theTexture->GetName(), "name" );
+                writeStringIntoBufferSafe( engineInterface, theTexture->GetMaskName(), metaInfo.maskName, sizeof( metaInfo.maskName ), theTexture->GetName(), "mask name" );
 
                 // Construct raster flags.
                 uint32 rasterFlags = generateRasterFormatFlags(platformTex->rasterFormat, paletteType, mipmapCount > 1, platformTex->autoMipmaps);

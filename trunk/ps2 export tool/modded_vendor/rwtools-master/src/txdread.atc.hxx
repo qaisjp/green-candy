@@ -32,13 +32,16 @@ inline uint32 getATCCompressionBlockSize( eATCInternalFormat internalFormat )
     return theSize;
 }
 
-struct NativeTextureATC : public PlatformTexture
+struct NativeTextureATC
 {
     Interface *engineInterface;
+
+    LibraryVersion texVersion;
 
     inline NativeTextureATC( Interface *engineInterface )
     {
         this->engineInterface = engineInterface;
+        this->texVersion = engineInterface->GetVersion();
 
         this->internalFormat = ATC_RGB_AMD;
         this->hasAlpha = false;
@@ -52,6 +55,7 @@ struct NativeTextureATC : public PlatformTexture
     {
         // Copy parameters.
         this->engineInterface = right.engineInterface;
+        this->texVersion = right.texVersion;
         this->internalFormat = right.internalFormat;
         this->hasAlpha = right.hasAlpha;
         this->unk1 = right.unk1;
@@ -70,44 +74,6 @@ struct NativeTextureATC : public PlatformTexture
     inline ~NativeTextureATC( void )
     {
         this->clearImageData();
-    }
-
-    uint32 getWidth( void ) const
-    {
-        return this->mipmaps[ 0 ].layerWidth;
-    }
-
-    uint32 getHeight( void ) const
-    {
-        return this->mipmaps[ 0 ].layerHeight;
-    }
-
-    uint32 getDepth( void ) const
-    {
-        return 0;
-    }
-
-    uint32 getMipmapCount( void ) const
-    {
-        return this->mipmaps.size();
-    }
-
-    ePaletteType getPaletteType( void ) const
-    {
-        // PVR textures are never palettized.
-        return PALETTE_NONE;
-    }
-
-    bool isCompressed( void ) const
-    {
-        // PVR textures are always compressed.
-        return true;
-    }
-
-    void compress( float quality )
-    {
-        // Since we are always compressed, there is nothing to do here.
-        return;
     }
 
     typedef genmip::mipmapLayer mipmapLayer;
@@ -159,6 +125,26 @@ struct atcNativeTextureTypeProvider : public texNativeTypeProvider
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    void SetTextureVersion( Interface *engineInterface, void *objMem, LibraryVersion version )
+    {
+        NativeTextureATC *nativeTex = (NativeTextureATC*)objMem;
+
+        nativeTex->texVersion = version;
+    }
+
+    LibraryVersion GetTextureVersion( const void *objMem )
+    {
+        const NativeTextureATC *nativeTex = (const NativeTextureATC*)objMem;
+
+        return nativeTex->texVersion;
+    }
+
+    bool GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut );
+    bool AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut );
+    void ClearMipmaps( Interface *engineInterface, void *objMem );
+
+    void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {

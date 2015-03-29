@@ -115,7 +115,8 @@ enum ePaletteType
 enum eColorOrdering
 {
     COLOR_RGBA,
-    COLOR_BGRA
+    COLOR_BGRA,
+    COLOR_ABGR
 };
 
 // utility to calculate palette item count.
@@ -146,24 +147,7 @@ inline uint32 getPaletteItemCount( ePaletteType paletteType )
 #include "renderware.bmp.h"
 
 // Texture container per platform for specialized color data.
-struct PlatformTexture abstract
-{
-    virtual uint32 getWidth( void ) const = 0;
-    virtual uint32 getHeight( void ) const = 0;
-
-    virtual uint32 getDepth( void ) const = 0;
-
-    virtual uint32 getMipmapCount( void ) const = 0;
-
-    virtual ePaletteType getPaletteType( void ) const = 0;
-
-    // Virtual function that can be overwritten so that the
-    // runtime can obtain a debug image that displays internals.
-    virtual bool getDebugBitmap( Bitmap& bmpOut ) const
-    {
-        return false;
-    }
-};
+typedef void* PlatformTexture;
 
 // Useful routine to generate generic raster format flags.
 inline uint32 generateRasterFormatFlags( eRasterFormat rasterFormat, ePaletteType paletteType, bool hasMipmaps, bool autoMipmaps )
@@ -249,9 +233,8 @@ struct Raster
     void SetEngineVersion( LibraryVersion version );
     LibraryVersion GetEngineVersion( void ) const;
 
-    // TODO: add conversion functions into this struct (instead of NativeTexture).
     void writeTGA(const char *path, bool optimized = false);
-    void writeTGAStream(std::ostream& tga, bool optimized = false);
+    void writeTGAStream(Stream *tga, bool optimized = false);
 
     Bitmap getBitmap(void) const;
     void setImageData(const Bitmap& srcImage);
@@ -260,13 +243,10 @@ struct Raster
 
     void getSize(uint32& width, uint32& height) const;
 
-    void newDirect3D(void);
+    void newNativeData( const char *typeName );
+    void clearNativeData( void );
 
 	void convertToFormat(eRasterFormat format);
-
-    // Check whether a texture is Direct3D compatible.
-    bool isDirect3DWritable(void) const;
-    void makeDirect3DCompatible(void);
 
     // Optimization routines.
     void optimizeForLowEnd(float quality);
@@ -286,6 +266,8 @@ struct TexDictionary;
 
 struct TextureBase : public RwObject
 {
+    friend struct TexDictionary;
+
     inline TextureBase( Interface *engineInterface, void *construction_params ) : RwObject( engineInterface, construction_params )
     {
         this->texRaster = NULL;
@@ -307,9 +289,23 @@ struct TextureBase : public RwObject
         }
     }
 
+    void SetName( const char *nameString )                      { this->name = nameString; }
+    void SetMaskName( const char *nameString )                  { this->maskName = nameString; }
+
+    const std::string& GetName( void ) const                    { return this->name; }
+    const std::string& GetMaskName( void ) const                { return this->maskName; }
+
     void AddToDictionary( TexDictionary *dict );
     void RemoveFromDictionary( void );
     TexDictionary* GetTexDictionary( void ) const;
+
+    void SetFilterMode( eRasterStageFilterMode filterMode )     { this->filterMode = filterMode; }
+    void SetUAddressing( eRasterStageAddressMode mode )         { this->uAddressing = mode; }
+    void SetVAddressing( eRasterStageAddressMode mode )         { this->vAddressing = mode; }
+
+    eRasterStageFilterMode GetFilterMode( void ) const          { return this->filterMode; }
+    eRasterStageAddressMode GetUAddressing( void ) const        { return this->uAddressing; }
+    eRasterStageAddressMode GetVAddressing( void ) const        { return this->vAddressing; }
 
     void improveFiltering(void);
 
@@ -317,11 +313,14 @@ struct TextureBase : public RwObject
     void clearMipmaps( void );
     void generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode mipGenMode = MIPMAPGEN_DEFAULT );
 
+    void SetRaster( Raster *texRaster );
+
     Raster* GetRaster( void ) const
     {
         return this->texRaster;
     }
 
+private:
     // Pointer to the pixel data storage.
     Raster *texRaster;
 
@@ -334,6 +333,7 @@ struct TextureBase : public RwObject
 
     TexDictionary *texDict;
 
+public:
     RwListEntry <TextureBase> texDictNode;
 };
 
@@ -344,22 +344,36 @@ struct rwListIterator
     {
         this->rootNode = &rootNode.root;
 
-        list_iterator = this->rootNode->next;
+        this->list_iterator = this->rootNode->next;
+    }
+
+    inline rwListIterator( const rwListIterator& right )
+    {
+        this->rootNode = right.rootNode;
+
+        this->list_iterator = right.list_iterator;
+    }
+
+    inline void operator = ( const rwListIterator& right )
+    {
+        this->rootNode = right.rootNode;
+
+        this->list_iterator = right.list_iterator;
     }
 
     inline bool IsEnd( void ) const
     {
-        return ( rootNode == list_iterator );
+        return ( this->rootNode == this->list_iterator );
     }
 
     inline void Increment( void )
     {
-        list_iterator = list_iterator->next;
+        this->list_iterator = this->list_iterator->next;
     }
 
     inline structType* Resolve( void ) const
     {
-        return (structType*)( (char*)list_iterator - nodeOffset );
+        return (structType*)( (char*)this->list_iterator - nodeOffset );
     }
 
     RwListEntry <structType> *rootNode;
@@ -553,6 +567,29 @@ struct RwUnsupportedOperationException : public RwException
     }
 };
 
+struct rawMipmapLayer
+{
+    pixelDataTraversal::mipmapResource mipData;
+
+    eRasterFormat rasterFormat;
+    uint32 depth;
+    eColorOrdering colorOrder;
+    ePaletteType paletteType;
+    void *paletteData;
+    uint32 paletteSize;
+    eCompressionType compressionType;
+
+    bool hasAlpha;
+
+    bool isNewlyAllocated;
+};
+
+struct nativeTextureBatchedInfo
+{
+    uint32 mipmapCount;
+    uint32 baseWidth, baseHeight;
+};
+
 struct texNativeTypeProvider abstract
 {
     inline texNativeTypeProvider( void )
@@ -583,7 +620,6 @@ struct texNativeTypeProvider abstract
     virtual void            DeserializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& inputProvider ) const throw( ... ) = 0;
 
     // Conversion parameters.
-    // TODO: split these operations up into set, get and unset (maybe)
     virtual void            GetPixelCapabilities( pixelCapabilities& capsOut ) const = 0;
 
     struct acquireFeedback_t
@@ -599,6 +635,27 @@ struct texNativeTypeProvider abstract
     virtual void            GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut ) throw( ... ) = 0;
     virtual void            SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut ) throw( ... ) = 0;
     virtual void            UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate ) = 0;
+
+    // Native Texture version information API.
+    virtual void            SetTextureVersion( Interface *engineInterface, void *objMem, LibraryVersion version ) = 0;
+    virtual LibraryVersion  GetTextureVersion( const void *objMem ) = 0;
+
+    // TODO: add meta-data traversal API using dynamic extendable object.
+
+    // Mipmap manipulation API.
+    virtual bool            GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut ) = 0;
+    virtual bool            AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut ) = 0;
+    virtual void            ClearMipmaps( Interface *engineInterface, void *objMem ) = 0;
+
+    // Information API.
+    virtual void            GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut ) = 0;
+
+    virtual bool            GetDebugBitmap( Interface *engineInterface, void *objMem, Bitmap& drawTarget ) const
+    {
+        // Native textures type providers can override this method to provide visual insight into their structure.
+        // Returning true means that anything has been drawn to drawTarget.
+        return false;
+    }
 
     // Driver identification functions.
     virtual uint32          GetDriverIdentifier( void *objMem ) const
@@ -633,3 +690,6 @@ bool ConvertRasterTo( Raster *theRaster, const char *nativeName );
 Raster* CreateRaster( Interface *engineInterface );
 Raster* AcquireRaster( Raster *theRaster );
 void DeleteRaster( Raster *theRaster );
+
+// Debug API.
+bool DebugDrawMipmaps( Interface *engineInterface, Raster *debugRaster, Bitmap& drawSurface );

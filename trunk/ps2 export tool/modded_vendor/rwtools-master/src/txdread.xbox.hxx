@@ -3,14 +3,17 @@
 namespace rw
 {
 
-struct NativeTextureXBOX : public PlatformTexture
+struct NativeTextureXBOX
 {
     Interface *engineInterface;
+
+    LibraryVersion texVersion;
 
     inline NativeTextureXBOX( Interface *engineInterface )
     {
         // Initialize the texture object.
         this->engineInterface = engineInterface;
+        this->texVersion = engineInterface->GetVersion();
         this->palette = NULL;
         this->paletteSize = 0;
         this->paletteType = PALETTE_NONE;
@@ -28,6 +31,7 @@ struct NativeTextureXBOX : public PlatformTexture
         Interface *engineInterface = right.engineInterface;
 
         this->engineInterface = right.engineInterface;
+        this->texVersion = right.texVersion;
 
         // Copy palette information.
         {
@@ -84,42 +88,6 @@ struct NativeTextureXBOX : public PlatformTexture
     inline ~NativeTextureXBOX( void )
     {
         this->clearTexelData();
-    }
-
-    uint32 getWidth( void ) const
-    {
-        return this->mipmaps[ 0 ].layerWidth;
-    }
-
-    uint32 getHeight( void ) const
-    {
-        return this->mipmaps[ 0 ].layerHeight;
-    }
-
-    uint32 getDepth( void ) const
-    {
-        return this->depth;
-    }
-
-    uint32 getMipmapCount( void ) const
-    {
-        return this->mipmaps.size();
-    }
-
-    ePaletteType getPaletteType( void ) const
-    {
-        return this->paletteType;
-    }
-
-    bool isCompressed( void ) const
-    {
-        return ( this->dxtCompression != 0 );
-    }
-
-    void compress( float quality )
-    {
-        // nothing to do here.
-        // you have to convert to D3D first to be able to compress (to DXT).
     }
 
     eRasterFormat rasterFormat;
@@ -199,6 +167,26 @@ struct xboxNativeTextureTypeProvider : public texNativeTypeProvider
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    void SetTextureVersion( Interface *engineInterface, void *objMem, LibraryVersion version )
+    {
+        NativeTextureXBOX *nativeTex = (NativeTextureXBOX*)objMem;
+
+        nativeTex->texVersion = version;
+    }
+
+    LibraryVersion GetTextureVersion( const void *objMem )
+    {
+        const NativeTextureXBOX *nativeTex = (const NativeTextureXBOX*)objMem;
+
+        return nativeTex->texVersion;
+    }
+
+    bool GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut );
+    bool AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut );
+    void ClearMipmaps( Interface *engineInterface, void *objMem );
+
+    void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {

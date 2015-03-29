@@ -4,6 +4,10 @@
 
 #include "streamutil.hxx"
 
+#include "txdread.common.hxx"
+
+#include "txdread.miputil.hxx"
+
 namespace rw
 {
 
@@ -23,9 +27,9 @@ void dxtMobileNativeTextureTypeProvider::SerializeTexture( TextureBase *theTextu
             mobile_dxt::textureNativeGenericHeader metaHeader;
             metaHeader.platformDescriptor = PLATFORMDESC_DXT_MOBILE;
 
-            metaHeader.filteringMode = theTexture->filterMode;
-            metaHeader.uAddressing = theTexture->uAddressing;
-            metaHeader.vAddressing = theTexture->vAddressing;
+            metaHeader.filteringMode = theTexture->GetFilterMode();
+            metaHeader.uAddressing = theTexture->GetUAddressing();
+            metaHeader.vAddressing = theTexture->GetVAddressing();
 
             memset( metaHeader.pad1, 0, sizeof( metaHeader.pad1 ) );
 
@@ -33,8 +37,8 @@ void dxtMobileNativeTextureTypeProvider::SerializeTexture( TextureBase *theTextu
             // Even though we can read those name fields with zero-termination safety,
             // the engines are not guarranteed to do so.
             // Also, print a warning if the name is changed this way.
-            writeStringIntoBufferSafe( engineInterface, theTexture->name, metaHeader.name, sizeof( metaHeader.name ), theTexture->name, "name" );
-            writeStringIntoBufferSafe( engineInterface, theTexture->maskName, metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->name, "mask name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetName(), metaHeader.name, sizeof( metaHeader.name ), theTexture->GetName(), "name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetMaskName(), metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->GetName(), "mask name" );
 
             // Cast to our native format.
             NativeTextureMobileDXT *platformTex = (NativeTextureMobileDXT*)nativeTex;
@@ -106,18 +110,9 @@ void dxtMobileNativeTextureTypeProvider::SerializeTexture( TextureBase *theTextu
     engineInterface->SerializeExtensions( theTexture, outputProvider );
 }
 
-void dxtMobileNativeTextureTypeProvider::GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut )
+inline eCompressionType getCompressionTypeFromS3TCInternalFormat( eS3TCInternalFormat internalFormat )
 {
-    // Getting data from this format is very easy and compatible with existing PC formats.
-    // I do have to watch out for special cases though, like the DXT1 fiasco (non-alpha/alpha).
-    // That is for another time, tho.
-
-    NativeTextureMobileDXT *nativeTex = (NativeTextureMobileDXT*)objMem;
-
-    // Get the compression format we need to use.
     eCompressionType rwCompressionType;
-
-    eS3TCInternalFormat internalFormat = nativeTex->internalFormat;
 
     if ( internalFormat == COMPRESSED_RGB_S3TC_DXT1 ||
          internalFormat == COMPRESSED_RGBA_S3TC_DXT1 )
@@ -134,8 +129,23 @@ void dxtMobileNativeTextureTypeProvider::GetPixelDataFromTexture( Interface *eng
     }
     else
     {
-        throw RwException( "invalid internalFormat in s3tc_mobile native texture texel fetch" );
+        throw RwException( "invalid internalFormat in s3tc_mobile native texture" );
     }
+
+    return rwCompressionType;
+}
+
+void dxtMobileNativeTextureTypeProvider::GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut )
+{
+    // Getting data from this format is very easy and compatible with existing PC formats.
+    // I do have to watch out for special cases though, like the DXT1 fiasco (non-alpha/alpha).
+    // That is for another time, tho.
+
+    NativeTextureMobileDXT *nativeTex = (NativeTextureMobileDXT*)objMem;
+
+    // Get the compression format we need to use.
+    eCompressionType rwCompressionType =
+        getCompressionTypeFromS3TCInternalFormat( nativeTex->internalFormat );
 
     // Copy over mipmap information.
     uint32 mipmapCount = nativeTex->mipmaps.size();
@@ -290,11 +300,12 @@ void dxtMobileNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engin
             void *dstTexels;
             uint32 dstDataSize;
 
-            bool compressionSuccess = ConvertMipmapLayerEx(
+            bool compressionSuccess = ConvertMipmapLayerNative(
                 engineInterface,
-                mipLayer,
+                mipWidth, mipHeight, layerWidth, layerHeight, texels, dataSize,
                 srcRasterFormat, srcDepth, srcColorOrder, srcPaletteType, srcPaletteData, srcPaletteSize, rwCompressionType,
-                RASTER_DEFAULT, 16, COLOR_BGRA, dstCompressionType,
+                RASTER_DEFAULT, 16, COLOR_BGRA, srcPaletteType, srcPaletteData, srcPaletteSize, dstCompressionType,
+                false,
                 newWidth, newHeight,
                 dstTexels, dstDataSize
             );
@@ -345,7 +356,7 @@ void dxtMobileNativeTextureTypeProvider::UnsetPixelDataFromTexture( Interface *e
         nativeTex->clearTexelData();
     }
 
-    // Simply remove the refences to the texel pointers.
+    // Simply remove the references to the texel pointers.
     nativeTex->mipmaps.clear();
 
     // For simpler debugging, we unset raster information aswell.
@@ -354,5 +365,165 @@ void dxtMobileNativeTextureTypeProvider::UnsetPixelDataFromTexture( Interface *e
     nativeTex->hasAlpha = false;
 }
 
+struct dxtMobileMipmapManager
+{
+    NativeTextureMobileDXT *nativeTex;
+
+    inline dxtMobileMipmapManager( NativeTextureMobileDXT *nativeTex )
+    {
+        this->nativeTex = nativeTex;
+    }
+
+    inline void GetLayerDimensions(
+        const NativeTextureMobileDXT::mipmapLayer& mipLayer,
+        uint32& layerWidth, uint32& layerHeight
+    )
+    {
+        layerWidth = mipLayer.layerWidth;
+        layerHeight = mipLayer.layerHeight;
+    }
+
+    inline void Deinternalize(
+        Interface *engineInterface,
+        const NativeTextureMobileDXT::mipmapLayer& mipLayer,
+        uint32& widthOut, uint32& heightOut, uint32& layerWidthOut, uint32& layerHeightOut,
+        eRasterFormat& dstRasterFormat, eColorOrdering& dstColorOrder, uint32& dstDepth,
+        ePaletteType& dstPaletteType, void*& dstPaletteData, uint32& dstPaletteSize,
+        eCompressionType& dstCompressionType, bool& hasAlpha,
+        void*& dstTexelsOut, uint32& dstDataSizeOut,
+        bool& isNewlyAllocatedOut, bool& isPaletteNewlyAllocated
+    )
+    {
+        // Just give it the texels.
+        widthOut = mipLayer.width;
+        heightOut = mipLayer.height;
+
+        layerWidthOut = mipLayer.layerWidth;
+        layerHeightOut = mipLayer.layerHeight;
+
+        dstRasterFormat = RASTER_DEFAULT;
+        dstColorOrder = COLOR_BGRA;
+        dstDepth = 16;
+
+        dstPaletteType = PALETTE_NONE;
+        dstPaletteData = NULL;
+        dstPaletteSize = 0;
+
+        dstCompressionType =
+            getCompressionTypeFromS3TCInternalFormat( nativeTex->internalFormat );
+
+        hasAlpha = nativeTex->hasAlpha,
+
+        dstTexelsOut = mipLayer.texels;
+        dstDataSizeOut = mipLayer.dataSize;
+
+        isNewlyAllocatedOut = false;
+        isPaletteNewlyAllocated = false;
+    }
+
+    inline void Internalize(
+        Interface *engineInterface,
+        NativeTextureMobileDXT::mipmapLayer& mipLayer,
+        uint32 width, uint32 height, uint32 layerWidth, uint32 layerHeight, void *srcTexels, uint32 dataSize,
+        eRasterFormat rasterFormat, eColorOrdering colorOrder, uint32 depth,
+        ePaletteType paletteType, void *paletteData, uint32 paletteSize,
+        eCompressionType compressionType, bool hasAlpha,
+        bool& hasDirectlyAcquiredOut
+    )
+    {
+        // Get the compression type of our texture.
+        eCompressionType rwCompressionType =
+            getCompressionTypeFromS3TCInternalFormat( nativeTex->internalFormat );
+
+        // If we can directly assign, just get the pointers into our texture.
+        // Otherwise we must convert the texels.
+        bool hasNewlyAllocated = false;
+
+        if ( rwCompressionType != compressionType )
+        {
+            bool hasChanged =
+                ConvertMipmapLayerNative(
+                    engineInterface,
+                    width, height, layerWidth, layerHeight, srcTexels, dataSize,
+                    rasterFormat, depth, colorOrder, paletteType, paletteData, paletteSize, compressionType,
+                    RASTER_DEFAULT, 16, COLOR_BGRA, PALETTE_NONE, NULL, 0, rwCompressionType,
+                    false,
+                    width, height,
+                    srcTexels, dataSize
+                );
+
+            if ( hasChanged )
+            {
+                hasNewlyAllocated = true;
+            }
+        }
+
+        // Store the this new layer.
+        mipLayer.width = width;
+        mipLayer.height = height;
+        mipLayer.layerWidth = layerWidth;
+        mipLayer.layerHeight = layerHeight;
+        mipLayer.texels = srcTexels;
+        mipLayer.dataSize = dataSize;
+
+        hasDirectlyAcquiredOut = ( hasNewlyAllocated == false );
+    }
+};
+
+bool dxtMobileNativeTextureTypeProvider::GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut )
+{
+    NativeTextureMobileDXT *nativeTex = (NativeTextureMobileDXT*)objMem;
+
+    dxtMobileMipmapManager mipMan( nativeTex );
+
+    return
+        virtualGetMipmapLayer <NativeTextureMobileDXT::mipmapLayer> (
+            engineInterface, mipMan,
+            mipIndex,
+            nativeTex->mipmaps, layerOut
+        );
+}
+
+bool dxtMobileNativeTextureTypeProvider::AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut )
+{
+    NativeTextureMobileDXT *nativeTex = (NativeTextureMobileDXT*)objMem;
+
+    dxtMobileMipmapManager mipMan( nativeTex );
+
+    return
+        virtualAddMipmapLayer <NativeTextureMobileDXT::mipmapLayer> (
+            engineInterface, mipMan,
+            nativeTex->mipmaps, layerIn,
+            feedbackOut
+        );
+}
+
+void dxtMobileNativeTextureTypeProvider::ClearMipmaps( Interface *engineInterface, void *objMem )
+{
+    NativeTextureMobileDXT *nativeTex = (NativeTextureMobileDXT*)objMem;
+
+    virtualClearMipmaps <NativeTextureMobileDXT::mipmapLayer> ( engineInterface, nativeTex->mipmaps );
+}
+
+void dxtMobileNativeTextureTypeProvider::GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut )
+{
+    NativeTextureMobileDXT *nativeTex = (NativeTextureMobileDXT*)objMem;
+
+    uint32 mipmapCount = nativeTex->mipmaps.size();
+
+    infoOut.mipmapCount = mipmapCount;
+
+    uint32 baseWidth = 0;
+    uint32 baseHeight = 0;
+
+    if ( mipmapCount > 0 )
+    {
+        baseWidth = nativeTex->mipmaps[ 0 ].layerWidth;
+        baseHeight = nativeTex->mipmaps[ 0 ].layerHeight;
+    }
+
+    infoOut.baseWidth = baseWidth;
+    infoOut.baseHeight = baseHeight;
+}
 
 };

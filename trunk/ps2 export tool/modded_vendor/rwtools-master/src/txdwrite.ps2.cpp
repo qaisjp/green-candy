@@ -645,10 +645,10 @@ void ps2NativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
     }
 
     // Write texture name.
-    writeStringSection(engineInterface, outputProvider, theTexture->name.c_str(), theTexture->name.size());
+    writeStringSection(engineInterface, outputProvider, theTexture->GetName().c_str(), theTexture->GetName().size());
 
     // Write mask name.
-    writeStringSection(engineInterface, outputProvider, theTexture->maskName.c_str(), theTexture->maskName.size());
+    writeStringSection(engineInterface, outputProvider, theTexture->GetMaskName().c_str(), theTexture->GetMaskName().size());
 
     // Prepare the image data (if not already prepared).
     uint32 mipmapCount = platformTex->mipmaps.size();
@@ -676,6 +676,8 @@ void ps2NativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
     }
 
     // Put the image data into the required format.
+    // TODO: make sure we update the encoding when it may change.
+    //       we want to have a valid format all the time.
     if ( requiredFormat != currentMipmapEncodingType )
     {
         uint32 depth = platformTex->depth;
@@ -695,6 +697,7 @@ void ps2NativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
 
             void *newtexels =
                 ps2GSPixelEncodingFormats::packImageData(
+                    engineInterface,
                     currentMipmapEncodingType, requiredFormat,
                     depth,
                     srcTexels,
@@ -745,20 +748,20 @@ void ps2NativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
                 void *palDataSource = palTex.texels;
                 uint32 palSize = ( palTex.swizzleWidth * palTex.swizzleHeight );
                 void *newPalTexels = NULL;
-                uint32 newPalSize;
+                uint32 newPalDataSize;
                 uint32 newPalWidth, newPalHeight;
 
                 genpalettetexeldata(
                     version, palDataSource,
                     platformTex->rasterFormat, platformTex->paletteType, palSize,
-                    newPalTexels, newPalSize, newPalWidth, newPalHeight
+                    newPalTexels, newPalDataSize, newPalWidth, newPalHeight
                 );
 
                 if ( newPalTexels != palDataSource )
                 {
                     palTex.swizzleWidth = newPalWidth;
                     palTex.swizzleHeight = newPalHeight;
-                    palTex.dataSize = newPalSize;
+                    palTex.dataSize = newPalDataSize;
                     palTex.texels = newPalTexels;
 
                     engineInterface->PixelFree( palDataSource );

@@ -48,8 +48,45 @@ void shutdownTXDEnvironment( Interface *theInterface );
 void initializeNativeTextureEnvironment( Interface *engineInterface );
 void shutdownNativeTextureEnvironment( Interface *engineInterface );
 
+struct rawBitmapFetchResult
+{
+    void *texelData;
+    uint32 dataSize;
+    uint32 width, height;
+    bool isNewlyAllocated;
+    uint32 depth;
+    eRasterFormat rasterFormat;
+    eColorOrdering colorOrder;
+    void *paletteData;
+    uint32 paletteSize;
+    ePaletteType paletteType;
+
+    void FreePixels( Interface *engineInterface )
+    {
+        engineInterface->PixelFree( this->texelData );
+
+        this->texelData = NULL;
+
+        if ( void *paletteData = this->paletteData )
+        {
+            engineInterface->PixelFree( paletteData );
+
+            this->paletteData = NULL;
+        }
+    }
+};
+
 // Private native texture API.
 texNativeTypeProvider* GetNativeTextureTypeProvider( Interface *engineInterface, void *platformData );
+uint32 GetNativeTextureMipmapCount( Interface *engineInterface, PlatformTexture *nativeTexture, texNativeTypeProvider *texTypeProvider );
+
+// Quick palette depth remapper.
+void ConvertPaletteDepth(
+    const void *srcTexels, void *dstTexels,
+    uint32 texUnitCount,
+    ePaletteType srcPaletteType, uint32 srcPaletteSize,
+    uint32 srcDepth, uint32 dstDepth
+);
 
 // Private pixel manipulation API.
 void ConvertMipmapLayer(
@@ -57,6 +94,17 @@ void ConvertMipmapLayer(
     const pixelDataTraversal::mipmapResource& mipLayer,
     eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize,
     eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, ePaletteType dstPaletteType,
+    bool forceAllocation,
+    void*& dstTexelsOut, uint32& dstDataSizeOut
+);
+
+bool ConvertMipmapLayerNative(
+    Interface *engineInterface,
+    uint32 mipWidth, uint32 mipHeight, uint32 layerWidth, uint32 layerHeight, void *srcTexels, uint32 srcDataSize,
+    eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize, eCompressionType srcCompressionType,
+    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, ePaletteType dstPaletteType, const void *dstPaletteData, uint32 dstPaletteSize, eCompressionType dstCompressionType,
+    bool copyAnyway,
+    uint32& dstPlaneWidthOut, uint32& dstPlaneHeightOut,
     void*& dstTexelsOut, uint32& dstDataSizeOut
 );
 
@@ -64,7 +112,8 @@ bool ConvertMipmapLayerEx(
     Interface *engineInterface,
     const pixelDataTraversal::mipmapResource& mipLayer,
     eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize, eCompressionType srcCompressionType,
-    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, eCompressionType dstCompressionType,
+    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, ePaletteType dstPaletteType, const void *dstPaletteData, uint32 dstPaletteSize, eCompressionType dstCompressionType,
+    bool copyAnyway,
     uint32& dstPlaneWidthOut, uint32& dstPlaneHeightOut,
     void*& dstTexelsOut, uint32& dstDataSizeOut
 );
@@ -75,6 +124,14 @@ bool DecideBestDXTCompressionFormat(
     bool srcHasAlpha,
     bool supportsDXT1, bool supportsDXT2, bool supportsDXT3, bool supportsDXT4, bool supportsDXT5,
     eCompressionType& dstCompressionTypeOut
+);
+
+// Palette conversion helper function.
+void ConvertPaletteData(
+    const void *srcPaletteTexels, void *dstPaletteTexels,
+    uint32 srcPaletteSize, uint32 dstPaletteSize,
+    eRasterFormat srcRasterFormat, eColorOrdering srcColorOrder, uint32 srcPalRasterDepth,
+    eRasterFormat dstRasterFormat, eColorOrdering dstColorOrder, uint32 dstPalRasterDepth
 );
 
 bool ConvertPixelData( Interface *engineInterface, pixelDataTraversal& pixelsToConvert, const pixelFormat pixFormat );

@@ -71,9 +71,9 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 NativeTextureMobileUNC *platformTex = (NativeTextureMobileUNC*)nativeTex;
 
                 // Read the format info.
-                theTexture->filterMode = (eRasterStageFilterMode)metaHeader.filteringMode;
-                theTexture->uAddressing = (eRasterStageAddressMode)metaHeader.uAddressing;
-                theTexture->vAddressing = (eRasterStageAddressMode)metaHeader.vAddressing;
+                theTexture->SetFilterMode( (eRasterStageFilterMode)metaHeader.filteringMode );
+                theTexture->SetUAddressing( (eRasterStageAddressMode)metaHeader.uAddressing );
+                theTexture->SetVAddressing( (eRasterStageAddressMode)metaHeader.vAddressing );
 
                 // Read the texture names.
                 {
@@ -85,12 +85,12 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                     // Move over the texture name.
                     memcpy( tmpbuf, metaHeader.name, sizeof( metaHeader.name ) );
 
-                    theTexture->name = tmpbuf;
+                    theTexture->SetName( tmpbuf );
 
                     // Move over the texture mask name.
                     memcpy( tmpbuf, metaHeader.maskName, sizeof( metaHeader.maskName ) );
 
-                    theTexture->maskName = tmpbuf;
+                    theTexture->SetMaskName( tmpbuf );
                 }
                 
                 // Read some advanced properties.
@@ -121,7 +121,7 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                 if ( !mipLevelGen.isValidLevel() )
                 {
-                    throw RwException( "texture " + theTexture->name + " has invalid dimensions" );
+                    throw RwException( "texture " + theTexture->GetName() + " has invalid dimensions" );
                 }
 
                 uint32 mipmap_index = 0;
@@ -173,7 +173,7 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                     // Reduce the texture image data section remainder.
                     if ( remainingTexImageDataSize < texDataSize )
                     {
-                        throw RwException( "texture " + theTexture->name + " has an invalid image data stream section size" );
+                        throw RwException( "texture " + theTexture->GetName() + " has an invalid image data stream section size" );
                     }
 
                     remainingTexImageDataSize -= texDataSize;
@@ -207,7 +207,7 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 // We do not want no empty textures.
                 if ( mipmap_index == 0 )
                 {
-                    throw RwException( "texture " + theTexture->name + " is empty" );
+                    throw RwException( "texture " + theTexture->GetName() + " is empty" );
                 }
 
                 int warningLevel = engineInterface->GetWarningLevel();
@@ -217,7 +217,7 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 {
                     if ( warningLevel >= 3 )
                     {
-                        engineInterface->PushWarning( "texture " + theTexture->name + " has image data section meta-data" );
+                        engineInterface->PushWarning( "texture " + theTexture->GetName() + " has image data section meta-data" );
                     }
 
                     // Skip the meta-data.

@@ -4,6 +4,10 @@
 
 #include "streamutil.hxx"
 
+#include "txdread.common.hxx"
+
+#include "txdread.miputil.hxx"
+
 namespace rw
 {
 
@@ -75,7 +79,7 @@ void d3dNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
 
             if ( platformTex->colorOrdering != requiredColorOrder )
             {
-                throw RwException( "texture " + theTexture->name + " has an invalid color order for writing" );
+                throw RwException( "texture " + theTexture->GetName() + " has an invalid color order for writing" );
             }
         }
     }
@@ -83,7 +87,7 @@ void d3dNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
     {
         if ( !platformTex->hasD3DFormat )
         {
-            throw RwException( "texture " + theTexture->name + " has no representation in Direct3D 9" );
+            throw RwException( "texture " + theTexture->GetName() + " has no representation in Direct3D 9" );
         }
     }
     else
@@ -122,8 +126,8 @@ void d3dNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
             // Even though we can read those name fields with zero-termination safety,
             // the engines are not guarranteed to do so.
             // Also, print a warning if the name is changed this way.
-            writeStringIntoBufferSafe( engineInterface, theTexture->name, metaHeader.name, sizeof( metaHeader.name ), theTexture->name, "name" );
-            writeStringIntoBufferSafe( engineInterface, theTexture->maskName, metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->name, "mask name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetName(), metaHeader.name, sizeof( metaHeader.name ), theTexture->GetName(), "name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetMaskName(), metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->GetName(), "mask name" );
 
             // Construct raster flags.
             uint32 mipmapCount = platformTex->mipmaps.size();
@@ -217,22 +221,11 @@ void d3dNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
 	engineInterface->SerializeExtensions( theTexture, outputProvider );
 }
 
-// Pixel movement functions.
-void d3dNativeTextureTypeProvider::GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut )
+inline eCompressionType getD3DCompressionType( const NativeTextureD3D *nativeTex )
 {
-    // Cast to our native texture type.
-    NativeTextureD3D *platformTex = (NativeTextureD3D*)objMem;
-
-    // The pixel capabilities system has been mainly designed around PC texture optimization.
-    // This means that we should be able to directly copy the Direct3D surface data into pixelsOut.
-    // If not, we need to adjust, make a new library version.
-
-    // We need to decide how to traverse palette runtime optimization data.
-
-    // Determine the compression type.
     eCompressionType rwCompressionType = RWCOMPRESS_NONE;
 
-    uint32 dxtType = platformTex->dxtCompression;
+    uint32 dxtType = nativeTex->dxtCompression;
 
     if ( dxtType != 0 )
     {
@@ -261,6 +254,24 @@ void d3dNativeTextureTypeProvider::GetPixelDataFromTexture( Interface *engineInt
             throw RwException( "unsupported DXT compression" );
         }
     }
+
+    return rwCompressionType;
+}
+
+// Pixel movement functions.
+void d3dNativeTextureTypeProvider::GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut )
+{
+    // Cast to our native texture type.
+    NativeTextureD3D *platformTex = (NativeTextureD3D*)objMem;
+
+    // The pixel capabilities system has been mainly designed around PC texture optimization.
+    // This means that we should be able to directly copy the Direct3D surface data into pixelsOut.
+    // If not, we need to adjust, make a new library version.
+
+    // We need to decide how to traverse palette runtime optimization data.
+
+    // Determine the compression type.
+    eCompressionType rwCompressionType = getD3DCompressionType( platformTex );
 
     // Put ourselves into the pixelsOut struct!
     pixelsOut.rasterFormat = platformTex->rasterFormat;
@@ -303,6 +314,100 @@ void d3dNativeTextureTypeProvider::GetPixelDataFromTexture( Interface *engineInt
     pixelsOut.isNewlyAllocated = false;
 }
 
+inline void convertCompatibleRasterFormat(
+    NativeTextureD3D::ePlatformType platformType,
+    eRasterFormat& rasterFormat, eColorOrdering& colorOrder, uint32& depth, ePaletteType paletteType
+)
+{
+    eRasterFormat srcRasterFormat = rasterFormat;
+    eColorOrdering srcColorOrder = colorOrder;
+    uint32 srcDepth = depth;
+
+    if ( paletteType != PALETTE_NONE )
+    {
+        if ( paletteType == PALETTE_4BIT || paletteType == PALETTE_8BIT )
+        {
+            // We only support 8bit depth palette.
+            depth = 8;
+        }
+        else
+        {
+            assert( 0 );
+        }
+
+        // All palettes have RGBA color order.
+        colorOrder = COLOR_RGBA;
+    }
+    else
+    {
+        if ( srcRasterFormat == RASTER_1555 )
+        {
+            depth = 16;
+            colorOrder = COLOR_BGRA;
+        }
+        else if ( srcRasterFormat == RASTER_565 )
+        {
+            depth = 16;
+            colorOrder = COLOR_BGRA;
+        }
+        else if ( srcRasterFormat == RASTER_4444 )
+        {
+            depth = 16;
+            colorOrder = COLOR_BGRA;
+        }
+        else if ( srcRasterFormat == RASTER_8888 )
+        {
+            depth = 32;
+
+            if ( platformType == NativeTextureD3D::PLATFORM_D3D9 )
+            {
+                // Can be both RGBA and BGRA.
+                if ( srcColorOrder != COLOR_RGBA ||
+                     srcColorOrder != COLOR_BGRA )
+                {
+                    colorOrder = COLOR_BGRA;
+                }
+            }
+            else
+            {
+                colorOrder = COLOR_BGRA;
+            }
+        }
+        else if ( srcRasterFormat == RASTER_888 )
+        {
+            if ( platformType == NativeTextureD3D::PLATFORM_D3D9 )
+            {
+                if ( srcColorOrder == COLOR_BGRA )
+                {
+                    if ( srcDepth != 24 && srcDepth != 32 )
+                    {
+                        depth = 32;
+                    }
+                }
+                else if ( srcColorOrder == COLOR_RGBA )
+                {
+                    depth = 32;
+                }
+                else
+                {
+                    depth = 32;
+                    colorOrder = COLOR_BGRA;
+                }
+            }
+            else
+            {
+                depth = 32;
+                colorOrder = COLOR_BGRA;
+            }
+        }
+        else if ( srcRasterFormat == RASTER_555 )
+        {
+            depth = 16;
+            colorOrder = COLOR_BGRA;
+        }
+    }
+}
+
 void d3dNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut )
 {
     // We want to remove our current texels and put the new ones into us instead.
@@ -312,14 +417,24 @@ void d3dNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
     NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
 
     // Remove our own texels first, since the runtime wants to overwrite them.
-    nativeTex->clearTexelData();
+    //nativeTex->clearTexelData();
+
+    // We need to ensure that the pixels we set to us are compatible.
+    eRasterFormat srcRasterFormat = pixelsIn.rasterFormat;
+    uint32 srcDepth = pixelsIn.depth;
+    eColorOrdering srcColorOrder = pixelsIn.colorOrder;
+    ePaletteType srcPaletteType = pixelsIn.paletteType;
+    void *srcPaletteData = pixelsIn.paletteData;
+    uint32 srcPaletteSize = pixelsIn.paletteSize;
+
+    eRasterFormat dstRasterFormat = srcRasterFormat;
+    uint32 dstDepth = srcDepth;
+    eColorOrdering dstColorOrder = srcColorOrder;
 
     // Determine the compression type.
     uint32 dxtType;
 
     eCompressionType rwCompressionType = pixelsIn.compressionType;
-
-    eRasterFormat dstRasterFormat = pixelsIn.rasterFormat;
 
     bool hasAlpha = pixelsIn.hasAlpha;
 
@@ -330,6 +445,16 @@ void d3dNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
         // new pixel information, instead in a compatible format. The same has to be
         // made for the XBOX implementation.
 
+        // Make sure this texture is writable.
+        // If we are on D3D, we have to avoid typical configurations that may come from
+        // other hardware.
+        NativeTextureD3D::ePlatformType platformType = nativeTex->platformType;
+
+        convertCompatibleRasterFormat(
+            platformType,
+            dstRasterFormat, dstColorOrder, dstDepth, srcPaletteType
+        );
+ 
         dxtType = 0;
     }
     else if ( rwCompressionType == RWCOMPRESS_DXT1 )
@@ -369,13 +494,50 @@ void d3dNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
         throw RwException( "unknown pixel compression type" );
     }
 
+    // Check whether we can directly acquire or have to allocate a new copy.
+    bool canDirectlyAcquire;
+
+    if ( rwCompressionType != RWCOMPRESS_NONE || srcRasterFormat == dstRasterFormat && srcDepth == dstDepth && srcColorOrder == dstColorOrder )
+    {
+        canDirectlyAcquire = true;
+    }
+    else
+    {
+        canDirectlyAcquire = false;
+    }
+
+    // If we have a palette, we must convert it aswell.
+    void *dstPaletteData = srcPaletteData;
+
+    if ( canDirectlyAcquire == false )
+    {
+        if ( srcPaletteType != PALETTE_NONE )
+        {
+            // Allocate a new palette.
+            uint32 srcPalRasterDepth = Bitmap::getRasterFormatDepth( srcRasterFormat );
+            uint32 dstPalRasterDepth = Bitmap::getRasterFormatDepth( dstRasterFormat );
+
+            uint32 palDataSize = getRasterDataSize( srcPaletteSize, dstPalRasterDepth );
+
+            dstPaletteData = engineInterface->PixelAllocate( palDataSize );
+
+            // Convert the colors.
+            ConvertPaletteData(
+                srcPaletteData, dstPaletteData,
+                srcPaletteSize, srcPaletteSize,
+                srcRasterFormat, srcColorOrder, srcPalRasterDepth,
+                dstRasterFormat, dstColorOrder, dstPalRasterDepth
+            );
+        }
+    }
+
     // Update our own texels.
     nativeTex->rasterFormat = dstRasterFormat;
-    nativeTex->depth = pixelsIn.depth;
-    nativeTex->palette = pixelsIn.paletteData;
-    nativeTex->paletteSize = pixelsIn.paletteSize;
-    nativeTex->paletteType = pixelsIn.paletteType;
-    nativeTex->colorOrdering = pixelsIn.colorOrder;
+    nativeTex->depth = dstDepth;
+    nativeTex->palette = dstPaletteData;
+    nativeTex->paletteSize = srcPaletteSize;
+    nativeTex->paletteType = srcPaletteType;
+    nativeTex->colorOrdering = dstColorOrder;
     nativeTex->hasAlpha = hasAlpha;
 
     nativeTex->autoMipmaps = pixelsIn.autoMipmaps;
@@ -383,8 +545,6 @@ void d3dNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
     nativeTex->rasterType = pixelsIn.rasterType;
 
     nativeTex->dxtCompression = dxtType;
-
-    bool canDirectlyAcquire = true;
 
     // Apply the pixel data.
     uint32 mipmapCount = pixelsIn.mipmaps.size();
@@ -395,15 +555,44 @@ void d3dNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
     {
         const pixelDataTraversal::mipmapResource& srcLayer = pixelsIn.mipmaps[ n ];
 
+        // Get the mipmap properties on the stac.
+        uint32 mipWidth = srcLayer.width;
+        uint32 mipHeight = srcLayer.height;
+
+        uint32 layerWidth = srcLayer.mipWidth;
+        uint32 layerHeight = srcLayer.mipHeight;
+
+        void *srcTexels = srcLayer.texels;
+        uint32 srcDataSize = srcLayer.dataSize;
+
+        void *dstTexels = srcTexels;
+        uint32 dstDataSize = srcDataSize;
+
+        // If we cannot directly acquire, allocate a new copy and convert.
+        if ( canDirectlyAcquire == false )
+        {
+            assert( rwCompressionType == RWCOMPRESS_NONE );
+
+            // Call the core's helper function.
+            ConvertMipmapLayer(
+                engineInterface,
+                srcLayer,
+                srcRasterFormat, srcDepth, srcColorOrder, srcPaletteType, srcPaletteData, srcPaletteSize,
+                dstRasterFormat, dstDepth, dstColorOrder, srcPaletteType,
+                true,
+                dstTexels, dstDataSize
+            );
+        }
+
         NativeTextureD3D::mipmapLayer newLayer;
 
-        newLayer.width = srcLayer.width;
-        newLayer.height = srcLayer.height;
-        newLayer.layerWidth = srcLayer.mipWidth;
-        newLayer.layerHeight = srcLayer.mipHeight;
+        newLayer.width = mipWidth;
+        newLayer.height = mipHeight;
+        newLayer.layerWidth = layerWidth;
+        newLayer.layerHeight = layerHeight;
 
-        newLayer.texels = srcLayer.texels;
-        newLayer.dataSize = srcLayer.dataSize;
+        newLayer.texels = dstTexels;
+        newLayer.dataSize = dstDataSize;
 
         // Store the layer.
         nativeTex->mipmaps[ n ] = newLayer;
@@ -454,6 +643,155 @@ void d3dNativeTextureTypeProvider::UnsetPixelDataFromTexture( Interface *engineI
     nativeTex->dxtCompression = 0;
     nativeTex->hasAlpha = false;
     nativeTex->colorOrdering = COLOR_BGRA;
+}
+
+struct d3dMipmapManager
+{
+    NativeTextureD3D *nativeTex;
+
+    inline d3dMipmapManager( NativeTextureD3D *nativeTex )
+    {
+        this->nativeTex = nativeTex;
+    }
+
+    inline void GetLayerDimensions(
+        const NativeTextureD3D::mipmapLayer& mipLayer,
+        uint32& layerWidth, uint32& layerHeight
+    )
+    {
+        layerWidth = mipLayer.layerWidth;
+        layerHeight = mipLayer.layerHeight;
+    }
+
+    inline void Deinternalize(
+        Interface *engineInterface,
+        const NativeTextureD3D::mipmapLayer& mipLayer,
+        uint32& widthOut, uint32& heightOut, uint32& layerWidthOut, uint32& layerHeightOut,
+        eRasterFormat& dstRasterFormat, eColorOrdering& dstColorOrder, uint32& dstDepth,
+        ePaletteType& dstPaletteType, void*& dstPaletteData, uint32& dstPaletteSize,
+        eCompressionType& dstCompressionType, bool& hasAlpha,
+        void*& dstTexelsOut, uint32& dstDataSizeOut,
+        bool& isNewlyAllocatedOut, bool& isPaletteNewlyAllocated
+    )
+    {
+        // We just return stuff.
+        widthOut = mipLayer.width;
+        heightOut = mipLayer.height;
+
+        layerWidthOut = mipLayer.layerWidth;
+        layerHeightOut = mipLayer.layerHeight;
+        
+        dstRasterFormat = nativeTex->rasterFormat;
+        dstColorOrder = nativeTex->colorOrdering;
+        dstDepth = nativeTex->depth;
+
+        dstPaletteType = nativeTex->paletteType;
+        dstPaletteData = nativeTex->palette;
+        dstPaletteSize = nativeTex->paletteSize;
+
+        dstCompressionType = getD3DCompressionType( nativeTex );
+
+        hasAlpha = nativeTex->hasAlpha;
+
+        dstTexelsOut = mipLayer.texels;
+        dstDataSizeOut = mipLayer.dataSize;
+
+        isNewlyAllocatedOut = false;
+        isPaletteNewlyAllocated = false;
+    }
+
+    inline void Internalize(
+        Interface *engineInterface,
+        NativeTextureD3D::mipmapLayer& mipLayer,
+        uint32 width, uint32 height, uint32 layerWidth, uint32 layerHeight, void *srcTexels, uint32 dataSize,
+        eRasterFormat rasterFormat, eColorOrdering colorOrder, uint32 depth,
+        ePaletteType paletteType, void *paletteData, uint32 paletteSize,
+        eCompressionType compressionType, bool hasAlpha,
+        bool& hasDirectlyAcquiredOut
+    )
+    {
+        // Convert to our format.
+        bool hasChanged =
+            ConvertMipmapLayerNative(
+                engineInterface,
+                width, height, layerWidth, layerHeight, srcTexels, dataSize,
+                rasterFormat, depth, colorOrder, paletteType, paletteData, paletteSize, compressionType,
+                nativeTex->rasterFormat, nativeTex->depth, nativeTex->colorOrdering,
+                nativeTex->paletteType, nativeTex->palette, nativeTex->paletteSize,
+                getD3DCompressionType( nativeTex ),
+                false,
+                width, height,
+                srcTexels, dataSize
+            );
+
+        // Store the data.
+        mipLayer.width = width;
+        mipLayer.height = height;
+
+        mipLayer.layerWidth = layerWidth;
+        mipLayer.layerHeight = layerHeight;
+
+        mipLayer.texels = srcTexels;
+        mipLayer.dataSize = dataSize;
+
+        hasDirectlyAcquiredOut = ( hasChanged == false );
+    }
+};
+
+bool d3dNativeTextureTypeProvider::GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut )
+{
+    NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
+
+    d3dMipmapManager mipMan( nativeTex );
+
+    return
+        virtualGetMipmapLayer <NativeTextureD3D::mipmapLayer> (
+            engineInterface, mipMan,
+            mipIndex,
+            nativeTex->mipmaps, layerOut
+        );
+}
+
+bool d3dNativeTextureTypeProvider::AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut )
+{
+    NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
+
+    d3dMipmapManager mipMan( nativeTex );
+
+    return
+        virtualAddMipmapLayer <NativeTextureD3D::mipmapLayer> (
+            engineInterface, mipMan,
+            nativeTex->mipmaps, layerIn,
+            feedbackOut
+        );
+}
+
+void d3dNativeTextureTypeProvider::ClearMipmaps( Interface *engineInterface, void *objMem )
+{
+    NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
+
+    virtualClearMipmaps <NativeTextureD3D::mipmapLayer> ( engineInterface, nativeTex->mipmaps );
+}
+
+void d3dNativeTextureTypeProvider::GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut )
+{
+    NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
+
+    uint32 mipmapCount = nativeTex->mipmaps.size();
+
+    infoOut.mipmapCount = mipmapCount;
+
+    uint32 baseWidth = 0;
+    uint32 baseHeight = 0;
+
+    if ( mipmapCount > 0 )
+    {
+        baseWidth = nativeTex->mipmaps[ 0 ].layerWidth;
+        baseHeight = nativeTex->mipmaps[ 0 ].layerHeight;
+    }
+
+    infoOut.baseWidth = baseWidth;
+    infoOut.baseHeight = baseHeight;
 }
 
 }

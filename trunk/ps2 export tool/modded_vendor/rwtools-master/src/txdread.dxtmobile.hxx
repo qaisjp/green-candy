@@ -42,9 +42,12 @@ struct NativeTextureMobileDXT
 {
     Interface *engineInterface;
 
+    LibraryVersion texVersion;
+
     inline NativeTextureMobileDXT( Interface *engineInterface )
     {
         this->engineInterface = engineInterface;
+        this->texVersion = engineInterface->GetVersion();
         this->internalFormat = COMPRESSED_RGB_S3TC_DXT1;
         this->unk3 = 0;
         this->hasAlpha = false;
@@ -55,6 +58,7 @@ struct NativeTextureMobileDXT
         Interface *engineInterface = right.engineInterface;
 
         this->engineInterface = engineInterface;
+        this->texVersion = right.texVersion;
         this->internalFormat = right.internalFormat;
         this->unk3 = right.unk3;
         this->hasAlpha = right.hasAlpha;
@@ -120,6 +124,26 @@ struct dxtMobileNativeTextureTypeProvider : public texNativeTypeProvider
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    void SetTextureVersion( Interface *engineInterface, void *objMem, LibraryVersion version )
+    {
+        NativeTextureMobileDXT *nativeTex = (NativeTextureMobileDXT*)objMem;
+
+        nativeTex->texVersion = version;
+    }
+
+    LibraryVersion GetTextureVersion( const void *objMem )
+    {
+        const NativeTextureMobileDXT *nativeTex = (const NativeTextureMobileDXT*)objMem;
+
+        return nativeTex->texVersion;
+    }
+
+    bool GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut );
+    bool AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut );
+    void ClearMipmaps( Interface *engineInterface, void *objMem );
+
+    void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {

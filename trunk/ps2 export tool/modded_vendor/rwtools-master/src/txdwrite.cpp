@@ -65,7 +65,7 @@ void texDictionaryStreamPlugin::Serialize( Interface *engineInterface, BlockProv
 
                         TextureBase *tex = item;
 
-                        Raster *texRaster = tex->texRaster;
+                        Raster *texRaster = tex->GetRaster();
 
                         if ( texRaster )
                         {

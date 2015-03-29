@@ -77,9 +77,9 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
                 NativeTextureMobileDXT *platformTex = (NativeTextureMobileDXT*)nativeTex;
 
                 // Read the format info.
-                theTexture->filterMode = (eRasterStageFilterMode)metaHeader.filteringMode;
-                theTexture->uAddressing = (eRasterStageAddressMode)metaHeader.uAddressing;
-                theTexture->vAddressing = (eRasterStageAddressMode)metaHeader.vAddressing;
+                theTexture->SetFilterMode( (eRasterStageFilterMode)metaHeader.filteringMode );
+                theTexture->SetUAddressing( (eRasterStageAddressMode)metaHeader.uAddressing );
+                theTexture->SetVAddressing( (eRasterStageAddressMode)metaHeader.vAddressing );
 
                 // Read the texture names.
                 {
@@ -91,12 +91,12 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
                     // Move over the texture name.
                     memcpy( tmpbuf, metaHeader.name, sizeof( metaHeader.name ) );
 
-                    theTexture->name = tmpbuf;
+                    theTexture->SetName( tmpbuf );
 
                     // Move over the texture mask name.
                     memcpy( tmpbuf, metaHeader.maskName, sizeof( metaHeader.maskName ) );
 
-                    theTexture->maskName = tmpbuf;
+                    theTexture->SetMaskName( tmpbuf );
                 }
 
                 eS3TCInternalFormat internalFormat = metaHeader.internalFormat;
@@ -107,7 +107,7 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
                      internalFormat != COMPRESSED_RGBA_S3TC_DXT3 &&
                      internalFormat != COMPRESSED_RGBA_S3TC_DXT5 )
                 {
-                    throw RwException( "texture " + theTexture->name + " has an invalid internalFormat parameter" );
+                    throw RwException( "texture " + theTexture->GetName() + " has an invalid internalFormat parameter" );
                 }
 
                 // Store advanced parameters.
@@ -141,7 +141,7 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
                 // Check whether the image data section size is correct.
                 if ( imageDataSectionSize < metaHeader.imageDataSectionSize )
                 {
-                    throw RwException( "texture " + theTexture->name + " has an invalid image data section size" );
+                    throw RwException( "texture " + theTexture->GetName() + " has an invalid image data section size" );
                 }
 
                 // Process all the mipmaps.
@@ -151,7 +151,7 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
 
                 if ( !mipLevelGen.isValidLevel() )
                 {
-                    throw RwException( "texture " + theTexture->name + " has invalid dimensions" );
+                    throw RwException( "texture " + theTexture->GetName() + " has invalid dimensions" );
                 }
 
                 uint32 mipmapCount = 0;
@@ -193,13 +193,13 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
                     // Compare whether the data size is correct.
                     if ( texDataSize != dataSizes[ mipmapCount ] )
                     {
-                        throw RwException( "texture " + theTexture->name + " has damaged mipmap layers" );
+                        throw RwException( "texture " + theTexture->GetName() + " has damaged mipmap layers" );
                     }
 
                     // Check whether we got enough image data left.
                     if ( remainingImageSection < texDataSize )
                     {
-                        throw RwException( "texture " + theTexture->name + " has an invalid image data section size" );
+                        throw RwException( "texture " + theTexture->GetName() + " has an invalid image data section size" );
                     }
 
                     remainingImageSection -= texDataSize;
@@ -233,7 +233,7 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
 
                 if ( mipmapCount == 0 )
                 {
-                    throw RwException( "texture " + theTexture->name + " is empty" );
+                    throw RwException( "texture " + theTexture->GetName() + " is empty" );
                 }
 
                 // If we skipped any mipmap layers, make sure we skip to the end of the block.
@@ -243,7 +243,7 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
 
                     if ( remainingImageSection < dataSize )
                     {
-                        throw RwException( "texture " + theTexture->name + " has an invalid image data section size" );
+                        throw RwException( "texture " + theTexture->GetName() + " has an invalid image data section size" );
                     }
 
                     remainingImageSection -= dataSize;
@@ -261,7 +261,7 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
 
                     if ( warningLevel >= 3 )
                     {
-                        engineInterface->PushWarning( "texture " + theTexture->name + " has image section meta-data" );
+                        engineInterface->PushWarning( "texture " + theTexture->GetName() + " has image section meta-data" );
                     }
 
                     // Skip to the end.

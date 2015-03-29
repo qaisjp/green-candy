@@ -130,23 +130,7 @@ inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, ePalette
     return hasFormat;
 }
 
-// This data can be returned by the NativeTextureD3D texture.
-// It will contain newly allocated texels to be used in a bitmap.
-struct rawBitmapFetchResult
-{
-    void *texelData;
-    uint32 dataSize;
-    uint32 width, height;
-    bool isNewlyAllocated;
-    uint32 depth;
-    eRasterFormat rasterFormat;
-    eColorOrdering colorOrder;
-    const void *paletteData;
-    uint32 paletteSize;
-    ePaletteType paletteType;
-};
-
-struct NativeTextureD3D : public PlatformTexture
+struct NativeTextureD3D
 {
     enum ePlatformType
     {
@@ -156,10 +140,13 @@ struct NativeTextureD3D : public PlatformTexture
 
     Interface *engineInterface;
 
+    LibraryVersion texVersion;
+
     inline NativeTextureD3D( Interface *engineInterface )
     {
         // Initialize the texture object.
         this->engineInterface = engineInterface;
+        this->texVersion = engineInterface->GetVersion();
         this->platformType = PLATFORM_D3D9;
         this->palette = NULL;
         this->paletteSize = 0;
@@ -181,6 +168,7 @@ struct NativeTextureD3D : public PlatformTexture
         Interface *engineInterface = right.engineInterface;
 
         this->engineInterface = engineInterface;
+        this->texVersion = right.texVersion;
 
         // Copy palette information.
         {
@@ -239,36 +227,6 @@ struct NativeTextureD3D : public PlatformTexture
         this->clearTexelData();
     }
 
-    uint32 getWidth( void ) const
-    {
-        return this->mipmaps[ 0 ].layerWidth;
-    }
-
-    uint32 getHeight( void ) const
-    {
-        return this->mipmaps[ 0 ].layerHeight;
-    }
-
-    uint32 getDepth( void ) const
-    {
-        return this->depth;
-    }
-
-    uint32 getMipmapCount( void ) const
-    {
-        return this->mipmaps.size();
-    }
-
-    ePaletteType getPaletteType( void ) const
-    {
-        return this->paletteType;
-    }
-
-    bool isCompressed( void ) const
-    {
-        return ( this->dxtCompression != 0 );
-    }
-
     void compress( float quality )
     {
         // Compress it with DXT.
@@ -291,9 +249,6 @@ struct NativeTextureD3D : public PlatformTexture
         // A different method should be used if more accuracy is required.
         //compressDxt( dxtType );
     }
-
-    // Function to return a raw bitmap from this texture.
-    bool getRawBitmap( uint32 mipLayer, bool allowPalette, rawBitmapFetchResult& bitmapOut ) const;
 
     typedef genmip::mipmapLayer mipmapLayer;
 
@@ -378,9 +333,6 @@ struct NativeTextureD3D : public PlatformTexture
     bool hasAlpha;
 
     eColorOrdering colorOrdering;
-
-    // Debug stuff.
-    bool getDebugBitmap( Bitmap& bmpOut ) const;
 };
 
 struct d3dNativeTextureTypeProvider : public texNativeTypeProvider
@@ -418,6 +370,26 @@ struct d3dNativeTextureTypeProvider : public texNativeTypeProvider
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
+
+    void SetTextureVersion( Interface *engineInterface, void *objMem, LibraryVersion version )
+    {
+        NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
+
+        nativeTex->texVersion = version;
+    }
+
+    LibraryVersion GetTextureVersion( const void *objMem )
+    {
+        const NativeTextureD3D *nativeTex = (const NativeTextureD3D*)objMem;
+
+        return nativeTex->texVersion;
+    }
+
+    bool GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut );
+    bool AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut );
+    void ClearMipmaps( Interface *engineInterface, void *objMem );
+
+    void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {

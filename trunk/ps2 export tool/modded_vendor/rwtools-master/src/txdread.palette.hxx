@@ -983,6 +983,65 @@ inline void nativePaletteRemap(
     dataSizeOut = dataSize;
 }
 
+// Mipmap remapping algorithm.
+inline void RemapMipmapLayer(
+    Interface *engineInterface,
+    eRasterFormat palRasterFormat, eColorOrdering palColorOrder,
+    const void *mipTexels, uint32 mipTexelCount, eRasterFormat mipRasterFormat, eColorOrdering mipColorOrder, uint32 mipDepth, ePaletteType mipPaletteType, const void *mipPaletteData, uint32 mipPaletteSize,
+    const void *paletteData, uint32 paletteSize, uint32 convItemDepth, ePaletteType convPaletteType,
+    void*& dstTexels, uint32& dstTexelDataSize
+)
+{
+    // Do some complex remapping.
+    // Since libimagequant does not support just remapping, we need to map it with the native algorithm.
+    palettizer remapper;
+
+    // Create an array with all the palette colors.
+    palettizer::texelContainer_t paletteContainer;
+
+    paletteContainer.resize( paletteSize );
+
+    uint32 palItemDepth = Bitmap::getRasterFormatDepth(palRasterFormat);
+
+    for ( uint32 n = 0; n < paletteSize; n++ )
+    {
+        uint8 r, g, b, a;
+
+        bool hasColor = browsetexelcolor(
+            paletteData, PALETTE_NONE, NULL, 0, n, palRasterFormat, palColorOrder, palItemDepth,
+            r, g, b, a
+        );
+
+        if ( !hasColor )
+        {
+            r = 0;
+            g = 0;
+            b = 0;
+            a = 0;
+        }
+
+        palettizer::texel_t inTexel;
+        inTexel.red = r;
+        inTexel.green = g;
+        inTexel.blue = b;
+        inTexel.alpha = a;
+
+        paletteContainer[ n ] = inTexel;
+    }
+
+    // Put the palette texels into the remapper.
+    remapper.texelElimData = paletteContainer;
+
+    // Do the remap.
+    nativePaletteRemap(
+        engineInterface,
+        remapper, convPaletteType, convItemDepth,
+        mipTexels, mipTexelCount, mipPaletteType, mipPaletteData, mipPaletteSize,
+        mipRasterFormat, mipColorOrder, mipDepth,
+        dstTexels, dstTexelDataSize
+    );
+}
+
 // Main palettization function for the pixel conversion framework.
 void PalettizePixelData( Interface *engineInterface, pixelDataTraversal& pixelData, const pixelFormat& dstPixelFormat );
 

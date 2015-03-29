@@ -463,6 +463,7 @@ namespace ps2GSPixelEncodingFormats
     }
 
     inline static void* unpackImageData(
+        Interface *engineInterface,
         eFormatEncodingType packedFormat, eFormatEncodingType rawFormat,
         uint32 rawItemDepth,
         const void *srcToBeDecoded, uint32 packedWidth, uint32 packedHeight,
@@ -508,7 +509,7 @@ namespace ps2GSPixelEncodingFormats
             return NULL;
 
         // Allocate a buffer for the new permutation data.
-        void *dstTexels = new uint8[ dstDataSize ];
+        void *dstTexels = engineInterface->PixelAllocate( dstDataSize );
 
         if ( dstTexels )
         {
@@ -558,7 +559,7 @@ namespace ps2GSPixelEncodingFormats
             }
             else
             {
-                delete [] (uint8*)dstTexels;
+                engineInterface->PixelFree( dstTexels );
 
                 dstTexels = NULL;
             }
@@ -674,6 +675,7 @@ namespace ps2GSPixelEncodingFormats
     }
 
     inline static void* packImageData(
+        Interface *engineInterface,
         eFormatEncodingType rawFormat, eFormatEncodingType packedFormat,
         uint32 rawItemDepth,
         const void *srcToBeEncoded, uint32 srcWidth, uint32 srcHeight,
@@ -739,7 +741,7 @@ namespace ps2GSPixelEncodingFormats
             return NULL;
 
         // Allocate a buffer for the new permutation data.
-        void *dstTexels = new uint8[ dstDataSize ];
+        void *dstTexels = engineInterface->PixelAllocate( dstDataSize );
 
         if ( dstTexels )
         {
@@ -781,7 +783,7 @@ namespace ps2GSPixelEncodingFormats
             }
             else
             {
-                delete [] (uint8*)dstTexels;
+                engineInterface->PixelFree( dstTexels );
 
                 dstTexels = NULL;
             }
