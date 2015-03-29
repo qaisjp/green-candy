@@ -62,9 +62,9 @@ void atcNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
             // Write the header with meta information.
             atitc::textureNativeGenericHeader metaHeader;
             metaHeader.platformDescriptor = PLATFORM_ATC;
-            metaHeader.filteringMode = theTexture->filterMode;
-            metaHeader.uAddressing = theTexture->uAddressing;
-            metaHeader.vAddressing = theTexture->vAddressing;
+            metaHeader.filteringMode = theTexture->GetFilterMode();
+            metaHeader.uAddressing = theTexture->GetUAddressing();
+            metaHeader.vAddressing = theTexture->GetVAddressing();
             
             memset( metaHeader.pad1, 0, sizeof(metaHeader.pad1) );
 
@@ -72,8 +72,8 @@ void atcNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
             // Even though we can read those name fields with zero-termination safety,
             // the engines are not guarranteed to do so.
             // Also, print a warning if the name is changed this way.
-            writeStringIntoBufferSafe( engineInterface, theTexture->name, metaHeader.name, sizeof( metaHeader.name ), theTexture->name, "name" );
-            writeStringIntoBufferSafe( engineInterface, theTexture->maskName, metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->name, "mask name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetName(), metaHeader.name, sizeof( metaHeader.name ), theTexture->GetName(), "name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetMaskName(), metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->GetName(), "mask name" );
 
             uint32 mipmapCount = platformTex->mipmaps.size();
 

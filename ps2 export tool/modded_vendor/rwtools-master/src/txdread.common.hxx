@@ -34,7 +34,7 @@ struct texDictionaryStreamPlugin : public serializationProvider
 
 inline void fixFilteringMode(TextureBase& inTex, uint32 mipmapCount)
 {
-    eRasterStageFilterMode currentFilterMode = inTex.filterMode;
+    eRasterStageFilterMode currentFilterMode = inTex.GetFilterMode();
 
     eRasterStageFilterMode newFilterMode = currentFilterMode;
 
@@ -77,12 +77,12 @@ inline void fixFilteringMode(TextureBase& inTex, uint32 mipmapCount)
             // Since this is a really annoying message, put it on warning level 4.
             if ( warningLevel >= 4 )
             {
-                engineInterface->PushWarning( "texture " + inTex.name + " has an invalid filtering mode (fixed)" );
+                engineInterface->PushWarning( "texture " + inTex.GetName() + " has an invalid filtering mode (fixed)" );
             }
         }
 
         // Fix it.
-        inTex.filterMode = newFilterMode;
+        inTex.SetFilterMode( newFilterMode ); 
     }
 }
 
@@ -194,5 +194,37 @@ public:
         return this->hasIncrementedHeight;
     }
 };
+
+inline eRasterFormat getVirtualRasterFormat( bool hasAlpha, eCompressionType rwCompressionType )
+{
+    eRasterFormat rasterFormat = RASTER_DEFAULT;
+
+    if ( rwCompressionType == RWCOMPRESS_DXT1 )
+    {
+	    if (hasAlpha)
+        {
+		    rasterFormat = RASTER_1555;
+        }
+	    else
+        {
+		    rasterFormat = RASTER_565;
+        }
+    }
+    else if ( rwCompressionType == RWCOMPRESS_DXT2 ||
+              rwCompressionType == RWCOMPRESS_DXT3 )
+    {
+        rasterFormat = RASTER_4444;
+    }
+    else if ( rwCompressionType == RWCOMPRESS_DXT4 )
+    {
+        rasterFormat = RASTER_4444;
+    }
+    else if ( rwCompressionType == RWCOMPRESS_DXT5 )
+    {
+        rasterFormat = RASTER_4444;
+    }
+
+    return rasterFormat;
+}
 
 };

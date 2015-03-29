@@ -237,6 +237,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\txdread.miputil.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\txdread.palette.hxx"
 				>
 			</File>
@@ -359,6 +363,10 @@
 		</File>
 		<File
 			RelativePath="..\src\txdread.d3d.dxt.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\src\txdread.debugutil.cpp"
 			>
 		</File>
 		<File

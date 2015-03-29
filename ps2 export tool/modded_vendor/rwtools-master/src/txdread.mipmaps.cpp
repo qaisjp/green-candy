@@ -20,7 +20,12 @@ uint32 Raster::getMipmapCount( void ) const
 
     if ( PlatformTexture *platformTex = this->platformData )
     {
-        mipmapCount = platformTex->getMipmapCount();
+        texNativeTypeProvider *texProvider = GetNativeTextureTypeProvider( engineInterface, platformTex );
+
+        if ( texProvider )
+        {
+            mipmapCount = GetNativeTextureMipmapCount( engineInterface, platformTex, texProvider );
+        }
     }
 
     return mipmapCount;
@@ -28,7 +33,7 @@ uint32 Raster::getMipmapCount( void ) const
 
 void TextureBase::clearMipmaps( void )
 {
-    Raster *texRaster = this->texRaster;
+    Raster *texRaster = this->GetRaster();
 
     if ( texRaster )
     {
@@ -167,7 +172,7 @@ inline void ensurePutIntoArray( dataType dataToPut, containerType& container, ui
 
 void TextureBase::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode mipGenMode )
 {
-    Raster *texRaster = this->texRaster;
+    Raster *texRaster = this->GetRaster();
 
     if ( texRaster )
     {
@@ -306,60 +311,18 @@ void TextureBase::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode 
                 }
                 else
                 {
-                    // Palettize if required.
+                    // Remap palette if required.
                     ePaletteType paletteType = platformTex->paletteType;
 
                     if ( paletteType != PALETTE_NONE )
                     {
-                        const void *paletteData = platformTex->palette;
-                        uint32 paletteSize = platformTex->paletteSize;
-
-                        // Do some complex remapping.
-                        // Since libimagequant does not support just remapping, we need to map it with the native algorithm.
-                        palettizer remapper;
-
-                        // Create an array with all the palette colors.
-                        palettizer::texelContainer_t paletteContainer;
-
-                        paletteContainer.resize( paletteSize );
-
-                        uint32 palItemDepth = Bitmap::getRasterFormatDepth(srcRasterFormat);
-
-                        for ( uint32 n = 0; n < paletteSize; n++ )
-                        {
-                            uint8 r, g, b, a;
-
-                            bool hasColor = browsetexelcolor(
-                                paletteData, PALETTE_NONE, NULL, 0, n, srcRasterFormat, srcColorOrder, palItemDepth,
-                                r, g, b, a
-                            );
-
-                            if ( !hasColor )
-                            {
-                                r = 0;
-                                g = 0;
-                                b = 0;
-                                a = 0;
-                            }
-
-                            palettizer::texel_t inTexel;
-                            inTexel.red = r;
-                            inTexel.green = g;
-                            inTexel.blue = b;
-                            inTexel.alpha = a;
-
-                            paletteContainer[ n ] = inTexel;
-                        }
-
-                        // Put the palette texels into the remapper.
-                        remapper.texelElimData = paletteContainer;
-
-                        // Do the remap.
-                        nativePaletteRemap(
+                        RemapMipmapLayer(
                             engineInterface,
-                            remapper, paletteType, srcItemDepth,
-                            newtexels, texItemCount, PALETTE_NONE, NULL, 0,
-                            tmpRasterFormat, tmpColorOrder, firstLevelDepth,
+                            srcRasterFormat, srcColorOrder,
+                            newtexels, texItemCount,
+                            tmpRasterFormat, tmpColorOrder, firstLevelDepth, PALETTE_NONE, NULL, 0,
+                            platformTex->palette, platformTex->paletteSize,
+                            srcItemDepth, paletteType,
                             actualTexelArray, actualDataSize
                         );
                     }

@@ -9,16 +9,6 @@
 namespace rw
 {
 
-struct pixelProvider abstract
-{
-    virtual void getCoordinates( uint32& x, uint32& y ) const = 0;
-    virtual void getColor( uint8& r, uint8& g, uint8& b, uint8& a ) const = 0;
-
-    virtual void increment( void ) = 0;
-
-    virtual bool isEnd( void ) const = 0;
-};
-
 inline bool decompressTexelsUsingDXT(
     Interface *engineInterface, uint32 dxtType, eDXTCompressionMethod dxtMethod,
     uint32 texWidth, uint32 texHeight,
@@ -342,260 +332,48 @@ void genericCompressDXTNative( Interface *engineInterface, pixelDataTraversal& p
     pixelData.compressionType = targetCompressionType;
 }
 
-struct rawBitmapPixelProvider : public pixelProvider
+void ConvertPaletteDepth(
+    const void *srcTexels, void *dstTexels,
+    uint32 texUnitCount,
+    ePaletteType paletteType, uint32 paletteSize,
+    uint32 srcDepth, uint32 dstDepth
+)
 {
-    // Constant parameters.
-    const eRasterFormat rasterFormat;
-    const uint32 depth;
-    const eColorOrdering colorOrder;
-    const void *const texelSource;
-
-    const ePaletteType paletteType;
-    const void *const paletteData;
-    const uint32 paletteSize;
-
-    const uint32 width, height;
-
-    inline rawBitmapPixelProvider(
-        eRasterFormat rasterFormat, uint32 depth, eColorOrdering colorOrder, const void *texelSource,
-        ePaletteType paletteType, const void *paletteData, uint32 paletteSize,
-        uint32 width, uint32 height
-    )
-        : rasterFormat( rasterFormat ), depth( depth ), colorOrder( colorOrder ), texelSource( texelSource ),
-        paletteType( paletteType ), paletteData( paletteData ), paletteSize( paletteSize ),
-        width( width ), height( height )
+    // Copy palette indice.
+    for ( uint32 n = 0; n < texUnitCount; n++ )
     {
-        this->width_iter = 0;
-        this->height_iter = 0;
-    }
+        uint8 palIndex;
 
-    // Iterative parameters.
-    uint32 width_iter, height_iter;
+        // Fetch the index
+        bool gotPaletteIndex = getpaletteindex(srcTexels, paletteType, paletteSize, srcDepth, n, palIndex);
 
-    inline void getCoordinates( uint32& x, uint32& y ) const
-    {
-        x = this->width_iter;
-        y = this->height_iter;
-    }
-
-    inline void getColor( uint8& rOut, uint8& gOut, uint8& bOut, uint8& aOut ) const
-    {
-        // Get the current color index.
-        uint32 colorIndex = PixelFormat::coord2index( this->width_iter, this->height_iter, this->width );
-
-        uint8 r, g, b, a;
-
-        bool gotColor = browsetexelcolor(
-            this->texelSource, this->paletteType, this->paletteData, this->paletteSize,
-            colorIndex,
-            this->rasterFormat, this->colorOrder, this->depth,
-            r, g, b, a
-        );
-
-        if ( !gotColor )
+        if ( !gotPaletteIndex )
         {
-            r = 0;
-            g = 0;
-            b = 0;
-            a = 0;
+            palIndex = 0;
         }
 
-        rOut = r;
-        gOut = g;
-        bOut = b;
-        aOut = a;
-    }
-
-    inline void increment( void )
-    {
-        uint32 width_iter = this->width_iter;
-
-        width_iter++;
-        
-        uint32 width = this->width;
-
-        if ( width_iter >= width )
+        // Put the index.
+        if ( dstDepth == 4 )
         {
-            width_iter = 0;
-
-            uint32 height_iter = this->height_iter;
-
-            height_iter++;
-
-            uint32 height = this->height;
-
-            if ( height_iter >= height )
-            {
-                width_iter = width;
-                height_iter = height;
-            }
-
-            this->height_iter = height_iter;
+            ( (PixelFormat::palette4bit*)dstTexels )->setvalue(n, palIndex);
         }
-
-        this->width_iter = width_iter;
-    }
-
-    inline bool isEnd( void ) const
-    {
-        return ( width_iter >= width && height_iter >= height );
-    }
-};
-
-struct dxtCompressedPixelProvider : public pixelProvider
-{
-    // Constant format parameters.
-    static const uint32 blockWidth = 4;
-    static const uint32 blockHeight = 4;
-
-    const void *const srcTexels;
-
-    const uint32 width, height;
-
-    const eDXTCompressionMethod dxtMethod;
-    const uint32 dxtType;
-
-private:
-    inline void establishColor( uint32 blockIndex )
-    {
-        // Decompress!
-        bool decompressSuccess = decompressDXTBlock(
-            this->dxtMethod, this->srcTexels,
-            blockIndex,
-            this->dxtType, this->dxtColors
-        );
-
-        assert( decompressSuccess == true );
-    }
-
-public:
-    inline dxtCompressedPixelProvider( eDXTCompressionMethod dxtMode, uint32 dxtType, const void *srcTexels, uint32 width, uint32 height )
-        : srcTexels( srcTexels ), width( width ), height( height ), dxtMethod( dxtMode ), dxtType( dxtType )
-    {
-        assert( width == ALIGN_SIZE( width, 4u ) );
-        assert( height == ALIGN_SIZE( height, 4u ) );
-
-        this->x_blockOffset = 0;
-        this->y_blockOffset = 0;
-
-        this->x_blockIter = 0;
-        this->y_blockIter = 0;
-
-        this->blockIndex = 0;
-
-        this->establishColor( 0 );
-
-        // Calculate the amount of blocks.
-        uint32 texUnitCount = ( width * height );
-
-        this->blockCount = ( texUnitCount / ( blockWidth * blockHeight ) );
-    }
-
-    // Iterative parameters.
-    PixelFormat::pixeldata32bit dxtColors[ blockWidth ][ blockHeight ];
-
-    uint32 x_blockOffset, y_blockOffset;
-    uint32 x_blockIter, y_blockIter;
-
-    uint32 blockIndex;
-    uint32 blockCount;
-
-    inline void getCoordinates( uint32& x, uint32& y ) const
-    {
-        x = ( this->x_blockOffset + this->x_blockIter );
-        y = ( this->y_blockOffset + this->y_blockIter );
-    }
-
-    inline void getColor( uint8& r, uint8& g, uint8& b, uint8& a ) const
-    {
-        const PixelFormat::pixeldata32bit& theColor = this->dxtColors[ this->y_blockIter ][ this->x_blockIter ];
-
-        r = theColor.red;
-        g = theColor.green;
-        b = theColor.blue;
-        a = theColor.alpha;
-    }
-
-    inline void increment( void )
-    {
-        // Increment the block iter coordinates.
-        uint32 x_blockIter = this->x_blockIter;
-        uint32 y_blockIter = this->y_blockIter;
-
-        x_blockIter++;
-
-        if ( x_blockIter >= blockWidth )
+        else if ( dstDepth == 8 )
         {
-            x_blockIter = 0;
-
-            y_blockIter++;
+            ( (PixelFormat::palette8bit*)dstTexels )->setvalue(n, palIndex);
         }
-
-        if ( x_blockIter >= blockWidth && y_blockIter >= blockHeight )
+        else
         {
-            // Increment the image space coordinates.
-            x_blockIter = 0;
-            y_blockIter = 0;
-
-            uint32 x_blockOffset = this->x_blockOffset;
-
-            x_blockOffset += blockWidth;
-
-            bool wantsUpdate = true;
-
-            uint32 width = this->width;
-
-            if ( x_blockOffset >= width )
-            {
-                x_blockOffset = 0;
-
-                uint32 y_blockOffset = this->y_blockOffset;
-
-                y_blockOffset += blockHeight;
-
-                uint32 height = this->height;
-
-                if ( y_blockOffset >= height )
-                {
-                    x_blockOffset = width;
-                    y_blockOffset = height;
-
-                    wantsUpdate = false;
-                }
-
-                this->y_blockOffset = y_blockOffset;
-            }
-
-            if ( wantsUpdate )
-            {
-                // Increment the block index and decompress the colors.
-                uint32 blockIndex = this->blockIndex;
-
-                blockIndex++;
-
-                this->establishColor( blockIndex );
-
-                this->blockIndex = blockIndex;
-            }
-
-            this->x_blockOffset = x_blockOffset;
+            assert( 0 );
         }
-
-        this->x_blockIter = x_blockIter;
-        this->y_blockIter = y_blockIter;
     }
-
-    inline bool isEnd( void ) const
-    {
-        return ( this->blockIndex >= this->blockCount );
-    }
-};
+}
 
 void ConvertMipmapLayer(
     Interface *engineInterface,
     const pixelDataTraversal::mipmapResource& mipLayer,
     eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize,
     eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, ePaletteType dstPaletteType,
+    bool forceAllocation,
     void*& dstTexelsOut, uint32& dstDataSizeOut
 )
 {
@@ -614,7 +392,7 @@ void ConvertMipmapLayer(
 
     uint32 dstTexelsDataSize = srcTexelsDataSize;
 
-    if ( srcDepth != dstDepth )
+    if ( forceAllocation || srcDepth != dstDepth )
     {
         dstTexelsDataSize = getRasterDataSize( srcItemCount, dstDepth );
 
@@ -629,47 +407,12 @@ void ConvertMipmapLayer(
         // We only have work to do if the depth changed or the pointers to the arrays changed.
         if ( srcDepth != dstDepth || srcTexels != dstTexels )
         {
-            // Copy palette indice.
-            for ( uint32 n = 0; n < srcItemCount; n++ )
-            {
-                uint32 palIndex;
-
-                // Fetch the index
-                if ( srcDepth == 4 )
-                {
-                    PixelFormat::palette4bit::trav_t travItem;
-                    
-                    ( (PixelFormat::palette4bit*)srcTexels )->getvalue(n, travItem);
-
-                    palIndex = travItem;
-                }
-                else if ( srcDepth == 8 )
-                {
-                    PixelFormat::palette8bit::trav_t travItem;
-
-                    ( (PixelFormat::palette8bit*)srcTexels )->getvalue(n, travItem);
-
-                    palIndex = travItem;
-                }
-                else
-                {
-                    assert( 0 );
-                }
-
-                // Put the index.
-                if ( dstDepth == 4 )
-                {
-                    ( (PixelFormat::palette4bit*)dstTexels )->setvalue(n, palIndex);
-                }
-                else if ( dstDepth == 8 )
-                {
-                    ( (PixelFormat::palette8bit*)dstTexels )->setvalue(n, palIndex);
-                }
-                else
-                {
-                    assert( 0 );
-                }
-            }
+            ConvertPaletteDepth(
+                srcTexels, dstTexels,
+                srcItemCount,
+                srcPaletteType, srcPaletteSize,
+                srcDepth, dstDepth
+            );
         }
     }
     else
@@ -705,25 +448,17 @@ void ConvertMipmapLayer(
     dstDataSizeOut = dstTexelsDataSize;
 }
 
-bool ConvertMipmapLayerEx(
+bool ConvertMipmapLayerNative(
     Interface *engineInterface,
-    const pixelDataTraversal::mipmapResource& mipLayer,
+    uint32 mipWidth, uint32 mipHeight, uint32 layerWidth, uint32 layerHeight, void *srcTexels, uint32 srcDataSize,
     eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize, eCompressionType srcCompressionType,
-    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, eCompressionType dstCompressionType,
+    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, ePaletteType dstPaletteType, const void *dstPaletteData, uint32 dstPaletteSize, eCompressionType dstCompressionType,
+    bool copyAnyway,
     uint32& dstPlaneWidthOut, uint32& dstPlaneHeightOut,
     void*& dstTexelsOut, uint32& dstDataSizeOut
 )
 {
-    uint32 mipWidth = mipLayer.width;
-    uint32 mipHeight = mipLayer.height;
-
-    uint32 layerWidth = mipLayer.mipWidth;
-    uint32 layerHeight = mipLayer.mipHeight;
-
     bool isMipLayerTexels = false;
-
-    void *srcTexels = mipLayer.texels;
-    uint32 srcDataSize = mipLayer.dataSize;
 
     // Perform this like a pipeline with multiple stages.
     uint32 srcDXTType;
@@ -777,44 +512,103 @@ bool ConvertMipmapLayerEx(
     {
         uint32 texUnitCount = ( mipWidth * mipHeight );
 
-        uint32 dstDataSize = getRasterDataSize( texUnitCount, dstDepth );
+        void *newtexels = NULL;
+        uint32 dstDataSize = 0;
 
-        void *newtexels = engineInterface->PixelAllocate( dstDataSize );
-
-        // Do the conversion.
-        for ( uint32 n = 0; n < texUnitCount; n++ )
+        if ( dstPaletteType == PALETTE_NONE )
         {
-            uint8 r, g, b, a;
+            dstDataSize = getRasterDataSize( texUnitCount, dstDepth );
 
-            bool gotColor = browsetexelcolor( srcTexels, srcPaletteType, srcPaletteData, srcPaletteSize, n, srcRasterFormat, srcColorOrder, srcDepth, r, g, b, a );
+            newtexels = engineInterface->PixelAllocate( dstDataSize );
 
-            if ( !gotColor )
+            // Do the conversion.
+            for ( uint32 n = 0; n < texUnitCount; n++ )
             {
-                r = 0;
-                g = 0;
-                b = 0;
-                a = 0;
+                uint8 r, g, b, a;
+
+                bool gotColor = browsetexelcolor( srcTexels, srcPaletteType, srcPaletteData, srcPaletteSize, n, srcRasterFormat, srcColorOrder, srcDepth, r, g, b, a );
+
+                if ( !gotColor )
+                {
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                    a = 0;
+                }
+
+                puttexelcolor( newtexels, n, dstRasterFormat, dstColorOrder, dstDepth, r, g, b, a );
+            }
+        }
+        else if ( srcPaletteType != PALETTE_NONE )
+        {
+            if ( srcPaletteData == dstPaletteData )
+            {
+                // Fix the indice, if necessary.
+                if ( srcDepth != dstDepth )
+                {
+                    dstDataSize = getRasterDataSize( texUnitCount, dstDepth );
+
+                    newtexels = engineInterface->PixelAllocate( dstDataSize );
+
+                    // Convert the depth.
+                    ConvertPaletteDepth(
+                        srcTexels, newtexels,
+                        texUnitCount,
+                        srcPaletteType, srcPaletteSize,
+                        srcDepth, dstDepth
+                    );
+                }
+            }
+            else
+            {
+                // Remap texels.
+                RemapMipmapLayer(
+                    engineInterface,
+                    dstRasterFormat, dstColorOrder,
+                    srcTexels, texUnitCount,
+                    srcRasterFormat, srcColorOrder, srcDepth, srcPaletteType, srcPaletteData, srcPaletteSize,
+                    dstPaletteData, dstPaletteSize,
+                    dstDepth, dstPaletteType,
+                    newtexels, dstDataSize
+                );
+            }
+        }
+        else
+        {
+            // There must be a destination palette already allocated, as we cannot create one.
+            assert( dstPaletteData != NULL );
+
+            // Remap.
+            RemapMipmapLayer(
+                engineInterface,
+                dstRasterFormat, dstColorOrder,
+                srcTexels, texUnitCount,
+                srcRasterFormat, srcColorOrder, srcDepth, srcPaletteType, srcPaletteData, srcPaletteSize,
+                dstPaletteData, dstPaletteSize,
+                dstDepth, dstPaletteType,
+                newtexels, dstDataSize
+            );
+        }
+        
+        if ( newtexels != NULL )
+        {
+            if ( isMipLayerTexels == false )
+            {
+                // If we have temporary texels, remove them.
+                engineInterface->PixelFree( srcTexels );
             }
 
-            puttexelcolor( newtexels, n, dstRasterFormat, dstColorOrder, dstDepth, r, g, b, a );
+            // Store the new texels.
+            srcTexels = newtexels;
+            srcDataSize = dstDataSize;
+
+            // Update raster properties.
+            srcRasterFormat = dstRasterFormat;
+            srcColorOrder = dstColorOrder;
+            srcDepth = dstDepth;
+
+            isMipLayerTexels = false;
         }
-
-        if ( isMipLayerTexels == false )
-        {
-            // If we have temporary texels, remove them.
-            engineInterface->PixelFree( srcTexels );
-        }
-
-        // Store the new texels.
-        srcTexels = newtexels;
-        srcDataSize = dstDataSize;
-
-        // Update raster properties.
-        srcRasterFormat = dstRasterFormat;
-        srcColorOrder = dstColorOrder;
-        srcDepth = dstDepth;
-
-        isMipLayerTexels = false;
     }
 
     if ( requiresCompression )
@@ -862,7 +656,7 @@ bool ConvertMipmapLayerEx(
     }
 
     // Output parameters.
-    if ( isMipLayerTexels == false )
+    if ( copyAnyway == true || isMipLayerTexels == false )
     {
         dstPlaneWidthOut = mipWidth;
         dstPlaneHeightOut = mipHeight;
@@ -874,6 +668,37 @@ bool ConvertMipmapLayerEx(
     }
 
     return false;
+}
+
+bool ConvertMipmapLayerEx(
+    Interface *engineInterface,
+    const pixelDataTraversal::mipmapResource& mipLayer,
+    eRasterFormat srcRasterFormat, uint32 srcDepth, eColorOrdering srcColorOrder, ePaletteType srcPaletteType, const void *srcPaletteData, uint32 srcPaletteSize, eCompressionType srcCompressionType,
+    eRasterFormat dstRasterFormat, uint32 dstDepth, eColorOrdering dstColorOrder, ePaletteType dstPaletteType, const void *dstPaletteData, uint32 dstPaletteSize, eCompressionType dstCompressionType,
+    bool copyAnyway,
+    uint32& dstPlaneWidthOut, uint32& dstPlaneHeightOut,
+    void*& dstTexelsOut, uint32& dstDataSizeOut
+)
+{
+    uint32 mipWidth = mipLayer.width;
+    uint32 mipHeight = mipLayer.height;
+
+    uint32 layerWidth = mipLayer.mipWidth;
+    uint32 layerHeight = mipLayer.mipHeight;
+
+    void *srcTexels = mipLayer.texels;
+    uint32 srcDataSize = mipLayer.dataSize;
+
+    return
+        ConvertMipmapLayerNative(
+            engineInterface,
+            mipWidth, mipHeight, layerWidth, layerHeight, srcTexels, srcDataSize,
+            srcRasterFormat, srcDepth, srcColorOrder, srcPaletteType, srcPaletteData, srcPaletteSize, srcCompressionType,
+            dstRasterFormat, dstDepth, dstColorOrder, dstPaletteType, dstPaletteData, dstPaletteSize, dstCompressionType,
+            copyAnyway,
+            dstPlaneWidthOut, dstPlaneHeightOut,
+            dstTexelsOut, dstDataSizeOut
+        );
 }
 
 bool DecideBestDXTCompressionFormat(
@@ -933,6 +758,49 @@ bool DecideBestDXTCompressionFormat(
     }
 
     return compressionSuccess;
+}
+
+void ConvertPaletteData(
+    const void *srcPaletteTexels, void *dstPaletteTexels,
+    uint32 srcPaletteSize, uint32 dstPaletteSize,
+    eRasterFormat srcRasterFormat, eColorOrdering srcColorOrder, uint32 srcPalRasterDepth,
+    eRasterFormat dstRasterFormat, eColorOrdering dstColorOrder, uint32 dstPalRasterDepth
+)
+{
+    // Process valid colors.
+    uint32 canProcessCount = std::min( srcPaletteSize, dstPaletteSize );
+
+    for ( uint32 n = 0; n < canProcessCount; n++ )
+    {
+        uint8 r, g, b, a;
+
+        bool hasColor = browsetexelcolor(
+            srcPaletteTexels, PALETTE_NONE, NULL, 0, n, srcRasterFormat, srcColorOrder, srcPalRasterDepth,
+            r, g, b, a
+        );
+
+        if ( !hasColor )
+        {
+            r = 0;
+            g = 0;
+            b = 0;
+            a = 0;
+        }
+
+        puttexelcolor(
+            dstPaletteTexels, n, dstRasterFormat, dstColorOrder, dstPalRasterDepth,
+            r, g, b, a
+        );
+    }
+
+    // Zero out any remainder.
+    for ( uint32 n = canProcessCount; n < dstPaletteSize; n++ )
+    {
+        puttexelcolor(
+            dstPaletteTexels, n, dstRasterFormat, dstColorOrder, dstPalRasterDepth,
+            0, 0, 0, 0
+        );
+    }
 }
 
 bool ConvertPixelData( Interface *engineInterface, pixelDataTraversal& pixelsToConvert, const pixelFormat pixFormat )
@@ -1098,40 +966,12 @@ bool ConvertPixelData( Interface *engineInterface, pixelDataTraversal& pixelsToC
                 // If we have a palette, process it.
                 if ( srcPaletteType != PALETTE_NONE && dstPaletteType != PALETTE_NONE )
                 {
-                    // Process valid colors.
-                    uint32 canProcessCount = std::min( srcPaletteSize, dstPaletteSize );
-
-                    for ( uint32 n = 0; n < canProcessCount; n++ )
-                    {
-                        uint8 r, g, b, a;
-
-                        bool hasColor = browsetexelcolor(
-                            srcPaletteTexels, PALETTE_NONE, NULL, 0, n, srcRasterFormat, srcColorOrder, srcPalRasterDepth,
-                            r, g, b, a
-                        );
-
-                        if ( !hasColor )
-                        {
-                            r = 0;
-                            g = 0;
-                            b = 0;
-                            a = 0;
-                        }
-
-                        puttexelcolor(
-                            dstPaletteTexels, n, dstRasterFormat, dstColorOrder, dstPalRasterDepth,
-                            r, g, b, a
-                        );
-                    }
-
-                    // Zero out any remainder.
-                    for ( uint32 n = canProcessCount; n < dstPaletteSize; n++ )
-                    {
-                        puttexelcolor(
-                            dstPaletteTexels, n, dstRasterFormat, dstColorOrder, dstPalRasterDepth,
-                            0, 0, 0, 0
-                        );
-                    }
+                    ConvertPaletteData(
+                        srcPaletteTexels, dstPaletteTexels,
+                        srcPaletteSize, dstPaletteSize,
+                        srcRasterFormat, srcColorOrder, srcDepth,
+                        dstRasterFormat, dstColorOrder, dstDepth
+                    );
                 }
 
                 // Process mipmaps.
@@ -1150,6 +990,7 @@ bool ConvertPixelData( Interface *engineInterface, pixelDataTraversal& pixelsToC
                         engineInterface,
                         mipLayer, srcRasterFormat, srcDepth, srcColorOrder, srcPaletteType, srcPaletteTexels, srcPaletteSize,
                         dstRasterFormat, dstDepth, dstColorOrder, dstPaletteType,
+                        false,
                         dstTexels, dstTexelsDataSize
                     );
 

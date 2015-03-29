@@ -39,10 +39,10 @@ void pvrNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 // Cast to our native texture type.
                 NativeTexturePVR *platformTex = (NativeTexturePVR*)nativeTex;
 
-                // Read the filtering and addressing modes.
-                theTexture->filterMode = (eRasterStageFilterMode)metaHeader.filterMode;
-                theTexture->uAddressing = (eRasterStageAddressMode)metaHeader.uAddressing;
-                theTexture->vAddressing = (eRasterStageAddressMode)metaHeader.vAddressing;
+                // Read the format info.
+                theTexture->SetFilterMode( (eRasterStageFilterMode)metaHeader.filterMode );
+                theTexture->SetUAddressing( (eRasterStageAddressMode)metaHeader.uAddressing );
+                theTexture->SetVAddressing( (eRasterStageAddressMode)metaHeader.vAddressing );
 
                 // Read the texture names.
                 {
@@ -54,12 +54,12 @@ void pvrNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                     // Move over the texture name.
                     memcpy( tmpbuf, metaHeader.name, sizeof( metaHeader.name ) );
 
-                    theTexture->name = tmpbuf;
+                    theTexture->SetName( tmpbuf );
 
                     // Move over the texture mask name.
                     memcpy( tmpbuf, metaHeader.maskName, sizeof( metaHeader.maskName ) );
 
-                    theTexture->maskName = tmpbuf;
+                    theTexture->SetMaskName( tmpbuf );
                 }
 
                 // Check that we have a valid compression parameter.
@@ -70,7 +70,7 @@ void pvrNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                      internalFormat != GL_COMPRESSED_RGBA_PVRTC_4BPPV1_IMG &&
                      internalFormat != GL_COMPRESSED_RGBA_PVRTC_2BPPV1_IMG )
                 {
-                    throw RwException( "texture " + theTexture->name + " has an invalid PVR compression type" );
+                    throw RwException( "texture " + theTexture->GetName() + " has an invalid PVR compression type" );
                 }
 
                 platformTex->internalFormat = internalFormat;
@@ -110,7 +110,7 @@ void pvrNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 // Verify that the image data section size is correct.
                 if ( imageDataSectionSize != metaHeader.imageDataStreamSize )
                 {
-                    throw RwException( "texture " + theTexture->name + " has an invalid image stream section size" );
+                    throw RwException( "texture " + theTexture->GetName() + " has an invalid image stream section size" );
                 }
 
                 // Read the mipmap layers.
@@ -120,7 +120,7 @@ void pvrNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                 if ( !mipLevelGen.isValidLevel() )
                 {
-                    throw RwException( "texture " + theTexture->name + " has invalid dimensions" );
+                    throw RwException( "texture " + theTexture->GetName() + " has invalid dimensions" );
                 }
 
                 uint32 mipmapCount = 0;
@@ -177,7 +177,7 @@ void pvrNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                     if ( texReqDataSize != actualDataSize )
                     {
-                        throw RwException( "texture " + theTexture->name + " has damaged mipmaps" );
+                        throw RwException( "texture " + theTexture->GetName() + " has damaged mipmaps" );
                     }
 
                     // Add the layer.
@@ -207,7 +207,7 @@ void pvrNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
 
                 if ( mipmapCount == 0 )
                 {
-                    throw RwException( "texture " + theTexture->name + " is empty" );
+                    throw RwException( "texture " + theTexture->GetName() + " is empty" );
                 }
 
                 // Increment past any mipmap data that we skipped.

@@ -253,6 +253,13 @@ static inline bool browsetexelcolor(
             blue = prered;
             alpha = prealpha;
         }
+        else if ( colorOrder == COLOR_ABGR )
+        {
+            red = prealpha;
+            green = preblue;
+            blue = pregreen;
+            alpha = prered;
+        }
         else
         {
             assert( 0 );
@@ -293,6 +300,13 @@ static inline bool puttexelcolor(
         putgreen = green;
         putblue = red;
         putalpha = alpha;
+    }
+    else if ( colorOrder == COLOR_ABGR )
+    {
+        putred = alpha;
+        putgreen = blue;
+        putblue = green;
+        putalpha = red;
     }
     else
     {

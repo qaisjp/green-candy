@@ -4,6 +4,10 @@
 
 #include "streamutil.hxx"
 
+#include "txdread.common.hxx"
+
+#include "txdread.miputil.hxx"
+
 namespace rw
 {
 
@@ -23,9 +27,9 @@ void uncNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
             mobile_unc::textureNativeGenericHeader metaHeader;
             metaHeader.platformDescriptor = PLATFORMDESC_UNC_MOBILE;
 
-            metaHeader.filteringMode = theTexture->filterMode;
-            metaHeader.uAddressing = theTexture->uAddressing;
-            metaHeader.vAddressing = theTexture->vAddressing;
+            metaHeader.filteringMode = theTexture->GetFilterMode();
+            metaHeader.uAddressing = theTexture->GetUAddressing();
+            metaHeader.vAddressing = theTexture->GetVAddressing();
 
             memset( metaHeader.pad1, 0, sizeof( metaHeader.pad1 ) );
 
@@ -33,8 +37,8 @@ void uncNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
             // Even though we can read those name fields with zero-termination safety,
             // the engines are not guarranteed to do so.
             // Also, print a warning if the name is changed this way.
-            writeStringIntoBufferSafe( engineInterface, theTexture->name, metaHeader.name, sizeof( metaHeader.name ), theTexture->name, "name" );
-            writeStringIntoBufferSafe( engineInterface, theTexture->maskName, metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->name, "mask name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetName(), metaHeader.name, sizeof( metaHeader.name ), theTexture->GetName(), "name" );
+            writeStringIntoBufferSafe( engineInterface, theTexture->GetMaskName(), metaHeader.maskName, sizeof( metaHeader.maskName ), theTexture->GetName(), "mask name" );
 
             // Cast to our native texture format.
             NativeTextureMobileUNC *platformTex = (NativeTextureMobileUNC*)nativeTex;
@@ -219,6 +223,7 @@ void uncNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
                 mipLayer,
                 srcRasterFormat, srcDepth, srcColorOrder, srcPaletteType, srcPaletteData, srcPaletteSize,
                 requiredRasterFormat, requiredDepth, requiredColorOrder, requiredPaletteType,
+                true,
                 dstTexels, dstDataSize
             );
         }
@@ -263,5 +268,152 @@ void uncNativeTextureTypeProvider::UnsetPixelDataFromTexture( Interface *engineI
     nativeTex->hasAlpha = false;
 }
 
+struct uncMipmapManager
+{
+    NativeTextureMobileUNC *nativeTex;
+
+    inline uncMipmapManager( NativeTextureMobileUNC *nativeTex )
+    {
+        this->nativeTex = nativeTex;
+    }
+
+    inline void GetLayerDimensions(
+        const NativeTextureMobileUNC::mipmapLayer& mipLayer,
+        uint32& layerWidth, uint32& layerHeight
+    )
+    {
+        layerWidth = mipLayer.layerWidth;
+        layerHeight = mipLayer.layerHeight;
+    }
+
+    inline void Deinternalize(
+        Interface *engineInterface,
+        const NativeTextureMobileUNC::mipmapLayer& mipLayer,
+        uint32& widthOut, uint32& heightOut, uint32& layerWidthOut, uint32& layerHeightOut,
+        eRasterFormat& dstRasterFormat, eColorOrdering& dstColorOrder, uint32& dstDepth,
+        ePaletteType& dstPaletteType, void*& dstPaletteData, uint32& dstPaletteSize,
+        eCompressionType& dstCompressionType, bool& hasAlpha,
+        void*& dstTexelsOut, uint32& dstDataSizeOut,
+        bool& isNewlyAllocatedOut, bool& isPaletteNewlyAllocated
+    )
+    {
+        // Just pass it along.
+        getUNCRasterFormat( nativeTex->hasAlpha, dstRasterFormat, dstColorOrder, dstDepth );
+
+        dstPaletteType = PALETTE_NONE;
+        dstPaletteData = NULL;
+        dstPaletteSize = 0;
+
+        dstCompressionType = RWCOMPRESS_NONE;
+
+        widthOut = mipLayer.width;
+        heightOut = mipLayer.height;
+
+        layerWidthOut = mipLayer.layerWidth;
+        layerHeightOut = mipLayer.layerHeight;
+
+        dstTexelsOut = mipLayer.texels;
+        dstDataSizeOut = mipLayer.dataSize;
+
+        isNewlyAllocatedOut = false;
+        isPaletteNewlyAllocated = false;
+    }
+
+    inline void Internalize(
+        Interface *engineInterface,
+        NativeTextureMobileUNC::mipmapLayer& mipLayer,
+        uint32 width, uint32 height, uint32 layerWidth, uint32 layerHeight, void *srcTexels, uint32 dataSize,
+        eRasterFormat rasterFormat, eColorOrdering colorOrder, uint32 depth,
+        ePaletteType paletteType, void *paletteData, uint32 paletteSize,
+        eCompressionType compressionType, bool hasAlpha,
+        bool& hasDirectlyAcquiredOut
+    )
+    {
+        // Convert it to our format.
+        eRasterFormat texRasterFormat;
+        uint32 texDepth;
+        eColorOrdering texColorOrder;
+
+        getUNCRasterFormat( nativeTex->hasAlpha, texRasterFormat, texColorOrder, texDepth );
+
+        bool hasChanged =
+            ConvertMipmapLayerNative(
+                engineInterface,
+                width, height, layerWidth, layerHeight, srcTexels, dataSize,
+                rasterFormat, depth, colorOrder, paletteType, paletteData, paletteSize, compressionType,
+                texRasterFormat, texDepth, texColorOrder, PALETTE_NONE, NULL, 0, RWCOMPRESS_NONE,
+                false,
+                width, height,
+                srcTexels, dataSize
+            );
+
+        // Save the stuff.
+        mipLayer.width = width;
+        mipLayer.height = height;
+        mipLayer.layerWidth = layerWidth;
+        mipLayer.layerHeight = layerHeight;
+        mipLayer.texels = srcTexels;
+        mipLayer.dataSize = dataSize;
+
+        // If we have allocated anything, it is not direct acquisition.
+        hasDirectlyAcquiredOut = ( hasChanged == false );
+    }
+};
+
+bool uncNativeTextureTypeProvider::GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut )
+{
+    NativeTextureMobileUNC *nativeTex = (NativeTextureMobileUNC*)objMem;
+
+    uncMipmapManager mipMan( nativeTex );
+
+    return
+        virtualGetMipmapLayer <NativeTextureMobileUNC::mipmapLayer> (
+            engineInterface, mipMan,
+            mipIndex,
+            nativeTex->mipmaps, layerOut
+        );
+}
+
+bool uncNativeTextureTypeProvider::AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut )
+{
+    NativeTextureMobileUNC *nativeTex = (NativeTextureMobileUNC*)objMem;
+
+    uncMipmapManager mipMan( nativeTex );
+
+    return
+        virtualAddMipmapLayer <NativeTextureMobileUNC::mipmapLayer> (
+            engineInterface, mipMan,
+            nativeTex->mipmaps, layerIn,
+            feedbackOut
+        );
+}
+
+void uncNativeTextureTypeProvider::ClearMipmaps( Interface *engineInterface, void *objMem )
+{
+    NativeTextureMobileUNC *nativeTex = (NativeTextureMobileUNC*)objMem;
+
+    virtualClearMipmaps <NativeTextureMobileUNC::mipmapLayer> ( engineInterface, nativeTex->mipmaps );
+}
+
+void uncNativeTextureTypeProvider::GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut )
+{
+    NativeTextureMobileUNC *nativeTex = (NativeTextureMobileUNC*)objMem;
+
+    uint32 mipmapCount = nativeTex->mipmaps.size();
+
+    infoOut.mipmapCount = mipmapCount;
+
+    uint32 baseWidth = 0;
+    uint32 baseHeight = 0;
+
+    if ( mipmapCount > 0 )
+    {
+        baseWidth = nativeTex->mipmaps[ 0 ].layerWidth;
+        baseHeight = nativeTex->mipmaps[ 0 ].layerHeight;
+    }
+
+    infoOut.baseWidth = baseWidth;
+    infoOut.baseHeight = baseHeight;
+}
 
 };

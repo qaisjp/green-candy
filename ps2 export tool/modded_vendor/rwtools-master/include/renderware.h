@@ -388,7 +388,7 @@ struct RwObject abstract
         return;
     }
 
-private:
+protected:
     LibraryVersion objVersion;
 };
 
@@ -545,8 +545,15 @@ public:
     RwObject*           Deserialize             ( Stream *inputStream );
 
     // RwObject general API.
+    RwObject*           ConstructRwObject       ( const char *typeName );       // construct any registered RwObject class
     RwObject*           CloneRwObject           ( const RwObject *srcObj );     // creates a new copy of an object
     void                DeleteRwObject          ( RwObject *obj );              // force kills an object
+
+    typedef std::vector <std::string> rwobjTypeNameList_t;
+
+    void                GetObjectTypeNames      ( rwobjTypeNameList_t& listOut ) const;
+    bool                IsObjectRegistered      ( const char *typeName ) const;
+    const char*         GetObjectTypeName       ( const RwObject *rwObj ) const;
 
     void                SerializeExtensions     ( const RwObject *rwObj, BlockProvider& outputProvider );
     void                DeserializeExtensions   ( RwObject *rwObj, BlockProvider& inputProvider );

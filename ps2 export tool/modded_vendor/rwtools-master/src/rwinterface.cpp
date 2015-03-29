@@ -79,6 +79,31 @@ void Interface::SetVersion( LibraryVersion version )
     this->version = version;
 }
 
+RwObject* Interface::ConstructRwObject( const char *typeName )
+{
+    RwObject *newObj = NULL;
+
+    if ( RwTypeSystem::typeInfoBase *rwobjTypeInfo = this->rwobjTypeInfo )
+    {
+        // Try to find a type that inherits from RwObject with this name.
+        RwTypeSystem::typeInfoBase *rwTypeInfo = this->typeSystem.FindTypeInfo( typeName, rwobjTypeInfo );
+
+        if ( rwTypeInfo )
+        {
+            // Try to construct us.
+            GenericRTTI *rtObj = this->typeSystem.Construct( this, rwTypeInfo, NULL );
+
+            if ( rtObj )
+            {
+                // We are successful! Return the new object.
+                newObj = (RwObject*)RwTypeSystem::GetObjectFromTypeStruct( rtObj );
+            }
+        }
+    }
+
+    return newObj;
+}
+
 RwObject* Interface::CloneRwObject( const RwObject *srcObj )
 {
     RwObject *newObj = NULL;
@@ -108,6 +133,57 @@ void Interface::DeleteRwObject( RwObject *obj )
     {
         this->typeSystem.Destroy( rttiObj );
     }
+}
+
+void Interface::GetObjectTypeNames( rwobjTypeNameList_t& listOut ) const
+{
+    if ( RwTypeSystem::typeInfoBase *rwobjTypeInfo = this->rwobjTypeInfo )
+    {
+        LIST_FOREACH_BEGIN( RwTypeSystem::typeInfoBase, this->typeSystem.registeredTypes.root, node )
+
+            if ( item != rwobjTypeInfo )
+            {
+                if ( this->typeSystem.IsTypeInheritingFrom( rwobjTypeInfo, item ) )
+                {
+                    listOut.push_back( item->name );
+                }
+            }
+
+        LIST_FOREACH_END
+    }
+}
+
+bool Interface::IsObjectRegistered( const char *typeName ) const
+{
+    if ( RwTypeSystem::typeInfoBase *rwobjTypeInfo = this->rwobjTypeInfo )
+    {
+        // Try to find a type that inherits from RwObject with this name.
+        RwTypeSystem::typeInfoBase *rwTypeInfo = this->typeSystem.FindTypeInfo( typeName, rwobjTypeInfo );
+
+        if ( rwTypeInfo )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+const char* Interface::GetObjectTypeName( const RwObject *rwObj ) const
+{
+    const char *typeName = "unknown";
+
+    const GenericRTTI *rtObj = this->typeSystem.GetTypeStructFromConstAbstractObject( rwObj );
+
+    if ( rtObj )
+    {
+        RwTypeSystem::typeInfoBase *typeInfo = RwTypeSystem::GetTypeInfoFromTypeStruct( rtObj );
+
+        // Return its type name.
+        typeName = typeInfo->name;
+    }
+
+    return typeName;
 }
 
 void Interface::SerializeExtensions( const RwObject *rwObj, BlockProvider& outputProvider )

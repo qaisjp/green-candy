@@ -108,8 +108,16 @@ static bool ProcessTXDArchive(
 
                     if ( txd == NULL )
                     {
+                        errMsg = "not a texture dictionary (";
+                        errMsg += rwEngine->GetObjectTypeName( rwObj );
+                        errMsg += ")";
+
                         rwEngine->DeleteRwObject( rwObj );
                     }
+                }
+                else
+                {
+                    errMsg = "unknown RenderWare stream (maybe compressed)";
                 }
             }
             catch( rw::RwException& except )
@@ -120,13 +128,9 @@ static bool ProcessTXDArchive(
             }
         }
 
-        if ( txd == NULL )
+        if ( txd )
         {
-            errMsg = "not a TXD or invalid stream (maybe compressed)";
-        }
-        else
-        {
-            // Update the versio of this texture dictionary.
+            // Update the version of this texture dictionary.
             txd->SetEngineVersion( rwEngine->GetVersion() );
 
             try
@@ -141,7 +145,7 @@ static bool ProcessTXDArchive(
                         rw::TextureBase *theTexture = iter.Resolve();
 
                         // Update the version of this texture.
-                        theTexture->SetEngineVersion( theTexture );
+                        theTexture->SetEngineVersion( rwEngine->GetVersion() );
 
                         // We need to modify the raster.
                         rw::Raster *texRaster = theTexture->GetRaster();
@@ -161,12 +165,13 @@ static bool ProcessTXDArchive(
                                 // We generate as many mipmaps as we can.
                                 tex.generateMipmaps( mipGenMaxLevel + 1, mipGenMode );
                             }
+#endif
 
                             // Output debug stuff.
                             if ( outputDebug && debugRoot != NULL )
                             {
                                 // We want to debug mipmap generation, so output debug textures only using mipmaps.
-                                if ( _meetsDebugCriteria( tex ) )
+                                //if ( _meetsDebugCriteria( tex ) )
                                 {
                                     const filePath& srcPath = srcStream->GetPath();
 
@@ -183,49 +188,58 @@ static bool ProcessTXDArchive(
 
                                         if ( fileNamePart.size() != 0 )
                                         {
-                                            std::string uniqueTextureNameTGA = directoryPart + fileNamePart + "_" + tex.name + ".tga";
+                                            std::string uniqueTextureNameTGA = directoryPart + fileNamePart + "_" + theTexture->name + ".tga";
 
                                             CFile *debugOutputStream = debugRoot->Open( uniqueTextureNameTGA.c_str(), "wb" );
 
                                             if ( debugOutputStream )
                                             {
-                                                // Create a debug texture.
-                                                rw::NativeTexture debugTex;
+                                                // Create a debug raster.
+                                                rw::Raster *newRaster = rw::CreateRaster( rwEngine );
 
-                                                debugTex.newDirect3D();
-
-                                                // Put the debug content into it.
+                                                if ( newRaster )
                                                 {
-                                                    rw::Bitmap debugTexContent;
+                                                    newRaster->newNativeData( "Direct3D" );
 
-                                                    debugTexContent.setBgColor( 1, 1, 1 );
-
-                                                    bool gotDebugContent = tex.platformData->getDebugBitmap( debugTexContent );
-
-                                                    if ( gotDebugContent )
+                                                    // Put the debug content into it.
                                                     {
-                                                        debugTex.setImageData( debugTexContent );
+                                                        rw::Bitmap debugTexContent;
+
+                                                        debugTexContent.setBgColor( 1, 1, 1 );
+
+                                                        bool gotDebugContent = rw::DebugDrawMipmaps( rwEngine, texRaster, debugTexContent );
+
+                                                        if ( gotDebugContent )
+                                                        {
+                                                            newRaster->setImageData( debugTexContent );
+                                                        }
                                                     }
+
+                                                    if ( newRaster->getMipmapCount() > 0 )
+                                                    {
+                                                        // Write the debug texture to it.
+                                                        rw::Stream *outputStream = RwStreamCreateTranslated( debugOutputStream );
+
+                                                        if ( outputStream )
+                                                        {
+                                                            newRaster->writeTGAStream( outputStream, false );
+
+                                                            rwEngine->DeleteStream( outputStream );
+                                                        }
+                                                    }
+
+                                                    rw::DeleteRaster( newRaster );
                                                 }
 
-                                                if ( debugTex.getMipmapCount() > 0 )
-                                                {
-                                                    // Write the debug texture to it.
-                                                    FileSystem::fileStreamBuf stlWrapper( debugOutputStream );
-
-                                                    std::ostream outStream( &stlWrapper );
-
-                                                    debugTex.writeTGAStream( outStream, false );
-
-                                                    // Free the stream handle.
-                                                    delete debugOutputStream;
-                                                }
+                                                // Free the stream handle.
+                                                delete debugOutputStream;
                                             }
                                         }
                                     }
                                 }
                             }
 
+#if 0
                             // Palettize the texture to save space.
                             if ( doCompress )
                             {
@@ -242,13 +256,14 @@ static bool ProcessTXDArchive(
                                     }
                                 }
                             }
+#endif
 
                             // Improve the filtering mode if the user wants us to.
                             if ( improveFiltering )
                             {
                                 tex.improveFiltering();
                             }
-#endif
+
                             // Convert it into the target platform.
                             if ( targetPlatform == PLATFORM_PS2 )
                             {
@@ -256,15 +271,6 @@ static bool ProcessTXDArchive(
                             }
                             else if ( targetPlatform == PLATFORM_XBOX )
                             {
-#if 0
-                                // If we are trying to convert to XBOX, its the same as if converting to
-                                // Direct3D 8. Hence we want to ensure its writable in that.
-                                tex.convertToDirect3D8();
-
-                                // Make sure we can write it.
-                                tex.makeDirect3DCompatible();
-#endif
-
                                 rw::ConvertRasterTo( texRaster, "XBOX" );
                             }
                             else if ( targetPlatform == PLATFORM_PC )
@@ -671,6 +677,18 @@ struct eirFileSystemWrapperProvider : public rw::customStreamInterface
     CFileSystem *nativeFileSystem;
 };
 
+inline bool isGoodEngine( const rw::Interface *engineInterface )
+{
+    if ( engineInterface->IsObjectRegistered( "texture" ) == false )
+        return false;
+
+    if ( engineInterface->IsObjectRegistered( "texture_dictionary" ) == false )
+        return false;
+
+    // We are ready to go.
+    return true;
+}
+
 bool ApplicationMain( void )
 {
     signal( SIGTERM, _term_handler );
@@ -696,595 +714,603 @@ bool ApplicationMain( void )
 
     if ( rwEngine != NULL )
     {
-        // Initialize environments.
-        fsHandle = CFileSystem::Create();
-
-        // Register the native file system wrapper type.
-        eirFileSystemWrapperProvider eirfs_file_wrap;
-        eirfs_file_wrap.nativeFileSystem = fsHandle;
-
-        rwEngine->RegisterStream( "eirfs_file", sizeof( eirFileSystemMetaInfo ), &eirfs_file_wrap );
-        
-        // By default, we create San Andreas files.
-        rw::KnownVersions::eGameVersion c_gameVersion = rw::KnownVersions::SA;
-
-        // Set up the warning buffer.
-        rwEngine->SetWarningManager( &_warningMan );
-
-        // Read the configuration file.
-        CINI *configFile = LoadINI( "txdgen.ini" );
-
-        std::string c_outputRoot = "txdgen_out/";
-        std::string c_gameRoot = "txdgen/";
-
-        eTargetPlatform c_targetPlatform = PLATFORM_PC;
-
-        bool c_clearMipmaps = false;
-
-        bool c_generateMipmaps = false;
-
-        rw::eMipmapGenerationMode c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
-
-        uint32 c_mipGenMaxLevel = 0;
-
-        bool c_improveFiltering = true;
-
-        bool compressTextures = false;
-
-        rw::ePaletteRuntimeType c_palRuntimeType = rw::PALRUNTIME_NATIVE;
-
-        rw::eDXTCompressionMethod c_dxtRuntimeType = rw::DXTRUNTIME_NATIVE;
-
-        bool c_reconstructIMGArchives = true;
-
-        bool c_fixIncompatibleRasters = true;
-        bool c_dxtPackedDecompression = false;
-
-        bool c_imgArchivesCompressed = false;
-
-        bool c_ignoreSerializationRegions = false;
-
-        float c_compressionQuality = 0.5f;
-
-        bool c_outputDebug = false;
-
-        if ( configFile )
+        if ( isGoodEngine( rwEngine ) )
         {
-            if ( CINI::Entry *mainEntry = configFile->GetEntry( "Main" ) )
+            // Initialize environments.
+            fsHandle = CFileSystem::Create();
+
+            // Register the native file system wrapper type.
+            eirFileSystemWrapperProvider eirfs_file_wrap;
+            eirfs_file_wrap.nativeFileSystem = fsHandle;
+
+            rwEngine->RegisterStream( "eirfs_file", sizeof( eirFileSystemMetaInfo ), &eirfs_file_wrap );
+            
+            // By default, we create San Andreas files.
+            rw::KnownVersions::eGameVersion c_gameVersion = rw::KnownVersions::SA;
+
+            // Set up the warning buffer.
+            rwEngine->SetWarningManager( &_warningMan );
+
+            // Read the configuration file.
+            CINI *configFile = LoadINI( "txdgen.ini" );
+
+            std::string c_outputRoot = "txdgen_out/";
+            std::string c_gameRoot = "txdgen/";
+
+            eTargetPlatform c_targetPlatform = PLATFORM_PC;
+
+            bool c_clearMipmaps = false;
+
+            bool c_generateMipmaps = false;
+
+            rw::eMipmapGenerationMode c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
+
+            uint32 c_mipGenMaxLevel = 0;
+
+            bool c_improveFiltering = true;
+
+            bool compressTextures = false;
+
+            rw::ePaletteRuntimeType c_palRuntimeType = rw::PALRUNTIME_NATIVE;
+
+            rw::eDXTCompressionMethod c_dxtRuntimeType = rw::DXTRUNTIME_NATIVE;
+
+            bool c_reconstructIMGArchives = true;
+
+            bool c_fixIncompatibleRasters = true;
+            bool c_dxtPackedDecompression = false;
+
+            bool c_imgArchivesCompressed = false;
+
+            bool c_ignoreSerializationRegions = false;
+
+            float c_compressionQuality = 0.5f;
+
+            bool c_outputDebug = false;
+
+            if ( configFile )
             {
-                // Output root.
-                if ( const char *newOutputRoot = mainEntry->Get( "outputRoot" ) )
+                if ( CINI::Entry *mainEntry = configFile->GetEntry( "Main" ) )
                 {
-                    c_outputRoot = newOutputRoot;
-                }
+                    // Output root.
+                    if ( const char *newOutputRoot = mainEntry->Get( "outputRoot" ) )
+                    {
+                        c_outputRoot = newOutputRoot;
+                    }
 
-                // Game root.
-                if ( const char *newGameRoot = mainEntry->Get( "gameRoot" ) )
-                {
-                    c_gameRoot = newGameRoot;
-                }
+                    // Game root.
+                    if ( const char *newGameRoot = mainEntry->Get( "gameRoot" ) )
+                    {
+                        c_gameRoot = newGameRoot;
+                    }
 
-                // Target Platform.
-                const char *targetPlatform = mainEntry->Get( "targetPlatform" );
+                    // Target Platform.
+                    const char *targetPlatform = mainEntry->Get( "targetPlatform" );
 
-                if ( targetPlatform )
-                {
-                    if ( stricmp( targetPlatform, "PC" ) == 0 )
+                    if ( targetPlatform )
                     {
-                        c_targetPlatform = PLATFORM_PC;
+                        if ( stricmp( targetPlatform, "PC" ) == 0 )
+                        {
+                            c_targetPlatform = PLATFORM_PC;
+                        }
+                        else if ( stricmp( targetPlatform, "PS2" ) == 0 ||
+                                  stricmp( targetPlatform, "Playstation 2" ) == 0 ||
+                                  stricmp( targetPlatform, "PlayStation2" ) == 0 )
+                        {
+                            c_targetPlatform = PLATFORM_PS2;
+                        }
+                        else if ( stricmp( targetPlatform, "XBOX" ) == 0 )
+                        {
+                            c_targetPlatform = PLATFORM_XBOX;
+                        }
+                        else if ( stricmp( targetPlatform, "DXT_MOBILE" ) == 0 ||
+                                  stricmp( targetPlatform, "S3TC_MOBILE" ) == 0 )
+                        {
+                            c_targetPlatform = PLATFORM_DXT_MOBILE;
+                        }
+                        else if ( stricmp( targetPlatform, "PVR" ) == 0 ||
+                                  stricmp( targetPlatform, "PowerVR" ) == 0 ||
+                                  stricmp( targetPlatform, "PVRTC" ) == 0 )
+                        {
+                            c_targetPlatform = PLATFORM_PVR;
+                        }
+                        else if ( stricmp( targetPlatform, "ATC" ) == 0 ||
+                                  stricmp( targetPlatform, "ATI_Compress" ) == 0 ||
+                                  stricmp( targetPlatform, "ATI" ) == 0 ||
+                                  stricmp( targetPlatform, "ATITC" ) == 0 ||
+                                  stricmp( targetPlatform, "ATI TC" ) == 0 )
+                        {
+                            c_targetPlatform = PLATFORM_ATC;
+                        }
+                        else if ( stricmp( targetPlatform, "UNC" ) == 0 ||
+                                  stricmp( targetPlatform, "UNCOMPRESSED" ) == 0 ||
+                                  stricmp( targetPlatform, "unc_mobile" ) == 0 ||
+                                  stricmp( targetPlatform, "uncompressed_mobile" ) == 0 )
+                        {
+                            c_targetPlatform = PLATFORM_UNC_MOBILE;
+                        }
                     }
-                    else if ( stricmp( targetPlatform, "PS2" ) == 0 ||
-                              stricmp( targetPlatform, "Playstation 2" ) == 0 )
-                    {
-                        c_targetPlatform = PLATFORM_PS2;
-                    }
-                    else if ( stricmp( targetPlatform, "XBOX" ) == 0 )
-                    {
-                        c_targetPlatform = PLATFORM_XBOX;
-                    }
-                    else if ( stricmp( targetPlatform, "DXT_MOBILE" ) == 0 ||
-                              stricmp( targetPlatform, "S3TC_MOBILE" ) == 0 )
-                    {
-                        c_targetPlatform = PLATFORM_DXT_MOBILE;
-                    }
-                    else if ( stricmp( targetPlatform, "PVR" ) == 0 ||
-                              stricmp( targetPlatform, "PowerVR" ) == 0 ||
-                              stricmp( targetPlatform, "PVRTC" ) == 0 )
-                    {
-                        c_targetPlatform = PLATFORM_PVR;
-                    }
-                    else if ( stricmp( targetPlatform, "ATC" ) == 0 ||
-                              stricmp( targetPlatform, "ATI_Compress" ) == 0 ||
-                              stricmp( targetPlatform, "ATI" ) == 0 ||
-                              stricmp( targetPlatform, "ATITC" ) == 0 ||
-                              stricmp( targetPlatform, "ATI TC" ) == 0 )
-                    {
-                        c_targetPlatform = PLATFORM_ATC;
-                    }
-                    else if ( stricmp( targetPlatform, "UNC" ) == 0 ||
-                              stricmp( targetPlatform, "UNCOMPRESSED" ) == 0 ||
-                              stricmp( targetPlatform, "unc_mobile" ) == 0 ||
-                              stricmp( targetPlatform, "uncompressed_mobile" ) == 0 )
-                    {
-                        c_targetPlatform = PLATFORM_UNC_MOBILE;
-                    }
-                }
 
-                // Target game version.
-                if ( const char *targetVersion = mainEntry->Get( "targetVersion" ) )
-                {
-                    rw::KnownVersions::eGameVersion gameVer;
-                    bool hasGameVer = false;
+                    // Target game version.
+                    if ( const char *targetVersion = mainEntry->Get( "targetVersion" ) )
+                    {
+                        rw::KnownVersions::eGameVersion gameVer;
+                        bool hasGameVer = false;
+                            
+                        if ( stricmp( targetVersion, "SA" ) == 0 ||
+                             stricmp( targetVersion, "SanAndreas" ) == 0 ||
+                             stricmp( targetVersion, "San Andreas" ) == 0 ||
+                             stricmp( targetVersion, "GTA SA" ) == 0 ||
+                             stricmp( targetVersion, "GTASA" ) == 0 )
+                        {
+                            gameVer = rw::KnownVersions::SA;
+
+                            hasGameVer = true;
+                        }
+                        else if ( stricmp( targetVersion, "VC" ) == 0 ||
+                                  stricmp( targetVersion, "ViceCity" ) == 0 ||
+                                  stricmp( targetVersion, "Vice City" ) == 0 ||
+                                  stricmp( targetVersion, "GTA VC" ) == 0 ||
+                                  stricmp( targetVersion, "GTAVC" ) == 0 )
+                        {
+                            if ( c_targetPlatform == PLATFORM_PS2 )
+                            {
+                                gameVer = rw::KnownVersions::VC_PS2;
+                            }
+                            else
+                            {
+                                gameVer = rw::KnownVersions::VC_PC;
+                            }
+
+                            hasGameVer = true;
+                        }
+                        else if ( stricmp( targetVersion, "GTAIII" ) == 0 ||
+                                  stricmp( targetVersion, "III" ) == 0 ||
+                                  stricmp( targetVersion, "GTA3" ) == 0 ||
+                                  stricmp( targetVersion, "GTA 3" ) == 0 )
+                        {
+                            gameVer = rw::KnownVersions::GTA3;
+
+                            hasGameVer = true;
+                        }
+                        else if ( stricmp( targetVersion, "MANHUNT" ) == 0 ||
+                                  stricmp( targetVersion, "MHUNT" ) == 0 ||
+                                  stricmp( targetVersion, "MH" ) == 0 )
+                        {
+                            gameVer = rw::KnownVersions::MANHUNT;
+
+                            hasGameVer = true;
+                        }
                         
-                    if ( stricmp( targetVersion, "SA" ) == 0 ||
-                         stricmp( targetVersion, "SanAndreas" ) == 0 ||
-                         stricmp( targetVersion, "San Andreas" ) == 0 ||
-                         stricmp( targetVersion, "GTA SA" ) == 0 ||
-                         stricmp( targetVersion, "GTASA" ) == 0 )
-                    {
-                        gameVer = rw::KnownVersions::SA;
-
-                        hasGameVer = true;
-                    }
-                    else if ( stricmp( targetVersion, "VC" ) == 0 ||
-                              stricmp( targetVersion, "ViceCity" ) == 0 ||
-                              stricmp( targetVersion, "Vice City" ) == 0 ||
-                              stricmp( targetVersion, "GTA VC" ) == 0 ||
-                              stricmp( targetVersion, "GTAVC" ) == 0 )
-                    {
-                        if ( c_targetPlatform == PLATFORM_PS2 )
+                        if ( hasGameVer )
                         {
-                            gameVer = rw::KnownVersions::VC_PS2;
+                            c_gameVersion = gameVer;
                         }
-                        else
+                    }
+
+                    // Mipmap clear flag.
+                    if ( mainEntry->Find( "clearMipmaps" ) )
+                    {
+                        c_clearMipmaps = mainEntry->GetBool( "clearMipmaps" );
+                    }
+
+                    // Mipmap Generation enable.
+                    if ( mainEntry->Find( "generateMipmaps" ) )
+                    {
+                        c_generateMipmaps = mainEntry->GetBool( "generateMipmaps" );
+                    }
+
+                    // Mipmap Generation Mode.
+                    if ( const char *mipGenMode = mainEntry->Get( "mipGenMode" ) )
+                    {
+                        if ( stricmp( mipGenMode, "default" ) == 0 )
                         {
-                            gameVer = rw::KnownVersions::VC_PC;
+                            c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
                         }
-
-                        hasGameVer = true;
+                        else if ( stricmp( mipGenMode, "contrast" ) == 0 )
+                        {
+                            c_mipGenMode = rw::MIPMAPGEN_CONTRAST;
+                        }
+                        else if ( stricmp( mipGenMode, "brighten" ) == 0 )
+                        {
+                            c_mipGenMode = rw::MIPMAPGEN_BRIGHTEN;
+                        }
+                        else if ( stricmp( mipGenMode, "darken" ) == 0 )
+                        {
+                            c_mipGenMode = rw::MIPMAPGEN_DARKEN;
+                        }
+                        else if ( stricmp( mipGenMode, "selectclose" ) == 0 )
+                        {
+                            c_mipGenMode = rw::MIPMAPGEN_SELECTCLOSE;
+                        } 
                     }
-                    else if ( stricmp( targetVersion, "GTAIII" ) == 0 ||
-                              stricmp( targetVersion, "III" ) == 0 ||
-                              stricmp( targetVersion, "GTA3" ) == 0 ||
-                              stricmp( targetVersion, "GTA 3" ) == 0 )
-                    {
-                        gameVer = rw::KnownVersions::GTA3;
 
-                        hasGameVer = true;
+                    // Mipmap generation maximum level.
+                    if ( mainEntry->Find( "mipGenMaxLevel" ) )
+                    {
+                        int mipGenMaxLevelInt = mainEntry->GetInt( "mipGenMaxLevel" );
+
+                        if ( mipGenMaxLevelInt >= 0 )
+                        {
+                            c_mipGenMaxLevel = (uint32)mipGenMaxLevelInt;
+                        }
                     }
-                    else if ( stricmp( targetVersion, "MANHUNT" ) == 0 ||
-                              stricmp( targetVersion, "MHUNT" ) == 0 ||
-                              stricmp( targetVersion, "MH" ) == 0 )
-                    {
-                        gameVer = rw::KnownVersions::MANHUNT;
 
-                        hasGameVer = true;
+                    // Filter mode improvement.
+                    if ( mainEntry->Find( "improveFiltering" ) )
+                    {
+                        c_improveFiltering = mainEntry->GetBool( "improveFiltering" );
+                    }
+
+                    // Compression.
+                    if ( mainEntry->Find( "compressTextures" ) )
+                    {
+                        compressTextures = mainEntry->GetBool( "compressTextures" );
+                    }
+
+                    // Compression quality.
+                    if ( mainEntry->Find( "compressionQuality" ) )
+                    {
+                        c_compressionQuality = (float)mainEntry->GetFloat( "compressionQuality", 0.0 );
+                    }
+
+                    // Palette runtime type.
+                    if ( const char *palRuntimeType = mainEntry->Get( "palRuntimeType" ) )
+                    {
+                        if ( stricmp( palRuntimeType, "native" ) == 0 )
+                        {
+                            c_palRuntimeType = rw::PALRUNTIME_NATIVE;
+                        }
+                        else if ( stricmp( palRuntimeType, "pngquant" ) == 0 )
+                        {
+                            c_palRuntimeType = rw::PALRUNTIME_PNGQUANT;
+                        }
+                    }
+
+                    // DXT compression method.
+                    if ( const char *dxtCompressionMethod = mainEntry->Get( "dxtRuntimeType" ) )
+                    {
+                        if ( stricmp( dxtCompressionMethod, "native" ) == 0 )
+                        {
+                            c_dxtRuntimeType = rw::DXTRUNTIME_NATIVE;
+                        }
+                        else if ( stricmp( dxtCompressionMethod, "squish" ) == 0 ||
+                                  stricmp( dxtCompressionMethod, "libsquish" ) == 0 )
+                        {
+                            c_dxtRuntimeType = rw::DXTRUNTIME_SQUISH;
+                        }
+                    }
+
+                    // Warning level.
+                    if ( mainEntry->Find( "warningLevel" ) )
+                    {
+                        rwEngine->SetWarningLevel( mainEntry->GetInt( "warningLevel" ) );
+                    }
+
+                    // Ignore secure warnings.
+                    if ( mainEntry->Find( "ignoreSecureWarnings" ) )
+                    {
+                        bool doIgnore = mainEntry->GetBool( "ignoreSecureWarnings" );
+
+                        rwEngine->SetIgnoreSecureWarnings( doIgnore );
+                    }
+
+                    // Reconstruct IMG Archives.
+                    if ( mainEntry->Find( "reconstructIMGArchives" ) )
+                    {
+                        c_reconstructIMGArchives = mainEntry->GetBool( "reconstructIMGArchives" );
+                    }
+
+                    // Fix incompatible rasters.
+                    if ( mainEntry->Find( "fixIncompatibleRasters" ) )
+                    {
+                        c_fixIncompatibleRasters = mainEntry->GetBool( "fixIncompatibleRasters" );
+                    }
+
+                    // DXT packed decompression.
+                    if ( mainEntry->Find( "dxtPackedDecompression" ) )
+                    {
+                        c_dxtPackedDecompression = mainEntry->GetBool( "dxtPackedDecompression" );
                     }
                     
-                    if ( hasGameVer )
+                    // IMG archive compression
+                    if ( mainEntry->Find( "imgArchivesCompressed" ) )
                     {
-                        c_gameVersion = gameVer;
+                        c_imgArchivesCompressed = mainEntry->GetBool( "imgArchivesCompressed" );
+                    }
+
+                    // Serialization compatibility setting.
+                    if ( mainEntry->Find( "ignoreSerializationRegions" ) )
+                    {
+                        c_ignoreSerializationRegions = mainEntry->GetBool( "ignoreSerializationRegions" );
+                    }
+
+                    // Debug output flag.
+                    if ( mainEntry->Find( "outputDebug" ) )
+                    {
+                        c_outputDebug = mainEntry->GetBool( "outputDebug" );
                     }
                 }
 
-                // Mipmap clear flag.
-                if ( mainEntry->Find( "clearMipmaps" ) )
-                {
-                    c_clearMipmaps = mainEntry->GetBool( "clearMipmaps" );
-                }
-
-                // Mipmap Generation enable.
-                if ( mainEntry->Find( "generateMipmaps" ) )
-                {
-                    c_generateMipmaps = mainEntry->GetBool( "generateMipmaps" );
-                }
-
-                // Mipmap Generation Mode.
-                if ( const char *mipGenMode = mainEntry->Get( "mipGenMode" ) )
-                {
-                    if ( stricmp( mipGenMode, "default" ) == 0 )
-                    {
-                        c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
-                    }
-                    else if ( stricmp( mipGenMode, "contrast" ) == 0 )
-                    {
-                        c_mipGenMode = rw::MIPMAPGEN_CONTRAST;
-                    }
-                    else if ( stricmp( mipGenMode, "brighten" ) == 0 )
-                    {
-                        c_mipGenMode = rw::MIPMAPGEN_BRIGHTEN;
-                    }
-                    else if ( stricmp( mipGenMode, "darken" ) == 0 )
-                    {
-                        c_mipGenMode = rw::MIPMAPGEN_DARKEN;
-                    }
-                    else if ( stricmp( mipGenMode, "selectclose" ) == 0 )
-                    {
-                        c_mipGenMode = rw::MIPMAPGEN_SELECTCLOSE;
-                    } 
-                }
-
-                // Mipmap generation maximum level.
-                if ( mainEntry->Find( "mipGenMaxLevel" ) )
-                {
-                    int mipGenMaxLevelInt = mainEntry->GetInt( "mipGenMaxLevel" );
-
-                    if ( mipGenMaxLevelInt >= 0 )
-                    {
-                        c_mipGenMaxLevel = (uint32)mipGenMaxLevelInt;
-                    }
-                }
-
-                // Filter mode improvement.
-                if ( mainEntry->Find( "improveFiltering" ) )
-                {
-                    c_improveFiltering = mainEntry->GetBool( "improveFiltering" );
-                }
-
-                // Compression.
-                if ( mainEntry->Find( "compressTextures" ) )
-                {
-                    compressTextures = mainEntry->GetBool( "compressTextures" );
-                }
-
-                // Compression quality.
-                if ( mainEntry->Find( "compressionQuality" ) )
-                {
-                    c_compressionQuality = (float)mainEntry->GetFloat( "compressionQuality", 0.0 );
-                }
-
-                // Palette runtime type.
-                if ( const char *palRuntimeType = mainEntry->Get( "palRuntimeType" ) )
-                {
-                    if ( stricmp( palRuntimeType, "native" ) == 0 )
-                    {
-                        c_palRuntimeType = rw::PALRUNTIME_NATIVE;
-                    }
-                    else if ( stricmp( palRuntimeType, "pngquant" ) == 0 )
-                    {
-                        c_palRuntimeType = rw::PALRUNTIME_PNGQUANT;
-                    }
-                }
-
-                // DXT compression method.
-                if ( const char *dxtCompressionMethod = mainEntry->Get( "dxtRuntimeType" ) )
-                {
-                    if ( stricmp( dxtCompressionMethod, "native" ) == 0 )
-                    {
-                        c_dxtRuntimeType = rw::DXTRUNTIME_NATIVE;
-                    }
-                    else if ( stricmp( dxtCompressionMethod, "squish" ) == 0 ||
-                              stricmp( dxtCompressionMethod, "libsquish" ) == 0 )
-                    {
-                        c_dxtRuntimeType = rw::DXTRUNTIME_SQUISH;
-                    }
-                }
-
-                // Warning level.
-                if ( mainEntry->Find( "warningLevel" ) )
-                {
-                    rwEngine->SetWarningLevel( mainEntry->GetInt( "warningLevel" ) );
-                }
-
-                // Ignore secure warnings.
-                if ( mainEntry->Find( "ignoreSecureWarnings" ) )
-                {
-                    bool doIgnore = mainEntry->GetBool( "ignoreSecureWarnings" );
-
-                    rwEngine->SetIgnoreSecureWarnings( doIgnore );
-                }
-
-                // Reconstruct IMG Archives.
-                if ( mainEntry->Find( "reconstructIMGArchives" ) )
-                {
-                    c_reconstructIMGArchives = mainEntry->GetBool( "reconstructIMGArchives" );
-                }
-
-                // Fix incompatible rasters.
-                if ( mainEntry->Find( "fixIncompatibleRasters" ) )
-                {
-                    c_fixIncompatibleRasters = mainEntry->GetBool( "fixIncompatibleRasters" );
-                }
-
-                // DXT packed decompression.
-                if ( mainEntry->Find( "dxtPackedDecompression" ) )
-                {
-                    c_dxtPackedDecompression = mainEntry->GetBool( "dxtPackedDecompression" );
-                }
-                
-                // IMG archive compression
-                if ( mainEntry->Find( "imgArchivesCompressed" ) )
-                {
-                    c_imgArchivesCompressed = mainEntry->GetBool( "imgArchivesCompressed" );
-                }
-
-                // Serialization compatibility setting.
-                if ( mainEntry->Find( "ignoreSerializationRegions" ) )
-                {
-                    c_ignoreSerializationRegions = mainEntry->GetBool( "ignoreSerializationRegions" );
-                }
-
-                // Debug output flag.
-                if ( mainEntry->Find( "outputDebug" ) )
-                {
-                    c_outputDebug = mainEntry->GetBool( "outputDebug" );
-                }
+                // Kill the configuration.
+                delete configFile;
             }
 
-            // Kill the configuration.
-            delete configFile;
-        }
+            // Set some configuration.
+            rwEngine->SetVersion( rw::KnownVersions::getGameVersion( c_gameVersion ) );
+            rwEngine->SetPaletteRuntime( c_palRuntimeType );
+            rwEngine->SetDXTRuntime( c_dxtRuntimeType );
 
-        // Set some configuration.
-        rwEngine->SetVersion( rw::KnownVersions::getGameVersion( c_gameVersion ) );
-        rwEngine->SetPaletteRuntime( c_palRuntimeType );
-        rwEngine->SetDXTRuntime( c_dxtRuntimeType );
+            rwEngine->SetFixIncompatibleRasters( c_fixIncompatibleRasters );
 
-        rwEngine->SetFixIncompatibleRasters( c_fixIncompatibleRasters );
+            rwEngine->SetIgnoreSerializationBlockRegions( c_ignoreSerializationRegions );
 
-        rwEngine->SetIgnoreSerializationBlockRegions( c_ignoreSerializationRegions );
+            // Output some debug info.
+            std::cout
+                <<
+                "=========================\n" \
+                "Configuration:\n" \
+                "=========================\n";
 
-        // Output some debug info.
-        std::cout
-            <<
-            "=========================\n" \
-            "Configuration:\n" \
-            "=========================\n";
+            std::cout
+                << "* outputRoot: " << c_outputRoot << std::endl
+                << "* gameRoot: " << c_gameRoot << std::endl;
 
-        std::cout
-            << "* outputRoot: " << c_outputRoot << std::endl
-            << "* gameRoot: " << c_gameRoot << std::endl;
+            rw::LibraryVersion targetVersion = rwEngine->GetVersion();
 
-        rw::LibraryVersion targetVersion = rwEngine->GetVersion();
+            const char *strTargetVersion = "unknown";
 
-        const char *strTargetVersion = "unknown";
-
-        if ( targetVersion.rwLibMajor == 3 && targetVersion.rwLibMinor == 6 )
-        {
-            if ( c_gameVersion == rw::KnownVersions::SA )
+            if ( targetVersion.rwLibMajor == 3 && targetVersion.rwLibMinor == 6 )
             {
-                strTargetVersion = "San Andreas";
-            }
-            else if ( c_gameVersion == rw::KnownVersions::MANHUNT )
-            {
-                strTargetVersion = "Manhunt";
-            }
-        }
-        else if ( targetVersion.rwLibMajor == 3 && ( targetVersion.rwLibMinor == 3 || targetVersion.rwLibMinor == 4 ) )
-        {
-            strTargetVersion = "Vice City";
-        }
-        else if ( targetVersion.rwLibMajor == 3 && ( targetVersion.rwLibMinor == 0 || targetVersion.rwLibMinor == 1 ) )
-        {
-            strTargetVersion = "GTA 3";
-        }
-
-        std::cout
-            << "* targetVersion: " << strTargetVersion << " [rwver: " << targetVersion.toString() << "]" << std::endl;
-
-        const char *strTargetPlatform = "unknown";
-
-        if ( c_targetPlatform == PLATFORM_PC )
-        {
-            strTargetPlatform = "PC";
-        }
-        else if ( c_targetPlatform == PLATFORM_PS2 )
-        {
-            strTargetPlatform = "PS2";
-        }
-        else if ( c_targetPlatform == PLATFORM_XBOX )
-        {
-            strTargetPlatform = "XBOX";
-        }
-        else if ( c_targetPlatform == PLATFORM_DXT_MOBILE )
-        {
-            strTargetPlatform = "S3TC [mobile]";
-        }   
-        else if ( c_targetPlatform == PLATFORM_PVR )
-        {
-            strTargetPlatform = "PowerVR [mobile]";
-        }
-        else if ( c_targetPlatform == PLATFORM_ATC )
-        {
-            strTargetPlatform = "ATI [mobile]";
-        }
-        else if ( c_targetPlatform == PLATFORM_UNC_MOBILE )
-        {
-            strTargetPlatform = "uncompressed [mobile]";
-        }
-
-        std::cout
-            << "* targetPlatform: " << strTargetPlatform << std::endl;
-
-        std::cout
-            << "* clearMipmaps: " << ( c_clearMipmaps ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* generateMipmaps: " << ( c_generateMipmaps ? "true" : "false" ) << std::endl;
-
-        const char *mipGenModeString = "unknown";
-
-        if ( c_mipGenMode == rw::MIPMAPGEN_DEFAULT )
-        {
-            mipGenModeString = "default";
-        }
-        else if ( c_mipGenMode == rw::MIPMAPGEN_CONTRAST )
-        {
-            mipGenModeString = "contrast";
-        }
-        else if ( c_mipGenMode == rw::MIPMAPGEN_BRIGHTEN )
-        {
-            mipGenModeString = "brighten";
-        }
-        else if ( c_mipGenMode == rw::MIPMAPGEN_DARKEN )
-        {
-            mipGenModeString = "darken";
-        }
-        else if ( c_mipGenMode == rw::MIPMAPGEN_SELECTCLOSE )
-        {
-            mipGenModeString = "selectclose";
-        }
-
-        std::cout
-            << "* mipGenMode: " << mipGenModeString << std::endl;
-
-        std::cout
-            << "* mipGenMaxLevel: " << c_mipGenMaxLevel << std::endl;
-
-        std::cout
-            << "* improveFiltering: " << ( c_improveFiltering ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* compressTextures: " << ( compressTextures ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* compressionQuality: " << ( c_compressionQuality ) << std::endl;
-
-        const char *strPalRuntimeType = "unknown";
-
-        if ( c_palRuntimeType == rw::PALRUNTIME_NATIVE )
-        {
-            strPalRuntimeType = "native";
-        }
-        else if ( c_palRuntimeType == rw::PALRUNTIME_PNGQUANT )
-        {
-            strPalRuntimeType = "pngquant";
-        }
-
-        std::cout
-            << "* palRuntimeType: " << strPalRuntimeType << std::endl;
-
-        const char *strDXTRuntimeType = "unknown";
-
-        if ( c_dxtRuntimeType == rw::DXTRUNTIME_NATIVE )
-        {
-            strDXTRuntimeType = "native";
-        }
-        else if ( c_dxtRuntimeType == rw::DXTRUNTIME_SQUISH )
-        {
-            strDXTRuntimeType = "squish";
-        }
-
-        std::cout
-            << "* dxtRuntimeType: " << strDXTRuntimeType << std::endl;
-
-        std::cout
-            << "* warningLevel: " << rwEngine->GetWarningLevel() << std::endl;
-
-        std::cout
-            << "* ignoreSecureWarnings: " << ( rwEngine->GetIgnoreSecureWarnings() ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* reconstructIMGArchives: " << ( c_reconstructIMGArchives ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* fixIncompatibleRasters: " << ( c_fixIncompatibleRasters ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* dxtPackedDecompression: " << ( c_dxtPackedDecompression ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* imgArchivesCompressed: " << ( c_imgArchivesCompressed ? "true" : "false" ) << std::endl;
-
-        std::cout
-            << "* ignoreSerializationRegions: " << ( c_ignoreSerializationRegions ? "true" : "false" ) << std::endl;
-
-        // Finish with a newline.
-        std::cout << std::endl;
-
-        // Do the conversion!
-        {
-            CFileTranslator *absGameRootTranslator = NULL;
-            CFileTranslator *absOutputRootTranslator = NULL;
-
-            bool hasGameRoot = obtainAbsolutePath( c_gameRoot.c_str(), absGameRootTranslator, false, true );
-            bool hasOutputRoot = obtainAbsolutePath( c_outputRoot.c_str(), absOutputRootTranslator, true, true );
-
-            // Create a debug directory if we want to output debug.
-            CFileTranslator *absDebugOutputTranslator = NULL;
-
-            bool hasDebugRoot = false;
-
-            if ( c_outputDebug )
-            {
-                hasDebugRoot = obtainAbsolutePath( "debug_output/", absDebugOutputTranslator, true, true );
-            }
-
-            if ( hasGameRoot && hasOutputRoot )
-            {
-                try
+                if ( c_gameVersion == rw::KnownVersions::SA )
                 {
-                    // File roots are prepared.
-                    // We can start processing files.
-                    gtaFileProcessor <_discFileSentry> fileProc;
-
-                    fileProc.setArchiveReconstruction( c_reconstructIMGArchives );
-
-                    fileProc.setUseCompressedIMGArchives( c_imgArchivesCompressed );
-
-                    _discFileSentry sentry;
-                    sentry.targetPlatform = c_targetPlatform;
-                    sentry.clearMipmaps = c_clearMipmaps;
-                    sentry.generateMipmaps = c_generateMipmaps;
-                    sentry.mipGenMode = c_mipGenMode;
-                    sentry.mipGenMaxLevel = c_mipGenMaxLevel;
-                    sentry.improveFiltering = c_improveFiltering;
-                    sentry.doCompress = compressTextures;
-                    sentry.compressionQuality = c_compressionQuality;
-                    sentry.gameVersion = c_gameVersion;
-                    sentry.outputDebug = c_outputDebug;
-                    sentry.debugTranslator = absDebugOutputTranslator;
-
-                    fileProc.process( &sentry, absGameRootTranslator, absOutputRootTranslator );
-
-                    // Output any warnings.
-                    _warningMan.Purge();
+                    strTargetVersion = "San Andreas";
                 }
-                catch( termination_request& )
+                else if ( c_gameVersion == rw::KnownVersions::MANHUNT )
                 {
-                    // OK.
-                    std::cout
-                        << "terminated application" << std::endl;
-
-                    successful = false;
+                    strTargetVersion = "Manhunt";
                 }
             }
-            else
+            else if ( targetVersion.rwLibMajor == 3 && ( targetVersion.rwLibMinor == 3 || targetVersion.rwLibMinor == 4 ) )
             {
-                if ( !hasGameRoot )
+                strTargetVersion = "Vice City";
+            }
+            else if ( targetVersion.rwLibMajor == 3 && ( targetVersion.rwLibMinor == 0 || targetVersion.rwLibMinor == 1 ) )
+            {
+                strTargetVersion = "GTA 3";
+            }
+
+            std::cout
+                << "* targetVersion: " << strTargetVersion << " [rwver: " << targetVersion.toString() << "]" << std::endl;
+
+            const char *strTargetPlatform = "unknown";
+
+            if ( c_targetPlatform == PLATFORM_PC )
+            {
+                strTargetPlatform = "PC";
+            }
+            else if ( c_targetPlatform == PLATFORM_PS2 )
+            {
+                strTargetPlatform = "PS2";
+            }
+            else if ( c_targetPlatform == PLATFORM_XBOX )
+            {
+                strTargetPlatform = "XBOX";
+            }
+            else if ( c_targetPlatform == PLATFORM_DXT_MOBILE )
+            {
+                strTargetPlatform = "S3TC [mobile]";
+            }   
+            else if ( c_targetPlatform == PLATFORM_PVR )
+            {
+                strTargetPlatform = "PowerVR [mobile]";
+            }
+            else if ( c_targetPlatform == PLATFORM_ATC )
+            {
+                strTargetPlatform = "ATI [mobile]";
+            }
+            else if ( c_targetPlatform == PLATFORM_UNC_MOBILE )
+            {
+                strTargetPlatform = "uncompressed [mobile]";
+            }
+
+            std::cout
+                << "* targetPlatform: " << strTargetPlatform << std::endl;
+
+            std::cout
+                << "* clearMipmaps: " << ( c_clearMipmaps ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* generateMipmaps: " << ( c_generateMipmaps ? "true" : "false" ) << std::endl;
+
+            const char *mipGenModeString = "unknown";
+
+            if ( c_mipGenMode == rw::MIPMAPGEN_DEFAULT )
+            {
+                mipGenModeString = "default";
+            }
+            else if ( c_mipGenMode == rw::MIPMAPGEN_CONTRAST )
+            {
+                mipGenModeString = "contrast";
+            }
+            else if ( c_mipGenMode == rw::MIPMAPGEN_BRIGHTEN )
+            {
+                mipGenModeString = "brighten";
+            }
+            else if ( c_mipGenMode == rw::MIPMAPGEN_DARKEN )
+            {
+                mipGenModeString = "darken";
+            }
+            else if ( c_mipGenMode == rw::MIPMAPGEN_SELECTCLOSE )
+            {
+                mipGenModeString = "selectclose";
+            }
+
+            std::cout
+                << "* mipGenMode: " << mipGenModeString << std::endl;
+
+            std::cout
+                << "* mipGenMaxLevel: " << c_mipGenMaxLevel << std::endl;
+
+            std::cout
+                << "* improveFiltering: " << ( c_improveFiltering ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* compressTextures: " << ( compressTextures ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* compressionQuality: " << ( c_compressionQuality ) << std::endl;
+
+            const char *strPalRuntimeType = "unknown";
+
+            if ( c_palRuntimeType == rw::PALRUNTIME_NATIVE )
+            {
+                strPalRuntimeType = "native";
+            }
+            else if ( c_palRuntimeType == rw::PALRUNTIME_PNGQUANT )
+            {
+                strPalRuntimeType = "pngquant";
+            }
+
+            std::cout
+                << "* palRuntimeType: " << strPalRuntimeType << std::endl;
+
+            const char *strDXTRuntimeType = "unknown";
+
+            if ( c_dxtRuntimeType == rw::DXTRUNTIME_NATIVE )
+            {
+                strDXTRuntimeType = "native";
+            }
+            else if ( c_dxtRuntimeType == rw::DXTRUNTIME_SQUISH )
+            {
+                strDXTRuntimeType = "squish";
+            }
+
+            std::cout
+                << "* dxtRuntimeType: " << strDXTRuntimeType << std::endl;
+
+            std::cout
+                << "* warningLevel: " << rwEngine->GetWarningLevel() << std::endl;
+
+            std::cout
+                << "* ignoreSecureWarnings: " << ( rwEngine->GetIgnoreSecureWarnings() ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* reconstructIMGArchives: " << ( c_reconstructIMGArchives ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* fixIncompatibleRasters: " << ( c_fixIncompatibleRasters ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* dxtPackedDecompression: " << ( c_dxtPackedDecompression ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* imgArchivesCompressed: " << ( c_imgArchivesCompressed ? "true" : "false" ) << std::endl;
+
+            std::cout
+                << "* ignoreSerializationRegions: " << ( c_ignoreSerializationRegions ? "true" : "false" ) << std::endl;
+
+            // Finish with a newline.
+            std::cout << std::endl;
+
+            // Do the conversion!
+            {
+                CFileTranslator *absGameRootTranslator = NULL;
+                CFileTranslator *absOutputRootTranslator = NULL;
+
+                bool hasGameRoot = obtainAbsolutePath( c_gameRoot.c_str(), absGameRootTranslator, false, true );
+                bool hasOutputRoot = obtainAbsolutePath( c_outputRoot.c_str(), absOutputRootTranslator, true, true );
+
+                // Create a debug directory if we want to output debug.
+                CFileTranslator *absDebugOutputTranslator = NULL;
+
+                bool hasDebugRoot = false;
+
+                if ( c_outputDebug )
                 {
-                    std::cout
-                        << "could not get a filesystem handle to the game root" << std::endl;
+                    hasDebugRoot = obtainAbsolutePath( "debug_output/", absDebugOutputTranslator, true, true );
                 }
 
-                if ( !hasOutputRoot )
+                if ( hasGameRoot && hasOutputRoot )
                 {
-                    std::cout
-                        << "could not get a filesystem handle to the output root" << std::endl;
+                    try
+                    {
+                        // File roots are prepared.
+                        // We can start processing files.
+                        gtaFileProcessor <_discFileSentry> fileProc;
+
+                        fileProc.setArchiveReconstruction( c_reconstructIMGArchives );
+
+                        fileProc.setUseCompressedIMGArchives( c_imgArchivesCompressed );
+
+                        _discFileSentry sentry;
+                        sentry.targetPlatform = c_targetPlatform;
+                        sentry.clearMipmaps = c_clearMipmaps;
+                        sentry.generateMipmaps = c_generateMipmaps;
+                        sentry.mipGenMode = c_mipGenMode;
+                        sentry.mipGenMaxLevel = c_mipGenMaxLevel;
+                        sentry.improveFiltering = c_improveFiltering;
+                        sentry.doCompress = compressTextures;
+                        sentry.compressionQuality = c_compressionQuality;
+                        sentry.gameVersion = c_gameVersion;
+                        sentry.outputDebug = c_outputDebug;
+                        sentry.debugTranslator = absDebugOutputTranslator;
+
+                        fileProc.process( &sentry, absGameRootTranslator, absOutputRootTranslator );
+
+                        // Output any warnings.
+                        _warningMan.Purge();
+                    }
+                    catch( termination_request& )
+                    {
+                        // OK.
+                        std::cout
+                            << "terminated application" << std::endl;
+
+                        successful = false;
+                    }
+                }
+                else
+                {
+                    if ( !hasGameRoot )
+                    {
+                        std::cout
+                            << "could not get a filesystem handle to the game root" << std::endl;
+                    }
+
+                    if ( !hasOutputRoot )
+                    {
+                        std::cout
+                            << "could not get a filesystem handle to the output root" << std::endl;
+                    }
+                }
+
+                // Clean up resources.
+                if ( hasDebugRoot )
+                {
+                    delete absDebugOutputTranslator;
+                }
+
+                if ( hasGameRoot )
+                {
+                    delete absGameRootTranslator;
+                }
+
+                if ( hasOutputRoot )
+                {
+                    delete absOutputRootTranslator;
                 }
             }
 
-            // Clean up resources.
-            if ( hasDebugRoot )
-            {
-                delete absDebugOutputTranslator;
-            }
+            // Shutdown environments.
+            std::cout << "\ncleaning up...\n";
 
-            if ( hasGameRoot )
-            {
-                delete absGameRootTranslator;
-            }
-
-            if ( hasOutputRoot )
-            {
-                delete absOutputRootTranslator;
-            }
+            CFileSystem::Destroy( fsHandle );
         }
-
-        // Shutdown environments.
-        std::cout << "\ncleaning up...\n";
-
-        CFileSystem::Destroy( fsHandle );
+        else
+        {
+            std::cout << "error: incompatible RenderWare environment.\n";
+        }
 
         // Destroy the RenderWare engine again.
         rw::DeleteEngine( rwEngine );
