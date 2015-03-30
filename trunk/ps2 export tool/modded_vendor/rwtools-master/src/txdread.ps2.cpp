@@ -1860,6 +1860,12 @@ struct ps2MipmapManager
         );
 
         // Return parameters to the runtime.
+        widthOut = layerWidth;
+        heightOut = layerHeight;
+
+        layerWidthOut = layerWidth;
+        layerHeightOut = layerHeight;
+
         dstRasterFormat = srcRasterFormat;
         dstDepth = srcDepth;
         dstColorOrder = srcColorOrder;
@@ -1890,6 +1896,14 @@ struct ps2MipmapManager
         bool& hasDirectlyAcquiredOut
     )
     {
+        // Check whether we have reached the maximum mipmap count.
+        const uint32 maxMipmaps = 7;
+    
+        if ( nativeTex->mipmaps.size() >= maxMipmaps )
+        {
+            throw RwException( "cannot add mipmap in PS2 texture because too many" );
+        }
+
         LibraryVersion currentVersion = nativeTex->texVersion;
 
         // Get the texture properties on the stack.

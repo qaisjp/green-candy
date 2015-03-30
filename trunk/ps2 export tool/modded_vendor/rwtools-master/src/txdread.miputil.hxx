@@ -199,15 +199,23 @@ inline bool virtualAddMipmapLayer(
         bool hasDirectlyAcquired;
         bool hasAcquiredPalette = false;    // TODO?
 
-        mipManager.Internalize(
-            engineInterface,
-            newLayer,
-            layerIn.mipData.width, layerIn.mipData.height, layerIn.mipData.mipWidth, layerIn.mipData.mipHeight, layerIn.mipData.texels, layerIn.mipData.dataSize,
-            layerIn.rasterFormat, layerIn.colorOrder, layerIn.depth,
-            layerIn.paletteType, layerIn.paletteData, layerIn.paletteSize,
-            layerIn.compressionType, layerIn.hasAlpha,
-            hasDirectlyAcquired
-        );
+        try
+        {
+            mipManager.Internalize(
+                engineInterface,
+                newLayer,
+                layerIn.mipData.width, layerIn.mipData.height, layerIn.mipData.mipWidth, layerIn.mipData.mipHeight, layerIn.mipData.texels, layerIn.mipData.dataSize,
+                layerIn.rasterFormat, layerIn.colorOrder, layerIn.depth,
+                layerIn.paletteType, layerIn.paletteData, layerIn.paletteSize,
+                layerIn.compressionType, layerIn.hasAlpha,
+                hasDirectlyAcquired
+            );
+        }
+        catch( RwException& )
+        {
+            // Alright, we failed.
+            return false;
+        }
 
         feedbackOut.hasDirectlyAcquired = hasDirectlyAcquired;
     }

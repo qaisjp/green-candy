@@ -186,58 +186,6 @@ const char* Interface::GetObjectTypeName( const RwObject *rwObj ) const
     return typeName;
 }
 
-void Interface::SerializeExtensions( const RwObject *rwObj, BlockProvider& outputProvider )
-{
-    BlockProvider extensionBlock( &outputProvider );
-
-    extensionBlock.EnterContext();
-
-    extensionBlock.setBlockID( CHUNK_EXTENSION );
-
-    // TODO.
-
-    extensionBlock.LeaveContext();
-}
-
-void Interface::DeserializeExtensions( RwObject *rwObj, BlockProvider& inputProvider )
-{
-    BlockProvider extensionBlock( &inputProvider );
-
-    extensionBlock.EnterContext();
-
-    try
-    {
-        if ( extensionBlock.getBlockID() == CHUNK_EXTENSION )
-        {
-            int64 end = extensionBlock.getBlockLength();
-            end += extensionBlock.tell();
-            
-            while ( extensionBlock.tell() < end )
-            {
-                BlockProvider subExtensionBlock( &extensionBlock, false );
-
-                subExtensionBlock.EnterContext();
-
-                // TODO.
-
-                subExtensionBlock.LeaveContext();
-            }
-        }
-        else
-        {
-            this->PushWarning( "could not find extension block; ignoring" );
-        }
-    }
-    catch( ... )
-    {
-        extensionBlock.LeaveContext();
-
-        throw;
-    }
-
-    extensionBlock.LeaveContext();
-}
-
 void Interface::SetWarningManager( WarningManagerInterface *warningMan )
 {
     this->warningManager = warningMan;

@@ -1003,10 +1003,7 @@ struct nativeTextureStreamPlugin : public serializationProvider
                             engineInterface->PushWarning( typeWarnBuf );
                         }
 
-                        // On failure, delete the texture and bail.
-                        engineInterface->DeleteRwObject( texOut );
-
-                        texOut = NULL;
+                        // On failure, just bail.
                     }
                     else
                     {
@@ -1061,14 +1058,6 @@ struct nativeTextureStreamPlugin : public serializationProvider
                     DeleteNativeTexture( engineInterface, platformData );
 
                     platformData = NULL;
-                }
-
-                // Delete a texture if we had one.
-                if ( texOut )
-                {
-                    engineInterface->DeleteRwObject( texOut );
-
-                    texOut = NULL;
                 }
 
                 // Since we have no more texture object to store the raster into, we delete the raster.

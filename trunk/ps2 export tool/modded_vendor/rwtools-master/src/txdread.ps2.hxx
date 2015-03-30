@@ -577,11 +577,6 @@ struct NativeTexturePS2
             this->texels = NULL;
         }
 
-        inline void operator = ( const GSTexture& right )
-        {
-            return;
-        }
-
     public:
         inline void CopyTexture( Interface *engineInterface, const GSTexture& right )
         {
@@ -702,11 +697,6 @@ struct NativeTexturePS2
         inline GSMipmap( const GSMipmap& right )
         {
             *this = right;
-        }
-
-        inline void operator = ( const GSMipmap& right )
-        {
-            return;
         }
 
     public:

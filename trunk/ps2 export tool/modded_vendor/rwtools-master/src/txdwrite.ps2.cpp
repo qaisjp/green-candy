@@ -639,6 +639,10 @@ void NativeTexturePS2::UpdateStructure( Interface *engineInterface )
         {
             uint32 depth = this->depth;
 
+            uint32 reqFormatDepth = getFormatEncodingDepth( requiredFormat );
+
+            uint32 currentEncodingDepth = getFormatEncodingDepth( currentMipmapEncodingType );
+
             for ( uint32 n = 0; n < mipmapCount; n++ )
             {
                 NativeTexturePS2::GSMipmap& mipLayer = this->mipmaps[ n ];
@@ -652,15 +656,39 @@ void NativeTexturePS2::UpdateStructure( Interface *engineInterface )
 
                 uint32 newDataSize;
 
-                void *newtexels =
-                    ps2GSPixelEncodingFormats::packImageData(
-                        engineInterface,
-                        currentMipmapEncodingType, requiredFormat,
-                        depth,
-                        srcTexels,
-                        mipWidth, mipHeight,
-                        newDataSize, packedWidth, packedHeight
-                    );
+                void *newtexels;
+
+                // TODO: need to straighten out the permutation engine again.
+                // But this can wait until a much further point in time.
+
+                if ( reqFormatDepth > currentEncodingDepth )
+                {
+                    newtexels =
+                        ps2GSPixelEncodingFormats::packImageData(
+                            engineInterface,
+                            currentMipmapEncodingType, requiredFormat,
+                            depth,
+                            srcTexels,
+                            mipWidth, mipHeight,
+                            newDataSize, packedWidth, packedHeight
+                        );
+                }
+                else
+                {
+                    newtexels =
+                        ps2GSPixelEncodingFormats::unpackImageData(
+                            engineInterface,
+                            currentMipmapEncodingType, requiredFormat,
+                            depth,
+                            srcTexels,
+                            mipLayer.swizzleWidth, mipLayer.swizzleHeight,
+                            newDataSize,
+                            mipWidth, mipHeight
+                        );
+
+                    packedWidth = mipWidth;
+                    packedHeight = mipHeight;
+                }
 
                 assert( newtexels != NULL );
 

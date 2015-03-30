@@ -497,7 +497,7 @@ inline void CompressMipmapToATC(
     uint32 compressWidth = ALIGN_SIZE( mipWidth, 4u );
     uint32 compressHeight = ALIGN_SIZE( mipHeight, 4u );
 
-    uint32 compressionBlockCount = ( compressWidth * compressHeight );
+    uint32 compressionBlockCount = ( compressWidth * compressHeight ) / 16;
 
     // Allocate the output buffer.
     size_t dstDataSize = ( compressionBlockCount * compressionBlockSize );

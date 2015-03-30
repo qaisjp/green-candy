@@ -1,4 +1,4 @@
-TxdGen 0.9.1 PREVIEW by The_GTA. Beta release.
+TxdGen 0.9.8 by The_GTA. Beta release. PRERELEASE.
 ==================================
 
 TxdGen is the RW Texture Dictionary conversion tool. Its goal is to support
@@ -39,6 +39,8 @@ CREDITS
 4) uses the lzo library (http://www.oberhumer.com/opensource/lzo/)
 5) Thanks to aru from GTAForums for XBOX swizzling and unswizzling algorithms (http://gtaforums.com/topic/213907-unswizzle-tool/)
 6) Some parts are inspired by research from DK22Pac
+7) Uses the PowerVR SDK (http://www.imgtec.com/tools/powervr-tools/)
+8) Uses the ATI_Compress library (http://developer.amd.com/tools-and-sdks/archive/legacy-cpu-gpu-tools/ati_compress/)
 
 ==================================
 WHAT IS IMGIMPORT ?
@@ -77,9 +79,9 @@ SOURCE CODE
 The source code to this project is located on the MTA:Eir respository under
 the "ps2 export tool" directory.
 
-https://www.assembla.com/code/green-candy/subversion/nodes/577/trunk/ps2%20export%20tool
+https://www.assembla.com/code/green-candy/subversion/nodes/584/trunk/ps2%20export%20tool
 
-- February 2015
+- March 2015
 
 PS: if you like a great community, give mtasa.com a try. when I get
 nice stuff to the GTAForums community, I will return to my MP project,

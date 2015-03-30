@@ -862,7 +862,16 @@ void xboxNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInte
     // Copy more advanced properties.
     xboxTex->rasterType = pixelsIn.rasterType;
     xboxTex->hasAlpha = pixelsIn.hasAlpha;
-    xboxTex->autoMipmaps = pixelsIn.autoMipmaps;
+
+    // Properly set the automipmaps field.
+    bool autoMipmaps = pixelsIn.autoMipmaps;
+
+    if ( mipmapCount > 1 )
+    {
+        autoMipmaps = false;
+    }
+
+    xboxTex->autoMipmaps = autoMipmaps;
 
     xboxTex->dxtCompression = xboxCompressionType;
 
