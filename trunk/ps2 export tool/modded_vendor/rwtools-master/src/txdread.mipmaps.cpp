@@ -3,10 +3,6 @@
 
 #include "pixelformat.hxx"
 
-#include "txdread.d3d.hxx"
-
-#include "txdread.d3d.dxt.hxx"
-
 #include "txdread.palette.hxx"
 
 #include "txdread.common.hxx"
@@ -37,46 +33,43 @@ void TextureBase::clearMipmaps( void )
 
     if ( texRaster )
     {
-        // We need a Direct3D texture.
-        //if ( texRaster->platform != PLATFORM_D3D8 && texRaster->platform != PLATFORM_D3D9 )
-        //    return;
+        Interface *engineInterface = this->engineInterface;
 
-        NativeTextureD3D *platformTex = (NativeTextureD3D*)texRaster->platformData;
-
-        // Clear mipmaps. This is image data starting from level index 1.
-        uint32 mipmapCount = platformTex->mipmaps.size();
-
-        if ( mipmapCount > 1 )
+        PlatformTexture *platformTex = texRaster->platformData;
+        
+        if ( platformTex )
         {
-            for ( uint32 n = 1; n < mipmapCount; n++ )
-            {
-                // Delete the texels.
-                const void *texels = platformTex->mipmaps[ n ].texels;
+            texNativeTypeProvider *texProvider = GetNativeTextureTypeProvider( engineInterface, platformTex );
 
-                delete [] texels;
+            // Clear mipmaps. This is image data starting from level index 1.
+            nativeTextureBatchedInfo info;
+
+            texProvider->GetTextureInfo( engineInterface, platformTex, info );
+
+            if ( info.mipmapCount > 1 )
+            {
+                // Call into the native type provider.
+                texProvider->ClearMipmaps( engineInterface, platformTex );
+                
+                // Adjust the filtering.
+                {
+                    eRasterStageFilterMode currentFilterMode = this->GetFilterMode();
+
+                    if ( currentFilterMode == RWFILTER_POINT_POINT ||
+                         currentFilterMode == RWFILTER_POINT_LINEAR )
+                    {
+                        this->SetFilterMode( RWFILTER_POINT );
+                    }
+                    else if ( currentFilterMode == RWFILTER_LINEAR_POINT ||
+                              currentFilterMode == RWFILTER_LINEAR_LINEAR )
+                    {
+                        this->SetFilterMode( RWFILTER_LINEAR );
+                    }
+                }
             }
 
-            // Set the mipmap count to 1.
-            platformTex->mipmaps.resize( 1 );
-
-            // Adjust the filtering.
-            {
-                eRasterStageFilterMode currentFilterMode = this->filterMode;
-
-                if ( currentFilterMode == RWFILTER_POINT_POINT ||
-                     currentFilterMode == RWFILTER_POINT_LINEAR )
-                {
-                    this->filterMode = RWFILTER_POINT;
-                }
-                else if ( currentFilterMode == RWFILTER_LINEAR_POINT ||
-                          currentFilterMode == RWFILTER_LINEAR_LINEAR )
-                {
-                    this->filterMode = RWFILTER_LINEAR;
-                }
-            }
+            // Now we can have automatically generated mipmaps!
         }
-
-        // Now we can have automatically generated mipmaps!
     }
 }
 
@@ -176,26 +169,31 @@ void TextureBase::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode 
 
     if ( texRaster )
     {
-        // We need a Direct3D texture.
-        //if ( texRaster->platform != PLATFORM_D3D8 && texRaster->platform != PLATFORM_D3D9 )
-        //    return;
+        PlatformTexture *platformTex = texRaster->platformData;
 
-        NativeTextureD3D *platformTex = (NativeTextureD3D*)texRaster->platformData;
+        if ( !platformTex )
+        {
+            throw RwException( "no native data" );
+        }
+
+        Interface *engineInterface = this->engineInterface;
+
+        texNativeTypeProvider *texProvider = GetNativeTextureTypeProvider( engineInterface, platformTex );
+
+        if ( !texProvider )
+        {
+            throw RwException( "invalid native data" );
+        }
 
         // We cannot do anything if we do not have a first level (base texture).
-        uint32 oldMipmapCount = platformTex->mipmaps.size();
+        nativeTextureBatchedInfo nativeInfo;
+
+        texProvider->GetTextureInfo( engineInterface, platformTex, nativeInfo );
+
+        uint32 oldMipmapCount = nativeInfo.mipmapCount;
 
         if ( oldMipmapCount == 0 )
             return;
-
-        eRasterFormat srcRasterFormat = platformTex->rasterFormat;
-        eColorOrdering srcColorOrder = platformTex->colorOrdering;
-        uint32 srcItemDepth = platformTex->depth;
-
-        uint32 dxtType = platformTex->dxtCompression;
-
-        eRasterFormat dstRasterFormat = srcRasterFormat;
-        eColorOrdering dstColorOrder = srcColorOrder;
 
         // Grab the bitmap of this texture, so we can generate mipmaps.
         Bitmap textureBitmap = texRaster->getBitmap();
@@ -253,105 +251,103 @@ void TextureBase::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode 
 
                 uint32 texDataSize = getRasterDataSize( texItemCount, firstLevelDepth );
 
-                void *newtexels = new uint8[ texDataSize ];
+                void *newtexels = engineInterface->PixelAllocate( texDataSize );
 
-                // Process the pixels.
-                for ( uint32 mip_y = 0; mip_y < mipHeight; mip_y++ )
+                texNativeTypeProvider::acquireFeedback_t acquireFeedback;
+
+                bool couldAdd = false;
+
+                try
                 {
-                    for ( uint32 mip_x = 0; mip_x < mipWidth; mip_x++ )
+                    // Process the pixels.
+                    bool hasAlpha = false;
+                   
+                    for ( uint32 mip_y = 0; mip_y < mipHeight; mip_y++ )
                     {
-                        // Get the color for this pixel.
-                        uint8 r, g, b, a;
+                        for ( uint32 mip_x = 0; mip_x < mipWidth; mip_x++ )
+                        {
+                            // Get the color for this pixel.
+                            uint8 r, g, b, a;
 
-                        r = 0;
-                        g = 0;
-                        b = 0;
-                        a = 0;
+                            r = 0;
+                            g = 0;
+                            b = 0;
+                            a = 0;
 
-                        // Perform a filter operation on the currently selected texture block.
-                        uint32 mipProcessWidth = curMipProcessWidth;
-                        uint32 mipProcessHeight = curMipProcessHeight;
+                            // Perform a filter operation on the currently selected texture block.
+                            uint32 mipProcessWidth = curMipProcessWidth;
+                            uint32 mipProcessHeight = curMipProcessHeight;
 
-                        performMipmapFiltering(
-                            mipGenMode,
-                            textureBitmap,
-                            mip_x * mipProcessWidth, mip_y * mipProcessHeight,
-                            mipProcessWidth, mipProcessHeight,
-                            r, g, b, a
-                        );
+                            performMipmapFiltering(
+                                mipGenMode,
+                                textureBitmap,
+                                mip_x * mipProcessWidth, mip_y * mipProcessHeight,
+                                mipProcessWidth, mipProcessHeight,
+                                r, g, b, a
+                            );
 
-                        // Put the color.
-                        uint32 colorIndex = PixelFormat::coord2index( mip_x, mip_y, mipWidth );
+                            if ( a != 255 )
+                            {
+                                hasAlpha = true;
+                            }
 
-                        puttexelcolor(
-                            newtexels, colorIndex, tmpRasterFormat, tmpColorOrder, firstLevelDepth,
-                            r, g, b, a
-                        );
+                            // Put the color.
+                            uint32 colorIndex = PixelFormat::coord2index( mip_x, mip_y, mipWidth );
+
+                            puttexelcolor(
+                                newtexels, colorIndex, tmpRasterFormat, tmpColorOrder, firstLevelDepth,
+                                r, g, b, a
+                            );
+                        }
                     }
-                }
 
-                // Pack the pixels into the required format.
-                // That means compress if the texture is compressed and palettize if the texture is palettized.
-                void *actualTexelArray = NULL;
-                uint32 actualDataSize = 0;
+                    // Push the texels into the texture.
+                    rawMipmapLayer rawMipLayer;
 
-                // Compress if required.
-                uint32 realMipWidth = mipWidth;
-                uint32 realMipHeight = mipHeight;
+                    rawMipLayer.mipData.width = mipWidth;
+                    rawMipLayer.mipData.height = mipHeight;
 
-                if ( dxtType != 0 )
-                {
-                    compressTexelsUsingDXT(
-                        engineInterface,
-                        dxtType, newtexels, mipWidth, mipHeight,
-                        tmpRasterFormat, NULL, PALETTE_NONE, 0, tmpColorOrder, firstLevelDepth,
-                        actualTexelArray, actualDataSize,
-                        realMipWidth, realMipHeight
+                    rawMipLayer.mipData.mipWidth = mipWidth;   // layer dimensions.
+                    rawMipLayer.mipData.mipHeight = mipHeight;
+
+                    rawMipLayer.mipData.texels = newtexels;
+                    rawMipLayer.mipData.dataSize = texDataSize;
+
+                    rawMipLayer.rasterFormat = tmpRasterFormat;
+                    rawMipLayer.depth = firstLevelDepth;
+                    rawMipLayer.colorOrder = tmpColorOrder;
+                    rawMipLayer.paletteType = PALETTE_NONE;
+                    rawMipLayer.paletteData = NULL;
+                    rawMipLayer.paletteSize = 0;
+                    rawMipLayer.compressionType = RWCOMPRESS_NONE;
+                    
+                    rawMipLayer.hasAlpha = hasAlpha;
+
+                    rawMipLayer.isNewlyAllocated = true;
+
+                    couldAdd = texProvider->AddMipmapLayer(
+                        engineInterface, platformTex, rawMipLayer, acquireFeedback
                     );
                 }
-                else
+                catch( ... )
                 {
-                    // Remap palette if required.
-                    ePaletteType paletteType = platformTex->paletteType;
+                    // We have not successfully pushed the texels, so deallocate us.
+                    engineInterface->PixelFree( newtexels );
 
-                    if ( paletteType != PALETTE_NONE )
-                    {
-                        RemapMipmapLayer(
-                            engineInterface,
-                            srcRasterFormat, srcColorOrder,
-                            newtexels, texItemCount,
-                            tmpRasterFormat, tmpColorOrder, firstLevelDepth, PALETTE_NONE, NULL, 0,
-                            platformTex->palette, platformTex->paletteSize,
-                            srcItemDepth, paletteType,
-                            actualTexelArray, actualDataSize
-                        );
-                    }
-                    else
-                    {
-                        // Do a raw copy.
-                        actualTexelArray = newtexels;
-                        actualDataSize = texDataSize;
-                    }
+                    throw;
                 }
 
-                // Delete old or temporary texels.
-                if ( actualTexelArray != newtexels )
+                if ( couldAdd == false || acquireFeedback.hasDirectlyAcquired == false )
                 {
-                    delete [] newtexels;
+                    // If the texture has not directly acquired the texels, we must free our copy.
+                    engineInterface->PixelFree( newtexels );
                 }
 
-                // Store the texels.
-                NativeTextureD3D::mipmapLayer newLayer;
-                newLayer.width = realMipWidth;
-                newLayer.height = realMipHeight;
-                newLayer.layerWidth = mipWidth;
-                newLayer.layerHeight = mipHeight;
-                
-                newLayer.texels = actualTexelArray;
-                newLayer.dataSize = actualDataSize;
-
-                // Put the new layer.
-                ensurePutIntoArray( newLayer, platformTex->mipmaps, curMipIndex );
+                if ( couldAdd == false )
+                {
+                    // If we failed to add any mipmap, we abort operation.
+                    break;
+                }
 
                 // We have a new mipmap.
                 actualNewMipmapCount++;
@@ -381,35 +377,19 @@ void TextureBase::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode 
             }
         }
 
-        if ( srcRasterFormat != dstRasterFormat )
-        {
-            platformTex->rasterFormat = dstRasterFormat;
-        }
-
-        if ( srcColorOrder != dstColorOrder )
-        {
-            platformTex->colorOrdering = dstColorOrder;
-        }
-
-        // Make sure that we have no auto mipmaps when we have mipmaps already.
-        if ( actualNewMipmapCount > 1 )
-        {
-            platformTex->autoMipmaps = false;
-        }
-
         // Adjust filtering mode.
         {
-            eRasterStageFilterMode currentFilterMode = this->filterMode;
+            eRasterStageFilterMode currentFilterMode = this->GetFilterMode();
 
             if ( actualNewMipmapCount > 1 )
             {
                 if ( currentFilterMode == RWFILTER_POINT )
                 {
-                    this->filterMode = RWFILTER_POINT_POINT;
+                    this->SetFilterMode( RWFILTER_POINT_POINT );
                 }
                 else if ( currentFilterMode == RWFILTER_LINEAR )
                 {
-                    this->filterMode = RWFILTER_LINEAR_LINEAR;
+                    this->SetFilterMode( RWFILTER_LINEAR_LINEAR );
                 }
             }
             else
@@ -417,12 +397,12 @@ void TextureBase::generateMipmaps( uint32 maxMipmapCount, eMipmapGenerationMode 
                 if ( currentFilterMode == RWFILTER_POINT_POINT ||
                      currentFilterMode == RWFILTER_POINT_LINEAR )
                 {
-                    this->filterMode = RWFILTER_POINT;
+                    this->SetFilterMode( RWFILTER_POINT );
                 }
                 else if ( currentFilterMode == RWFILTER_LINEAR_POINT ||
                           currentFilterMode == RWFILTER_LINEAR_LINEAR )
                 {
-                    this->filterMode = RWFILTER_LINEAR;
+                    this->SetFilterMode( RWFILTER_LINEAR );
                 }
             }
         }

@@ -987,6 +987,13 @@ struct xboxMipmapManager
         dstCompressionType = getXBOXCompressionType( nativeTex );
 
         hasAlpha = nativeTex->hasAlpha;
+
+        dstTexelsOut = texels;
+        dstDataSizeOut = dataSize;
+
+        // We may or may not need to swizzle.
+        isNewlyAllocatedOut = isNewlyAllocated;
+        isPaletteNewlyAllocated = false;
     }
 
     inline void Internalize(
@@ -1045,6 +1052,9 @@ struct xboxMipmapManager
 
             hasNewlyAllocated = true;
         }
+
+        // We have no more auto mipmaps.
+        nativeTex->autoMipmaps = false;
 
         // Store the encoded mipmap data.
         mipLayer.width = width;

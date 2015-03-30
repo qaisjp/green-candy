@@ -569,12 +569,14 @@ inline bool GetNativeTextureRawBitmapData(
             void *dstPalTexels = NULL;
             uint32 dstPalDataSize = 0;
 
+            uint32 dstDepth = Bitmap::getRasterFormatDepth(rasterFormat);
+
             bool hasConverted =
                 ConvertMipmapLayerNative(
                     engineInterface,
                     width, height, layerWidth, layerHeight, srcTexels, dataSize,
                     rasterFormat, depth, colorOrder, paletteType, paletteData, paletteSize, compressionType,
-                    rasterFormat, depth, colorOrder, PALETTE_NONE, NULL, 0, compressionType,
+                    rasterFormat, dstDepth, colorOrder, PALETTE_NONE, NULL, 0, compressionType,
                     false,
                     palWidth, palHeight,
                     dstPalTexels, dstPalDataSize
@@ -591,6 +593,8 @@ inline bool GetNativeTextureRawBitmapData(
 
             srcTexels = dstPalTexels;
             dataSize = dstPalDataSize;
+
+            depth = dstDepth;
 
             paletteType = PALETTE_NONE;
             paletteData = NULL;

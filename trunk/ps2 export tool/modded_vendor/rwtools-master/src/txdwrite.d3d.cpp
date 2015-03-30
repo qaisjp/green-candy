@@ -731,6 +731,9 @@ struct d3dMipmapManager
                 srcTexels, dataSize
             );
 
+        // We have no more auto mipmaps.
+        nativeTex->autoMipmaps = false;
+
         // Store the data.
         mipLayer.width = width;
         mipLayer.height = height;
