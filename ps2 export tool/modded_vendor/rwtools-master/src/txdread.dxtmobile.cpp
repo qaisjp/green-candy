@@ -137,7 +137,7 @@ void dxtMobileNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTex
                 }
 
                 // Check whether the image data section size is correct.
-                if ( imageDataSectionSize < metaHeader.imageDataSectionSize )
+                if ( imageDataSectionSize > metaHeader.imageDataSectionSize )
                 {
                     throw RwException( "texture " + theTexture->GetName() + " has an invalid image data section size" );
                 }

@@ -57,7 +57,7 @@ void dxtMobileNativeTextureTypeProvider::SerializeTexture( TextureBase *theTextu
 
             for ( uint32 n = 0; n < mipmapCount; n++ )
             {
-                uint32 dataSize = platformTex->mipmaps[ 0 ].dataSize;
+                uint32 dataSize = platformTex->mipmaps[ n ].dataSize;
 
                 imageDataSectionSize += sizeof( uint32 );
                 imageDataSectionSize += dataSize;

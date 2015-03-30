@@ -178,7 +178,7 @@ inline void DecompressPVRMipmap(
     using namespace pvrtexture;
 
     // Create a PVR texture.
-    CPVRTextureHeader pvrHeader( pvrSrcPixelType.PixelTypeID, mipWidth, mipHeight );
+    CPVRTextureHeader pvrHeader( pvrSrcPixelType.PixelTypeID, mipHeight, mipWidth );
 
     CPVRTexture pvrSourceTexture( pvrHeader, srcTexels );
 
@@ -380,7 +380,7 @@ inline void CompressMipmapToPVR(
     uint32 pvrTexWidth = ALIGN_SIZE( mipWidth, pvrBlockWidth );
     uint32 pvrTexHeight = ALIGN_SIZE( mipHeight, pvrBlockHeight );
 
-    CPVRTextureHeader pvrHeader( pvrSrcPixelType.PixelTypeID, pvrTexWidth, pvrTexHeight );
+    CPVRTextureHeader pvrHeader( pvrSrcPixelType.PixelTypeID, pvrTexHeight, pvrTexWidth );
 
     // Copy stuff into the PVR texture properly.
     CPVRTexture pvrTexture( pvrHeader );

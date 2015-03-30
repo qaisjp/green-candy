@@ -1,3 +1,21 @@
+r584
+- reimplemented palettization and compression - tons of great things
+---------------------
+r583
+awesome stuff
+---------------------
+r582
+- reimplemented Direct3D platform update through native interface API - added native interface API which can be used to skip the RenderWare layer to directly access the metal - stabilized the PS2 texture implementation; it has reached final...
+---------------------
+r581
+- added mipmap modification API to native textures - added texture information API to native textures - reimplemented debug output system - added per-mipmap conversion API - generalized the mipmap debug output system - reimplemented the Ren...
+---------------------
+r580
+THIS REVISION IS WORK IN PROGRESS.
+---------------------
+r578
+- uploaded version 0.9 release - fixed a bug in the D3D parser where a palettized texture with a wrong D3DFORMAT field could break the color ordering of the texture
+---------------------
 r577
 - added a fix for the black-roads bug in San Andreas textures to TxdGen - added the "improveFiltering" flag to TxdGen so textures can be made to use linear filtering - fixed some bugs in the DXT decompression logic - fixed some bugs in the ...
 ---------------------

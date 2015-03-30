@@ -547,15 +547,23 @@ void d3dNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
     nativeTex->colorOrdering = dstColorOrder;
     nativeTex->hasAlpha = hasAlpha;
 
-    nativeTex->autoMipmaps = pixelsIn.autoMipmaps;
+    uint32 mipmapCount = pixelsIn.mipmaps.size();
+
+    // Properly set the automipmaps field.
+    bool autoMipmaps = pixelsIn.autoMipmaps;
+
+    if ( mipmapCount > 1 )
+    {
+        autoMipmaps = false;
+    }
+
+    nativeTex->autoMipmaps = autoMipmaps;
     nativeTex->isCubeTexture = pixelsIn.cubeTexture;
     nativeTex->rasterType = pixelsIn.rasterType;
 
     nativeTex->dxtCompression = dxtType;
 
     // Apply the pixel data.
-    uint32 mipmapCount = pixelsIn.mipmaps.size();
-
     nativeTex->mipmaps.resize( mipmapCount );
 
     for ( uint32 n = 0; n < mipmapCount; n++ )
