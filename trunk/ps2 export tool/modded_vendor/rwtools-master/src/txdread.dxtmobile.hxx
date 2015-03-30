@@ -121,6 +121,18 @@ struct dxtMobileNativeTextureTypeProvider : public texNativeTypeProvider
         capsOut.supportsPalette = true;
     }
 
+    void GetStorageCapabilities( storageCapabilities& storeCaps ) const
+    {
+        storeCaps.pixelCaps.supportsDXT1 = true;
+        storeCaps.pixelCaps.supportsDXT2 = false;
+        storeCaps.pixelCaps.supportsDXT3 = true;
+        storeCaps.pixelCaps.supportsDXT4 = false;
+        storeCaps.pixelCaps.supportsDXT5 = true;
+        storeCaps.pixelCaps.supportsPalette = false;
+
+        storeCaps.isCompressedFormat = true;
+    }
+
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
@@ -144,6 +156,23 @@ struct dxtMobileNativeTextureTypeProvider : public texNativeTypeProvider
     void ClearMipmaps( Interface *engineInterface, void *objMem );
 
     void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
+
+    ePaletteType GetTexturePaletteType( const void *objMem )
+    {
+        return PALETTE_NONE;
+    }
+
+    bool IsTextureCompressed( const void *objMem )
+    {
+        return true;
+    }
+
+    bool DoesTextureHaveAlpha( const void *objMem )
+    {
+        const NativeTextureMobileDXT *nativeTex = (const NativeTextureMobileDXT*)objMem;
+
+        return nativeTex->hasAlpha;
+    }
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {
@@ -169,9 +198,7 @@ struct textureNativeGenericHeader
 {
     uint32 platformDescriptor;
 
-    uint32 filteringMode;
-    uint32 uAddressing;
-    uint32 vAddressing;
+    wardrumFormatInfo formatInfo;
 
     uint8 pad1[0x10];
 

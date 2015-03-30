@@ -123,6 +123,7 @@ bool DecideBestDXTCompressionFormat(
     Interface *engineInterface,
     bool srcHasAlpha,
     bool supportsDXT1, bool supportsDXT2, bool supportsDXT3, bool supportsDXT4, bool supportsDXT5,
+    float quality,
     eCompressionType& dstCompressionTypeOut
 );
 

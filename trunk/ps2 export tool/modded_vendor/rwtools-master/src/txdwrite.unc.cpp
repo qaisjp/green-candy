@@ -26,10 +26,7 @@ void uncNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
             // Write the generic meta header.
             mobile_unc::textureNativeGenericHeader metaHeader;
             metaHeader.platformDescriptor = PLATFORMDESC_UNC_MOBILE;
-
-            metaHeader.filteringMode = theTexture->GetFilterMode();
-            metaHeader.uAddressing = theTexture->GetUAddressing();
-            metaHeader.vAddressing = theTexture->GetVAddressing();
+            metaHeader.formatInfo.set( *theTexture );
 
             memset( metaHeader.pad1, 0, sizeof( metaHeader.pad1 ) );
 

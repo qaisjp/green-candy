@@ -335,9 +335,13 @@ static bool ProcessTXDArchive(
                             // Decide whether to convert to target architecture beforehand or afterward.
                             bool shouldConvertBeforehand = ShouldRasterConvertBeforehand( texRaster, targetPlatform );
 
+                            bool hasConvertedToTargetArchitecture = false;
+
                             if ( shouldConvertBeforehand == true )
                             {
                                 ConvertRasterToPlatform( theTexture, texRaster, targetPlatform, gameVersion );
+
+                                hasConvertedToTargetArchitecture = true;
                             }
 
                             // Clear mipmaps if requested.
@@ -425,24 +429,27 @@ static bool ProcessTXDArchive(
                                 }
                             }
 
-#if 0
                             // Palettize the texture to save space.
                             if ( doCompress )
                             {
                                 if ( targetPlatform == PLATFORM_PS2 )
                                 {
-                                    tex.optimizeForLowEnd( compressionQuality );
+                                    texRaster->optimizeForLowEnd( compressionQuality );
                                 }
                                 else if ( targetPlatform == PLATFORM_XBOX || targetPlatform == PLATFORM_PC )
                                 {
-                                    // Compress if we are not already compressed.
-                                    if ( tex.platformData->isCompressed() == false )
+                                    // If we are not target architecture already, make sure we are.
+                                    if ( hasConvertedToTargetArchitecture == false )
                                     {
-                                        tex.platformData->compress( compressionQuality );
+                                        ConvertRasterToPlatform( theTexture, texRaster, targetPlatform, gameVersion );
+
+                                        hasConvertedToTargetArchitecture = true;
                                     }
+
+                                    // Compress if we are not already compressed.
+                                    texRaster->compress( compressionQuality );
                                 }
                             }
-#endif
 
                             // Improve the filtering mode if the user wants us to.
                             if ( improveFiltering )
@@ -453,7 +460,12 @@ static bool ProcessTXDArchive(
                             // Convert it into the target platform.
                             if ( shouldConvertBeforehand == false )
                             {
-                                ConvertRasterToPlatform( theTexture, texRaster, targetPlatform, gameVersion );
+                                if ( hasConvertedToTargetArchitecture == false )
+                                {
+                                    ConvertRasterToPlatform( theTexture, texRaster, targetPlatform, gameVersion );
+
+                                    hasConvertedToTargetArchitecture = true;
+                                }
                             }
                         }
                     }
