@@ -193,6 +193,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\renderware.txd.d3d.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\renderware.txd.h"
 				>
 			</File>

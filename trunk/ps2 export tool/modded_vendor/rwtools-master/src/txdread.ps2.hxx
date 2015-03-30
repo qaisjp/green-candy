@@ -803,7 +803,8 @@ public:
 
     void getOptimalGSParameters(gsParams_t& paramsOut) const;
 
-    void PerformDebugChecks(const textureMetaDataHeader& textureMeta) const;
+    // Call this function whenever special properties of the PS2 texture have changed.
+    void UpdateStructure( Interface *engineInterface );
 
     bool getDebugBitmap( Bitmap& bmpOut ) const;
 };
@@ -852,6 +853,8 @@ struct ps2NativeTextureTypeProvider : public texNativeTypeProvider
         NativeTexturePS2 *nativeTex = (NativeTexturePS2*)objMem;
 
         nativeTex->texVersion = version;
+
+        nativeTex->UpdateStructure( engineInterface );
     }
 
     LibraryVersion GetTextureVersion( const void *objMem )

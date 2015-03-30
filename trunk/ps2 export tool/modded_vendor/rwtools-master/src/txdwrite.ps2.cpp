@@ -604,6 +604,119 @@ inline void updateTextureRegisters(NativeTexturePS2::GSTexture& gsTex, eFormatEn
     }
 }
 
+void NativeTexturePS2::UpdateStructure( Interface *engineInterface )
+{
+    LibraryVersion version = this->texVersion;
+
+    // Check whether we have to update the texture contents.
+    uint32 mipmapCount = this->mipmaps.size();
+
+    eRasterFormat rasterFormat = this->rasterFormat;
+    ePaletteType paletteType = this->paletteType;
+
+    bool hasToUpdateContents = ( mipmapCount > 0 );
+
+    if ( hasToUpdateContents )
+    {
+        // Make sure all textures are in the required encoding format.
+        eFormatEncodingType requiredFormat = this->getHardwareRequiredEncoding(version);
+
+        // Get the format we should decode to.
+        eFormatEncodingType actualEncodingType = getFormatEncodingFromRasterFormat(rasterFormat, paletteType);
+
+        eFormatEncodingType currentMipmapEncodingType = this->swizzleEncodingType;
+
+        if ( requiredFormat == FORMAT_UNKNOWN )
+        {
+            throw RwException( "unknown swizzle encoding of PS2 texture" );
+        }
+        if ( actualEncodingType == FORMAT_UNKNOWN )
+        {
+            throw RwException( "unknown image data encoding of PS2 texture" );
+        }
+
+        if ( requiredFormat != currentMipmapEncodingType )
+        {
+            uint32 depth = this->depth;
+
+            for ( uint32 n = 0; n < mipmapCount; n++ )
+            {
+                NativeTexturePS2::GSMipmap& mipLayer = this->mipmaps[ n ];
+
+                uint32 mipWidth = mipLayer.width;
+                uint32 mipHeight = mipLayer.height;
+                
+                uint32 packedWidth, packedHeight;
+
+                void *srcTexels = mipLayer.texels;
+
+                uint32 newDataSize;
+
+                void *newtexels =
+                    ps2GSPixelEncodingFormats::packImageData(
+                        engineInterface,
+                        currentMipmapEncodingType, requiredFormat,
+                        depth,
+                        srcTexels,
+                        mipWidth, mipHeight,
+                        newDataSize, packedWidth, packedHeight
+                    );
+
+                assert( newtexels != NULL );
+
+                // Update parameters.
+                mipLayer.dataSize = newDataSize;
+                mipLayer.texels = newtexels;
+
+                mipLayer.swizzleWidth = packedWidth;
+                mipLayer.swizzleHeight = packedHeight;
+
+                // Delete the old texels.
+                if ( newtexels != srcTexels )
+                {
+                    engineInterface->PixelFree( srcTexels );
+                }
+            }
+
+            // We are now encoded differently.
+            this->swizzleEncodingType = requiredFormat;
+        }
+    }
+
+    // Prepare palette data.
+    if ( paletteType != PALETTE_NONE )
+    {
+        uint32 reqPalWidth, reqPalHeight;
+
+        getPaletteTextureDimensions(paletteType, version, reqPalWidth, reqPalHeight);
+
+        // Update the texture.
+        NativeTexturePS2::GSTexture& palTex = this->paletteTex;
+
+        void *palDataSource = palTex.texels;
+        uint32 palSize = ( palTex.swizzleWidth * palTex.swizzleHeight );
+        void *newPalTexels = NULL;
+        uint32 newPalDataSize;
+        uint32 newPalWidth, newPalHeight;
+
+        genpalettetexeldata(
+            version, palDataSource,
+            rasterFormat, paletteType, palSize,
+            newPalTexels, newPalDataSize, newPalWidth, newPalHeight
+        );
+
+        if ( newPalTexels != palDataSource )
+        {
+            palTex.swizzleWidth = newPalWidth;
+            palTex.swizzleHeight = newPalHeight;
+            palTex.dataSize = newPalDataSize;
+            palTex.texels = newPalTexels;
+
+            engineInterface->PixelFree( palDataSource );
+        }
+    }
+}
+
 void ps2NativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, PlatformTexture *nativeTex, BlockProvider& outputProvider ) const
 {
     Interface *engineInterface = theTexture->engineInterface;
@@ -678,51 +791,9 @@ void ps2NativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
     // Put the image data into the required format.
     // TODO: make sure we update the encoding when it may change.
     //       we want to have a valid format all the time.
-    if ( requiredFormat != currentMipmapEncodingType )
+    if ( currentMipmapEncodingType != requiredFormat )
     {
-        uint32 depth = platformTex->depth;
-
-        for ( uint32 n = 0; n < mipmapCount; n++ )
-        {
-            NativeTexturePS2::GSMipmap& mipLayer = platformTex->mipmaps[ n ];
-
-            uint32 mipWidth = mipLayer.width;
-            uint32 mipHeight = mipLayer.height;
-            
-            uint32 packedWidth, packedHeight;
-
-            void *srcTexels = mipLayer.texels;
-
-            uint32 newDataSize;
-
-            void *newtexels =
-                ps2GSPixelEncodingFormats::packImageData(
-                    engineInterface,
-                    currentMipmapEncodingType, requiredFormat,
-                    depth,
-                    srcTexels,
-                    mipWidth, mipHeight,
-                    newDataSize, packedWidth, packedHeight
-                );
-
-            assert( newtexels != NULL );
-
-            // Update parameters.
-            mipLayer.dataSize = newDataSize;
-            mipLayer.texels = newtexels;
-
-            mipLayer.swizzleWidth = packedWidth;
-            mipLayer.swizzleHeight = packedHeight;
-
-            // Delete the old texels.
-            if ( newtexels != srcTexels )
-            {
-                engineInterface->PixelFree( srcTexels );
-            }
-        }
-
-        // We are not encoded differently.
-        platformTex->swizzleEncodingType = requiredFormat;
+        throw RwException( "invalid PS2 texture encoding in native texture serialization (integral error)" );
     }
 
     // Graphics Synthesizer package struct.
@@ -745,26 +816,10 @@ void ps2NativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
                 // Update the texture.
                 NativeTexturePS2::GSTexture& palTex = platformTex->paletteTex;
 
-                void *palDataSource = palTex.texels;
-                uint32 palSize = ( palTex.swizzleWidth * palTex.swizzleHeight );
-                void *newPalTexels = NULL;
-                uint32 newPalDataSize;
-                uint32 newPalWidth, newPalHeight;
-
-                genpalettetexeldata(
-                    version, palDataSource,
-                    platformTex->rasterFormat, platformTex->paletteType, palSize,
-                    newPalTexels, newPalDataSize, newPalWidth, newPalHeight
-                );
-
-                if ( newPalTexels != palDataSource )
+                if ( palTex.swizzleWidth != reqPalWidth ||
+                     palTex.swizzleHeight != reqPalHeight )
                 {
-                    palTex.swizzleWidth = newPalWidth;
-                    palTex.swizzleHeight = newPalHeight;
-                    palTex.dataSize = newPalDataSize;
-                    palTex.texels = newPalTexels;
-
-                    engineInterface->PixelFree( palDataSource );
+                    throw RwException( "invalid PS2 native texture palette dimensions (integral error)" );
                 }
             }
 

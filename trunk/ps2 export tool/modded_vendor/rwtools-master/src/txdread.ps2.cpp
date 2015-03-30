@@ -1544,10 +1544,10 @@ inline void GeneratePS2CLUT(
 
 void ps2NativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut )
 {
-    LibraryVersion currentVersion = engineInterface->GetVersion();
-
     // Cast to our native format.
     NativeTexturePS2 *ps2tex = (NativeTexturePS2*)objMem;
+
+    LibraryVersion currentVersion = ps2tex->texVersion;
 
     // Make sure that we got uncompressed bitmap data.
     assert( pixelsIn.compressionType == RWCOMPRESS_NONE );
@@ -1890,7 +1890,7 @@ struct ps2MipmapManager
         bool& hasDirectlyAcquiredOut
     )
     {
-        LibraryVersion currentVersion = engineInterface->GetVersion();
+        LibraryVersion currentVersion = nativeTex->texVersion;
 
         // Get the texture properties on the stack.
         eRasterFormat texRasterFormat = nativeTex->rasterFormat;

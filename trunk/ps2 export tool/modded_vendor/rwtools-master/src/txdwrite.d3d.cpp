@@ -405,6 +405,13 @@ inline void convertCompatibleRasterFormat(
             depth = 16;
             colorOrder = COLOR_BGRA;
         }
+        else
+        {
+            // Any unknown raster formats need conversion to full quality.
+            rasterFormat = RASTER_8888;
+            depth = 32;
+            colorOrder = COLOR_BGRA;
+        }
     }
 }
 
@@ -792,6 +799,154 @@ void d3dNativeTextureTypeProvider::GetTextureInfo( Interface *engineInterface, v
 
     infoOut.baseWidth = baseWidth;
     infoOut.baseHeight = baseHeight;
+}
+
+// Platform update API function.
+void NativeTextureD3D::NativeSetPlatformType( ePlatformType newPlatform )
+{
+    Interface *engineInterface = this->engineInterface;
+
+    // Make sure that our pixels are compatible.
+    // This can only be a problem for uncompressed rasters.
+    uint32 dxtType = this->dxtCompression;
+
+    if ( dxtType == 0 )
+    {
+        eRasterFormat srcRasterFormat = this->rasterFormat;
+        eColorOrdering srcColorOrder = this->colorOrdering;
+        uint32 srcDepth = this->depth;
+        
+        ePaletteType srcPaletteType = this->paletteType;
+        void *srcPaletteData = this->palette;
+        uint32 srcPaletteSize = this->paletteSize;
+
+        eRasterFormat dstRasterFormat = srcRasterFormat;
+        eColorOrdering dstColorOrder = srcColorOrder;
+        uint32 dstDepth = srcDepth;
+
+        ePaletteType dstPaletteType = srcPaletteType;
+        void *dstPaletteData = srcPaletteData;
+        uint32 dstPaletteSize = srcPaletteSize;
+
+        convertCompatibleRasterFormat(
+            newPlatform,
+            dstRasterFormat, dstColorOrder, dstDepth, srcPaletteType
+        );
+
+        // Check whether we have to convert the pixels.
+        if ( srcRasterFormat != dstRasterFormat || srcColorOrder != dstColorOrder || srcDepth != dstDepth )
+        {
+            // Do it.
+            if ( srcPaletteType != PALETTE_NONE )
+            {
+                // We have to update the palette.
+                dstPaletteData = srcPaletteData;
+
+                uint32 srcPalRasterDepth = Bitmap::getRasterFormatDepth( srcRasterFormat );
+                uint32 dstPalRasterDepth = Bitmap::getRasterFormatDepth( dstRasterFormat );
+
+                if ( srcPalRasterDepth != dstPalRasterDepth )
+                {
+                    uint32 newPalDataSize = getRasterDataSize( srcPaletteSize, dstPalRasterDepth );
+
+                    dstPaletteData = engineInterface->PixelAllocate( newPalDataSize );
+                }
+
+                ConvertPaletteData(
+                    srcPaletteData, dstPaletteData,
+                    srcPaletteSize, srcPaletteSize,
+                    srcRasterFormat, srcColorOrder, srcPalRasterDepth,
+                    dstRasterFormat, dstColorOrder, dstPalRasterDepth
+                );
+
+                if ( dstPaletteData != srcPaletteData )
+                {
+                    engineInterface->PixelFree( srcPaletteData );
+                }
+            }
+
+            // Now do all mipmap layers.
+            if ( srcPaletteType == PALETTE_NONE || srcDepth != dstDepth )
+            {
+                uint32 mipmapCount = this->mipmaps.size();
+
+                for ( uint32 n = 0; n < mipmapCount; n++ )
+                {
+                    NativeTextureD3D::mipmapLayer& mipLayer = this->mipmaps[ n ];
+
+                    uint32 mipWidth = mipLayer.width;
+                    uint32 mipHeight = mipLayer.height;
+
+                    uint32 layerWidth = mipLayer.layerWidth;
+                    uint32 layerHeight = mipLayer.layerHeight;
+
+                    void *srcTexels = mipLayer.texels;
+                    uint32 dataSize = mipLayer.dataSize;
+
+                    void *dstTexels = NULL;
+                    uint32 dstDataSize = 0;
+
+                    bool hasConverted =
+                        ConvertMipmapLayerNative(
+                            engineInterface,
+                            mipWidth, mipHeight, layerWidth, layerHeight, srcTexels, dataSize,
+                            srcRasterFormat, srcDepth, srcColorOrder, srcPaletteType, dstPaletteData, srcPaletteSize, RWCOMPRESS_NONE,
+                            dstRasterFormat, dstDepth, dstColorOrder, dstPaletteType, dstPaletteData, dstPaletteSize, RWCOMPRESS_NONE,
+                            false,
+                            mipWidth, mipHeight,
+                            dstTexels, dstDataSize
+                        );
+
+                    if ( hasConverted )
+                    {
+                        engineInterface->PixelFree( srcTexels );
+
+                        mipLayer.width = mipWidth;
+                        mipLayer.height = mipHeight;
+
+                        mipLayer.texels = dstTexels;
+                        mipLayer.dataSize = dstDataSize;
+                    }
+                }
+            }
+
+            // Update fields.
+            if ( srcRasterFormat != dstRasterFormat )
+            {
+                this->rasterFormat = dstRasterFormat;
+            }
+
+            if ( srcColorOrder != dstColorOrder )
+            {
+                this->colorOrdering = dstColorOrder;
+            }
+
+            if ( srcDepth != dstDepth )
+            {
+                this->depth = dstDepth;
+            }
+
+            if ( srcPaletteType != dstPaletteType )
+            {
+                this->paletteType = dstPaletteType;
+            }
+
+            if ( srcPaletteData != dstPaletteData )
+            {
+                // Remember to release old resources!
+                engineInterface->PixelFree( srcPaletteData );
+
+                this->palette = dstPaletteData;
+            }
+
+            if ( srcPaletteSize != dstPaletteSize )
+            {
+                this->paletteSize = dstPaletteSize;
+            }
+        }
+    }
+
+    this->platformType = newPlatform;
 }
 
 }
