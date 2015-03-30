@@ -26,10 +26,7 @@ void dxtMobileNativeTextureTypeProvider::SerializeTexture( TextureBase *theTextu
             // Write the generic header.
             mobile_dxt::textureNativeGenericHeader metaHeader;
             metaHeader.platformDescriptor = PLATFORMDESC_DXT_MOBILE;
-
-            metaHeader.filteringMode = theTexture->GetFilterMode();
-            metaHeader.uAddressing = theTexture->GetUAddressing();
-            metaHeader.vAddressing = theTexture->GetVAddressing();
+            metaHeader.formatInfo.set( *theTexture );
 
             memset( metaHeader.pad1, 0, sizeof( metaHeader.pad1 ) );
 
@@ -227,6 +224,7 @@ void dxtMobileNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engin
                 engineInterface,
                 srcHasAlpha,
                 true, false, true, false, true,
+                1.0f,
                 dstCompressionType
             );
 

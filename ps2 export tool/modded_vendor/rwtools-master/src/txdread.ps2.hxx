@@ -841,6 +841,18 @@ struct ps2NativeTextureTypeProvider : public texNativeTypeProvider
         capsOut.supportsPalette = true;
     }
 
+    void GetStorageCapabilities( storageCapabilities& storeCaps ) const
+    {
+        storeCaps.pixelCaps.supportsDXT1 = false;
+        storeCaps.pixelCaps.supportsDXT2 = false;
+        storeCaps.pixelCaps.supportsDXT3 = false;
+        storeCaps.pixelCaps.supportsDXT4 = false;
+        storeCaps.pixelCaps.supportsDXT5 = false;
+        storeCaps.pixelCaps.supportsPalette = true;
+
+        storeCaps.isCompressedFormat = false;
+    }
+
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
@@ -869,6 +881,27 @@ struct ps2NativeTextureTypeProvider : public texNativeTypeProvider
     void ClearMipmaps( Interface *engineInterface, void *objMem );
 
     void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
+
+    ePaletteType GetTexturePaletteType( const void *objMem )
+    {
+        const NativeTexturePS2 *nativeTex = (const NativeTexturePS2*)objMem;
+
+        return nativeTex->paletteType;
+    }
+
+    bool IsTextureCompressed( const void *objMem )
+    {
+        return false;
+    }
+
+    bool DoesTextureHaveAlpha( const void *objMem )
+    {
+        // TODO: this needs a rewrite. PS2 textures do not cache the alpha flag.
+
+        const NativeTexturePS2 *nativeTex = (const NativeTexturePS2*)objMem;
+
+        return nativeTex->hasAlpha;
+    }
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {

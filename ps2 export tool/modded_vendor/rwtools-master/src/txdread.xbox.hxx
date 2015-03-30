@@ -164,6 +164,18 @@ struct xboxNativeTextureTypeProvider : public texNativeTypeProvider
         capsOut.supportsPalette = true;
     }
 
+    void GetStorageCapabilities( storageCapabilities& storeCaps ) const
+    {
+        storeCaps.pixelCaps.supportsDXT1 = true;
+        storeCaps.pixelCaps.supportsDXT2 = true;
+        storeCaps.pixelCaps.supportsDXT3 = true;
+        storeCaps.pixelCaps.supportsDXT4 = true;
+        storeCaps.pixelCaps.supportsDXT5 = true;
+        storeCaps.pixelCaps.supportsPalette = true;
+
+        storeCaps.isCompressedFormat = false;
+    }
+
     void GetPixelDataFromTexture( Interface *engineInterface, void *objMem, pixelDataTraversal& pixelsOut );
     void SetPixelDataToTexture( Interface *engineInterface, void *objMem, const pixelDataTraversal& pixelsIn, acquireFeedback_t& feedbackOut );
     void UnsetPixelDataFromTexture( Interface *engineInterface, void *objMem, bool deallocate );
@@ -187,6 +199,27 @@ struct xboxNativeTextureTypeProvider : public texNativeTypeProvider
     void ClearMipmaps( Interface *engineInterface, void *objMem );
 
     void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
+
+    ePaletteType GetTexturePaletteType( const void *objMem )
+    {
+        const NativeTextureXBOX *nativeTex = (const NativeTextureXBOX*)objMem;
+
+        return nativeTex->paletteType;
+    }
+
+    bool IsTextureCompressed( const void *objMem )
+    {
+        const NativeTextureXBOX *nativeTex = (const NativeTextureXBOX*)objMem;
+
+        return ( nativeTex->dxtCompression != 0 );
+    }
+
+    bool DoesTextureHaveAlpha( const void *objMem )
+    {
+        const NativeTextureXBOX *nativeTex = (const NativeTextureXBOX*)objMem;
+
+        return nativeTex->hasAlpha;
+    }
 
     uint32 GetDriverIdentifier( void *objMem ) const
     {

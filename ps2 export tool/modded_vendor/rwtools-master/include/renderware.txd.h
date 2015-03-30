@@ -60,6 +60,18 @@ public:
     void set(const TextureBase& inTex);
 };
 
+struct wardrumFormatInfo
+{
+private:
+    uint32 filterMode;
+    uint32 uAddressing;
+    uint32 vAddressing;
+
+public:
+    void parse(TextureBase& theTexture) const;
+    void set(const TextureBase& inTex );
+};
+
 #include "renderware.txd.pixelformat.h"
 
 struct ps2MipmapTransmissionData
@@ -251,9 +263,11 @@ struct Raster
     void* getNativeInterface( void );
 
 	void convertToFormat(eRasterFormat format);
+    void convertToPalette(ePaletteType paletteType);
 
     // Optimization routines.
     void optimizeForLowEnd(float quality);
+    void compress(float quality);
 
     // Mipmap utilities.
     uint32 getMipmapCount( void ) const;
@@ -454,6 +468,18 @@ struct pixelCapabilities
     bool supportsPalette;
 };
 
+struct storageCapabilities
+{
+    inline storageCapabilities( void )
+    {
+        this->isCompressedFormat = false;
+    }
+
+    pixelCapabilities pixelCaps;
+
+    bool isCompressedFormat;
+};
+
 struct pixelFormat
 {
     inline pixelFormat( void )
@@ -628,6 +654,7 @@ struct texNativeTypeProvider abstract
 
     // Conversion parameters.
     virtual void            GetPixelCapabilities( pixelCapabilities& capsOut ) const = 0;
+    virtual void            GetStorageCapabilities( storageCapabilities& storeCaps ) const = 0;
 
     struct acquireFeedback_t
     {
@@ -656,6 +683,11 @@ struct texNativeTypeProvider abstract
 
     // Information API.
     virtual void            GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut ) = 0;
+
+    virtual ePaletteType    GetTexturePaletteType( const void *objMem ) = 0;
+    virtual bool            IsTextureCompressed( const void *objMem ) = 0;
+
+    virtual bool            DoesTextureHaveAlpha( const void *objMem ) = 0;
 
     // If you extend this method, your native texture can export a public API interface to the application.
     // This will be an optimized junction point between native internals and high level API, so use it with caution.

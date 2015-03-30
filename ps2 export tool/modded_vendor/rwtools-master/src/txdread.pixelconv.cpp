@@ -705,9 +705,10 @@ bool ConvertMipmapLayerEx(
 }
 
 bool DecideBestDXTCompressionFormat(
-    Interface *engineInterface,     // TODO: fetch quality parameter from this.
+    Interface *engineInterface,
     bool srcHasAlpha,
     bool supportsDXT1, bool supportsDXT2, bool supportsDXT3, bool supportsDXT4, bool supportsDXT5,
+    float quality,
     eCompressionType& dstCompressionTypeOut
 )
 {
@@ -717,6 +718,19 @@ bool DecideBestDXTCompressionFormat(
     // We go from DXT5 to DXT1, only mentioning the actually supported formats.
     if ( srcHasAlpha )
     {
+        // Do a smart decision based on the quality parameter.
+        if ( targetCompressionType == RWCOMPRESS_NONE )
+        {
+            if ( supportsDXT5 && quality >= 1.0f )
+            {
+                targetCompressionType = RWCOMPRESS_DXT5;
+            }
+            else if ( supportsDXT3 && quality < 1.0f )
+            {
+                targetCompressionType = RWCOMPRESS_DXT3;
+            }
+        }
+
         if ( targetCompressionType == RWCOMPRESS_NONE )
         {
             if ( supportsDXT5 )

@@ -71,9 +71,7 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 NativeTextureMobileUNC *platformTex = (NativeTextureMobileUNC*)nativeTex;
 
                 // Read the format info.
-                theTexture->SetFilterMode( (eRasterStageFilterMode)metaHeader.filteringMode );
-                theTexture->SetUAddressing( (eRasterStageAddressMode)metaHeader.uAddressing );
-                theTexture->SetVAddressing( (eRasterStageAddressMode)metaHeader.vAddressing );
+                metaHeader.formatInfo.parse( *theTexture );
 
                 // Read the texture names.
                 {
@@ -209,6 +207,9 @@ void uncNativeTextureTypeProvider::DeserializeTexture( TextureBase *theTexture, 
                 {
                     throw RwException( "texture " + theTexture->GetName() + " is empty" );
                 }
+
+                // Fix filtering mode.
+                fixFilteringMode( *theTexture, mipmap_index );
 
                 int warningLevel = engineInterface->GetWarningLevel();
 

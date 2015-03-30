@@ -65,9 +65,7 @@ void pvrNativeTextureTypeProvider::SerializeTexture( TextureBase *theTexture, Pl
             // Write the header with meta information.
             pvr::textureMetaHeaderGeneric metaHeader;
             metaHeader.platformDescriptor = PLATFORM_PVR;
-            metaHeader.filterMode = theTexture->GetFilterMode();
-            metaHeader.uAddressing = theTexture->GetUAddressing();
-            metaHeader.vAddressing = theTexture->GetVAddressing();
+            metaHeader.formatInfo.set( *theTexture );
             
             memset( metaHeader.pad1, 0, sizeof(metaHeader.pad1) );
 

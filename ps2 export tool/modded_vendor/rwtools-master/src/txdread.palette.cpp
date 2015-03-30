@@ -442,4 +442,123 @@ void PalettizePixelData( Interface *engineInterface, pixelDataTraversal& pixelDa
     }
 }
 
+void Raster::convertToPalette( ePaletteType paletteType )
+{
+    // NULL operation.
+    if ( paletteType == PALETTE_NONE )
+        return;
+
+    PlatformTexture *platformTex = this->platformData;
+
+    if ( !platformTex )
+    {
+        throw RwException( "no native data" );
+    }
+
+    Interface *engineInterface = this->engineInterface;
+
+    texNativeTypeProvider *texProvider = GetNativeTextureTypeProvider( engineInterface, platformTex );
+
+    if ( !texProvider )
+    {
+        throw RwException( "invalid native data" );
+    }
+
+    // If the raster has the same palettization as we request, we can terminate early.
+    ePaletteType currentPaletteType = texProvider->GetTexturePaletteType( platformTex );
+
+    if ( currentPaletteType == paletteType )
+        return;
+
+    // Get palette default capabilities.
+    uint32 dstDepth;
+
+    if ( paletteType == PALETTE_4BIT )
+    {
+        dstDepth = 4;
+    }
+    else if ( paletteType == PALETTE_8BIT )
+    {
+        dstDepth = 8;
+    }
+    else
+    {
+        throw RwException( "unknown palette type in raster palettization routine" );
+    }
+
+    // Decide whether the target raster even supports palette.
+    pixelCapabilities inputTransferCaps;
+
+    texProvider->GetPixelCapabilities( inputTransferCaps );
+
+    if ( inputTransferCaps.supportsPalette == false )
+    {
+        throw RwException( "target raster does not support palette input" );
+    }
+
+    storageCapabilities storageCaps;
+
+    texProvider->GetStorageCapabilities( storageCaps );
+
+    if ( storageCaps.pixelCaps.supportsPalette == false )
+    {
+        throw RwException( "target raster cannot store palette data" );
+    }
+
+    // Alright, our native data does support palette data.
+    // We now want to fetch the rasters pixel data, make it private and palettize it.
+    pixelDataTraversal pixelData;
+
+    texProvider->GetPixelDataFromTexture( engineInterface, platformTex, pixelData );
+
+    bool hasDirectlyAcquired = false;
+
+    try
+    {
+        // Unset it from the original texture.
+        texProvider->UnsetPixelDataFromTexture( engineInterface, platformTex, pixelData.isNewlyAllocated == true );
+
+        // Pixel data is now safely stand-alone.
+        pixelData.SetStandalone();
+
+        // Convert the pixel data to palette.
+        pixelFormat targetPixelFormat;
+        targetPixelFormat.rasterFormat = pixelData.rasterFormat;
+        targetPixelFormat.depth = dstDepth;
+        targetPixelFormat.colorOrder = pixelData.colorOrder;
+        targetPixelFormat.paletteType = paletteType;
+        targetPixelFormat.compressionType = RWCOMPRESS_NONE;
+
+        bool hasConverted = ConvertPixelData( engineInterface, pixelData, targetPixelFormat );
+
+        if ( !hasConverted )
+        {
+            throw RwException( "pixel conversion failed in palettization routine" );
+        }
+
+        // Now set the pixels to the texture again.
+        texNativeTypeProvider::acquireFeedback_t acquireFeedback;
+
+        texProvider->SetPixelDataToTexture( engineInterface, platformTex, pixelData, acquireFeedback );
+
+        hasDirectlyAcquired = acquireFeedback.hasDirectlyAcquired;
+    }
+    catch( ... )
+    {
+        pixelData.FreePixels( engineInterface );
+
+        throw;
+    }
+
+    if ( hasDirectlyAcquired == false )
+    {
+        // This should never happen.
+        pixelData.FreePixels( engineInterface );
+    }
+    else
+    {
+        pixelData.DetachPixels();
+    }
+}
+
 };
