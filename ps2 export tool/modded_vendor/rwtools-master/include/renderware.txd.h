@@ -246,6 +246,10 @@ struct Raster
     void newNativeData( const char *typeName );
     void clearNativeData( void );
 
+    bool hasNativeDataOfType( const char *typeName ) const;
+
+    void* getNativeInterface( void );
+
 	void convertToFormat(eRasterFormat format);
 
     // Optimization routines.
@@ -567,6 +571,9 @@ struct RwUnsupportedOperationException : public RwException
     }
 };
 
+// Include native texture extension public headers.
+#include "renderware.txd.d3d.h"
+
 struct rawMipmapLayer
 {
     pixelDataTraversal::mipmapResource mipData;
@@ -649,6 +656,14 @@ struct texNativeTypeProvider abstract
 
     // Information API.
     virtual void            GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut ) = 0;
+
+    // If you extend this method, your native texture can export a public API interface to the application.
+    // This will be an optimized junction point between native internals and high level API, so use it with caution.
+    // Note that if internals change the application must take that into account.
+    virtual void*           GetNativeInterface( void *objMem )
+    {
+        return NULL;
+    }
 
     virtual bool            GetDebugBitmap( Interface *engineInterface, void *objMem, Bitmap& drawTarget ) const
     {

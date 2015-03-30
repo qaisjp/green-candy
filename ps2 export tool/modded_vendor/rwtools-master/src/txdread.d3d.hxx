@@ -130,7 +130,7 @@ inline bool getD3DFormatFromRasterType(eRasterFormat paletteRasterType, ePalette
     return hasFormat;
 }
 
-struct NativeTextureD3D
+struct NativeTextureD3D : public d3dpublic::d3dNativeTextureInterface
 {
     enum ePlatformType
     {
@@ -250,6 +250,68 @@ struct NativeTextureD3D
         //compressDxt( dxtType );
     }
 
+    // Implement the public API.
+
+    bool GetD3DFormat( DWORD& d3dFormat ) const
+    {
+        bool hasD3DFormat = this->hasD3DFormat;
+
+        if ( hasD3DFormat )
+        {
+            d3dFormat = (DWORD)this->d3dFormat;
+        }
+
+        return hasD3DFormat;
+    }
+
+    void SetPlatformType( d3dpublic::ePlatformType platformType )
+    {
+        ePlatformType nativePlatformType;
+        bool hasNativePlatformType = false;
+
+        if ( platformType == d3dpublic::PLATFORM_D3D8 )
+        {
+            nativePlatformType = PLATFORM_D3D8;
+
+            hasNativePlatformType = true;
+        }
+        else if ( platformType == d3dpublic::PLATFORM_D3D9 )
+        {
+            nativePlatformType = PLATFORM_D3D9;
+
+            hasNativePlatformType = true;
+        }
+
+        if ( hasNativePlatformType )
+        {
+            NativeSetPlatformType( nativePlatformType );
+        }
+    }
+
+    d3dpublic::ePlatformType GetPlatformType( void ) const
+    {
+        d3dpublic::ePlatformType platformType = d3dpublic::PLATFORM_UNKNOWN;
+
+        ePlatformType nativePlatformType = this->platformType;
+
+        if ( nativePlatformType == PLATFORM_D3D8 )
+        {
+            platformType = d3dpublic::PLATFORM_D3D8;
+        }
+        else if ( nativePlatformType == PLATFORM_D3D9 )
+        {
+            platformType = d3dpublic::PLATFORM_D3D9;
+        }
+
+        return platformType;
+    }
+
+    // PUBLIC API END
+
+private:
+    void NativeSetPlatformType( ePlatformType newPlatform );
+
+public:
     typedef genmip::mipmapLayer mipmapLayer;
 
     // Platform descriptor.
@@ -388,6 +450,16 @@ struct d3dNativeTextureTypeProvider : public texNativeTypeProvider
     bool GetMipmapLayer( Interface *engineInterface, void *objMem, uint32 mipIndex, rawMipmapLayer& layerOut );
     bool AddMipmapLayer( Interface *engineInterface, void *objMem, const rawMipmapLayer& layerIn, acquireFeedback_t& feedbackOut );
     void ClearMipmaps( Interface *engineInterface, void *objMem );
+
+    void* GetNativeInterface( void *objMem )
+    {
+        NativeTextureD3D *nativeTex = (NativeTextureD3D*)objMem;
+
+        // The native interface is part of the texture.
+        d3dpublic::d3dNativeTextureInterface *nativeAPI = nativeTex;
+
+        return (void*)nativeAPI;
+    }
 
     void GetTextureInfo( Interface *engineInterface, void *objMem, nativeTextureBatchedInfo& infoOut );
 

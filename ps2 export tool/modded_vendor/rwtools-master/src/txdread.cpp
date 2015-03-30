@@ -850,6 +850,9 @@ struct nativeTextureStreamPlugin : public serializationProvider
 
                     if ( platformData )
                     {
+                        // Set the version of the native texture.
+                        definiteProvider->SetTextureVersion( engineInterface, platformData, inputProvider.getBlockVersion() );
+
                         // Attempt to deserialize the native texture.
                         inputProvider.seek( 0, RWSEEK_BEG );
 
@@ -891,6 +894,9 @@ struct nativeTextureStreamPlugin : public serializationProvider
                             {
                                 try
                                 {
+                                    // Set the version of the native data.
+                                    theProvider->SetTextureVersion( engineInterface, nativeData, inputProvider.getBlockVersion() );
+
                                     inputProvider.seek( 0, RWSEEK_BEG );
 
                                     try
@@ -2144,6 +2150,39 @@ void Raster::clearNativeData( void )
     this->platformData = NULL;
 }
 
+bool Raster::hasNativeDataOfType( const char *typeName ) const
+{
+    PlatformTexture *platformTex = this->platformData;
+
+    if ( !platformTex )
+        return false;
+
+    Interface *engineInterface = this->engineInterface;
+
+    GenericRTTI *rtObj = RwTypeSystem::GetTypeStructFromObject( platformTex );
+
+    RwTypeSystem::typeInfoBase *typeInfo = RwTypeSystem::GetTypeInfoFromTypeStruct( rtObj );
+
+    return ( strcmp( typeInfo->name, typeName ) == 0 );
+}
+
+void* Raster::getNativeInterface( void )
+{
+    PlatformTexture *platformTex = this->platformData;
+
+    if ( !platformTex )
+        return NULL;
+
+    Interface *engineInterface = this->engineInterface;
+
+    texNativeTypeProvider *texProvider = GetNativeTextureTypeProvider( engineInterface, platformTex );
+
+    if ( !texProvider )
+        return NULL;
+
+    return texProvider->GetNativeInterface( platformTex );
+}
+
 void Raster::optimizeForLowEnd(float quality)
 {
     //if (this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9)
@@ -2334,9 +2373,6 @@ void Raster::writeTGA(const char *path, bool optimized)
 
 void Raster::writeTGAStream(Stream *tgaStream, bool optimized)
 {
-    //if ( this->platform != PLATFORM_D3D8 && this->platform != PLATFORM_D3D9 )
-    //    return;
-
     // We are using an extended version of the TGA standard that not a lot of editors support.
 
     Interface *engineInterface = this->engineInterface;

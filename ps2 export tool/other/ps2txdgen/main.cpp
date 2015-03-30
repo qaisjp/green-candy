@@ -188,7 +188,7 @@ static bool ProcessTXDArchive(
 
                                         if ( fileNamePart.size() != 0 )
                                         {
-                                            std::string uniqueTextureNameTGA = directoryPart + fileNamePart + "_" + theTexture->name + ".tga";
+                                            std::string uniqueTextureNameTGA = directoryPart + fileNamePart + "_" + theTexture->GetName() + ".tga";
 
                                             CFile *debugOutputStream = debugRoot->Open( uniqueTextureNameTGA.c_str(), "wb" );
 
@@ -261,7 +261,7 @@ static bool ProcessTXDArchive(
                             // Improve the filtering mode if the user wants us to.
                             if ( improveFiltering )
                             {
-                                tex.improveFiltering();
+                                theTexture->improveFiltering();
                             }
 
                             // Convert it into the target platform.
@@ -276,22 +276,28 @@ static bool ProcessTXDArchive(
                             else if ( targetPlatform == PLATFORM_PC )
                             {
                                 // First, convert to Direct3D driver.
-                                rw::ConvertRasterTo( texRaster, "Direct3D" );
+                                bool couldConvert = rw::ConvertRasterTo( texRaster, "Direct3D" );
 
-#if 0
-                                // Next, depends on the game.
-                                if (gameVersion == rw::KnownVersions::SA)
+                                if ( couldConvert )
                                 {
-                                    rw::ConvertRasterTo( texRaster, "Direct3D 9" );
-                                }
-                                else
-                                {
-                                    rw::ConvertRasterTo( texRaster, "Direct3D 8" );
-                                }
+                                    // Obtain the native interface to the texture.
+                                    // Note that this is a very dangerous operation.
+                                    rw::d3dpublic::d3dNativeTextureInterface *nativeInterface =
+                                        (rw::d3dpublic::d3dNativeTextureInterface*)texRaster->getNativeInterface();
 
-                                // Make sure that we have a D3DFORMAT field.
-                                tex.makeDirect3DCompatible();
-#endif
+                                    if ( nativeInterface )
+                                    {
+                                        // Next, depends on the game.
+                                        if (gameVersion == rw::KnownVersions::SA)
+                                        {
+                                            nativeInterface->SetPlatformType( rw::d3dpublic::PLATFORM_D3D9 );
+                                        }
+                                        else
+                                        {
+                                            nativeInterface->SetPlatformType( rw::d3dpublic::PLATFORM_D3D8 );
+                                        }
+                                    }
+                                }
                             }
                             else if ( targetPlatform == PLATFORM_DXT_MOBILE )
                             {
@@ -903,7 +909,8 @@ bool ApplicationMain( void )
                     // Mipmap Generation Mode.
                     if ( const char *mipGenMode = mainEntry->Get( "mipGenMode" ) )
                     {
-                        if ( stricmp( mipGenMode, "default" ) == 0 )
+                        if ( stricmp( mipGenMode, "default" ) == 0 ||
+                             stricmp( mipGenMode, "recommended" ) == 0 )
                         {
                             c_mipGenMode = rw::MIPMAPGEN_DEFAULT;
                         }
@@ -975,7 +982,8 @@ bool ApplicationMain( void )
                             c_dxtRuntimeType = rw::DXTRUNTIME_NATIVE;
                         }
                         else if ( stricmp( dxtCompressionMethod, "squish" ) == 0 ||
-                                  stricmp( dxtCompressionMethod, "libsquish" ) == 0 )
+                                  stricmp( dxtCompressionMethod, "libsquish" ) == 0 ||
+                                  stricmp( dxtCompressionMethod, "recommended" ) == 0 )
                         {
                             c_dxtRuntimeType = rw::DXTRUNTIME_SQUISH;
                         }
