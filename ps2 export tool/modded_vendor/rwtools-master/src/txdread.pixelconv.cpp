@@ -458,7 +458,7 @@ bool ConvertMipmapLayerNative(
     void*& dstTexelsOut, uint32& dstDataSizeOut
 )
 {
-    bool isMipLayerTexels = false;
+    bool isMipLayerTexels = true;
 
     // Perform this like a pipeline with multiple stages.
     uint32 srcDXTType;
@@ -616,7 +616,10 @@ bool ConvertMipmapLayerNative(
         // Perform compression now.
         if ( isDstDXTType )
         {
-            assert( dstDXTType != 2 && dstDXTType != 4 );
+            if ( dstDXTType == 2 || dstDXTType == 4 )
+            {
+                throw RwException( "unsupported DXT target in pixel conversion routine (sorry)" );
+            }
 
             void *dstTexels;
             uint32 dstDataSize;

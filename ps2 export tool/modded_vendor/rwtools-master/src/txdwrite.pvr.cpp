@@ -370,6 +370,7 @@ inline void CompressMipmapToPVR(
     eRasterFormat pvrRasterFormat, uint32 pvrDepth, eColorOrdering pvrColorOrder,
     const pvrtexture::PixelType pvrSrcPixelType, const pvrtexture::PixelType& pvrDstPixelType,
     uint32 pvrBlockWidth, uint32 pvrBlockHeight,
+    uint32 pvrBlockDepth,
     uint32& widthOut, uint32& heightOut,
     void*& dstTexelsOut, uint32& dstDataSizeOut
 )
@@ -426,7 +427,7 @@ inline void CompressMipmapToPVR(
     assert( transcodeSuccess == true );
 
     // Copy the PowerVR pixels into a local array.
-    uint32 dstDataSize = getRasterDataSize(pvrTexWidth * pvrTexHeight, pvrDepth);
+    uint32 dstDataSize = getRasterDataSize(pvrTexWidth * pvrTexHeight, pvrBlockDepth);
 
     assert(dstDataSize <= pvrTexture.getDataSize());
 
@@ -572,6 +573,7 @@ void pvrNativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
                 RASTER_8888, 32, COLOR_RGBA,
                 pvrSrcPixelType, pvrDstPixelType,
                 pvrBlockWidth, pvrBlockHeight,
+                pvrDepth,
                 compressedWidth, compressedHeight,
                 dstTexels, dstDataSize
             );
@@ -806,6 +808,7 @@ struct pvrMipmapManager
             RASTER_8888, 32, COLOR_RGBA,
             pvrSrcPixelType, pvrDstPixelType,
             pvrBlockWidth, pvrBlockHeight,
+            pvrDepth,
             compressedWidth, compressedHeight,
             dstTexels, dstDataSize
         );
