@@ -1,4 +1,4 @@
-TxdGen 0.9.8 by The_GTA. Beta release. PRERELEASE.
+TxdGen 0.9.8 by The_GTA. Beta release.
 ==================================
 
 TxdGen is the RW Texture Dictionary conversion tool. Its goal is to support
@@ -16,6 +16,17 @@ the output into another folder.
 Fix problems that the Rockstar development team has overlooked! The parser
 comes with rich debugging output to inform you about any problems that
 lurk inside of official and community TXD files.
+
+Now supports GTA3 Android/iOS/mobile TXDs! Using a freshly rewritten RenderWare
+implementation TxdGen is one of the most stable RW file converters out there!
+
+==================================
+REQUIREMENTS
+==================================
+To use TxdGen you need the Visual Studio 2013 redistributable, x86 version.
+You can download it from Microsoft's website.
+
+http://www.microsoft.com/en-us/download/details.aspx?id=40784
 
 ==================================
 HOW TO USE TXDGEN
@@ -79,7 +90,7 @@ SOURCE CODE
 The source code to this project is located on the MTA:Eir respository under
 the "ps2 export tool" directory.
 
-https://www.assembla.com/code/green-candy/subversion/nodes/584/trunk/ps2%20export%20tool
+https://www.assembla.com/code/green-candy/subversion/nodes/585/trunk/ps2%20export%20tool
 
 - March 2015
 

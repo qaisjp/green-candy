@@ -521,9 +521,21 @@ void Raster::convertToPalette( ePaletteType paletteType )
         // Pixel data is now safely stand-alone.
         pixelData.SetStandalone();
 
+        // We always want to palettize to 32bit quality.
+        eRasterFormat targetRasterFormat = pixelData.rasterFormat;
+
+        if ( pixelData.hasAlpha )
+        {
+            targetRasterFormat = RASTER_8888;
+        }
+        else
+        {
+            targetRasterFormat = RASTER_888;
+        }
+
         // Convert the pixel data to palette.
         pixelFormat targetPixelFormat;
-        targetPixelFormat.rasterFormat = pixelData.rasterFormat;
+        targetPixelFormat.rasterFormat = targetRasterFormat;
         targetPixelFormat.depth = dstDepth;
         targetPixelFormat.colorOrder = pixelData.colorOrder;
         targetPixelFormat.paletteType = paletteType;
