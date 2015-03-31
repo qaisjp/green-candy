@@ -1,3 +1,6 @@
+r585
+- added generic extension block storage so that extensions are preserved for all RenderWare objects
+---------------------
 r584
 - reimplemented palettization and compression - tons of great things
 ---------------------

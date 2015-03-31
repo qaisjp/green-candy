@@ -1570,14 +1570,15 @@ void ps2NativeTextureTypeProvider::SetPixelDataToTexture( Interface *engineInter
         ePaletteType paletteType = pixelsIn.paletteType;
         uint32 paletteSize = pixelsIn.paletteSize;
 
-        // Only fix if the user wants us to.
-        if (engineInterface->GetFixIncompatibleRasters())
+        if (targetRasterFormat == RASTER_888)
         {
-            if (targetRasterFormat == RASTER_888)
-            {
-                // Since this raster takes the same memory space as RASTER_8888, we can silently convert it.
-                targetRasterFormat = RASTER_8888;
-            }
+            // Since this raster takes the same memory space as RASTER_8888, we can silently convert it.
+            targetRasterFormat = RASTER_8888;
+        }
+        else if (targetRasterFormat != RASTER_1555)
+        {
+            // We need to change the format of the texture, as we do not support it.
+            targetRasterFormat = RASTER_8888;
         }
 
         if (paletteType != PALETTE_NONE)

@@ -432,20 +432,20 @@ static bool ProcessTXDArchive(
                             // Palettize the texture to save space.
                             if ( doCompress )
                             {
+                                // If we are not target architecture already, make sure we are.
+                                if ( hasConvertedToTargetArchitecture == false )
+                                {
+                                    ConvertRasterToPlatform( theTexture, texRaster, targetPlatform, gameVersion );
+
+                                    hasConvertedToTargetArchitecture = true;
+                                }
+
                                 if ( targetPlatform == PLATFORM_PS2 )
                                 {
                                     texRaster->optimizeForLowEnd( compressionQuality );
                                 }
                                 else if ( targetPlatform == PLATFORM_XBOX || targetPlatform == PLATFORM_PC )
                                 {
-                                    // If we are not target architecture already, make sure we are.
-                                    if ( hasConvertedToTargetArchitecture == false )
-                                    {
-                                        ConvertRasterToPlatform( theTexture, texRaster, targetPlatform, gameVersion );
-
-                                        hasConvertedToTargetArchitecture = true;
-                                    }
-
                                     // Compress if we are not already compressed.
                                     texRaster->compress( compressionQuality );
                                 }

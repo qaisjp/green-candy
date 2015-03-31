@@ -954,6 +954,9 @@ void NativeTextureD3D::NativeSetPlatformType( ePlatformType newPlatform )
             {
                 this->paletteSize = dstPaletteSize;
             }
+
+            // We need to update our D3DFORMAT field.
+            this->updateD3DFormat();
         }
     }
 
