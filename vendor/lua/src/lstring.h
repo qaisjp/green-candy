@@ -23,7 +23,7 @@ LUAI_FUNC void luaS_resize (lua_State *L, int newsize);
 LUAI_FUNC Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e);
 LUAI_FUNC void luaS_freeudata (lua_State *L, Udata *u);
 LUAI_FUNC TString *luaS_newlstr (lua_State *L, const char *str, size_t l);
-LUAI_FUNC int luaS_concat (lua_State *L, StkId top, int total);
+LUAI_FUNC int luaS_concat (lua_State *L, int topOffset, int total);
 LUAI_FUNC void luaS_globalgc (lua_State *L);
 LUAI_FUNC void luaS_free (lua_State *L, TString *s);
 

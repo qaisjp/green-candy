@@ -337,13 +337,6 @@ typedef long long LUA_WIDE_INTEGER;
 #undef LUA_COMPAT_LOADLIB
 
 /*
-@@ LUA_COMPAT_VARARG controls compatibility with old vararg feature.
-** CHANGE it to undefined as soon as your programs use only '...' to
-** access vararg parameters (instead of the old 'arg' table).
-*/
-#define LUA_COMPAT_VARARG
-
-/*
 @@ LUA_COMPAT_MOD controls compatibility with old math.mod function.
 ** CHANGE it to undefined as soon as your programs use 'math.fmod' or
 ** the new '%' operator instead of 'math.mod'.
@@ -791,7 +784,7 @@ public:
 @* will verify the integrity of all internal objects if compiled in debug mode.
 ** DEFINE or COMMENT OUT
 */
-//#define LUA_OBJECT_VERIFICATION
+#define LUA_OBJECT_VERIFICATION
 
 /*
 @@ LUA_MAXCAPTURES is the maximum number of captures that a pattern

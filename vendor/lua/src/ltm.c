@@ -52,10 +52,12 @@ void luaT_init (lua_State *L) {
   }
 }
 
+#define _LUA_NUMELMS(x)     ( sizeof(x) / sizeof(*x) )
+
 unsigned int luaT_getnumtypes( lua_State *L )
 {
     UNUSED(L);
-    return NUMELMS( luaT_typenames );
+    return _LUA_NUMELMS( luaT_typenames );
 }
 
 int luaT_gettype( lua_State *L, unsigned int index )
@@ -81,7 +83,7 @@ int luaT_gettype( lua_State *L, unsigned int index )
 
     int iTypeNum = -1;
 
-    if ( index < NUMELMS(theTypes) )
+    if ( index < _LUA_NUMELMS(theTypes) )
     {
         iTypeNum = theTypes[ index ];
     }
@@ -94,15 +96,22 @@ int luaT_gettype( lua_State *L, unsigned int index )
 ** function to be used with macro "fasttm": optimized for absence of
 ** tag methods
 */
-const TValue *luaT_gettm (Table *events, TMS event, TString *ename)
+bool luaT_gettm (lua_State *L, Table *events, TMS event, TString *ename, ConstValueAddress& outTM)
 {
-  const TValue *tm = luaH_getstr(events, ename);
-  lua_assert(event <= TM_EQ);
-  if (ttisnil(tm)) {  /* no tag method? */
-    events->flags |= bitmask((lu_byte)event);  /* cache this fact */
-    return NULL;
-  }
-  else return tm;
+    ConstValueAddress tm = luaH_getstr(L, events, ename);
+
+    lua_assert(event <= TM_EQ);
+
+    if (ttisnil(tm))
+    {  /* no tag method? */
+        events->flags |= bitmask((lu_byte)event);  /* cache this fact */
+        return false;
+    }
+    else
+    {
+        outTM = tm;
+        return true;
+    }
 }
 
 inline Table* luaT_getmetabyobj( lua_State *L, const TValue *o )
@@ -118,16 +127,17 @@ inline Table* luaT_getmetabyobj( lua_State *L, const TValue *o )
     return L->mt[ttype(o)];
 }
 
-const TValue *luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )
+ConstValueAddress luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )
 {
     if ( ttype(o) == LUA_TCLASS )
     {
-        const TValue *res = luaH_getstr( jvalue(o)->storage, G(L)->tmname[event] );
+        ConstValueAddress res = luaH_getstr( L, jvalue(o)->storage, G(L)->tmname[event] );
+
         if ( res )
             return res;
     }
     Table *mt = luaT_getmetabyobj( L, o );
-    return (mt ? luaH_getstr( mt, G(L)->tmname[event] ) : luaO_nilobject);
+    return (mt ? luaH_getstr( L, mt, G(L)->tmname[event] ) : luaO_getnilcontext( L ));
 }
 
 // Module initialization.

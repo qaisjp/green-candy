@@ -13,25 +13,32 @@
 #include "ltm.h"
 
 
-#define tostring(L,o) ((ttype(o) == LUA_TSTRING) || (luaV_tostring(L, o)))
+LUAI_FUNC int luaV_lessthan                 (lua_State *L, ConstValueAddress& l, ConstValueAddress& r);
+LUAI_FUNC int luaV_equalval                 (lua_State *L, ConstValueAddress& t1, ConstValueAddress& t2);
+LUAI_FUNC ConstValueAddress luaV_tonumber   (ConstValueAddress& obj, ValueAddress& n);
+LUAI_FUNC int luaV_tostring                 (lua_State *L, ValueAddress& obj);
+LUAI_FUNC void luaV_handle_index            (lua_State *L, ConstValueAddress& obj, ConstValueAddress& tm, ConstValueAddress& key, ValueAddress& val);
+LUAI_FUNC void luaV_gettable                (lua_State *L, ConstValueAddress& t, ConstValueAddress& key, ValueAddress& val);
+LUAI_FUNC void luaV_handle_newindex         (lua_State *L, ConstValueAddress& obj, ConstValueAddress& tm, ConstValueAddress& key, ConstValueAddress& val);
+LUAI_FUNC void luaV_settable                (lua_State *L, ConstValueAddress& t, ConstValueAddress& key, ConstValueAddress& val);
+LUAI_FUNC void luaV_execute                 (lua_State *L, int nexeccalls, eCallFrameModel callFrameModel);
+LUAI_FUNC void luaV_concat                  (lua_State *L, int total, int last);
 
-#define tonumber(o,n)	(ttype(o) == LUA_TNUMBER || \
-                         (((o) = luaV_tonumber(o,n)) != NULL))
+// Macros to simplify the API.
+FASTAPI int tostring( lua_State *L, ValueAddress& o )
+{
+    return ((ttype(o) == LUA_TSTRING) || (luaV_tostring(L, o)));
+}
 
-#define equalobj(L,o1,o2) \
-	(ttype(o1) == ttype(o2) && luaV_equalval(L, o1, o2))
+FASTAPI int tonumber( ConstValueAddress& o, ValueAddress& n )
+{
+    return (ttype(o) == LUA_TNUMBER || (o = luaV_tonumber(o,n)) != NULL);
+}
 
-
-LUAI_FUNC int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r);
-LUAI_FUNC int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2);
-LUAI_FUNC const TValue *luaV_tonumber (const TValue *obj, TValue *n);
-LUAI_FUNC int luaV_tostring (lua_State *L, StkId obj);
-LUAI_FUNC void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val );
-LUAI_FUNC void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, StkId val);
-LUAI_FUNC void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val );
-LUAI_FUNC void luaV_settable (lua_State *L, const TValue *t, const TValue *key, StkId val);
-LUAI_FUNC void luaV_execute (lua_State *L, int nexeccalls);
-LUAI_FUNC void luaV_concat (lua_State *L, int total, int last);
+FASTAPI int equalobj( lua_State *L, ConstValueAddress& o1, ConstValueAddress& o2 )
+{
+    return (ttype(o1) == ttype(o2) && luaV_equalval(L, o1, o2));
+}
 
 // Module initialization.
 LUAI_FUNC void luaV_init( lua_config *cfg );

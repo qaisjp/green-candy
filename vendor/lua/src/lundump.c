@@ -155,24 +155,32 @@ static void LoadDebug(LoadState* S, Proto* f)
 
 static Proto* LoadFunction(LoadState* S, TString* p)
 {
-    Proto* f;
     callstack_ref cref( *S->L );
 
-    f=luaF_newproto(S->L);
-    setptvalue2s(S->L,S->L->top,f); incr_top(S->L);
-    f->source=LoadString(S);
-    if (f->source==NULL) f->source=p;
-    f->linedefined=LoadInt(S);
-    f->lastlinedefined=LoadInt(S);
-    f->nups=LoadByte(S);
-    f->numparams=LoadByte(S);
-    f->is_vararg=LoadByte(S);
-    f->maxstacksize=LoadByte(S);
-    LoadCode(S,f);
-    LoadConstants(S,f);
-    LoadDebug(S,f);
-    IF (!luaG_checkcode(f), "bad code");
-    S->L->top--;
+    Proto *f = luaF_newproto( S->L );
+    pushptvalue( S->L, f );
+
+    f->source = LoadString(S);
+
+    if ( f->source == NULL )
+    {
+        f->source = p;
+    }
+
+    f->linedefined = LoadInt(S);
+    f->lastlinedefined = LoadInt(S);
+    f->nups = LoadByte(S);
+    f->numparams = LoadByte(S);
+    f->is_vararg = LoadByte(S);
+    f->maxstacksize = LoadByte(S);
+
+    LoadCode( S, f );
+    LoadConstants( S, f );
+    LoadDebug( S, f );
+
+    IF ( !luaG_checkcode(f), "bad code" );
+
+    popstack( S->L, 1 );
     return f;
 }
 

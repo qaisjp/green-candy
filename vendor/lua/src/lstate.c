@@ -26,7 +26,7 @@
 // Main state of the whole Lua VM.
 struct lua_MainState : public lua_State
 {
-    inline lua_MainState( void *construction_params )
+    inline lua_MainState( global_State *g, void *construction_params ) : lua_State( g )
     {
         return;
     }
@@ -138,28 +138,31 @@ struct globalStateMainStateFactoryMeta
 static PluginConnectingBridge <LuaRTTI, globalStateMainStateFactoryMeta, namespaceFactory_t> mainLuaStateConnectingBridge( namespaceFactory );
 
 
-static void stack_init (lua_State *L1, lua_State *L) {
-  /* initialize CallInfo array */
-  L1->base_ci = luaM_newvector <CallInfo> (L, BASIC_CI_SIZE);
-  L1->ci = L1->base_ci;
-  L1->size_ci = BASIC_CI_SIZE;
-  L1->end_ci = L1->base_ci + L1->size_ci - 1;
-  /* initialize stack array */
-  L1->stack = luaM_newvector <TValue> (L, BASIC_STACK_SIZE + EXTRA_STACK);
-  L1->stacksize = BASIC_STACK_SIZE + EXTRA_STACK;
-  L1->top = L1->stack;
-  L1->stack_last = L1->stack+(L1->stacksize - EXTRA_STACK)-1;
-  /* initialize first ci */
-  L1->ci->func = L1->top;
-  setnilvalue(L1->top++);  /* `function' entry for this `ci' */
-  L1->base = L1->ci->base = L1->top;
-  L1->ci->top = L1->top + LUA_MINSTACK;
+static void stack_init (lua_State *L1, lua_State *L)
+{
+    RtStackAddr rtStack = L1->rtStack.LockedAcquisition( L );
+    CiStackAddr ciStack = L1->ciStack.LockedAcquisition( L );
+
+    // Link the stacks to the runtime thread.
+    L1->rtStack.runtimeThread = L1;
+
+    /* initialize CallInfo array */
+    ciStack->Initialize( L, BASIC_CI_SIZE );
+    CallInfo *mainFrame = ciStack->ObtainItem( L );     // there must be an item on the ci stack.
+    /* initialize stack array */
+    rtStack->Initialize( L, BASIC_STACK_SIZE );
+    StkId firstStackValue = rtStack->ObtainItem( L );    // there must be an item on the rt stack.
+    /* initialize first ci */
+    mainFrame->func = firstStackValue;
+    setnilvalue( firstStackValue );  /* `function' entry for this `ci' */
+    mainFrame->stack.Initialize( firstStackValue, firstStackValue );
 }
 
 
-static void freestack (lua_State *L, lua_State *L1) {
-  luaM_freearray(L, L1->base_ci, L1->size_ci);
-  luaM_freearray(L, L1->stack, L1->stacksize);
+static void freestack (lua_State *L, lua_State *L1)
+{
+    L1->ciStack.Shutdown( L );
+    L1->rtStack.Shutdown( L );
 }
 
 
@@ -184,17 +187,13 @@ static void f_luaopen (lua_State *L, void *ud)
 static inline void preinit_state (lua_State *L, global_State *g)
 {
     L->l_G = g;
-    L->stack = NULL;
-    L->stacksize = 0;
     L->hook = NULL;
     L->hookmask = 0;
     L->basehookcount = 0;
     L->allowhook = true;
     resethookcount(L);
     L->openupval.Clear();
-    L->size_ci = 0;
     L->nCcalls = 0;
-    L->base_ci = L->ci = NULL;
     L->savedpc = NULL;
     L->errfunc = 0;
     sethvalue( L, &L->storage, luaH_new( L, 0, 0 ) );
@@ -208,7 +207,12 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
         // First yield is invisible
         L->yield();
 
-        lua_call( L, lua_gettop( L ) - 1, LUA_MULTRET );
+        int posOfFunction = 2;
+        int currentTop = lua_gettop( L );
+
+        int numArgs = ( currentTop - posOfFunction );
+
+        lua_call( L, numArgs, LUA_MULTRET );
 
 	    L->errorCode = 0;	// we gracefully quit :)
     }
@@ -225,8 +229,12 @@ static void __stdcall luaE_threadEntryPoint( lua_Thread *L )
         {
 		    L->errorCode = e.status();
 
-            luaD_seterrorobj( L, L->errorCode, L->top );
-            L->ci->top = L->top;
+            L->rtStack.Lock( L );
+
+            luaD_seterrorobj( L, L->errorCode );
+            L->rtStack.SetTopOffset( L, L->GetCurrentStackFrame().GetTopOffset( L, L->rtStack ) );
+
+            L->rtStack.Unlock( L );
         }
     }
     catch( lua_thread_termination& e )
@@ -271,7 +279,7 @@ static void __stdcall luaE_guardedThreadEntryPoint( lua_Thread *L )
 #endif //_WIN32
 
 
-lua_Thread::lua_Thread( void *construction_params )
+lua_Thread::lua_Thread( global_State *g, void *construction_params ) : lua_State( g )
 {
     isMain = false;
     yieldDisabled = false;
@@ -354,7 +362,7 @@ void luaE_terminate( lua_Thread *L )
     }
 	else
 	{
-        luaF_close(L, L->stack);  /* close all upvalues for this thread */
+        luaF_close(L, L->rtStack.Base());  /* close all upvalues for this thread */
         lua_assert(L->openupval.IsEmpty() == true);
 
 		// Threads clean their environments after themselves
@@ -440,7 +448,7 @@ static void close_state (lua_State *L)
 {
     global_State *g = G(L);
 
-    luaF_close(L, L->stack);  /* close all upvalues for this thread */
+    luaF_close(L, L->rtStack.Base());  /* close all upvalues for this thread */
     luaC_freeall(L);  /* collect all objects */
     lua_assert(g->strt.nuse == 0);
     luaM_freearray(L, G(L)->strt.hash, G(L)->strt.size);
@@ -453,6 +461,8 @@ static void close_state (lua_State *L)
     // Close down type runtimes.
     luaQ_runtimeshutdown( g );
     luaF_runtimeshutdown( g );
+
+    luaH_clearRuntimeMemory( g );
 }
 
 static void dealloc_state( global_State *globalState )
@@ -535,7 +545,7 @@ inline lua_State *_newstatetemplate( lua_config *cfg, bool hasUniqueConfig, bool
 
             if ( L )
             {
-                // Store whether we have a unique configuration.
+                // Store whether we have an unique configuration.
                 // If so, we will have to destroy it when we close this state.
                 g->hasUniqueConfig = hasUniqueConfig;
                 g->config = cfg;
@@ -635,7 +645,7 @@ LUA_API void lua_close (lua_State *L)
         L = G(L)->mainthread;  /* only the main thread can be closed */
 
         lua_lock(L);
-        luaF_close(L, L->stack);  /* close all upvalues for this thread */
+        luaF_close(L, L->rtStack.Base());  /* close all upvalues for this thread */
 
         // Collect all pending memory
         luaC_shutdown( G(L) );

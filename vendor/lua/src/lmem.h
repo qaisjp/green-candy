@@ -167,31 +167,147 @@ struct GeneralMemoryAllocator
     }
 };
 
-template <typename structType, typename allocatorType>
-inline structType* _newstruct( allocatorType& allocData )
+// Cached class allocator for Lua.
+// See also "CachedConstructedClassAllocator" struct.
+template <typename dataType>
+struct LuaCachedConstructedClassAllocator
 {
-    structType *valOut = NULL;
+protected:
+    struct dataEntry : dataType
     {
-        // Attempt to allocate a block of memory for bootstrapping.
-        void *mem = allocData.Allocate( sizeof( structType ) );
+        AINLINE dataEntry( LuaCachedConstructedClassAllocator *storage, bool isSummoned )
+        {
+            LIST_INSERT( storage->m_freeList.root, this->node );
+
+            this->isSummoned = isSummoned;
+        }
+
+        RwListEntry <dataEntry> node;
+        bool isSummoned;
+    };
+
+    struct summonBlockTail
+    {
+        unsigned int allocCount;
+        RwListEntry <summonBlockTail> node;
+    };
+
+public:
+    AINLINE LuaCachedConstructedClassAllocator( void )
+    {
+        LIST_CLEAR( m_usedList.root );
+        LIST_CLEAR( m_freeList.root );
+
+        LIST_CLEAR( m_summonBlocks.root );
+    }
+
+    AINLINE ~LuaCachedConstructedClassAllocator( void )
+    {
+        lua_assert( LIST_EMPTY( m_freeList.root ) );
+        lua_assert( LIST_EMPTY( m_usedList.root ) );
+
+        lua_assert( LIST_EMPTY( m_summonBlocks.root ) );
+    }
+
+    AINLINE void SummonEntries( lua_State *L, unsigned int startCount )
+    {
+        void *mem = luaM_realloc_( L, NULL, 0, sizeof( dataEntry ) * startCount + sizeof( summonBlockTail ) );
 
         if ( mem )
         {
-            valOut = new (mem) structType;
+            for ( unsigned int n = 0; n < startCount; n++ )
+            {
+                new ( (dataEntry*)mem + n ) dataEntry( this, true );
+            }
+
+            // Get the tail of the summon block and add it to the list of summoned blocks.
+            summonBlockTail *theTail = (summonBlockTail*)( (dataEntry*)mem + startCount );
+
+            theTail->allocCount = startCount;
+
+            LIST_APPEND( m_summonedBlocks.root, theTail->node );
         }
     }
-    return valOut;
-}
 
-template <typename structType, typename allocatorType>
-inline void _delstruct( structType *theStruct, allocatorType& allocData )
-{
-    theStruct->~structType();
+    AINLINE void Shutdown( global_State *g )
+    {
+        // Having actually used blocks by this point is deadly.
+        // Make sure there are none.
+        lua_assert( LIST_EMPTY( m_usedList.root ) );
 
-    void *mem = theStruct;
+        // Allocate all free blocks.
+        LIST_FOREACH_BEGIN( dataEntry, m_freeList.root, node )
+            if ( !item->isSummoned )
+            {
+                // Free this memory.
+                luaM_realloc__( g, item, sizeof( dataEntry ), 0 );
+            }
+        LIST_FOREACH_END
 
-    allocData.Free( mem, sizeof( structType ) );
-}
+        LIST_CLEAR( m_freeList.root );
+
+        // Deallocate all summoned blocks now.
+        LIST_FOREACH_BEGIN( summonBlockTail, m_summonBlocks.root, node )
+            // Get the memory begin pointer.
+            void *blockStart = (void*)( (dataEntry*)item - item->allocCount );
+
+            // Free it.
+            luaM_realloc__( g, blockStart, sizeof( dataEntry ) * item->allocCount + sizeof( summonBlockTail ), 0 );
+        LIST_FOREACH_END
+
+        LIST_CLEAR( m_summonBlocks.root );
+    }
+
+private:
+    AINLINE dataEntry* AllocateNew( lua_State *L )
+    {
+        void *mem = luaM_realloc_( L, NULL, 0, sizeof( dataEntry ) );
+
+        if ( mem )
+        {
+            return new (mem) dataEntry( this, false );
+        }
+        return NULL;
+    }
+
+public:
+    AINLINE dataType* Allocate( lua_State *L )
+    {
+        dataEntry *entry = NULL;
+
+        if ( !LIST_EMPTY( m_freeList.root ) )
+        {
+            entry = LIST_GETITEM( dataEntry, m_freeList.root.next, node );
+        }
+
+        if ( !entry )
+        {
+            entry = AllocateNew( L );
+        }
+
+        if ( entry )
+        {
+            LIST_REMOVE( entry->node );
+            LIST_INSERT( m_usedList.root, entry->node );
+        }
+
+        return entry;
+    }
+
+    AINLINE void Free( dataType *data )
+    {
+        dataEntry *entry = (dataEntry*)data;
+
+        LIST_REMOVE( entry->node );
+        LIST_INSERT( m_freeList.root, entry->node );
+    }
+
+protected:
+    RwList <dataEntry> m_usedList;
+    RwList <dataEntry> m_freeList;
+
+    RwList <summonBlockTail> m_summonBlocks;
+};
 
 #endif
 

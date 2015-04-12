@@ -2,6 +2,8 @@
 
 #include "lfunc.hxx"
 
+#include "lfunc.class.hxx"
+
 // Include garbage collector definitions.
 #include "lgc.interface.hxx"
 
@@ -14,15 +16,16 @@ void luaF_gcruntime( lua_State *L )
     if ( closureEnv )
     {
         /* remark occasional upvalues of (maybe) dead threads */
-        for ( UpVal *uv = closureEnv->uvhead.u.l.next; uv != &closureEnv->uvhead; uv = uv->u.l.next )
-        {
-            lua_assert( uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv );
+        LIST_FOREACH_BEGIN( UpVal, closureEnv->uvhead.root, u.l )
 
-            if ( isgray(uv) )
+            lua_assert( LIST_ISVALID( *iter ) == true );
+
+            if ( isgray(item) )
             {
-                markvalue(g, uv->v);
+                markvalue(g, item->v);
             }
-        }
+
+        LIST_FOREACH_END
     }
 }
 

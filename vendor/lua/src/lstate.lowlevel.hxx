@@ -19,12 +19,10 @@ struct GlobalStateAllocPluginData
 
     inline void Shutdown( lua_config *cfg )
     {
-#if 0
         if ( this->constructor )
         {
             cfg->globalStateFactory.DeleteConstructor( this->constructor );
         }
-#endif
     }
 
     // Structure that is used for bootstrapping with anonymous destruction support.

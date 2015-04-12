@@ -283,6 +283,9 @@ LUA_API void lua_freeconfig( lua_config *cfg )
     // Get the memory allocator onto the stack.
     GeneralMemoryAllocator allocMem = allocData->_memAlloc;
 
+    // Shutdown the allocation data.
+    allocData->Shutdown( cfg );
+
     // Free the configuration itself.
     namespaceFactory.Destroy( allocMem, cfg );
 

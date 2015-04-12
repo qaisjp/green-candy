@@ -31,6 +31,7 @@ LUAI_FUNC void luaC_freeall (lua_State *L);
 LUAI_FUNC void luaC_step (lua_State *L);
 LUAI_FUNC void luaC_finish( lua_State *L );
 LUAI_FUNC void luaC_fullgc (lua_State *L);
+LUAI_FUNC bool luaC_isready (lua_State *L);
 LUAI_FUNC void luaC_register( lua_State *L, GCObject *o, lu_byte tt );
 LUAI_FUNC void luaC_link (lua_State *L, GCObject *o, lu_byte tt);
 LUAI_FUNC void luaC_linktmu( lua_State *L, GCObject *o, lu_byte tt);

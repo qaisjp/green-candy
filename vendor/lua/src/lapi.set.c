@@ -20,27 +20,35 @@
 
 LUA_API void lua_settable (lua_State *L, int idx)
 {
-  const TValue *t;
-  lua_lock(L);
-  api_checknelems(L, 2);
-  t = index2constadr(L, idx);
-  api_checkvalidindex(L, t);
-  luaV_settable(L, t, L->top - 2, L->top - 1);
-  L->top -= 2;  /* pop index and value */
-  lua_unlock(L);
+    lua_lock(L);
+    api_checknelems(L, 2);
+    ConstValueAddress t = index2constadr(L, idx);
+    api_checkvalidindex(L, t);
+    {
+        ConstValueAddress keyItem = index2constadr( L, -2 );
+        ConstValueAddress valItem = index2constadr( L, -1 );
+
+        luaV_settable(L, t, keyItem, valItem);
+        popstack( L, 2 );  /* pop index and value */
+    }
+    lua_unlock(L);
 }
 
 LUA_API void lua_setfieldl( lua_State *L, int idx, const char *k, size_t l )
 {
-    const TValue *t;
-    TValue key;
     lua_lock(L);
     api_checknelems(L, 1);
-    t = index2constadr(L, idx);
+    ConstValueAddress t = index2constadr(L, idx);
     api_checkvalidindex(L, t);
-    setsvalue(L, &key, luaS_newlstr(L, k, l));
-    luaV_settable(L, t, &key, L->top - 1);
-    L->top--;  /* pop value */
+    {
+        LocalValueAddress key;
+        setsvalue(L, key, luaS_newlstr(L, k, l));
+
+        ConstValueAddress valItem = index2constadr( L, -1 );
+
+        luaV_settable(L, t, key.ConstCast(), valItem);
+        popstack( L, 1 );  /* pop value */
+    }
     lua_unlock(L);
 }
 
@@ -50,47 +58,85 @@ LUA_API void lua_setfield (lua_State *L, int idx, const char *k)
 }
 
 
-LUA_API void lua_rawset (lua_State *L, int idx) {
-  const TValue *t;
-  lua_lock(L);
-  api_checknelems(L, 2);
-  t = index2constadr(L, idx);
-  api_check(L, ttistable(t));
-  setobj2t(L, luaH_set(L, hvalue(t), L->top-2), L->top-1);
-  luaC_barriert(L, hvalue(t), L->top-1);
-  L->top -= 2;
-  lua_unlock(L);
+LUA_API void lua_rawset (lua_State *L, int idx)
+{
+    lua_lock(L);
+    api_checknelems(L, 2);
+    ConstValueAddress t = index2constadr(L, idx);
+    api_check(L, ttistable(t));
+    {
+        Table *setToTable = hvalue( t );
+
+        RtCtxItem keyItem = index2stackadr( L, -2 );
+        RtCtxItem valItem = index2stackadr( L, -1 );
+
+        const TValue *keyItemPointer = keyItem.Pointer();
+        const TValue *valItemPointer = valItem.Pointer();
+
+        lua_assert( keyItemPointer != NULL );
+        lua_assert( valItemPointer != NULL );
+
+        {
+            ValueAddress tableItemPtr = luaH_set( L, setToTable, keyItemPointer );
+
+            setobj2t(L, tableItemPtr, valItemPointer);
+        }
+        popstack( L, 2 );
+    }
+    lua_unlock(L);
 }
 
 
-LUA_API void lua_rawseti (lua_State *L, int idx, int n) {
-  const TValue *o;
-  lua_lock(L);
-  api_checknelems(L, 1);
-  o = index2constadr(L, idx);
-  api_check(L, ttistable(o));
-  setobj2t(L, luaH_setnum(L, hvalue(o), n), L->top-1);
-  luaC_barriert(L, hvalue(o), L->top-1);
-  L->top--;
-  lua_unlock(L);
+LUA_API void lua_rawseti (lua_State *L, int idx, int n)
+{
+    lua_lock(L);
+    api_checknelems(L, 1);
+    ConstValueAddress o = index2constadr(L, idx);
+    api_check(L, ttistable(o));
+    {
+        Table *setToTable = hvalue( o );
+
+        RtCtxItem valItem = index2stackadr( L, -1 );
+
+        const TValue *valItemPointer = valItem.Pointer();
+
+        lua_assert( valItemPointer != NULL );
+
+        ValueAddress numObj = luaH_setnum(L, setToTable, n);
+
+        setobj2t(L, numObj, valItemPointer);
+
+        popstack( L, 1 );
+    }
+    lua_unlock(L);
 }
 
 
 LUA_API int lua_setmetatable (lua_State *L, int objindex)
 {
-    const TValue *obj;
     Table *mt;
     lua_lock(L);
     api_checknelems(L, 1);
-    obj = index2constadr(L, objindex);
+    ConstValueAddress obj = index2constadr(L, objindex);
     api_checkvalidindex(L, obj);
-
-    if (ttisnil(L->top - 1))
-        mt = NULL;
-    else
     {
-        api_check(L, ttistable(L->top - 1));
-        mt = hvalue(L->top - 1);
+        RtStackView& currentStackFrame = L->GetCurrentStackFrame();
+
+        L->rtStack.Lock( L );
+
+        StkId_const stackTop = currentStackFrame.Top( L, L->rtStack );
+
+        if ( ttisnil( stackTop ) )
+            mt = NULL;
+        else
+        {
+            api_check(L, ttistable(stackTop));
+            mt = hvalue(stackTop);
+        }
+
+        popstack( L, 1 );
+
+        L->rtStack.Unlock( L );
     }
 
     switch (ttype(obj))
@@ -109,9 +155,13 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex)
         break;
     case LUA_TUSERDATA:
         {
-            uvalue(obj)->metatable = mt;
-            if (mt)
-                luaC_objbarrier(L, uvalue(obj), mt);
+            Udata *u = uvalue(obj );
+
+            u->metatable = mt;
+            if ( mt )
+            {
+                luaC_objbarrier(L, u, mt);
+            }
         }
         break;
     default:
@@ -121,49 +171,64 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex)
         break;
     }
 
-    L->top--;
     lua_unlock(L);
     return 1;
 }
 
 LUA_API int lua_setfenv (lua_State *L, int idx)
 {
-    const TValue *o;
     int res = 1;
     lua_lock(L);
     api_checknelems(L, 1);
-    o = index2constadr(L, idx);
+    ConstValueAddress o = index2constadr(L, idx);
     api_checkvalidindex(L, o);
-    api_check(L, iscollectable(L->top - 1));
-
-    switch( ttype(o) )
     {
-    case LUA_TFUNCTION:
+        rtStack_t& rtStack = L->rtStack;
+
+        RtStackView& currentStackFrame = L->GetCurrentStackFrame();
+
+        rtStack.Lock( L );
+
+        StkId_const tableSlot = currentStackFrame.Top( L, rtStack );
+
+        api_check(L, iscollectable(tableSlot));
+
+        switch( ttype(o) )
         {
-            Closure *cl = clvalue(o);
+        case LUA_TFUNCTION:
+            {
+                Closure *cl = clvalue(o);
 
-            if ( cl->IsEnvLocked() )
-                goto fail;
-
-            cl->env = gcvalue(L->top - 1);
+                if ( !cl->IsEnvLocked() )
+                {
+                    cl->env = gcvalue(tableSlot);
+                }
+                else
+                {
+                    res = 0;
+                }
+            }
+            break;
+        case LUA_TUSERDATA:
+            uvalue(o)->env = gcvalue(tableSlot);
+            break;
+        case LUA_TTHREAD:
+            setgcvalue(L, gt(thvalue(o)), gcvalue(tableSlot));
+            break;
+        default:
+            res = 0;
+            break;
         }
-        break;
-    case LUA_TUSERDATA:
-        uvalue(o)->env = gcvalue(L->top - 1);
-        break;
-    case LUA_TTHREAD:
-        setgcvalue(L, gt(thvalue(o)), gcvalue(L->top - 1));
-        break;
-    default:
-fail:
-        res = 0;
-        goto end;
+
+        if ( res == 1 )
+        {
+            luaC_objbarrier(L, gcvalue(o), gcvalue(tableSlot));
+        }
+
+        rtStack.Unlock( L );
+
+        popstack( L, 1 );
     }
-
-    luaC_objbarrier(L, gcvalue(o), gcvalue(L->top - 1));
-
-end:
-    L->top--;
     lua_unlock(L);
     return res;
 }

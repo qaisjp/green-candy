@@ -15,7 +15,10 @@ void luaJ_gcruntime( lua_State *L )
     if ( classEnv )
     {
         // Mark special global values that are used by the class runtime.
-        stringmark( classEnv->superCached );   // 'super' used by classes
+        if ( TString *superCached = classEnv->superCached )
+        {
+            stringmark( superCached );   // 'super' used by classes
+        }
     }
 }
 
@@ -60,11 +63,11 @@ int Class::TraverseGC( global_State *g )
 
             if ( ttype( weakMeth ) == LUA_TFUNCTION )
             {
-                setobj( L, L->top++, weakMeth );
+                pushtvalue( L, weakMeth );
                 bool success = lua_pcall( L, 0, 1, 0 ) == 0;
 
                 markChild = ( success && ( lua_toboolean( L, -1 ) == false ) );
-                L->top--;   // we can pop the error message or the boolean with this.
+                popstack( L, 1 );   // we can pop the error message or the boolean with this.
             }
 
             if ( markChild )

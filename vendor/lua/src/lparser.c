@@ -266,118 +266,145 @@ static void adjust_assign (LexState *ls, int nvars, int nexps, expdesc *e) {
 }
 
 
-static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable) {
-  bl->breaklist = NO_JUMP;
-  bl->isbreakable = isbreakable;
-  bl->nactvar = fs->nactvar;
-  bl->upval = 0;
-  bl->previous = fs->bl;
-  fs->bl = bl;
-  lua_assert(fs->freereg == fs->nactvar);
+static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable)
+{
+    bl->breaklist = NO_JUMP;
+    bl->isbreakable = isbreakable;
+    bl->nactvar = fs->nactvar;
+    bl->upval = 0;
+    bl->previous = fs->bl;
+    fs->bl = bl;
+    lua_assert(fs->freereg == fs->nactvar);
 }
 
 
-static void leaveblock (FuncState *fs) {
-  BlockCnt *bl = fs->bl;
-  fs->bl = bl->previous;
-  removevars(fs->ls, bl->nactvar);
-  if (bl->upval)
-    luaK_codeABC(fs, OP_CLOSE, bl->nactvar, 0, 0);
-  /* a block either controls scope or breaks (never both) */
-  lua_assert(!bl->isbreakable || !bl->upval);
-  lua_assert(bl->nactvar == fs->nactvar);
-  fs->freereg = fs->nactvar;  /* free registers */
-  luaK_patchtohere(fs, bl->breaklist);
+static void leaveblock (FuncState *fs)
+{
+    BlockCnt *bl = fs->bl;
+
+    fs->bl = bl->previous;
+    removevars(fs->ls, bl->nactvar);
+
+    if ( bl->upval )
+    {
+        luaK_codeABC( fs, OP_CLOSE, bl->nactvar, 0, 0 );
+    }
+
+    /* a block either controls scope or breaks (never both) */
+    lua_assert(!bl->isbreakable || !bl->upval);
+    lua_assert(bl->nactvar == fs->nactvar);
+
+    fs->freereg = fs->nactvar;  /* free registers */
+
+    luaK_patchtohere(fs, bl->breaklist);
 }
 
 
-static void pushclosure (LexState *ls, FuncState *func, expdesc *v) {
-  FuncState *fs = ls->fs;
-  Proto *f = fs->f;
-  int oldsize = f->sizep;
-  int i;
-  luaM_growvector(ls->L, f->p, fs->np, f->sizep, MAXARG_Bx, "constant table overflow");
-  while (oldsize < f->sizep) f->p[oldsize++] = NULL;
-  f->p[fs->np++] = func->f;
-  luaC_objbarrier(ls->L, f, func->f);
-  init_exp(v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->np-1));
-  for (i=0; i<func->f->nups; i++) {
-    OpCode o = (func->upvalues[i].k == VLOCAL) ? OP_MOVE : OP_GETUPVAL;
-    luaK_codeABC(fs, o, 0, func->upvalues[i].info, 0);
-  }
+static void pushclosure (LexState *ls, FuncState *func, expdesc *v)
+{
+    FuncState *fs = ls->fs;
+    Proto *f = fs->f;
+    int oldsize = f->sizep;
+
+    luaM_growvector(ls->L, f->p, fs->np, f->sizep, MAXARG_Bx, "constant table overflow");
+
+    while ( oldsize < f->sizep )
+    {
+        f->p[ oldsize++ ] = NULL;
+    }
+
+    f->p[ fs->np++ ] = func->f;
+    luaC_objbarrier( ls->L, f, func->f );
+
+    init_exp( v, VRELOCABLE, luaK_codeABx(fs, OP_CLOSURE, 0, fs->np-1) );
+
+    for ( int i = 0; i < func->f->nups; i++ )
+    {
+        OpCode o = (func->upvalues[i].k == VLOCAL) ? OP_MOVE : OP_GETUPVAL;
+
+        luaK_codeABC(fs, o, 0, func->upvalues[i].info, 0);
+    }
 }
 
 
-static void open_func (LexState *ls, FuncState *fs) {
-  lua_State *L = ls->L;
-  Proto *f = luaF_newproto(L);
-  fs->f = f;
-  fs->prev = ls->fs;  /* linked list of funcstates */
-  fs->ls = ls;
-  fs->L = L;
-  ls->fs = fs;
-  fs->pc = 0;
-  fs->lasttarget = -1;
-  fs->jpc = NO_JUMP;
-  fs->freereg = 0;
-  fs->nk = 0;
-  fs->np = 0;
-  fs->nlocvars = 0;
-  fs->nactvar = 0;
-  fs->bl = NULL;
-  f->source = ls->source;
-  f->maxstacksize = 2;  /* registers 0/1 are always valid */
-  fs->h = luaH_new(L, 0, 0);
-  /* anchor table of constants and prototype (to avoid being collected) */
-  sethvalue2s(L, L->top, fs->h);
-  incr_top(L);
-  setptvalue2s(L, L->top, f);
-  incr_top(L);
+static void open_func (LexState *ls, FuncState *fs)
+{
+    lua_State *L = ls->L;
+    Proto *f = luaF_newproto(L);
+
+    fs->f = f;
+    fs->prev = ls->fs;  /* linked list of funcstates */
+    fs->ls = ls;
+    fs->L = L;
+    ls->fs = fs;
+    fs->pc = 0;
+    fs->lasttarget = -1;
+    fs->jpc = NO_JUMP;
+    fs->freereg = 0;
+    fs->nk = 0;
+    fs->np = 0;
+    fs->nlocvars = 0;
+    fs->nactvar = 0;
+    fs->bl = NULL;
+    f->source = ls->source;
+    f->maxstacksize = 2;  /* registers 0/1 are always valid */
+    fs->h = luaH_new(L, 0, 0);
+
+    /* anchor table of constants and prototype (to avoid being collected) */
+    pushhvalue(L, fs->h);
+    pushptvalue(L, f);
 }
 
 
-static void close_func (LexState *ls) {
-  lua_State *L = ls->L;
-  FuncState *fs = ls->fs;
-  Proto *f = fs->f;
-  removevars(ls, 0);
-  luaK_ret(fs, 0, 0);  /* final return */
-  luaM_reallocvector(L, f->code, f->sizecode, fs->pc);
-  f->sizecode = fs->pc;
-  luaM_reallocvector(L, f->lineinfo, f->sizelineinfo, fs->pc);
-  f->sizelineinfo = fs->pc;
-  luaM_reallocvector(L, f->k, f->sizek, fs->nk);
-  f->sizek = fs->nk;
-  luaM_reallocvector(L, f->p, f->sizep, fs->np);
-  f->sizep = fs->np;
-  luaM_reallocvector(L, f->locvars, f->sizelocvars, fs->nlocvars);
-  f->sizelocvars = fs->nlocvars;
-  luaM_reallocvector(L, f->upvalues, f->sizeupvalues, f->nups);
-  f->sizeupvalues = f->nups;
-  lua_assert(luaG_checkcode(f));
-  lua_assert(fs->bl == NULL);
-  ls->fs = fs->prev;
-  L->top -= 2;  /* remove table and prototype from the stack */
-  /* last token read was anchored in defunct function; must reanchor it */
-  if (fs) anchor_token(ls);
+static void close_func (LexState *ls)
+{
+    lua_State *L = ls->L;
+    FuncState *fs = ls->fs;
+    Proto *f = fs->f;
+
+    removevars(ls, 0);
+    luaK_ret(fs, 0, 0);  /* final return */
+    luaM_reallocvector(L, f->code, f->sizecode, fs->pc);
+    f->sizecode = fs->pc;
+    luaM_reallocvector(L, f->lineinfo, f->sizelineinfo, fs->pc);
+    f->sizelineinfo = fs->pc;
+    luaM_reallocvector(L, f->k, f->sizek, fs->nk);
+    f->sizek = fs->nk;
+    luaM_reallocvector(L, f->p, f->sizep, fs->np);
+    f->sizep = fs->np;
+    luaM_reallocvector(L, f->locvars, f->sizelocvars, fs->nlocvars);
+    f->sizelocvars = fs->nlocvars;
+    luaM_reallocvector(L, f->upvalues, f->sizeupvalues, f->nups);
+    f->sizeupvalues = f->nups;
+    lua_assert(luaG_checkcode(f));
+    lua_assert(fs->bl == NULL);
+    ls->fs = fs->prev;
+    popstack( L, 2 );  /* remove table and prototype from the stack */
+
+    /* last token read was anchored in defunct function; must reanchor it */
+    if ( fs )
+    {
+        anchor_token(ls);
+    }
 }
 
 
-Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff, const char *name) {
-  struct LexState lexstate;
-  struct FuncState funcstate;
-  lexstate.buff = buff;
-  luaX_setinput(L, &lexstate, z, luaS_new(L, name));
-  open_func(&lexstate, &funcstate);
-  funcstate.f->is_vararg = VARARG_ISVARARG;  /* main func. is always vararg */
-  luaX_next(&lexstate);  /* read first token */
-  chunk(&lexstate);
-  check(&lexstate, TK_EOS);
-  close_func(&lexstate);
-  lua_assert(funcstate.prev == NULL);
-  lua_assert(funcstate.f->nups == 0);
-  lua_assert(lexstate.fs == NULL);
-  return funcstate.f;
+Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff, const char *name)
+{
+    struct LexState lexstate;
+    struct FuncState funcstate;
+    lexstate.buff = buff;
+    luaX_setinput(L, &lexstate, z, luaS_new(L, name));
+    open_func(&lexstate, &funcstate);
+    funcstate.f->is_vararg = VARARG_ISVARARG;  /* main func. is always vararg */
+    luaX_next(&lexstate);  /* read first token */
+    chunk(&lexstate);
+    check(&lexstate, TK_EOS);
+    close_func(&lexstate);
+    lua_assert(funcstate.prev == NULL);
+    lua_assert(funcstate.f->nups == 0);
+    lua_assert(lexstate.fs == NULL);
+    return funcstate.f;
 }
 
 
@@ -538,11 +565,6 @@ static void parlist (LexState *ls) {
         }
         case TK_DOTS: {  /* param -> `...' */
           luaX_next(ls);
-#if defined(LUA_COMPAT_VARARG)
-          /* use `arg' as default name */
-          new_localvarliteral(ls, "arg", nparams++);
-          f->is_vararg = VARARG_HASARG | VARARG_NEEDSARG;
-#endif
           f->is_vararg |= VARARG_ISVARARG;
           break;
         }

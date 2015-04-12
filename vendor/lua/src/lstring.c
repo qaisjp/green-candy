@@ -34,7 +34,7 @@ struct stringTypeInfo_t
             return _sizestring( sizeof( TString ), params->length );
         }
 
-        size_t GetTypeSizeByObject( void *langObj ) const
+        size_t GetTypeSizeByObject( const void *langObj ) const
         {
             TString *strObj = (TString*)langObj;
 
@@ -51,7 +51,7 @@ struct stringTypeInfo_t
             return _sizeudata( sizeof( Udata ), params->length );
         }
 
-        size_t GetTypeSizeByObject( void *langObj ) const
+        size_t GetTypeSizeByObject( const void *langObj ) const
         {
             Udata *u = (Udata*)langObj;
 
@@ -67,8 +67,8 @@ struct stringTypeInfo_t
         LuaTypeSystem& typeSys = cfg->typeSys;
 
         // Register the string type.
-        stringTypeInfo = typeSys.RegisterDynamicStructType <TString> ( "string", &_stringMetaInfo );
-        udataTypeInfo = typeSys.RegisterDynamicStructType <Udata> ( "udata", &_stringMetaInfo );
+        stringTypeInfo = typeSys.RegisterDynamicStructType <TString> ( "string", &_stringMetaInfo, false );
+        udataTypeInfo = typeSys.RegisterDynamicStructType <Udata> ( "udata", &_stringMetaInfo, false );
 
         // Set up the inheritance.
         typeSys.SetTypeInfoInheritingClass(
@@ -156,7 +156,7 @@ void luaS_resize (lua_State *L, int newsize)
     tb->hash = newhash;
 }
 
-TString::TString( void *construction_params )
+TString::TString( global_State *g, void *construction_params ) : GCObject( g )
 {
     stringConstructionParams *params = (stringConstructionParams*)construction_params;
 
@@ -246,45 +246,63 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l)
     return newlstr(L, str, l, h);  /* not found */
 }
 
-int luaS_concat (lua_State *L, StkId top, int total)
+int luaS_concat (lua_State *L, int topOffset, int total)
 {
     // Only concat strings if we can get the global string environment.
     globalStateStringEnv *stringEnv = GetGlobalStringEnv( G(L) );
 
     if ( !stringEnv )
     {
-        luaG_runerror(L, "no global string environment");
+        luaG_runerror( L, "no global string environment" );
     }
 
-    /* at least two string values; get as many as possible */
-    size_t tl = tsvalue(top-1)->len;
-    char *buffer;
-    int i, n;
+    int n = 0;  // the amount of string items that have been concatenated to one.
 
-    /* collect total length */
-    for (n = 1; n < total && tostring(L, top-n-1); n++)
+    if ( total > 0 )
     {
-        size_t l = tsvalue(top-n-1)->len;
+        /* at least one string value; get as many as possible */
+        size_t tl = 0;
 
-        if (l >= MAX_SIZET - tl)
+        /* collect total length */
+        for ( n = 0; n < total; n++ )
         {
-            luaG_runerror(L, "string length overflow");
+            ValueAddress stringVal = index2adr( L, topOffset - n );
+
+            int canBeStringed = tostring(L, stringVal);
+
+            if ( canBeStringed == 0 )
+                break;
+
+            size_t l = tsvalue(stringVal)->len;
+
+            if ( n != 0 && l >= MAX_SIZET - tl )
+            {
+                luaG_runerror( L, "string length overflow" );
+            }
+
+            tl += l;
         }
 
-        tl += l;
+        char *buffer = luaZ_openspace(L, &stringEnv->buff, tl);
+        tl = 0;
+
+        for ( int i = n; i > 0; i-- )
+        {  /* concat all strings */
+            ValueAddress stringVal = index2adr( L, topOffset - i + 1 );
+
+            TString *theString = tsvalue(stringVal);
+
+            size_t l = theString->len;
+
+            memcpy( buffer+tl, getstr(theString), l );
+            tl += l;
+        }
+        
+        // Write the result string.
+        ValueAddress outString = index2adr( L, topOffset - n + 1 );
+
+        setsvalue(L, outString, luaS_newlstr(L, buffer, tl));
     }
-
-    buffer = luaZ_openspace(L, &stringEnv->buff, tl);
-    tl = 0;
-
-    for (i=n; i>0; i--)
-    {  /* concat all strings */
-        size_t l = tsvalue(top-i)->len;
-
-        memcpy(buffer+tl, svalue(top-i), l);
-        tl += l;
-    }
-    setsvalue2s(L, top-n, luaS_newlstr(L, buffer, tl));
 
     return n;
 }
@@ -297,7 +315,7 @@ void luaS_globalgc (lua_State *L)
     if ( stringEnv )
     {
         /* check size of buffer */
-        if (luaZ_sizebuffer(&stringEnv->buff) > LUA_MINBUFFER*2)
+        if ( luaZ_sizebuffer(&stringEnv->buff) > LUA_MINBUFFER*2 )
         {  /* buffer too big? */
             size_t newsize = luaZ_sizebuffer(&stringEnv->buff) / 2;
             luaZ_resizebuffer(L, &stringEnv->buff, newsize);
@@ -312,7 +330,7 @@ void luaS_free (lua_State *L, TString *s)
     lua_delete <TString> ( L, s );
 }
 
-Udata::Udata( void *construction_params )
+Udata::Udata( global_State *g, void *construction_params ) : GCObject( g )
 {
     stringConstructionParams *params = (stringConstructionParams*)construction_params;
 

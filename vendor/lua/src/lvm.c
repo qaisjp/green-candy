@@ -25,28 +25,37 @@
 #define MAXTAGLOOP	100
 
 
-const TValue *luaV_tonumber (const TValue *obj, TValue *n) {
-  lua_Number num;
-  if (ttisnumber(obj)) return obj;
-  if (ttisstring(obj) && luaO_str2d(svalue(obj), &num)) {
-    setnvalue(n, num);
-    return n;
-  }
-  else
-    return NULL;
+ConstValueAddress luaV_tonumber (ConstValueAddress& obj, ValueAddress& n)
+{
+    lua_Number num;
+
+    if ( ttisnumber(obj) )
+    {
+        return obj;
+    }
+
+    if ( ttisstring(obj) && luaO_str2d(svalue(obj), &num) )
+    {
+        setnvalue(n, num);
+        return n.ConstCast();
+    }
+
+    return ConstValueAddress( NULL );
 }
 
 
-int luaV_tostring (lua_State *L, StkId obj) {
-  if (!ttisnumber(obj))
-    return 0;
-  else {
-    char s[LUAI_MAXNUMBER2STR];
-    lua_Number n = nvalue(obj);
-    lua_number2str(s, n);
-    setsvalue2s(L, obj, luaS_new(L, s));
-    return 1;
-  }
+int luaV_tostring (lua_State *L, ValueAddress& obj)
+{
+    if ( !ttisnumber(obj) )
+        return 0;
+    else
+    {
+        char s[LUAI_MAXNUMBER2STR];
+        lua_Number n = nvalue(obj);
+        lua_number2str(s, n);
+        setsvalue(L, obj, luaS_new(L, s));
+        return 1;
+    }
 }
 
 
@@ -64,7 +73,7 @@ static void traceexec( lua_State *L, const Instruction *pc )
     }
     if ( mask & LUA_MASKLINE )
     {
-        Proto *p = ci_func(L->ci)->GetLClosure()->p;
+        Proto *p = ci_func( L->ciStack.Top() )->GetLClosure()->p;
         int npc = pcRel(pc, p);
         int newline = getline(p, npc);
 
@@ -76,47 +85,35 @@ static void traceexec( lua_State *L, const Instruction *pc )
 }
 
 
-static void callTMres (lua_State *L, StkId res, const TValue *f, const TValue *p1, const TValue *p2)
+static void callTMres (lua_State *L, ValueAddress& res, ConstValueAddress& f, ConstValueAddress& p1, ConstValueAddress& p2)
 {
-  ptrdiff_t result = savestack(L, res);
-  setobj2s(L, L->top, f);  /* push function */
-  setobj2s(L, L->top+1, p1);  /* 1st argument */
-  setobj2s(L, L->top+2, p2);  /* 2nd argument */
-  luaD_checkstack(L, 3);
-  L->top += 3;
-  luaD_call(L, L->top - 3, 1);
-  res = restorestack(L, result);
-  L->top--;
-  setobjs2s(L, res, L->top);
+    pushtvalue(L, f);  /* push function */
+    pushtvalue(L, p1);  /* 1st argument */
+    pushtvalue(L, p2);  /* 2nd argument */
+    luaD_checkstack(L, 3);
+    lua_call(L, 2, 1);
+    popstkvalue( L, res );
 }
 
 // WARNING: stack reallocating function
-void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val )
+void luaV_handle_index( lua_State *L, ConstValueAddress& obj, ConstValueAddress& tm, ConstValueAddress& key, ValueAddress& val )
 {
     if ( ttisnil( tm ) )
         luaG_typeerror( L, obj, "index" );
 
     if ( ttisfunction( tm ) )
     {
-        TValue _key;
-        setobj( L, &_key, key );
-
-        ptrdiff_t savedstk = savestack( L, val );
-
         // Reallocate a new stack
         luaD_checkstack( L, 3 );
 
-        // Save the function value for calling
-        StkId func = L->top++;
-
         // Work with the new stack
-        setclvalue( L, func, clvalue( tm ) );
-        setobj( L, L->top++, obj );
-        setobj( L, L->top++, &_key );
-        luaD_call( L, func, 1 );
+        pushclvalue( L, clvalue( tm ) );
+        pushtvalue( L, obj );
+        pushtvalue( L, key );
+        lua_call( L, 2, 1 );
 
         // Save result at appropriate position
-        setobj( L, restorestack( L, savedstk ), --L->top );
+        popstkvalue( L, val );
     }
     else
     {
@@ -127,7 +124,7 @@ void luaV_handle_index( lua_State *L, const TValue *obj, const TValue *tm, const
 }
 
 // WARNING: stack reallocating function
-void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, StkId val)
+void luaV_gettable (lua_State *L, ConstValueAddress& t, ConstValueAddress& key, ValueAddress& val)
 {
     if ( iscollectable( t ) )
         gcvalue( t )->Index( L, key, val );
@@ -136,28 +133,21 @@ void luaV_gettable (lua_State *L, const TValue *t, const TValue *key, StkId val)
 }
 
 // WARNING: stack reallocating function
-void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, const TValue *key, StkId val )
+void luaV_handle_newindex( lua_State *L, ConstValueAddress& obj, ConstValueAddress& tm, ConstValueAddress& key, ConstValueAddress& val )
 {
     if ( ttisnil( tm ) )
         luaG_typeerror( L, obj, "index" );
 
     if ( ttisfunction( tm ) )
     {
-        // Temporary storage for security (problem: unknown location [stack, table, ...] + allocation)
-        TValue _key, _val;
-        setobj( L, &_key, key );
-        setobj( L, &_val, val );
-
         luaD_checkstack( L, 4 );    // allocate a new stack
 
-        StkId func = L->top++;  // remember the function stack id
-
         // Work with the new stack
-        setclvalue( L, func, clvalue( tm ) );
-        setobj( L, L->top++, obj );
-        setobj( L, L->top++, &_key );
-        setobj( L, L->top++, &_val );
-        luaD_call( L, func, 0 );
+        pushclvalue( L, clvalue( tm ) );
+        pushtvalue( L, obj );
+        pushtvalue( L, key );
+        pushtvalue( L, val );
+        lua_call( L, 3, 0 );
     }
     else
     {
@@ -170,7 +160,7 @@ void luaV_handle_newindex( lua_State *L, const TValue *obj, const TValue *tm, co
 }
 
 // WARNING: stack reallocating function
-void luaV_settable (lua_State *L, const TValue *t, const TValue *key, StkId val)
+void luaV_settable (lua_State *L, ConstValueAddress& t, ConstValueAddress& key, ConstValueAddress& val)
 {
     if ( iscollectable( t ) )
         gcvalue( t )->NewIndex( L, key, val );
@@ -179,39 +169,58 @@ void luaV_settable (lua_State *L, const TValue *t, const TValue *key, StkId val)
 }
 
 
-static int call_binTM (lua_State *L, const TValue *p1, const TValue *p2,
-                       StkId res, TMS event) {
-  const TValue *tm = luaT_gettmbyobj(L, p1, event);  /* try first operand */
-  if (ttisnil(tm))
-    tm = luaT_gettmbyobj(L, p2, event);  /* try second operand */
-  if (ttisnil(tm)) return 0;
-  callTMres(L, res, tm, p1, p2);
-  return 1;
+static int call_binTM (lua_State *L, ConstValueAddress& p1, ConstValueAddress& p2, ValueAddress& res, TMS event)
+{
+    ConstValueAddress tm = luaT_gettmbyobj( L, p1, event );  /* try first operand */
+
+    if ( ttisnil(tm) )
+    {
+        tm = luaT_gettmbyobj( L, p2, event );  /* try second operand */
+
+        if ( ttisnil(tm) )
+        {
+            return 0;
+        }
+    }
+
+    callTMres(L, res, tm, p1, p2);
+    return 1;
 }
 
-static const TValue *get_compTM (lua_State *L, Table *mt1, Table *mt2, TMS event)
+static ConstValueAddress get_compTM (lua_State *L, Table *mt1, Table *mt2, TMS event)
 {
-    const TValue *tm1 = fasttm(L, mt1, event);
-    const TValue *tm2;
-    if (tm1 == NULL) return NULL;  /* no metamethod */
+    global_State *g = G(L);
+
+    ConstValueAddress tm1 = gfasttm(g, mt1, event);
+
+    if (tm1 == NULL) return ConstValueAddress( NULL );  /* no metamethod */
     if (mt1 == mt2) return tm1;  /* same metatables => same metamethods */
-    tm2 = fasttm(L, mt2, event);
-    if (tm2 == NULL) return NULL;  /* no metamethod */
+
+    ConstValueAddress tm2 = gfasttm(g, mt2, event);
+
+    if (tm2 == NULL) return ConstValueAddress( NULL );  /* no metamethod */
     if (luaO_rawequalObj(tm1, tm2))  /* same metamethods? */
         return tm1;
-    return NULL;
+
+    return ConstValueAddress( NULL );
 }
 
-static int call_orderTM (lua_State *L, const TValue *p1, const TValue *p2,
-                         TMS event) {
-  const TValue *tm1 = luaT_gettmbyobj(L, p1, event);
-  const TValue *tm2;
-  if (ttisnil(tm1)) return -1;  /* no metamethod? */
-  tm2 = luaT_gettmbyobj(L, p2, event);
-  if (!luaO_rawequalObj(tm1, tm2))  /* different metamethods? */
-    return -1;
-  callTMres(L, L->top, tm1, p1, p2);
-  return !l_isfalse(L->top);
+static int call_orderTM (lua_State *L, ConstValueAddress& p1, ConstValueAddress& p2, TMS event)
+{
+    ConstValueAddress tm1 = luaT_gettmbyobj(L, p1, event);
+
+    if ( ttisnil(tm1) )
+        return -1;  /* no metamethod? */
+
+    ConstValueAddress tm2 = luaT_gettmbyobj(L, p2, event);
+
+    if ( !luaO_rawequalObj(tm1, tm2) )  /* different metamethods? */
+        return -1;
+
+    LocalValueAddress tmp;
+
+    callTMres( L, tmp, tm1, p1, p2 );
+    return !l_isfalse(tmp);
 }
 
 
@@ -237,39 +246,63 @@ static int l_strcmp (const TString *ls, const TString *rs) {
 }
 
 
-int luaV_lessthan (lua_State *L, const TValue *l, const TValue *r) {
-  int res;
-  if (ttype(l) != ttype(r))
-    return luaG_ordererror(L, l, r);
-  else if (ttisnumber(l))
-    return luai_numlt(nvalue(l), nvalue(r));
-  else if (ttisstring(l))
-    return l_strcmp(tsvalue(l), tsvalue(r)) < 0;
-  else if ((res = call_orderTM(L, l, r, TM_LT)) != -1)
-    return res;
-  return luaG_ordererror(L, l, r);
-}
-
-
-static int lessequal (lua_State *L, const TValue *l, const TValue *r) {
-  int res;
-  if (ttype(l) != ttype(r))
-    return luaG_ordererror(L, l, r);
-  else if (ttisnumber(l))
-    return luai_numle(nvalue(l), nvalue(r));
-  else if (ttisstring(l))
-    return l_strcmp(tsvalue(l), tsvalue(r)) <= 0;
-  else if ((res = call_orderTM(L, l, r, TM_LE)) != -1)  /* first try `le' */
-    return res;
-  else if ((res = call_orderTM(L, r, l, TM_LT)) != -1)  /* else try `lt' */
-    return !res;
-  return luaG_ordererror(L, l, r);
-}
-
-
-int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2)
+int luaV_lessthan (lua_State *L, ConstValueAddress& l, ConstValueAddress& r)
 {
-    const TValue *tm;
+    int res;
+
+    if (ttype(l) != ttype(r))
+    {
+        return luaG_ordererror(L, l, r);
+    }
+    else if (ttisnumber(l))
+    {
+        return luai_numlt(nvalue(l), nvalue(r));
+    }
+    else if (ttisstring(l))
+    {
+        return l_strcmp(tsvalue(l), tsvalue(r)) < 0;
+    }
+    else if ((res = call_orderTM(L, l, r, TM_LT)) != -1)
+    {
+        return res;
+    }
+
+    return luaG_ordererror(L, l, r);
+}
+
+
+static int lessequal (lua_State *L, ConstValueAddress& l, ConstValueAddress& r)
+{
+    int res;
+
+    if (ttype(l) != ttype(r))
+    {
+        return luaG_ordererror(L, l, r);
+    }
+    else if (ttisnumber(l))
+    {
+        return luai_numle(nvalue(l), nvalue(r));
+    }
+    else if (ttisstring(l))
+    {
+        return l_strcmp(tsvalue(l), tsvalue(r)) <= 0;
+    }
+    else if ((res = call_orderTM(L, l, r, TM_LE)) != -1)  /* first try `le' */
+    {
+        return res;
+    }
+    else if ((res = call_orderTM(L, r, l, TM_LT)) != -1)  /* else try `lt' */
+    {
+        return !res;
+    }
+
+    return luaG_ordererror(L, l, r);
+}
+
+
+int luaV_equalval (lua_State *L, ConstValueAddress& t1, ConstValueAddress& t2)
+{
+    ConstValueAddress tm;
     lua_assert(ttype(t1) == ttype(t2));
 
     switch (ttype(t1))
@@ -296,32 +329,40 @@ int luaV_equalval (lua_State *L, const TValue *t1, const TValue *t2)
     if (tm == NULL)
         return 0;  /* no TM? */
 
-    callTMres(L, L->top, tm, t1, t2);  /* call TM */
-    return !l_isfalse(L->top);
+    LocalValueAddress tmp;
+
+    callTMres(L, tmp, tm, t1, t2);  /* call TM */
+    return !l_isfalse(tmp);
 }
 
 
 void luaV_concat (lua_State *L, int total, int last)
 {
+    lua_assert( total >= 2 );
+    
     do
     {
-        StkId top = L->base + last + 1;
+        stackOffset_t topOffset = last + 1;
+
+        ValueAddress firstOp = fetchstackadr( L, topOffset - 2 );
+        ValueAddress secondOp = fetchstackadr( L, topOffset - 1 );
+
         int n = 2;  /* number of elements handled in this pass (at least 2) */
 
-        if (!(ttisstring(top-2) || ttisnumber(top-2)) || !tostring(L, top-1))
+        if (!(ttisstring(firstOp) || ttisnumber(firstOp)) || !tostring(L, secondOp))
         {
-            if (!call_binTM(L, top-2, top-1, top-2, TM_CONCAT))
+            if (!call_binTM(L, firstOp.ConstCast(), secondOp.ConstCast(), firstOp, TM_CONCAT))
             {
-                luaG_concaterror(L, top-2, top-1);
+                luaG_concaterror(L, firstOp.ConstCast(), secondOp.ConstCast());
             }
         }
-        else if (tsvalue(top-1)->len == 0)  /* second op is empty? */
+        else if (tsvalue(secondOp)->len == 0)  /* second op is empty? */
         {
-            (void)tostring(L, top - 2);  /* result is first op (as string) */
+            (void)tostring(L, firstOp);  /* result is first op (as string) */
         }
         else
         {
-            n = luaS_concat( L, top, total );
+            n = luaS_concat( L, topOffset, total );
         }
 
         total -= n-1;  /* got `n' strings to create 1 new */
@@ -331,26 +372,31 @@ void luaV_concat (lua_State *L, int total, int last)
 }
 
 
-static void Arith (lua_State *L, StkId ra, const TValue *rb,
-                   const TValue *rc, TMS op) {
-  TValue tempb, tempc;
-  const TValue *b, *c;
-  if ((b = luaV_tonumber(rb, &tempb)) != NULL &&
-      (c = luaV_tonumber(rc, &tempc)) != NULL) {
-    lua_Number nb = nvalue(b), nc = nvalue(c);
-    switch (op) {
-      case TM_ADD: setnvalue(ra, luai_numadd(nb, nc)); break;
-      case TM_SUB: setnvalue(ra, luai_numsub(nb, nc)); break;
-      case TM_MUL: setnvalue(ra, luai_nummul(nb, nc)); break;
-      case TM_DIV: setnvalue(ra, luai_numdiv(nb, nc)); break;
-      case TM_MOD: setnvalue(ra, luai_nummod(nb, nc)); break;
-      case TM_POW: setnvalue(ra, luai_numpow(nb, nc)); break;
-      case TM_UNM: setnvalue(ra, luai_numunm(nb)); break;
-      default: lua_assert(0); break;
+static void Arith (lua_State *L, ValueAddress& ra, ConstValueAddress& rb, ConstValueAddress& rc, TMS op)
+{
+    LocalValueAddress tempb, tempc;
+    ConstValueAddress b, c;
+
+    if ( (b = luaV_tonumber(rb, tempb)) != NULL && (c = luaV_tonumber(rc, tempc)) != NULL )
+    {
+        lua_Number nb = nvalue(b), nc = nvalue(c);
+
+        switch (op)
+        {
+        case TM_ADD: setnvalue(ra, luai_numadd(nb, nc)); break;
+        case TM_SUB: setnvalue(ra, luai_numsub(nb, nc)); break;
+        case TM_MUL: setnvalue(ra, luai_nummul(nb, nc)); break;
+        case TM_DIV: setnvalue(ra, luai_numdiv(nb, nc)); break;
+        case TM_MOD: setnvalue(ra, luai_nummod(nb, nc)); break;
+        case TM_POW: setnvalue(ra, luai_numpow(nb, nc)); break;
+        case TM_UNM: setnvalue(ra, luai_numunm(nb)); break;
+        default: lua_assert(0); break;
+        }
     }
-  }
-  else if (!call_binTM(L, rb, rc, ra, op))
-    luaG_aritherror(L, rb, rc);
+    else if ( !call_binTM(L, rb, rc, ra, op) )
+    {
+        luaG_aritherror(L, rb, rc);
+    }
 }
 
 
@@ -359,457 +405,871 @@ static void Arith (lua_State *L, StkId ra, const TValue *rb,
 ** some macros for common tasks in `luaV_execute'
 */
 
-#define runtime_check(L, c)	{ if (!(c)) break; }
+FASTAPI void bytecode_exception( lua_State *L, const char *errmsg )
+{
+    std::string finalError( "bytecode exception: " );
+    finalError += errmsg;
 
-#define RA(i)	(base+GETARG_A(i))
-/* to be used after possible stack reallocation */
-#define RB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgR, base+GETARG_B(i))
-#define RC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgR, base+GETARG_C(i))
-#define RKB(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_B(i)) ? k+INDEXK(GETARG_B(i)) : base+GETARG_B(i))
-#define RKC(i)	check_exp(getCMode(GET_OPCODE(i)) == OpArgK, \
-	ISK(GETARG_C(i)) ? k+INDEXK(GETARG_C(i)) : base+GETARG_C(i))
-#define KBx(i)	check_exp(getBMode(GET_OPCODE(i)) == OpArgK, k+GETARG_Bx(i))
+    throw lua_exception( L, LUA_ERRRUN, finalError.c_str() );
+}
+
+struct bytecode_frame
+{
+    lua_State *L;
+    rtStack_t *rtStack;
+    Proto *runningProto;
+
+    inline bytecode_frame( lua_State *L, LClosure *cl )
+    {
+        this->L = L;
+        this->rtStack = &L->rtStack;
+        this->runningProto = cl->p;
+    }
+
+    FASTAPI stackOffset_t RA_getStackOffset( const Instruction i )
+    {
+        return GETARG_A(i);
+    }
+    FASTAPI RtCtxItem RActx_offset( const Instruction i, int offset )
+    {
+        return L->GetCurrentStackFrame().GetStackItem( L, *rtStack, RA_getStackOffset(i) + offset );
+    }
+    FASTAPI ValueAddress RA_offset( const Instruction i, int offset )
+    {
+        RtCtxItem stackItem = RActx_offset( i, offset );
+
+        return ValueAddress( L, rtStack->GetNewVirtualStackItem( L, stackItem ) );
+    }
+    FASTAPI ValueAddress RA( const Instruction i )
+    {
+        return RA_offset( i, 0 );
+    }
+    FASTAPI ValueAddress RB( const Instruction i )
+    {
+        //check_exp(getBMode(GET_OPCODE(i)) == OpArgR, )
+        RtCtxItem stackItem = L->GetCurrentStackFrame().GetStackItem( L, *rtStack, GETARG_B(i) );   
+
+        return ValueAddress( L, rtStack->GetNewVirtualStackItem( L, stackItem ) );
+    }
+    FASTAPI ValueAddress RC( const Instruction i )
+    {
+        //check_exp(getCMode(GET_OPCODE(i)) == OpArgR, )
+        RtCtxItem stackItem = L->GetCurrentStackFrame().GetStackItem( L, *rtStack, GETARG_C(i) );
+
+        return ValueAddress( L, rtStack->GetNewVirtualStackItem( L, stackItem ) );
+    }
+    FASTAPI ConstValueAddress RKB( const Instruction i )
+    {
+        //check_exp(getBMode(GET_OPCODE(i)) == OpArgK, )
+
+        ConstValueAddress retAddr;
+
+        if ( ISK(GETARG_B(i)) )
+        {
+            retAddr = luaF_getprotoconstaddress( L, this->runningProto, INDEXK(GETARG_B(i)) );
+        }
+        else
+        {
+            retAddr = RB(i).ConstCast();
+        }
+
+        return retAddr;
+    }
+    FASTAPI ConstValueAddress RKC( const Instruction i )
+    {
+        //check_exp(getCMode(GET_OPCODE(i)) == OpArgK, )
+
+        ConstValueAddress retAddr;
+
+        if ( ISK(GETARG_C(i)) )
+        {
+            retAddr = luaF_getprotoconstaddress( L, this->runningProto, INDEXK(GETARG_C(i)) );
+        }
+        else
+        {
+            retAddr = RC(i).ConstCast();
+        }
+
+        return retAddr;
+    }
+    FASTAPI ConstValueAddress KBx( const Instruction i )
+    {
+        //check_exp(getBMode(GET_OPCODE(i)) == OpArgK, )
+        return luaF_getprotoconstaddress( L, this->runningProto, GETARG_Bx(i) );
+    }
+};
 
 
 #define dojump(L,pc,i)	{(pc) += (i); luai_threadyield(L);}
 
 
-#define Protect(x)	{ L->savedpc = pc; {x;}; base = L->base; }
+#define Protect(x)	{ L->savedpc = pc; {x;}; }
 
 
-#define arith_op(op,tm) { \
-        TValue *rb = RKB(i); \
-        TValue *rc = RKC(i); \
-        if (ttisnumber(rb) && ttisnumber(rc)) { \
-          lua_Number nb = nvalue(rb), nc = nvalue(rc); \
-          setnvalue(ra, op(nb, nc)); \
-        } \
-        else \
-          Protect(Arith(L, ra, rb, rc, tm)); \
-      }
+#define arith_op(op,tm) \
+{ \
+    ConstValueAddress rb = bcframe.RKB(i); \
+    ConstValueAddress rc = bcframe.RKC(i); \
+    if (ttisnumber(rb) && ttisnumber(rc)) \
+    { \
+        lua_Number nb = nvalue(rb), nc = nvalue(rc); \
+        setnvalue(ra, op(nb, nc)); \
+    } \
+    else \
+    { \
+      Protect(Arith(L, ra, rb, rc, tm)); \
+    } \
+}
 
+void lua_debugLClosureStack( lua_State *L, CallInfo *currentFrame )
+{
+    stackOffset_t currentStackTop = currentFrame->stack.GetUsageCount( L, L->rtStack );
 
+    LClosure *lcl = clvalue( currentFrame->func )->GetLClosure();
 
-void luaV_execute (lua_State *L, int nexeccalls) {
-  LClosure *cl;
-  StkId base;
-  TValue *k;
-  const Instruction *pc;
+    stackOffset_t requiredStackTop = lcl->p->maxstacksize;
+
+    lua_assert( currentStackTop == requiredStackTop );
+}
+
+void luaV_execute (lua_State *L, int nexeccalls, eCallFrameModel callFrameModel)
+{
 reentry:  /* entry point */
-  lua_assert(isLua(L->ci));
-  pc = L->savedpc;
-  cl = clvalue(L->ci->func)->GetLClosure();
-  base = L->base;
-  k = cl->p->k;
-  /* main loop of interpreter */
-  for (;;) {
-    const Instruction i = *pc++;
-    StkId ra;
-    if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
-        (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
-      traceexec(L, pc);
-      base = L->base;
+    CiCtxItem currentFrameCtx = L->ciStack.GetStackItem( L, -1 );
+
+    lua_assert(isLua(currentFrameCtx.Pointer()));
+
+    const Instruction *pc = L->savedpc;
+    LClosure *cl = clvalue( currentFrameCtx.Pointer()->func )->GetLClosure();
+
+    bytecode_frame bcframe( L, cl );
+
+    /* main loop of interpreter */
+    for (;;)
+    {
+        const Instruction i = *pc++;
+
+        if ( (L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) && (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE) )
+        {
+            traceexec( L, pc );
+        }
+
+        OpCode opcode = GET_OPCODE(i);
+
+        // Debug beforehand.
+        lua_debugLClosureStack( L, currentFrameCtx.Pointer() );
+
+        // Is the opcode heavily stack dependant?
+        if ( opcode == OP_RETURN ||
+             opcode == OP_TAILCALL ||
+             opcode == OP_CALL ||
+             opcode == OP_CLOSE ||
+             opcode == OP_TFORLOOP ||
+             opcode == OP_SETLIST ||
+             opcode == OP_VARARG ||
+             opcode == OP_FORLOOP )
+        {
+            RtCtxItem ra = bcframe.RActx_offset(i, 0);
+
+            switch( opcode )
+            {
+            case OP_CALL: {
+                int b = GETARG_B(i);
+                int nresults = GETARG_C(i) - 1;
+
+                stackOffset_t theTopOffset;
+
+                {
+                    CallInfo *currentFrame = currentFrameCtx.Pointer();
+
+                    if ( b != 0 )
+                    {
+                        stackOffset_t raOffset = bcframe.RA_getStackOffset( i );
+
+                        theTopOffset = currentFrame->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, raOffset + b - 1 );    /* else previous instruction set top */
+                    }
+                    else
+                    {
+                        lua_assert( currentFrame->hasVirtualStackTop == true );
+
+                        // Make sure top offset is absolute.
+                        theTopOffset = currentFrame->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, currentFrame->virtualStackTop, true );
+                    }
+                }
+
+                L->savedpc = pc;
+
+                int result = luaD_precall(L, ra, nresults, theTopOffset, CALLFRAME_STATIC);
+
+                switch( result )
+                {
+                case PCRLUA: {
+                    nexeccalls++;
+                    goto reentry;  /* restart luaV_execute over new Lua function */
+                }
+                case PCRC: {
+                    /* it was a C function (`precall' called it); adjust results */
+                    if ( nresults == -1 )
+                    {
+                        CallInfo *currentFrame = currentFrameCtx.Pointer();
+
+                        currentFrame->hasVirtualStackTop = true;
+
+                        currentFrame->virtualStackTop = currentFrame->stack.GetRelativeStackOffset( L, *bcframe.rtStack, currentFrame->lastResultTop );
+                    }
+                    break;
+                }
+                default: {
+                    return;  /* yield */
+                }
+                }
+
+                break;
+            }
+            case OP_TAILCALL: {
+                int b = GETARG_B(i);
+
+                stackOffset_t theTopOffset;
+
+                {
+                    CallInfo *currentFrame = currentFrameCtx.Pointer();
+
+                    if ( b != 0 )
+                    {
+                        stackOffset_t raOffset = bcframe.RA_getStackOffset( i );
+
+                        stackOffset_t rebasingOffset = ( raOffset + b - 1 );
+
+                        theTopOffset = currentFrame->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, 0 ) + rebasingOffset;  /* else previous instruction set top */
+                    }
+                    else
+                    {
+                        lua_assert( currentFrame->hasVirtualStackTop == true );
+
+                        // Make sure top offset is absolute.
+                        theTopOffset = currentFrame->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, currentFrame->virtualStackTop, true );
+                    }
+                }
+
+                L->savedpc = pc;
+
+                lua_assert( GETARG_C(i) - 1 == -1 );
+
+                int precallResult = luaD_precall(L, ra, LUA_MULTRET, theTopOffset, CALLFRAME_STATIC);
+
+                switch( precallResult )
+                {
+                case PCRLUA: {
+                    /* tail call: put new frame in place of previous one */
+                    CallInfo *ciPrev = currentFrameCtx.Pointer();
+
+                    CallInfo *newCurrentFrame = L->ciStack.Top();
+
+                    rtStack_t& rtStack = L->rtStack;
+
+                    rtStack.Lock( L );
+                    {
+                        StkId func = ciPrev->func;
+                        StkId_const pfunc = newCurrentFrame->func;  /* previous function index */
+
+                        if ( !L->openupval.IsEmpty() )
+                        {
+                            luaF_close( L, ciPrev->stack.Base( L, rtStack ) );
+                        }
+
+                        stackOffset_t newBaseOffset =
+                            bcframe.rtStack->GetStackOffset( L,
+                                func + rtStack_t::GetDeferredStackOffset( pfunc, newCurrentFrame->stack.Base( L, rtStack ) )
+                            );
+                        
+                        // Rebase this stack frame.
+                        ciPrev->stack.InitializeEx( L, *bcframe.rtStack, newBaseOffset, clvalue(pfunc)->GetLClosure()->p->maxstacksize );
+
+                        // TODO: properly implement this following behavior in the stack logic.
+                        // It moves a variable amount of values to another position on the stack.
+
+                        // Move down the stack frame.
+
+                        RtStackView& curStackFrame = newCurrentFrame->stack;
+
+                        StkId_const stackTop = curStackFrame.Top( L, rtStack );
+                        {
+                            stackOffset_t prevFuncOffset = bcframe.rtStack->GetStackOffset( L, pfunc );
+                            stackOffset_t curFuncOffset = bcframe.rtStack->GetStackOffset( L, func );
+
+                            stackOffset_t moveCount = rtStack_t::GetDeferredStackOffset( pfunc, stackTop ) + 1;
+
+                            for ( stackOffset_t n = 0; n < moveCount; n++ )
+                            {
+                                RtCtxItem srcItem = bcframe.rtStack->GetStackItem( L, prevFuncOffset + n );
+                                RtCtxItem dstItem = bcframe.rtStack->GetStackItem( L, curFuncOffset + n );
+
+                                // Move the item down.
+                                setobj( L, dstItem.Pointer(), srcItem.Pointer() );
+                            }
+                        }
+                    }
+                    rtStack.Unlock( L );
+
+                    ciPrev->savedpc = L->savedpc;
+                    ciPrev->tailcalls++;  /* one more call lost */
+
+                    L->ciStack.Pop( L );  /* remove new frame */
+                    goto reentry;
+                }
+                case PCRC: {  /* it was a C function (`precall' called it) */
+                    CallInfo *currentFrame = currentFrameCtx.Pointer();
+
+                    currentFrame->hasVirtualStackTop = true;
+
+                    currentFrame->virtualStackTop = currentFrame->stack.GetRelativeStackOffset( L, *bcframe.rtStack, currentFrame->lastResultTop );
+                    break;
+                }
+                default: {
+                    return;  /* yield */
+                }
+                }
+
+                break;
+            }
+            case OP_RETURN: {
+                int b = GETARG_B(i);
+
+                stackOffset_t resultTopOffsetAbsolute;
+
+                CallInfo *currentFrame = currentFrameCtx.Pointer();
+
+                if ( b != 0 )
+                {
+                    stackOffset_t raOffset = bcframe.RA_getStackOffset( i );
+
+                    stackOffset_t rebasingOffset = ( raOffset + b - 2 );
+
+                    resultTopOffsetAbsolute = currentFrame->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, 0 ) + rebasingOffset;
+                }
+                else
+                {
+                    lua_assert( currentFrame->hasVirtualStackTop == true );
+
+                    resultTopOffsetAbsolute = currentFrame->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, currentFrame->virtualStackTop, true );
+                }
+
+                if ( !L->openupval.IsEmpty() )
+                {
+                    luaF_close(L, currentFrame->stack.Base( L, *bcframe.rtStack ));
+                }
+
+                L->savedpc = pc;
+
+                // Decide how to handle return.
+                eCallFrameModel returnCIModel = CALLFRAME_STATIC;
+
+                if ( nexeccalls == 1 )
+                {
+                    returnCIModel = callFrameModel;
+                }
+
+                bool shouldSetVirtualStackTop = ( currentFrame->nresults == -1 );
+
+                b = luaD_poscall(L, &ra, returnCIModel, resultTopOffsetAbsolute);
+
+                CallInfo *newCurrentFrame = L->ciStack.Top();
+
+                if ( shouldSetVirtualStackTop == true )
+                {
+                    newCurrentFrame->hasVirtualStackTop = true;
+
+                    newCurrentFrame->virtualStackTop = newCurrentFrame->stack.GetRelativeStackOffset( L, *bcframe.rtStack, newCurrentFrame->lastResultTop );
+                }
+
+                if ( --nexeccalls == 0 )  /* was previous function running `here'? */
+                {
+                    return;  /* no: return */
+                }
+                else
+                {  /* yes: continue its execution */
+                    lua_assert(isLua(newCurrentFrame));
+                    lua_assert(GET_OPCODE(*((newCurrentFrame)->savedpc - 1)) == OP_CALL);
+
+                    goto reentry;
+                }
+
+                break;
+            }
+            case OP_CLOSE: {
+                luaF_close(L, ra.Pointer());
+                break;
+            }
+            case OP_TFORLOOP: {
+                RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+                {
+                    RtCtxItem srcStateCtx = bcframe.RActx_offset(i, 1);
+                    RtCtxItem srcIndexCtx = bcframe.RActx_offset(i, 2);
+
+                    RtCtxItem cb = bcframe.RActx_offset(i, 3);  /* call base */
+                    {
+                        RtCtxItem stateCtx = bcframe.RActx_offset(i, 4);
+                        RtCtxItem indexCtx = bcframe.RActx_offset(i, 5);
+
+                        setobjs2s(L, indexCtx.Pointer(), srcIndexCtx.Pointer());
+                        setobjs2s(L, stateCtx.Pointer(), srcStateCtx.Pointer());
+                        setobjs2s(L, cb.Pointer(), ra.Pointer());
+                    }
+
+                    // Adjust the stack top.
+                    stackOffset_t callTopOffset;
+                    {
+                        stackOffset_t raOffset = bcframe.RA_getStackOffset(i);
+                        stackOffset_t cbOffset = ( raOffset + 3 );
+
+                        callTopOffset = currentFrameCtx.Pointer()->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, cbOffset + 3 - 1 );   /* func. + 2 args (state and index) */
+                    }
+
+                    Protect(luaD_call(L, cb, GETARG_C(i), CALLFRAME_STATIC, callTopOffset));
+
+                    if ( !ttisnil(cb.Pointer()) )
+                    {  /* continue loop? */
+                        setobj(L, srcIndexCtx.Pointer(), cb.Pointer());  /* save control variable */
+                        dojump(L, pc, GETARG_sBx(*pc));  /* jump back */
+                    }
+                }
+
+                pc++;
+                break;
+            }
+            case OP_SETLIST: {
+                int n = GETARG_B(i);
+                int c = GETARG_C(i);
+
+                CallInfo *currentFrame = currentFrameCtx.Pointer();
+
+                if ( n == 0 )
+                {
+                    lua_assert( currentFrame->hasVirtualStackTop == true );
+
+                    stackOffset_t raOffset = currentFrame->stack.GetStackOffset( L, *bcframe.rtStack, ra.Pointer() );
+
+                    stackOffset_t offsetTopFromRA = ( currentFrame->virtualStackTop - raOffset );
+
+                    n = offsetTopFromRA;
+                }
+                if ( c == 0 )
+                {
+                    c = cast_int(*pc++);
+                }
+
+                if ( !ttistable(ra.Pointer()) )
+                {
+                    bytecode_exception( L, "expected table in ARG_A" );
+                }
+
+                Table *h = hvalue(ra.Pointer());
+
+                int last = ((c-1)*LFIELDS_PER_FLUSH) + n;
+
+                if ( last > h->sizearray )  /* needs more space? */
+                {
+                    luaH_resizearray(L, h, last);  /* pre-alloc it at once */
+                }
+
+                stackOffset_t raAbsoluteOffset = currentFrame->stack.GetStackOffsetAbsolute( L, *bcframe.rtStack, ra.Pointer() );
+
+                for ( ; n > 0; n-- )
+                {
+                    RtCtxItem valCtx = bcframe.rtStack->GetStackItem( L, raAbsoluteOffset + n );
+
+                    ValueAddress numObj = luaH_setnum(L, h, last--);
+
+                    setobj2t(L, numObj, valCtx.Pointer());
+                }
+                break;
+            }
+            case OP_VARARG: {
+                CallInfo *currentFrame = currentFrameCtx.Pointer();
+
+                int b = GETARG_B(i) - 1;
+                stackOffset_t funcBaseOffset = rtStack_t::GetDeferredStackOffset( currentFrame->func, currentFrame->stack.Base( L, *bcframe.rtStack ) );
+                stackOffset_t actualPushedParams = ( funcBaseOffset - 1 );
+                int n = ( actualPushedParams - cl->p->numparams );
+
+                if ( b == -1 )
+                {
+                    Protect( luaD_checkstack( L, n ) );
+
+                    stackOffset_t raOffset = bcframe.RA_getStackOffset(i);
+
+                    b = n;
+
+                    // Store the stack top.
+                    stackOffset_t requiredStackOffset = ( raOffset + n - 1 );
+
+                    currentFrame->hasVirtualStackTop = true;
+
+                    currentFrame->virtualStackTop = requiredStackOffset;
+                }
+
+                stackOffset_t raOffset = bcframe.RA_getStackOffset( i );
+
+                for ( int j = 0; j < b; j++ )
+                {
+                    RtCtxItem targetStackItem = currentFrame->stack.GetStackItemOutbounds( L, *bcframe.rtStack, raOffset + j );
+
+                    // Sort of hacky, but it works.
+                    if ( j < n )
+                    {
+                        // Hack into the vararg params on of the previous frame.
+                        StkId_const srcStackItem = currentFrame->stack.Base( L, *bcframe.rtStack ) - n + j;
+
+                        setobjs2s(L, targetStackItem.Pointer(), srcStackItem);
+                    }
+                    else
+                    {
+                        setnilvalue(targetStackItem.Pointer());
+                    }
+                }
+                break;
+            }
+            case OP_FORLOOP: {
+                RtCtxItem stepItem = bcframe.RActx_offset(i, 2);
+                RtCtxItem limitItem = bcframe.RActx_offset(i, 1);
+
+                if ( ttype( stepItem.Pointer() ) != LUA_TNUMBER )
+                {
+                    bytecode_exception( L, "step item in OP_FORLOOP is not a number" );
+                }
+
+                if ( ttype( limitItem.Pointer() ) != LUA_TNUMBER )
+                {
+                    bytecode_exception( L, "limit item in OP_FORLOOP is not a number" );
+                }
+
+                if ( ttype( ra.Pointer() ) != LUA_TNUMBER )
+                {
+                    bytecode_exception( L, "index item in OP_FORLOOP is not a number" );
+                }
+
+                lua_Number step = nvalue( stepItem.Pointer() );
+                lua_Number idx = luai_numadd(nvalue( ra.Pointer() ), step); /* increment index */
+                lua_Number limit = nvalue( limitItem.Pointer() );
+
+                if ( luai_numlt(0, step) ? luai_numle(idx, limit) : luai_numle(limit, idx) )
+                {
+                    RtCtxItem extidxItem = bcframe.RActx_offset(i, 3);
+
+                    dojump(L, pc, GETARG_sBx(i));  /* jump back */
+                    setnvalue(ra.Pointer(), idx);  /* update internal index... */
+                    setnvalue(extidxItem.Pointer(), idx);  /* ...and external index */
+                }
+                break;
+            }
+            }
+        }
+        else
+        {
+            ValueAddress ra = bcframe.RA(i);
+            //lua_assert(L->top == L->ci->top || luaG_checkopenop(i));
+            lua_assert(ra != NULL);
+
+            switch( opcode )
+            {
+            case OP_MOVE: {
+                ValueAddress b = bcframe.RB(i);
+
+                setobjs2s(L, ra, b);
+                break;
+            }
+            case OP_LOADK: {
+                ConstValueAddress kb = bcframe.KBx( i );
+
+                setobj2s(L, ra, kb);
+                break;
+            }
+            case OP_LOADBOOL: {
+                setbvalue( ra, ( GETARG_B(i) != 0 ) );
+
+                if ( GETARG_C(i) )
+                {
+                    pc++;  /* skip next instruction (if C) */
+                }
+                break;
+            }
+            case OP_LOADNIL: {
+                bcframe.rtStack->Lock( L );
+                {
+                    TValue *rb = bcframe.RB(i);
+
+                    do
+                    {
+                        setnilvalue(rb--);
+                    }
+                    while (rb >= ra);
+                }
+                bcframe.rtStack->Unlock( L );
+                break;
+            }
+            case OP_GETUPVAL: {
+                int b = GETARG_B(i);
+                setobj2s(L, ra, cl->upvals[b]->v);
+                break;
+            }
+            case OP_GETGLOBAL: {
+                LocalValueAddress g;
+                ConstValueAddress rb = bcframe.KBx(i);
+                setgcvalue(L, g, cl->env);
+                lua_assert(ttisstring(rb));
+                Protect(luaV_gettable(L, g.ConstCast(), rb, ra));
+                break;
+            }
+            case OP_GETTABLE: {
+                ConstValueAddress tableAddr = bcframe.RB(i).ConstCast();
+                ConstValueAddress keyAddr = bcframe.RKC(i);
+
+                Protect(luaV_gettable(L, tableAddr, keyAddr, ra));
+                break;
+            }
+            case OP_SETGLOBAL: {
+                LocalValueAddress g;
+                setgcvalue(L, g, cl->env);
+                ConstValueAddress keyAddr = bcframe.KBx(i);
+                lua_assert(ttisstring(keyAddr));
+                Protect(luaV_settable(L, g.ConstCast(), keyAddr, ra.ConstCast()));
+                break;
+            }
+            case OP_SETUPVAL: {
+                UpVal *uv = cl->upvals[ GETARG_B(i) ];
+                setobj(L, uv->v, ra);
+                luaC_barrier(L, uv, ra);
+                break;
+            }
+            case OP_SETTABLE: {
+                ConstValueAddress keyAddr = bcframe.RKB(i);
+                ConstValueAddress valAddr = bcframe.RKC(i);
+
+                Protect(luaV_settable(L, ra.ConstCast(), keyAddr, valAddr));
+                break;
+            }
+            case OP_NEWTABLE: {
+                int b = GETARG_B(i);
+                int c = GETARG_C(i);
+
+                sethvalue(L, ra, luaH_new(L, luaO_fb2int(b), luaO_fb2int(c)));
+
+                Protect(luaC_checkGC(L));
+                break;
+            }
+            case OP_SELF: {
+                ValueAddress ra_offseted = bcframe.RA_offset( i, 1 );
+                ConstValueAddress rb = bcframe.RB(i).ConstCast();
+
+                setobjs2s(L, ra_offseted, rb);
+
+                ConstValueAddress keyAddr = bcframe.RKC(i);
+
+                Protect(luaV_gettable(L, rb, keyAddr, ra));
+                break;
+            }
+            case OP_ADD: {
+                arith_op(luai_numadd, TM_ADD);
+                break;
+            }
+            case OP_SUB: {
+                arith_op(luai_numsub, TM_SUB);
+                break;
+            }
+            case OP_MUL: {
+                arith_op(luai_nummul, TM_MUL);
+                break;
+            }
+            case OP_DIV: {
+                arith_op(luai_numdiv, TM_DIV);
+                break;
+            }
+            case OP_MOD: {
+                arith_op(luai_nummod, TM_MOD);
+                break;
+            }
+            case OP_POW: {
+                arith_op(luai_numpow, TM_POW);
+                break;
+            }
+            case OP_UNM: {
+                ConstValueAddress rb = bcframe.RB(i).ConstCast();
+
+                if ( ttisnumber(rb) )
+                {
+                    lua_Number nb = nvalue(rb);
+                    setnvalue(ra, luai_numunm(nb));
+                }
+                else
+                {
+                    Protect(Arith(L, ra, rb, rb, TM_UNM));
+                }
+                break;
+            }
+            case OP_NOT: {
+                ConstValueAddress rb = bcframe.RB(i).ConstCast();
+                bool res = l_isfalse(rb);  /* next assignment may change this value */
+                setbvalue(ra, res);
+                break;
+            }
+            case OP_LEN: {
+                ConstValueAddress rb = bcframe.RB(i).ConstCast();
+
+                switch( ttype(rb) )
+                {
+                case LUA_TTABLE: {
+                    setnvalue(ra, cast_num(luaH_getn(L, hvalue(rb))));
+                    break;
+                }
+                case LUA_TSTRING: {
+                    setnvalue(ra, cast_num(tsvalue(rb)->len));
+                    break;
+                }
+                default: {  /* try metamethod */
+                    ConstValueAddress niladdr = luaO_getnilcontext( L );
+
+                    Protect(
+                        if ( !call_binTM(L, rb, niladdr, ra, TM_LEN) )
+                        {
+                            luaG_typeerror(L, rb, "get length of");
+                        }
+                    )
+                }
+                }
+                break;
+            }
+            case OP_CONCAT: {
+                int b = GETARG_B(i);
+                int c = GETARG_C(i);
+
+                Protect(luaV_concat(L, c-b+1, c); luaC_checkGC(L));
+
+                ConstValueAddress outAddr = index2constadr( L, b + 1 );
+
+                setobjs2s(L, ra, outAddr);
+                break;
+            }
+            case OP_JMP: {
+                dojump(L, pc, GETARG_sBx(i));
+                break;
+            }
+            case OP_EQ: {
+                ConstValueAddress rb = bcframe.RKB(i);
+                ConstValueAddress rc = bcframe.RKC(i);
+
+                Protect(
+                    if ( equalobj(L, rb, rc) == GETARG_A(i) )
+                    {
+                        dojump(L, pc, GETARG_sBx(*pc));
+                    }
+                );
+
+                pc++;
+                break;
+            }
+            case OP_LT: {
+                ConstValueAddress rb = bcframe.RKB(i);
+                ConstValueAddress rc = bcframe.RKC(i);
+
+                Protect(
+                    if ( luaV_lessthan(L, rb, rc) == GETARG_A(i) )
+                    {
+                        dojump(L, pc, GETARG_sBx(*pc));
+                    }
+                );
+                pc++;
+                break;
+            }
+            case OP_LE: {
+                ConstValueAddress rb = bcframe.RKB(i);
+                ConstValueAddress rc = bcframe.RKC(i);
+
+                Protect(
+                    if ( lessequal(L, rb, rc) == GETARG_A(i) )
+                    {
+                        dojump(L, pc, GETARG_sBx(*pc));
+                    }
+                );
+                pc++;
+                break;
+            }
+            case OP_TEST: {
+                if ( l_isfalse(ra) != ( GETARG_C(i) != 0 ) )
+                {
+                    dojump(L, pc, GETARG_sBx(*pc));
+                }
+                pc++;
+                break;
+            }
+            case OP_TESTSET: {
+                ConstValueAddress rb = bcframe.RB(i).ConstCast();
+
+                if ( l_isfalse(rb) != ( GETARG_C(i) != 0 ) )
+                {
+                    setobjs2s(L, ra, rb);
+                    dojump(L, pc, GETARG_sBx(*pc));
+                }
+
+                pc++;
+                break;
+            }
+            case OP_FORPREP: {
+                ValueAddress init = ra;
+                ValueAddress plimit = bcframe.RA_offset(i, 1);
+                ValueAddress pstep = bcframe.RA_offset(i, 2);
+
+                L->savedpc = pc;  /* next steps may throw errors */
+
+                if ( !tonumber(init.ConstCast(), init) )
+                {
+                    luaG_runerror(L, LUA_QL("for") " initial value must be a number");
+                }
+                else if ( !tonumber(plimit.ConstCast(), plimit) )
+                {
+                    luaG_runerror(L, LUA_QL("for") " limit must be a number");
+                }
+                else if ( !tonumber(pstep.ConstCast(), pstep) )
+                {
+                    luaG_runerror(L, LUA_QL("for") " step must be a number");
+                }
+                setnvalue(ra, luai_numsub(nvalue(ra), nvalue(pstep)));
+                dojump(L, pc, GETARG_sBx(i));
+                break;
+            }
+            case OP_CLOSURE: {
+                Proto *p = cl->p->p[ GETARG_Bx(i) ];
+                int nup = p->nups;
+
+                LClosure *lcl = luaF_newLclosure( L, nup, cl->env );
+
+                Closure *ncl = lcl;
+                lcl->p = p;
+
+                for ( int j = 0; j < nup; j++, pc++ )
+                {
+                    if ( GET_OPCODE(*pc) == OP_GETUPVAL )
+                    {
+                        lcl->upvals[j] = cl->upvals[ GETARG_B(*pc) ];
+                    }
+                    else
+                    {
+                        lua_assert(GET_OPCODE(*pc) == OP_MOVE);
+
+                        RtCtxItem stackItem = index2stackadr( L, GETARG_B(*pc) + 1 );
+
+                        lcl->upvals[j] = luaF_findupval(L, stackItem.Pointer());
+                    }
+                }
+                setclvalue(L, ra, ncl);
+                Protect(luaC_checkGC(L));
+                break;
+            }
+            }
+        }
+
+        // Debug stuff.
+        lua_debugLClosureStack( L, currentFrameCtx.Pointer() );
     }
-    /* warning!! several calls may realloc the stack and invalidate `ra' */
-    ra = RA(i);
-    lua_assert(base == L->base && L->base == L->ci->base);
-    lua_assert(base <= L->top && L->top <= L->stack + L->stacksize);
-    //lua_assert(L->top == L->ci->top || luaG_checkopenop(i));
-    switch (GET_OPCODE(i)) {
-      case OP_MOVE: {
-        setobjs2s(L, ra, RB(i));
-        continue;
-      }
-      case OP_LOADK: {
-        setobj2s(L, ra, KBx(i));
-        continue;
-      }
-      case OP_LOADBOOL: {
-        setbvalue(ra, ( GETARG_B(i) != 0 ));
-        if (GETARG_C(i)) pc++;  /* skip next instruction (if C) */
-        continue;
-      }
-      case OP_LOADNIL: {
-        TValue *rb = RB(i);
-        do {
-          setnilvalue(rb--);
-        } while (rb >= ra);
-        continue;
-      }
-      case OP_GETUPVAL: {
-        int b = GETARG_B(i);
-        setobj2s(L, ra, cl->upvals[b]->v);
-        continue;
-      }
-      case OP_GETGLOBAL: {
-        TValue g;
-        TValue *rb = KBx(i);
-        setgcvalue(L, &g, cl->env);
-        lua_assert(ttisstring(rb));
-        Protect(luaV_gettable(L, &g, rb, ra));
-        continue;
-      }
-      case OP_GETTABLE: {
-        Protect(luaV_gettable(L, RB(i), RKC(i), ra));
-        continue;
-      }
-      case OP_SETGLOBAL: {
-        TValue g;
-        setgcvalue(L, &g, cl->env);
-        lua_assert(ttisstring(KBx(i)));
-        Protect(luaV_settable(L, &g, KBx(i), ra));
-        continue;
-      }
-      case OP_SETUPVAL: {
-        UpVal *uv = cl->upvals[GETARG_B(i)];
-        setobj(L, uv->v, ra);
-        luaC_barrier(L, uv, ra);
-        continue;
-      }
-      case OP_SETTABLE: {
-        Protect(luaV_settable(L, ra, RKB(i), RKC(i)));
-        continue;
-      }
-      case OP_NEWTABLE: {
-        int b = GETARG_B(i);
-        int c = GETARG_C(i);
-        sethvalue(L, ra, luaH_new(L, luaO_fb2int(b), luaO_fb2int(c)));
-        Protect(luaC_checkGC(L));
-        continue;
-      }
-      case OP_SELF: {
-        StkId rb = RB(i);
-        setobjs2s(L, ra+1, rb);
-        Protect(luaV_gettable(L, rb, RKC(i), ra));
-        continue;
-      }
-      case OP_ADD: {
-        arith_op(luai_numadd, TM_ADD);
-        continue;
-      }
-      case OP_SUB: {
-        arith_op(luai_numsub, TM_SUB);
-        continue;
-      }
-      case OP_MUL: {
-        arith_op(luai_nummul, TM_MUL);
-        continue;
-      }
-      case OP_DIV: {
-        arith_op(luai_numdiv, TM_DIV);
-        continue;
-      }
-      case OP_MOD: {
-        arith_op(luai_nummod, TM_MOD);
-        continue;
-      }
-      case OP_POW: {
-        arith_op(luai_numpow, TM_POW);
-        continue;
-      }
-      case OP_UNM: {
-        TValue *rb = RB(i);
-        if (ttisnumber(rb)) {
-          lua_Number nb = nvalue(rb);
-          setnvalue(ra, luai_numunm(nb));
-        }
-        else {
-          Protect(Arith(L, ra, rb, rb, TM_UNM));
-        }
-        continue;
-      }
-      case OP_NOT: {
-        bool res = l_isfalse(RB(i));  /* next assignment may change this value */
-        setbvalue(ra, res);
-        continue;
-      }
-      case OP_LEN: {
-        const TValue *rb = RB(i);
-        switch (ttype(rb)) {
-          case LUA_TTABLE: {
-            setnvalue(ra, cast_num(luaH_getn(L, hvalue(rb))));
-            break;
-          }
-          case LUA_TSTRING: {
-            setnvalue(ra, cast_num(tsvalue(rb)->len));
-            break;
-          }
-          default: {  /* try metamethod */
-            Protect(
-              if (!call_binTM(L, rb, luaO_nilobject, ra, TM_LEN))
-                luaG_typeerror(L, rb, "get length of");
-            )
-          }
-        }
-        continue;
-      }
-      case OP_CONCAT: {
-        int b = GETARG_B(i);
-        int c = GETARG_C(i);
-        Protect(luaV_concat(L, c-b+1, c); luaC_checkGC(L));
-        setobjs2s(L, RA(i), base+b);
-        continue;
-      }
-      case OP_JMP: {
-        dojump(L, pc, GETARG_sBx(i));
-        continue;
-      }
-      case OP_EQ: {
-        TValue *rb = RKB(i);
-        TValue *rc = RKC(i);
-        Protect(
-          if (equalobj(L, rb, rc) == GETARG_A(i))
-            dojump(L, pc, GETARG_sBx(*pc));
-        )
-        pc++;
-        continue;
-      }
-      case OP_LT: {
-        Protect(
-          if (luaV_lessthan(L, RKB(i), RKC(i)) == GETARG_A(i))
-            dojump(L, pc, GETARG_sBx(*pc));
-        )
-        pc++;
-        continue;
-      }
-      case OP_LE: {
-        Protect(
-          if (lessequal(L, RKB(i), RKC(i)) == GETARG_A(i))
-            dojump(L, pc, GETARG_sBx(*pc));
-        )
-        pc++;
-        continue;
-      }
-      case OP_TEST: {
-        if (l_isfalse(ra) != ( GETARG_C(i) != 0 ))
-          dojump(L, pc, GETARG_sBx(*pc));
-        pc++;
-        continue;
-      }
-      case OP_TESTSET: {
-        TValue *rb = RB(i);
-        if (l_isfalse(rb) != ( GETARG_C(i) != 0 )) {
-          setobjs2s(L, ra, rb);
-          dojump(L, pc, GETARG_sBx(*pc));
-        }
-        pc++;
-        continue;
-      }
-      case OP_CALL: {
-        int b = GETARG_B(i);
-        int nresults = GETARG_C(i) - 1;
-        if (b != 0) L->top = ra+b;  /* else previous instruction set top */
-
-        assert( L->top != NULL );
-
-        L->savedpc = pc;
-        switch (luaD_precall(L, ra, nresults)) {
-          case PCRLUA: {
-            nexeccalls++;
-            goto reentry;  /* restart luaV_execute over new Lua function */
-          }
-          case PCRC: {
-            /* it was a C function (`precall' called it); adjust results */
-            if (nresults >= 0) L->top = L->ci->top;
-
-            assert( L->top != NULL );
-
-            base = L->base;
-            continue;
-          }
-          default: {
-            return;  /* yield */
-          }
-        }
-      }
-      case OP_TAILCALL: {
-        int b = GETARG_B(i);
-        if (b != 0) L->top = ra+b;  /* else previous instruction set top */
-
-        assert( L->top != NULL );
-
-        L->savedpc = pc;
-        lua_assert(GETARG_C(i) - 1 == LUA_MULTRET);
-        switch (luaD_precall(L, ra, LUA_MULTRET)) {
-          case PCRLUA: {
-            /* tail call: put new frame in place of previous one */
-            CallInfo *ci = L->ci - 1;  /* previous frame */
-            int aux;
-            StkId func = ci->func;
-            StkId pfunc = (ci+1)->func;  /* previous function index */
-            if (!L->openupval.IsEmpty()) luaF_close(L, ci->base);
-            L->base = ci->base = ci->func + ((ci+1)->base - pfunc);
-            for (aux = 0; pfunc+aux < L->top; aux++)  /* move frame down */
-              setobjs2s(L, func+aux, pfunc+aux);
-            ci->top = L->top = func+aux;  /* correct top */
-
-            assert( L->top != NULL );
-
-            lua_assert(L->top == L->base + clvalue(func)->GetLClosure()->p->maxstacksize);
-            ci->savedpc = L->savedpc;
-            ci->tailcalls++;  /* one more call lost */
-
-            assert( L->ci != L->base_ci );
-
-            L->ci--;  /* remove new frame */
-            goto reentry;
-          }
-          case PCRC: {  /* it was a C function (`precall' called it) */
-            base = L->base;
-            continue;
-          }
-          default: {
-            return;  /* yield */
-          }
-        }
-      }
-      case OP_RETURN: {
-        int b = GETARG_B(i);
-        if (b != 0) L->top = ra+b-1;
-
-        assert( L->top != NULL );
-
-        if (!L->openupval.IsEmpty()) luaF_close(L, base);
-        L->savedpc = pc;
-        b = luaD_poscall(L, ra);
-        if (--nexeccalls == 0)  /* was previous function running `here'? */
-          return;  /* no: return */
-        else {  /* yes: continue its execution */
-          if (b) L->top = L->ci->top;
-
-          assert( L->top != NULL );
-
-          lua_assert(isLua(L->ci));
-          lua_assert(GET_OPCODE(*((L->ci)->savedpc - 1)) == OP_CALL);
-          goto reentry;
-        }
-      }
-      case OP_FORLOOP: {
-        lua_Number step = nvalue(ra+2);
-        lua_Number idx = luai_numadd(nvalue(ra), step); /* increment index */
-        lua_Number limit = nvalue(ra+1);
-        if (luai_numlt(0, step) ? luai_numle(idx, limit)
-                                : luai_numle(limit, idx)) {
-          dojump(L, pc, GETARG_sBx(i));  /* jump back */
-          setnvalue(ra, idx);  /* update internal index... */
-          setnvalue(ra+3, idx);  /* ...and external index */
-        }
-        continue;
-      }
-      case OP_FORPREP: {
-        const TValue *init = ra;
-        const TValue *plimit = ra+1;
-        const TValue *pstep = ra+2;
-        L->savedpc = pc;  /* next steps may throw errors */
-        if (!tonumber(init, ra))
-          luaG_runerror(L, LUA_QL("for") " initial value must be a number");
-        else if (!tonumber(plimit, ra+1))
-          luaG_runerror(L, LUA_QL("for") " limit must be a number");
-        else if (!tonumber(pstep, ra+2))
-          luaG_runerror(L, LUA_QL("for") " step must be a number");
-        setnvalue(ra, luai_numsub(nvalue(ra), nvalue(pstep)));
-        dojump(L, pc, GETARG_sBx(i));
-        continue;
-      }
-      case OP_TFORLOOP: {
-        StkId cb = ra + 3;  /* call base */
-        setobjs2s(L, cb+2, ra+2);
-        setobjs2s(L, cb+1, ra+1);
-        setobjs2s(L, cb, ra);
-        L->top = cb+3;  /* func. + 2 args (state and index) */
-
-        assert( L->top != NULL );
-
-        Protect(luaD_call(L, cb, GETARG_C(i)));
-        L->top = L->ci->top;
-
-        assert( L->top != NULL );
-
-        cb = RA(i) + 3;  /* previous call may change the stack */
-        if (!ttisnil(cb)) {  /* continue loop? */
-          setobjs2s(L, cb-1, cb);  /* save control variable */
-          dojump(L, pc, GETARG_sBx(*pc));  /* jump back */
-        }
-        pc++;
-        continue;
-      }
-      case OP_SETLIST: {
-        int n = GETARG_B(i);
-        int c = GETARG_C(i);
-        int last;
-        Table *h;
-        if (n == 0) {
-          n = cast_int(L->top - ra) - 1;
-          L->top = L->ci->top;
-
-          assert( L->top != NULL );
-
-        }
-        if (c == 0) c = cast_int(*pc++);
-        runtime_check(L, ttistable(ra));
-        h = hvalue(ra);
-        last = ((c-1)*LFIELDS_PER_FLUSH) + n;
-        if (last > h->sizearray)  /* needs more space? */
-          luaH_resizearray(L, h, last);  /* pre-alloc it at once */
-        for (; n > 0; n--) {
-          TValue *val = ra+n;
-          setobj2t(L, luaH_setnum(L, h, last--), val);
-          luaC_barriert(L, h, val);
-        }
-        continue;
-      }
-      case OP_CLOSE: {
-        luaF_close(L, ra);
-        continue;
-      }
-      case OP_CLOSURE: {
-        Proto *p;
-        Closure *ncl;
-        int nup, j;
-        p = cl->p->p[GETARG_Bx(i)];
-        nup = p->nups;
-        LClosure *lcl = luaF_newLclosure(L, nup, cl->env);
-        ncl = lcl;
-        lcl->p = p;
-        for (j=0; j<nup; j++, pc++) {
-          if (GET_OPCODE(*pc) == OP_GETUPVAL)
-            lcl->upvals[j] = cl->upvals[GETARG_B(*pc)];
-          else {
-            lua_assert(GET_OPCODE(*pc) == OP_MOVE);
-            lcl->upvals[j] = luaF_findupval(L, base + GETARG_B(*pc));
-          }
-        }
-        setclvalue(L, ra, ncl);
-        Protect(luaC_checkGC(L));
-        continue;
-      }
-      case OP_VARARG: {
-        int b = GETARG_B(i) - 1;
-        int j;
-        CallInfo *ci = L->ci;
-        int n = cast_int(ci->base - ci->func) - cl->p->numparams - 1;
-        if (b == LUA_MULTRET) {
-          Protect(luaD_checkstack(L, n));
-          ra = RA(i);  /* previous call may change the stack */
-          b = n;
-          L->top = ra + n;
-
-          assert( L->top != NULL );
-
-        }
-        for (j = 0; j < b; j++) {
-          if (j < n) {
-            setobjs2s(L, ra + j, ci->base - n + j);
-          }
-          else {
-            setnilvalue(ra + j);
-          }
-        }
-        continue;
-      }
-    }
-  }
 }
 
 // Module initialization.
