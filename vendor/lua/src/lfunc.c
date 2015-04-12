@@ -30,6 +30,22 @@ TValue* luaF_getcurraccessor( lua_State *L )
     return &L->storage;
 }
 
+CClosureMethodRedirect::CClosureMethodRedirect( global_State *g, void *construction_params ) : CClosure( g, construction_params )
+{
+    this->redirect = NULL;
+    this->m_class = NULL;
+
+    this->nupvalues = 0;
+
+    this->isC = true;
+    this->isEnvLocked = true;
+}
+
+CClosureMethodRedirect::~CClosureMethodRedirect( void )
+{
+    return;
+}
+
 CClosureMethodRedirect* luaF_newCmethodredirect( lua_State *L, GCObject *e, Closure *redirect, Class *j )
 {
     global_State *g = G(L);
@@ -38,18 +54,15 @@ CClosureMethodRedirect* luaF_newCmethodredirect( lua_State *L, GCObject *e, Clos
 
     if ( typeInfo )
     {
-        CClosureMethodRedirect *c = lua_new <CClosureMethodRedirect> ( L, typeInfo->cclosureMethodRedirectTypeInfo );
+        cclosureSharedConstructionParams params;
+        params.nelems = 0;
+        params.runtimeThread = L;
+
+        CClosureMethodRedirect *c = lua_new <CClosureMethodRedirect> ( L, typeInfo->cclosureMethodRedirectTypeInfo, &params );
 
         if ( c )
         {
-            luaC_link(L, c, LUA_TFUNCTION);
-
-            c->genFlags = 0;
-            c->isC = true;
-            c->isEnvLocked = true;
             c->env = e;
-            c->nupvalues = 0;
-            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
             c->redirect = redirect;
             c->m_class = j;
         }
@@ -64,6 +77,23 @@ TValue* CClosureMethodRedirect::ReadUpValue( unsigned char index )
     return (TValue*)luaO_nilobject;
 }
 
+CClosureMethodRedirectSuper::CClosureMethodRedirectSuper( global_State *g, void *construction_params ) : CClosure( g, construction_params )
+{
+    this->redirect = NULL;
+    this->m_class = NULL;
+    this->super = NULL;
+
+    this->nupvalues = 0;
+
+    this->isC = true;
+    this->isEnvLocked = true;
+}
+
+CClosureMethodRedirectSuper::~CClosureMethodRedirectSuper( void )
+{
+    return;
+}
+
 CClosureMethodRedirectSuper* luaF_newCmethodredirectsuper( lua_State *L, GCObject *e, Closure *redirect, Class *j, Closure *super )
 {
     global_State *g = G(L);
@@ -72,18 +102,15 @@ CClosureMethodRedirectSuper* luaF_newCmethodredirectsuper( lua_State *L, GCObjec
 
     if ( typeInfo )
     {
+        cclosureSharedConstructionParams params;
+        params.nelems = 0;
+        params.runtimeThread = L;
+
         CClosureMethodRedirectSuper *c = lua_new <CClosureMethodRedirectSuper> ( L, typeInfo->cclosureMethodRedirectSuperTypeInfo );
 
         if ( c )
         {
-            luaC_link(L, c, LUA_TFUNCTION);
-
-            c->genFlags = 0;
-            c->isC = true;
-            c->isEnvLocked = true;
             c->env = e;
-            c->nupvalues = 0;
-            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
             c->redirect = redirect;
             c->m_class = j;
             c->super = super;
@@ -98,11 +125,26 @@ TValue* CClosureMethodRedirectSuper::ReadUpValue( unsigned char index )
     return (TValue*)luaO_nilobject;
 }
 
-CClosureBasic::CClosureBasic( global_State *g, void *construction_params ) : CClosure( g )
+CClosureBasic::CClosureBasic( global_State *g, void *construction_params ) : CClosure( g, construction_params )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-    this->nupvalues = params->nelems;
+    int nelems = 0;
+
+    if ( params )
+    {
+        nelems = params->nelems;
+    }
+
+    this->nupvalues = nelems;
+
+    this->isC = true;
+    this->isEnvLocked = false;
+}
+
+CClosureBasic::~CClosureBasic( void )
+{
+    return;
 }
 
 CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
@@ -115,18 +157,13 @@ CClosureBasic* luaF_newCclosure (lua_State *L, int nelems, GCObject *e)
     {
         cclosureSharedConstructionParams params;
         params.nelems = nelems;
+        params.runtimeThread = L;
 
         CClosureBasic *c = lua_new <CClosureBasic> ( L, typeInfo->cclosureBasicTypeInfo, &params );
 
         if ( c )
         {
-            luaC_link(L, c, LUA_TFUNCTION);
-
-            c->genFlags = 0;
-            c->isC = true;
-            c->isEnvLocked = false;
             c->env = e;
-            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
         }
         return c;
     }
@@ -141,11 +178,28 @@ TValue* CClosureBasic::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-CClosureMethod::CClosureMethod( global_State *g, void *construction_params ) : CClosureMethodBase( g )
+CClosureMethod::CClosureMethod( global_State *g, void *construction_params ) : CClosureMethodBase( g, construction_params )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-    this->nupvalues = params->nelems;
+    int nelems = 0;
+
+    if ( params )
+    {
+        nelems = params->nelems;
+    }
+
+    this->nupvalues = nelems;
+
+    this->isC = true;
+    this->isEnvLocked = true;
+
+    // TODO: maybe nil the upvalue slots.
+}
+
+CClosureMethod::~CClosureMethod( void )
+{
+    return;
 }
 
 CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j )
@@ -158,18 +212,13 @@ CClosureMethod* luaF_newCmethod( lua_State *L, int nelems, GCObject *e, Class *j
     {
         cclosureSharedConstructionParams params;
         params.nelems = nelems;
+        params.runtimeThread = L;
 
         CClosureMethod *c = lua_new <CClosureMethod> ( L, typeInfo->cclosureMethodTypeInfo, &params );
         
         if ( c )
         {
-            luaC_link( L, c, LUA_TFUNCTION );
-
-            c->genFlags = 0;
-            c->isC = true;
-            c->isEnvLocked = true;
             c->env = e;
-            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
             c->m_class = j;
         }
         return c;
@@ -185,11 +234,28 @@ TValue* CClosureMethod::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-CClosureMethodTrans::CClosureMethodTrans( global_State *g, void *construction_params ) : CClosureMethodBase( g )
+CClosureMethodTrans::CClosureMethodTrans( global_State *g, void *construction_params ) : CClosureMethodBase( g, construction_params )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-    this->nupvalues = params->nelems;
+    int nelems = 0;
+
+    if ( params )
+    {
+        nelems = params->nelems;
+    }
+
+    this->nupvalues = nelems;
+    this->trans = 0;
+    this->data = NULL;
+
+    this->isC = true;
+    this->isEnvLocked = true;
+}
+
+CClosureMethodTrans::~CClosureMethodTrans( void )
+{
+    return;
 }
 
 CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e, Class *j, int trans )
@@ -202,19 +268,13 @@ CClosureMethodTrans* luaF_newCmethodtrans( lua_State *L, int nelems, GCObject *e
     {
         cclosureSharedConstructionParams params;
         params.nelems = nelems;
+        params.runtimeThread = L;
 
         CClosureMethodTrans *c = lua_new <CClosureMethodTrans> ( L, typeInfo->cclosureMethodTransTypeInfo, &params );
 
         if ( c )
         {
-            luaC_link( L, c, LUA_TFUNCTION );
-
-            c->genFlags = 0;
-            c->isC = true;
-            c->isEnvLocked = true;
             c->env = e;
-            c->nupvalues = cast_byte(nelems);
-            c->accessor = gcvalue( luaF_getcurraccessor( L ) );
             c->m_class = j;
             c->trans = trans;
         }
@@ -231,11 +291,62 @@ TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
+CClosureMethodBase::CClosureMethodBase( global_State *g, void *construction_params ) : CClosure( g, construction_params )
+{
+    this->m_class = NULL;
+    this->method = NULL;
+    this->super = NULL;
+}
+
+CClosureMethodBase::~CClosureMethodBase( void )
+{
+    return;
+}
+
+CClosure::CClosure( global_State *g, void *construction_params ) : Closure( g )
+{
+    cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
+
+    lua_State *L = g->mainthread;
+
+    if ( params )
+    {
+        L = params->runtimeThread;
+    }
+
+    this->f = NULL;
+    this->accessor = gcvalue( luaF_getcurraccessor( L ) );
+}
+
+CClosure::~CClosure( void )
+{
+}
+
 LClosure::LClosure( global_State *g, void *construction_params ) : Closure( g )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-    this->nupvalues = params->nelems;
+    int nelems = 0;
+
+    if ( params )
+    {
+        nelems = params->nelems;
+    }
+
+    this->nupvalues = nelems;
+    this->p = NULL;
+
+    this->nupvalues = cast_byte(nelems);
+
+    for ( int n = 0; n < nelems; n++ )
+    {
+        this->upvals[ n ] = NULL;
+    }
+}
+
+LClosure::~LClosure( void )
+{
+    return;
 }
 
 LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)
@@ -248,27 +359,32 @@ LClosure *luaF_newLclosure (lua_State *L, int nelems, GCObject *e)
     {
         cclosureSharedConstructionParams params;
         params.nelems = nelems;
+        params.runtimeThread = L;
 
         LClosure *c = lua_new <LClosure> ( L, typeInfo->lclosureTypeInfo, &params );
 
         if ( c )
         {
-            luaC_link(L, c, LUA_TFUNCTION);
-
-            c->genFlags = 0;
-            c->isC = false;
-            c->isEnvLocked = false;
             c->env = e;
-            c->nupvalues = cast_byte(nelems);
-
-            while ( nelems-- )
-            {
-                c->upvals[nelems] = NULL;
-            }
         }
+
         return c;
     }
     return NULL;
+}
+
+Closure::Closure( global_State *g ) : GrayObject( g )
+{
+    this->nupvalues = 0;
+    this->env = NULL;
+    this->genFlags = 0;
+
+    luaC_link(g, this, LUA_TFUNCTION);
+}
+
+Closure::~Closure( void )
+{
+    return;
 }
 
 void luaF_freeclosure (lua_State *L, Closure *c)
@@ -294,12 +410,6 @@ UpVal *luaF_newupval (lua_State *L)
     {
         UpVal *uv = lua_new <UpVal> ( L, typeInfo->upvalueTypeInfo );
 
-        if ( uv )
-        {
-            luaC_link(L, uv, LUA_TUPVAL);
-            uv->v = &uv->u.value;
-            setnilvalue(uv->v);
-        }
         return uv;
     }
     return NULL;
@@ -346,7 +456,6 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
         
         if ( uv )
         {
-            luaC_register( L, uv, LUA_TUPVAL );
             uv->v = level;  /* current value lives in the stack */
 
             iter.Insert( uv );  /* chain it in the proper position */
@@ -376,6 +485,14 @@ static void unlinkupval (UpVal *uv)
     lua_assert( LIST_ISVALID( uv->u.l ) == true );
 
     LIST_REMOVE( uv->u.l );  /* remove from `uvhead' list */
+}
+
+UpVal::UpVal( global_State *g, void *construction_params ) : GCObject( g )
+{
+    luaC_register( g, this, LUA_TUPVAL );
+
+    this->v = &this->u.value;       // initially the upvalue is closed.
+    setnilvalue( &this->u.value );
 }
 
 UpVal::~UpVal( void )
@@ -426,43 +543,52 @@ Proto *luaF_newproto (lua_State *L)
     {
         Proto *f = lua_new <Proto> ( L, typeInfo->protoTypeInfo );
 
-        if ( f )
-        {
-            luaC_link(L, f, LUA_TPROTO);
-            f->k = NULL;
-            f->sizek = 0;
-            f->p = NULL;
-            f->sizep = 0;
-            f->code = NULL;
-            f->sizecode = 0;
-            f->sizelineinfo = 0;
-            f->sizeupvalues = 0;
-            f->nups = 0;
-            f->upvalues = NULL;
-            f->numparams = 0;
-            f->is_vararg = 0;
-            f->maxstacksize = 0;
-            f->lineinfo = NULL;
-            f->sizelocvars = 0;
-            f->locvars = NULL;
-            f->linedefined = 0;
-            f->lastlinedefined = 0;
-            f->source = NULL;
-        }
         return f;
     }
     return NULL;
 }
 
+Proto::Proto( global_State *g, void *construction_params ) : GrayObject( g )
+{
+    // Initialize ourselves.
+    luaC_link(g, this, LUA_TPROTO);
+
+    this->k = NULL;
+    this->sizek = 0;
+    this->p = NULL;
+    this->sizep = 0;
+    this->code = NULL;
+    this->sizecode = 0;
+    this->sizelineinfo = 0;
+    this->sizeupvalues = 0;
+    this->nups = 0;
+    this->upvalues = NULL;
+    this->numparams = 0;
+    this->is_vararg = 0;
+    this->maxstacksize = 0;
+    this->lineinfo = NULL;
+    this->sizelocvars = 0;
+    this->locvars = NULL;
+    this->linedefined = 0;
+    this->lastlinedefined = 0;
+    this->source = NULL;
+}
+
+Proto::~Proto( void )
+{
+    lua_State *L = gstate->mainthread;
+    
+    // Free all used resources.
+    luaM_freearray(L, this->code, this->sizecode);
+    luaM_freearray(L, this->p, this->sizep);
+    luaM_freearray(L, this->k, this->sizek);
+    luaM_freearray(L, this->lineinfo, this->sizelineinfo);
+    luaM_freearray(L, this->locvars, this->sizelocvars);
+    luaM_freearray(L, this->upvalues, this->sizeupvalues);
+}
+
 void luaF_freeproto (lua_State *L, Proto *p)
 {
-    luaM_freearray(L, p->code, p->sizecode);
-    luaM_freearray(L, p->p, p->sizep);
-    luaM_freearray(L, p->k, p->sizek);
-    luaM_freearray(L, p->lineinfo, p->sizelineinfo);
-    luaM_freearray(L, p->locvars, p->sizelocvars);
-    luaM_freearray(L, p->upvalues, p->sizeupvalues);
-
     lua_delete <Proto> ( L, p );
 }
 
@@ -484,46 +610,6 @@ ConstValueAddress luaF_getprotoconstaddress (lua_State *L, Proto *p, int idx)
         }
     }
     return theAddr;
-}
-
-Proto::~Proto()
-{
-}
-
-Closure::~Closure()
-{
-}
-
-CClosure::~CClosure()
-{
-}
-
-CClosureMethodRedirect::~CClosureMethodRedirect()
-{
-}
-
-CClosureMethodRedirectSuper::~CClosureMethodRedirectSuper()
-{
-}
-
-CClosureBasic::~CClosureBasic()
-{
-}
-
-CClosureMethodBase::~CClosureMethodBase()
-{
-}
-
-CClosureMethod::~CClosureMethod()
-{
-}
-
-CClosureMethodTrans::~CClosureMethodTrans()
-{
-}
-
-LClosure::~LClosure()
-{
 }
 
 /*

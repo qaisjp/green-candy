@@ -23,6 +23,8 @@
 #include "lvm.h"
 #include "lzio.h"
 
+#include "lfunc.upval.hxx"
+
 /*
 ** {======================================================
 ** Error-recovery functions

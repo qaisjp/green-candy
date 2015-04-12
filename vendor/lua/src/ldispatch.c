@@ -16,6 +16,8 @@
 #include "lobject.h"
 #include "lstate.h"
 
+#include "ldispatch.class.hxx"
+
 #include "lpluginutil.hxx"
 
 // Lua global_State dispatch type plugin environment
@@ -71,7 +73,7 @@ ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
     {
         global_State *g = G(L);
 
-       dispatchTypeInfoPlugin_t *dispatchEnv = dispatchTypeInfoPlugin.GetPluginStruct( g->config );
+        dispatchTypeInfoPlugin_t *dispatchEnv = dispatchTypeInfoPlugin.GetPluginStruct( g->config );
 
         if ( dispatchEnv )
         {
@@ -79,7 +81,7 @@ ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
 
             if ( q )
             {
-                luaC_link( L, q, LUA_TDISPATCH );
+                luaC_link( g, q, LUA_TDISPATCH );
                 q->m_class = j;
 
                 outObj = q;
@@ -103,7 +105,7 @@ ClassOutEnvDispatch* luaQ_newclassoutenv( lua_State *L, Class *j )
 
             if ( q )
             {
-                luaC_link( L, q, LUA_TDISPATCH );
+                luaC_link( g, q, LUA_TDISPATCH );
                 q->m_class = j;
 
                 outObj = q;
@@ -127,7 +129,7 @@ ClassMethodDispatch* luaQ_newclassmethodenv( lua_State *L, Class *j, GCObject *p
 
             if ( q )
             {
-                luaC_link( L, q, LUA_TDISPATCH );
+                luaC_link( g, q, LUA_TDISPATCH );
                 q->m_class = j;
                 luaC_objbarrier( L, q, j );
                 q->m_prevEnv = prevEnv;

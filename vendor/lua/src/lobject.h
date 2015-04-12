@@ -973,6 +973,8 @@ public:
     inline GCObject( global_State *g )
     {
         this->gstate = g;
+        this->tt = LUA_TNONE;
+        this->marked = 0;
     }
 
     virtual TString*    GetTString()        { return NULL; }
@@ -1039,7 +1041,7 @@ LUA_MAXALIGN class TString : public GCObject
 public:
     TString( global_State *g, void *construction_params );
 
-    ~TString();
+    ~TString( void );
 
     lu_byte reserved;
     unsigned int hash;
@@ -1051,7 +1053,7 @@ LUA_MAXALIGN class Udata : public GCObject
 public:
     Udata( global_State *g, void *construction_params );
 
-    ~Udata();
+    ~Udata( void );
 
     void MarkGC( global_State *g );
 
@@ -1066,12 +1068,9 @@ public:
 class Proto : public GrayObject
 {
 public:
-    inline Proto( global_State *g, void *construction_params ) : GrayObject( g )
-    {
-        return;
-    }
+    Proto( global_State *g, void *construction_params );
 
-    ~Proto();
+    ~Proto( void );
 
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
@@ -1116,43 +1115,16 @@ public:
 
 
 /*
-** Upvalues
-*/
-
-class UpVal : public GCObject
-{
-public:
-    inline UpVal( global_State *g, void *construction_params ) : GCObject( g )
-    {
-        return;
-    }
-
-    ~UpVal( void );
-
-    void MarkGC( global_State *g );
-
-    TValue *v;  /* points to stack or to its own value */
-    union
-    {
-        TValue value;  /* the value (when closed) */
-
-        RwListEntry <UpVal> l;  /* node (when open) */
-    } u;
-};
-
-
-/*
 ** Closures
 */
+
+class CClosure;
+class LClosure;
 
 class Closure abstract : public GrayObject
 {
 public:
-    inline Closure( global_State *g ) : GrayObject( g )
-    {
-        return;
-    }
-
+                            Closure         ( global_State *g );
     virtual                 ~Closure        ( void );
 
     int                     TraverseGC      ( global_State *g );
@@ -1165,8 +1137,8 @@ public:
     inline bool             IsEnvLocked     ( void ) const      { return isEnvLocked; }
 
     Closure*                GetClosure      ( void )            { return this; }
-    virtual class CClosure* GetCClosure     ( void )            { return NULL; }
-    virtual class LClosure* GetLClosure     ( void )            { return NULL; }
+    virtual CClosure*       GetCClosure     ( void )            { return NULL; }
+    virtual LClosure*       GetLClosure     ( void )            { return NULL; }
 
     union
     {
@@ -1184,13 +1156,9 @@ public:
 class CClosure abstract : public Closure
 {
 public:
-    inline CClosure( global_State *g ) : Closure( g )
-    {
-        this->f = NULL;
-        this->accessor = NULL;
-    }
+    CClosure( global_State *g, void *construction_params );
 
-    ~CClosure();
+    ~CClosure( void );
 
     int TraverseGC( global_State *g );
     size_t Propagate( global_State *g );
@@ -1256,10 +1224,7 @@ struct Node
 class Table : public GrayObject
 {
 public:
-    inline Table( global_State *g, void *construction_params ) : GrayObject( g )
-    {
-        return;
-    }
+    Table( global_State *g, void *construction_params );
 
     ~Table( void );
 
@@ -1298,68 +1263,11 @@ public:
     Dispatch*   GetDispatch()               { return this; }
 };
 
-class ClassDispatch abstract : public Dispatch
-{
-public:
-    inline ClassDispatch( global_State *g ) : Dispatch( g )
-    {
-        this->m_class = NULL;
-    }
-
-    size_t                  Propagate( global_State *g );
-
-    bool                    GCRequiresBackBarrier( void ) const     { return true; }
-
-    Class*                  GetClass()      { return m_class; }
-
-    Class*                  m_class;
-};
-
-class ClassEnvDispatch : public ClassDispatch
-{
-public:
-    inline ClassEnvDispatch( global_State *g, void *construct_params ) : ClassDispatch( g )
-    {
-        return;
-    }
-
-    void                    Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
-    void                    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
-};
-
-class ClassOutEnvDispatch : public ClassDispatch
-{
-public:
-    inline ClassOutEnvDispatch( global_State *g, void *construct_params ) : ClassDispatch( g )
-    {
-        return;
-    }
-
-    void                    Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
-    void                    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
-};
-
-class ClassMethodDispatch : public ClassDispatch
-{
-public:
-    inline ClassMethodDispatch( global_State *g, void *construct_params ) : ClassDispatch( g )
-    {
-        this->m_prevEnv = NULL;
-    }
-
-    size_t                  Propagate( global_State *g );
-
-    void                    Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
-    void                    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
-
-    GCObject*               m_prevEnv;
-};
-
 #include "ldispatch.h"
 
 struct _methodRegisterInfo
 {
-    _methodRegisterInfo()
+    _methodRegisterInfo( void )
     {
         numUpValues = 0;
         isTrans = false;
@@ -1378,10 +1286,7 @@ struct _methodCacheEntry : _methodRegisterInfo
 class Class : public GCObject, public virtual ILuaClass
 {
 public:
-    inline Class( global_State *g, void *construction_params ) : GCObject( g )
-    {
-        return;
-    }
+    Class( global_State *g, void *construction_params );
 
     ~Class( void );
 
@@ -1457,8 +1362,6 @@ public:
 
     ValueAddress        SetSuperMethod( lua_State *L );
     ConstValueAddress   GetSuperMethod( lua_State *L );
-
-    lua_State *hostState;
 
     Dispatch *env;
     Dispatch *outenv;
@@ -1568,7 +1471,6 @@ public:
         return this->ciStack.Top()->stack;
     }
 
-    global_State *l_G;
     const Instruction *savedpc;  /* 'savedpc' of current function */
     unsigned short nCcalls;  /* number of nested C calls */
     lu_byte hookmask;
@@ -1751,11 +1653,11 @@ FASTAPI void lua_delete( lua_State *L, classType *obj )
 // Helper macros for using lua_State and global_State.
 #ifdef LUA_USE_C_MACROS
 
-#define G(L)	(L->l_G)
+#define G(L)	(L->gstate)
 
 #else
 
-FASTAPI global_State* G( lua_State *L )         { return L->l_G; }
+FASTAPI global_State* G( lua_State *L )         { return L->gstate; }
 
 #endif
 

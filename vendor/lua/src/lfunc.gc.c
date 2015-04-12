@@ -3,6 +3,7 @@
 #include "lfunc.hxx"
 
 #include "lfunc.class.hxx"
+#include "lfunc.upval.hxx"
 
 // Include garbage collector definitions.
 #include "lgc.interface.hxx"

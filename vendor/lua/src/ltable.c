@@ -665,6 +665,33 @@ static void rehash (lua_State *L, Table *t, const TValue *ek)
 ** }=============================================================
 */
 
+Table::Table( global_State *g, void *construction_params ) : GrayObject( g )
+{
+    // Initialize the table.
+    luaC_link(g, this, LUA_TTABLE);
+    this->metatable = NULL;
+    this->flags = cast_byte(~0);
+    /* temporary values (kept only if some malloc fails) */
+    this->array = NULL;
+    this->sizearray = 0;
+    this->lsizenode = 0;
+    this->node = GetDummyNode( g );
+    this->lastfree = NULL;
+}
+
+Table::~Table( void )
+{
+    // Clean up runtime data of the table.
+    lua_State *L = gstate->mainthread;
+
+    if ( this->node != GetDummyNode( gstate ) )
+    {
+        luaM_freearray( L, this->node, sizenode( this ) );
+    }
+
+    luaM_freearray( L, this->array, this->sizearray );
+}
+
 Table *luaH_new (lua_State *L, int narray, int nhash)
 {
     global_State *g = G(L);
@@ -681,15 +708,6 @@ Table *luaH_new (lua_State *L, int narray, int nhash)
 
     if ( t )
     {
-        // Initialize the table.
-        luaC_link(L, t, LUA_TTABLE);
-        t->metatable = NULL;
-        t->flags = cast_byte(~0);
-        /* temporary values (kept only if some malloc fails) */
-        t->array = NULL;
-        t->sizearray = 0;
-        t->lsizenode = 0;
-        t->node = GetDummyNode( g );
         setarrayvector(L, t, narray);
         setnodevector(L, t, nhash);
     }
@@ -698,26 +716,17 @@ Table *luaH_new (lua_State *L, int narray, int nhash)
 
 void luaH_free (lua_State *L, Table *t)
 {
-    // Clean up runtime data of the table.
-    {
-        if ( t->node != GetDummyNode( G(L) ) )
-        {
-            luaM_freearray( L, t->node, sizenode( t ) );
-        }
-
-        luaM_freearray( L, t->array, t->sizearray );
-    }
-
     // Destroy the table.
-    lua_delete( L, t );
-}
-
-Table::~Table()
-{
+    lua_delete <Table> ( L, t );
 }
 
 static inline Node* getfreepos (Table *t)
 {
+    if ( t->lastfree == NULL )
+    {
+        return NULL;
+    }
+
     while ( t->lastfree-- > t->node )
     {
         if ( ttisnil( gkey(t->lastfree) ) )

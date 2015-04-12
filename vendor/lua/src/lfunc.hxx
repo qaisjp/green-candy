@@ -9,12 +9,14 @@
 #include "lstate.h"
 
 #include "lfunc.class.hxx"
+#include "lfunc.upval.hxx"
 
 #include "lpluginutil.hxx"
 
 struct cclosureSharedConstructionParams
 {
     int nelems;
+    lua_State *runtimeThread;
 };
 
 // Closure type info plugin.
