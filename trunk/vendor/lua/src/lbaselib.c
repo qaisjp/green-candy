@@ -12,6 +12,7 @@
 #include "ltm.h"
 #include "lstate.h"
 #include "lvm.h"
+#include "lgc.h"
 
 
 
@@ -142,8 +143,12 @@ static int luaB_getfenv (lua_State *L)
 
 static int luaB_setfenv (lua_State *L)
 {
-    if ( !iscollectable( L->base + 1 ) )
-        throw lua_exception( L, LUA_ERRRUN, "function environment needs to be real object" );
+    {
+        ConstValueAddress secondItem = index2constadr( L, 2 );
+
+        if ( !iscollectable( secondItem ) )
+            throw lua_exception( L, LUA_ERRRUN, "function environment needs to be real object" );
+    }
 
     getfunc(L, 0);
     lua_pushvalue(L, 2);
@@ -168,7 +173,12 @@ static int luaB_lockfenv (lua_State *L)
 
     getfunc(L, 0);
 
-    Closure *cl = clvalue( index2constadr( L, -1 ) );
+    Closure *cl = NULL;
+    {
+        ConstValueAddress clval = index2constadr( L, -1 );
+
+        cl = clvalue( clval );
+    }
 
     if ( cl->isC )
         luaL_error(L, LUA_QL("lockfenv") " cannot set lock for the environment of given object");
@@ -183,7 +193,12 @@ static int luaB_islockedfenv( lua_State *L )
 {
     getfunc(L, 0);
 
-    Closure *cl = clvalue( index2constadr( L, -1 ) );
+    Closure *cl = NULL;
+    {
+        ConstValueAddress clval = index2constadr( L, -1 );
+
+        cl = clvalue( clval );
+    }
 
     lua_pushboolean( L, cl->IsEnvLocked() );
     return 1;
@@ -222,29 +237,54 @@ static int luaB_gcinfo (lua_State *L) {
 }
 
 
-static int luaB_collectgarbage (lua_State *L) {
-  static const char *const opts[] = {"stop", "restart", "collect",
-    "count", "step", "setpause", "setstepmul", NULL};
-  static const int optsnum[] = {LUA_GCSTOP, LUA_GCRESTART, LUA_GCCOLLECT,
-    LUA_GCCOUNT, LUA_GCSTEP, LUA_GCSETPAUSE, LUA_GCSETSTEPMUL};
-  int o = luaL_checkoption(L, 1, "collect", opts);
-  int ex = luaL_optint(L, 2, 0);
-  int res = lua_gc(L, optsnum[o], ex);
-  switch (optsnum[o]) {
+static int luaB_collectgarbage (lua_State *L)
+{
+    static const char *const opts[] = {"stop", "restart", "collect",
+        "count", "step", "setpause", "setstepmul", NULL};
+
+    static const int optsnum[] = {LUA_GCSTOP, LUA_GCRESTART, LUA_GCCOLLECT,
+        LUA_GCCOUNT, LUA_GCSTEP, LUA_GCSETPAUSE, LUA_GCSETSTEPMUL};
+
+    // Check whether we are even ready.
+    bool isGCReady = luaC_isready( L );
+
+    if ( isGCReady == false )
+    {
+        lua_pushstring( L, "GC thread not ready" );
+        return 1;
+    }
+
+    int o = luaL_checkoption(L, 1, "collect", opts);
+    int ex = luaL_optint(L, 2, 0);
+
+    int res = lua_gc(L, optsnum[o], ex);
+
+    int returnNum = 0;
+
+    switch (optsnum[o])
+    {
     case LUA_GCCOUNT: {
-      int b = lua_gc(L, LUA_GCCOUNTB, 0);
-      lua_pushnumber(L, res + ((lua_Number)b/1024));
-      return 1;
+        int b = lua_gc(L, LUA_GCCOUNTB, 0);
+        lua_pushnumber(L, res + ((lua_Number)b/1024));
+        
+        returnNum = 1;
+        break;
     }
     case LUA_GCSTEP: {
-      lua_pushboolean(L, res);
-      return 1;
+        lua_pushboolean(L, res);
+        
+        returnNum = 1;
+        break;
     }
     default: {
-      lua_pushnumber(L, res);
-      return 1;
+        lua_pushnumber(L, res);
+        
+        returnNum = 1;
+        break;
     }
-  }
+    }
+
+    return returnNum;
 }
 
 static int luaB_type (lua_State *L)
@@ -287,7 +327,7 @@ static int luaB_typesize( lua_State *L )
 {
     luaL_checkany( L, 1 );
 
-    const TValue *typeVal = index2constadr( L, 1 );
+    ConstValueAddress typeVal = index2constadr( L, 1 );
 
     size_t typeSize = 0;
 
@@ -634,7 +674,7 @@ inline static int auxresume( lua_State *L, lua_Thread *co, int narg )
     }
 
     lua_xmove(L, co, narg);
-    lua_setlevel(L, co);
+    co->nCcalls = L->nCcalls;
     lua_resume(co, narg);
 
     if ( co->status == THREAD_TERMINATED && co->errorCode != 0 )
@@ -701,8 +741,8 @@ static int luaB_cocreate (lua_State *L)
     // Notify the system
     if ( Closure *evtCall = G(L)->events[LUA_EVENT_THREAD_CO_CREATE] )
     {
-        setclvalue( L, L->top++, evtCall );
-        setthvalue( L, L->top++, NL );
+        pushclvalue( L, evtCall );
+        pushthvalue( L, NL );
         lua_call( L, 1, 0 );
     }
 

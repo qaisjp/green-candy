@@ -10,7 +10,7 @@
 
 static int typelib_iscollectable( lua_State *L )
 {
-    const TValue *firstArgValue = index2constadr( L, 1 );
+    ConstValueAddress firstArgValue = index2constadr( L, 1 );
 
     lua_pushboolean( L, iscollectable( firstArgValue ) );
     return 1;
@@ -67,7 +67,7 @@ static inline void ConstructTypeHierarchy( LuaTypeSystem::typeInfoBase *subclass
 static int typelib_hierarchy( lua_State *L )
 {
     // Check whether we have a Lua type that is collectable.
-    const TValue *firstArgValue = index2constadr( L, 1 );
+    ConstValueAddress firstArgValue = index2constadr( L, 1 );
 
     if ( !iscollectable( firstArgValue ) )
         throw lua_exception( L, LUA_ERRRUN, "expected gcobj as first argument" );
@@ -92,7 +92,7 @@ static int typelib_hierarchy( lua_State *L )
 
 static int typelib_rttype( lua_State *L )
 {
-    const TValue *firstObjValue = index2constadr( L, 1 );
+    ConstValueAddress firstObjValue = index2constadr( L, 1 );
 
     int valType = ttype( firstObjValue );
 

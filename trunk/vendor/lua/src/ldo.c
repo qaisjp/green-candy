@@ -30,47 +30,59 @@
 */
 
 
-void luaD_seterrorobj (lua_State *L, int errcode, StkId oldtop) {
-    switch (errcode)
+void luaD_seterrorobj (lua_State *L, int errcode)
+{
+    RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+
+    switch( errcode )
     {
     case LUA_ERRMEM: {
-        setsvalue2s(L, oldtop, luaS_newliteral(L, MEMERRMSG));
+        pushsvalue(L, luaS_newliteral(L, MEMERRMSG));
         break;
     }
     case LUA_ERRERR: {
-        setsvalue2s(L, oldtop, luaS_newliteral(L, "error in error handling"));
+        pushsvalue(L, luaS_newliteral(L, "error in error handling"));
         break;
     }
     case LUA_ERRSYNTAX:
     case LUA_ERRRUN: {
-        setobjs2s(L, oldtop, L->top - 1);  /* error message on current top */
+        pushtvalue(L, L->GetCurrentStackFrame().Top( L, *rtStack ));  /* error message on current top */
         break;
     }
     }
-    L->top = oldtop + 1;
-
-    assert( L->top != NULL );
 }
 
 
-static void restore_stack_limit (lua_State *L) {
-  lua_assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK - 1);
-  if (L->size_ci > LUAI_MAXCALLS) {  /* there was an overflow? */
-    int inuse = cast_int(L->ci - L->base_ci);
-    if (inuse + 1 < LUAI_MAXCALLS)  /* can `undo' overflow? */
-      luaD_reallocCI(L, LUAI_MAXCALLS);
-  }
+static void restore_stack_limit (lua_State *L)
+{
+    L->rtStack.VerifyIntegrity( L );
+    L->ciStack.VerifyIntegrity( L );
+
+    if ( L->ciStack.GetSize() > LUAI_MAXCALLS )
+    {  /* there was an overflow? */
+        int inuse = L->ciStack.GetUsageCount( L );
+
+        if ( inuse + 1 < LUAI_MAXCALLS )  /* can `undo' overflow? */
+        {
+            luaD_reallocCI( L, LUAI_MAXCALLS );
+        }
+    }
 }
 
 
 static void resetstack (lua_State *L, int status)
 {
-    L->ci = L->base_ci;
-    L->base = L->ci->base;
-    luaF_close(L, L->base);  /* close eventual pending closures */
-    luaD_seterrorobj(L, status, L->base);
-    L->allowhook = true;
-    restore_stack_limit(L);
+    L->ciStack.SetTopOffset( L, 0 );
+    {
+        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+
+        StkId_const newBase = L->GetCurrentStackFrame().Base( L, *rtStack );
+        luaF_close(L, newBase);  /* close eventual pending closures */
+        L->rtStack.SetTopOffset( L, 0 );
+        luaD_seterrorobj(L, status);
+        L->allowhook = true;
+        restore_stack_limit(L);
+    }
     L->errfunc = 0;
 }
 
@@ -94,70 +106,129 @@ int luaD_rawrunprotected( lua_State *L, Pfunc f, void *ud, std::string& err, lua
 
 /* }====================================================== */
 
-
-static void correctstack (lua_State *L, TValue *oldstack)
+void lua_State::rtStackExp_t::OnRebasing( lua_State *L, stackItem_t oldStack )
 {
-    CallInfo *ci;
+    // Call the super function!
+    growingStack::OnRebasing( L, oldStack );
 
-    L->top = (L->top - oldstack) + L->stack;
-
-    assert( L->top != NULL );
-
-    for ( gcObjList_t::iterator iter = L->openupval.GetIterator(); !iter.IsEnd(); iter.Increment() )
+    if ( oldStack != NULL )
     {
-        GCObject *up = (GCObject*)iter.Resolve();
+        lua_State *rtThread = this->runtimeThread;
 
-        gco2uv(up)->v = (gco2uv(up)->v - oldstack) + L->stack;
+        for ( gcObjList_t::iterator iter = rtThread->openupval.GetIterator(); !iter.IsEnd(); iter.Increment() )
+        {
+            GCObject *up = (GCObject*)iter.Resolve();
+
+            gco2uv(up)->v = GetDeferredStackItem( oldStack, gco2uv(up)->v );
+        }
+
+        if ( !rtThread->ciStack.IsEmpty( rtThread ) )
+        {
+            CallInfo *base_ci = rtThread->ciStack.Base();
+            CallInfo *top_ci = rtThread->ciStack.Top();
+
+            for ( CallInfo *ci = base_ci; ci <= top_ci; ci++ )
+            {
+                ci->stack.OnRebasing( rtThread, *this, oldStack );
+
+                ci->func = GetDeferredStackItem( oldStack, ci->func );
+            }
+        }
+    }
+}
+
+void lua_State::rtStackExp_t::OnResizing( lua_State *L, stackOffset_t oldSize )
+{
+    // Call the super function!
+    growingStack::OnResizing( L, oldSize );
+}
+
+void lua_State::rtStackExp_t::OnChangeTop( lua_State *L, stackItem_t oldTop )
+{
+    // Call the super function!
+    growingStack::OnChangeTop( L, oldTop );
+
+    stackItem_t curTop = this->Top();
+
+    if ( oldTop > curTop )
+    {
+        __asm nop
     }
 
-    for (ci = L->base_ci; ci <= L->ci; ci++)
+    stackOffset_t topOffset;
+
+    bool hasTopOffset = this->GetTopOffset( L, topOffset );
+
+    lua_State *runtimeThread = this->runtimeThread;
+
+    if ( hasTopOffset )
     {
-        ci->top = (ci->top - oldstack) + L->stack;
-        ci->base = (ci->base - oldstack) + L->stack;
-        ci->func = (ci->func - oldstack) + L->stack;
+#if 0
+        // Update the current call-frame top (if present).
+        if ( !runtimeThread->ciStack.IsEmpty( L ) )
+        {
+            RtStackView& currentTopInfo = runtimeThread->GetCurrentStackFrame();
+            {
+                currentTopInfo.SetTopOffset( L, runtimeThread->rtStack, topOffset );
+
+#if 0
+                // Catch illegal changes of the top stack item.
+                if ( currentCallFrame->func && ttisfunction( currentCallFrame->func ) )
+                {
+                    LClosure *cl = clvalue( currentCallFrame->func )->GetLClosure();
+
+                    if ( cl )
+                    {
+                        stackOffset_t requiredStackSpace = cl->p->maxstacksize;
+                        stackOffset_t currentStackSpace = this->GetUsageCountBasedOn( L, L->base );
+                            
+                        lua_assert( requiredStackSpace <= currentStackSpace );
+                    }
+                }
+#endif
+            }
+        }
+#endif
+    }
+}
+
+
+void luaD_reallocstack (lua_State *L, int newsize)
+{
+    StkId oldstack = L->rtStack.Base();
+    int realsize = newsize + 1 + EXTRA_STACK;
+
+    L->rtStack.VerifyIntegrity( L );
+
+    L->rtStack.SetSize( L, realsize );
+}
+
+void luaD_reallocCI (lua_State *L, int newsize)
+{
+    L->ciStack.SetSize( L, newsize );
+}
+
+
+void luaD_growstack (lua_State *L, int n)
+{
+    L->rtStack.Grow( L, n );
+}
+
+
+static CiCtxItem growCI (lua_State *L)
+{
+    if ( L->ciStack.GetSize() + 1 > LUAI_MAXCALLS )
+    {
+        luaG_runerror( L, "callinfo stack overflow" );
     }
 
-    L->base = (L->base - oldstack) + L->stack;
-}
+    L->ciStack.Lock( L );
 
+    CiCtxItem retCi = L->ciStack.ObtainItemLocked( L );
 
-void luaD_reallocstack (lua_State *L, int newsize) {
-  TValue *oldstack = L->stack;
-  int realsize = newsize + 1 + EXTRA_STACK;
-  lua_assert(L->stack_last - L->stack == L->stacksize - EXTRA_STACK - 1);
-  luaM_reallocvector(L, L->stack, L->stacksize, realsize);
-  L->stacksize = realsize;
-  L->stack_last = L->stack+newsize;
-  correctstack(L, oldstack);
-}
+    L->ciStack.Unlock( L );
 
-
-void luaD_reallocCI (lua_State *L, int newsize) {
-  CallInfo *oldci = L->base_ci;
-  luaM_reallocvector(L, L->base_ci, L->size_ci, newsize);
-  L->size_ci = newsize;
-  L->ci = (L->ci - oldci) + L->base_ci;
-  L->end_ci = L->base_ci + L->size_ci - 1;
-}
-
-
-void luaD_growstack (lua_State *L, int n) {
-  if (n <= L->stacksize)  /* double size is enough? */
-    luaD_reallocstack(L, 2*L->stacksize);
-  else
-    luaD_reallocstack(L, L->stacksize + n);
-}
-
-
-static CallInfo *growCI (lua_State *L) {
-  if (L->size_ci > LUAI_MAXCALLS)  /* overflow while handling overflow? */
-    throw lua_exception( L, LUA_ERRERR, "failed to grow stack" );
-  else {
-    luaD_reallocCI(L, 2*L->size_ci);
-    if (L->size_ci > LUAI_MAXCALLS)
-      luaG_runerror(L, "stack overflow");
-  }
-  return ++L->ci;
+    return retCi;
 }
 
 
@@ -168,22 +239,23 @@ void luaD_callhook (lua_State *L, int event, int line)
     if ( !hook || !L->allowhook )
         return;
 
-    ptrdiff_t top = savestack(L, L->top);
-    ptrdiff_t ci_top = savestack(L, L->ci->top);
+    CallInfo *topCI = L->ciStack.Top();
+
+    stackOffset_t topOffset = L->GetCurrentStackFrame().GetTopOffset( L, L->rtStack );
+
     lua_Debug ar;
 
     ar.event = event;
     ar.currentline = line;
 
     if ( event == LUA_HOOKTAILRET )
+    {
         ar.i_ci = 0;  /* tail call; no debug information about it */
+    }
     else
-        ar.i_ci = cast_int(L->ci - L->base_ci);
-
-    luaD_checkstack(L, LUA_MINSTACK);  /* ensure minimum stack size */
-
-    L->ci->top = L->top + LUA_MINSTACK;
-    lua_assert(L->ci->top <= L->stack_last);
+    {
+        ar.i_ci = cast_int( L->ciStack.GetStackOffset( L, topCI ) );
+    }
 
     // Protect from more hook triggers
     {
@@ -194,236 +266,377 @@ void luaD_callhook (lua_State *L, int event, int line)
         lua_lock(L);
     }
 
-    L->ci->top = restorestack(L, ci_top);
-    L->top = restorestack(L, top);
-
-    assert( L->top != NULL );
+    L->GetCurrentStackFrame().SetTopOffset( L, L->rtStack, topOffset );
 }
 
-
-static StkId adjust_varargs (lua_State *L, Proto *p, int actual) {
-  int i;
-  int nfixargs = p->numparams;
-  Table *htab = NULL;
-  StkId base, fixed;
-  for (; actual < nfixargs; ++actual)
-    setnilvalue(L->top++);
-#if defined(LUA_COMPAT_VARARG)
-  if (p->is_vararg & VARARG_NEEDSARG) { /* compat. with old-style vararg? */
-    int nvar = actual - nfixargs;  /* number of extra arguments */
-    lua_assert(p->is_vararg & VARARG_HASARG);
-    luaC_checkGC(L);
-    htab = luaH_new(L, nvar, 1);  /* create `arg' table */
-    for (i=0; i<nvar; i++)  /* put extra arguments into `arg' table */
-      setobj2n(L, luaH_setnum(L, htab, i+1), L->top - nvar + i);
-    /* store counter in field `n' */
-    setnvalue(luaH_setstr(L, htab, luaS_newliteral(L, "n")), cast_num(nvar));
-  }
-#endif
-  /* move fixed parameters to final position */
-  fixed = L->top - actual;  /* first fixed argument */
-  base = L->top;  /* final position of first argument */
-  for (i=0; i<nfixargs; i++) {
-    setobjs2s(L, L->top++, fixed+i);
-    setnilvalue(fixed+i);
-  }
-  /* add `arg' parameter */
-  if (htab) {
-    sethvalue(L, L->top++, htab);
-    lua_assert(iswhite(htab));
-  }
-  return base;
-}
-
-
-static StkId tryfuncTM (lua_State *L, StkId func) {
-  const TValue *tm = luaT_gettmbyobj(L, func, TM_CALL);
-  StkId p;
-  ptrdiff_t funcr = savestack(L, func);
-  if (!ttisfunction(tm))
-    luaG_typeerror(L, func, "call");
-  /* Open a hole inside the stack at `func' */
-  for (p = L->top; p > func; p--) setobjs2s(L, p, p-1);
-  incr_top(L);
-  func = restorestack(L, funcr);  /* previous call may change stack */
-  setobj2s(L, func, tm);  /* tag method is the new function to be called */
-  return func;
-}
-
-#ifdef LUA_USE_C_MACROS
-
-#define inc_ci(L) \
-  ((L->ci == L->end_ci) ? growCI(L) : \
-   (condhardstacktests(luaD_reallocCI(L, L->size_ci)), ++L->ci))
-
-#else
-
-FASTAPI CallInfo* inc_ci( lua_State *L )
+static inline void tryfuncTM (lua_State *L, RtCtxItem& funcCtx)
 {
-    CallInfo *avail_ci = NULL;
+    ConstValueAddress tm = luaT_gettmbyobj(L, funcCtx.Pointer(), TM_CALL);
 
-    if ( L->ci == L->end_ci )
+    if ( !ttisfunction(tm) )
     {
-        avail_ci = growCI( L );
+        ConstValueAddress stackAddr = stackitem2constadr( L, funcCtx );
+
+        luaG_typeerror( L, stackAddr, "call" );
     }
-    else
-    {
-        condhardstacktests(luaD_reallocCI(L, L->size_ci));
+    
+    // TODO: fix this
 
-        avail_ci = ++L->ci;
+    // Get the absolute offset of the function on the stack.
+    stackOffset_t funcOffset = L->rtStack.GetStackOffset( L, funcCtx.Pointer() );
+
+    // We want to call a tag method, so insert it after the function.
+    L->rtStack.InsertItemAtExternal( L, funcOffset + 1, funcCtx.Pointer() );
+}
+
+
+FASTAPI CiCtxItem inc_ci( lua_State *L )
+{
+    return growCI( L );
+}
+
+
+int luaD_precall (lua_State *L, RtCtxItem& func, int nresults, stackOffset_t prevTopOffset, eCallFrameModel ci_model)
+{
+    int precallResult = -1;
+
+    if (!ttisfunction(func.Pointer())) /* `func' is not a function? */
+    {
+        tryfuncTM(L, func);  /* check the `function' tag method */
     }
 
-    lua_assert( L->ci != L->base_ci );
+    ciStack_t& ciStack = L->ciStack;
+    rtStack_t& rtStack = L->rtStack;
 
-    return avail_ci;
-}
+    // Store the last bytecode position.
+    ciStack.Top()->savedpc = L->savedpc;
 
-#endif //LUA_USE_C_MACROS
+    stackOffset_t funcOffsetAbsolute = L->GetCurrentStackFrame().GetStackOffsetAbsolute( L, rtStack, func.Pointer() );
 
+    Closure *basic_closure = clvalue(func.Pointer());
 
-int luaD_precall (lua_State *L, StkId func, int nresults)
-{
-    ptrdiff_t funcr;
+    LClosure *lcl = NULL;
+    CClosure *ccl = NULL;
 
-    if (!ttisfunction(func)) /* `func' is not a function? */
-        func = tryfuncTM(L, func);  /* check the `function' tag method */
+    // First prepare the call stack entry.
+    stackOffset_t newBaseOffsetAbsolute;
+    stackOffset_t newStackTopCount = 0;
 
-    funcr = savestack(L, func);
-    L->ci->savedpc = L->savedpc;
-
-    if ( LClosure *cl = clvalue(func)->GetLClosure() )
+    if ( lcl = basic_closure->GetLClosure() )
     {  /* Lua function? prepare its call */
-        CallInfo *ci;
-        StkId st, base;
-        Proto *p = cl->p;
+        Proto *p = lcl->p;
 
         luaD_checkstack(L, p->maxstacksize);
-        func = restorestack(L, funcr);
 
         if (!p->is_vararg)
         {  /* no varargs? */
-            base = func + 1;
-
-            if (L->top > base + p->numparams)
-                L->top = base + p->numparams;
-
-            assert( L->top != NULL );
+            newBaseOffsetAbsolute = funcOffsetAbsolute + 1;
         }
         else
         {  /* vararg function */
-            int nargs = cast_int(L->top - func) - 1;
-            base = adjust_varargs(L, p, nargs);
-            func = restorestack(L, funcr);  /* previous call may change the stack */
+            newBaseOffsetAbsolute = prevTopOffset + 1;
         }
 
-        ci = inc_ci(L);  /* now `enter' new function */
-        ci->func = func;
-        L->base = ci->base = base;
-        ci->top = L->base + p->maxstacksize;
-        lua_assert(ci->top <= L->stack_last);
-        L->savedpc = p->code;  /* starting point */
+        newStackTopCount = p->maxstacksize;
+    }
+    else if ( ccl = basic_closure->GetCClosure() )
+    {
+        /* if it's a C function, call it */
+        luaD_checkstack(L, LUA_MINSTACK);  /* ensure minimum stack size */
+
+        // Get the current top offset.
+        // We want to transform this top into a new top for the new callframe.
+        stackOffset_t oldTopOffsetAbsolute = prevTopOffset;
+
+        // This is the new base offset of the function.
+        newBaseOffsetAbsolute = ( funcOffsetAbsolute + 1 );
+
+        newStackTopCount = ( oldTopOffsetAbsolute - newBaseOffsetAbsolute + 1 );
+    }
+    else
+    {
+        lua_assert( 0 );
+    }
+
+    CiCtxItem ciCtx = inc_ci(L);  /* now `enter' new function */
+    {
+        CallInfo *ci = ciCtx.Pointer();
+
+        ci->func = func.Pointer();
+        ci->stack.InitializeEx( L, rtStack, newBaseOffsetAbsolute, newStackTopCount );
         ci->tailcalls = 0;
         ci->nresults = nresults;
+        ci->hasVirtualStackTop = false;
+        ci->virtualStackTop = -1;
+        ci->lastResultTop = -1;
+    }
 
-        for (st = L->top; st < ci->top; st++)
-            setnilvalue(st);
+    // Perform post-frame-creation building steps, if necessary.
+    if ( lcl != NULL )
+    {
+        Proto *p = lcl->p;
 
-        L->top = ci->top;
+        if ( !p->is_vararg )
+        {
+            // Make sure that we zero out the available stack slots that have no valid arguments.
+            stackOffset_t actuallyGivenParams = ( prevTopOffset - newBaseOffsetAbsolute + 1 );
 
-        assert( L->top != NULL );
+            for ( stackOffset_t n = 0; n < newStackTopCount; n++ )
+            {
+                if ( n >= actuallyGivenParams )
+                {
+                    RtCtxItem clearItem = ciCtx.Pointer()->stack.GetStackItem( L, rtStack, n );
+
+                    setnilvalue( clearItem.Pointer() );
+                }
+            }
+        }
+        else
+        {
+            // Post vararg arguments into visibility.
+            int nargs = cast_int(prevTopOffset - funcOffsetAbsolute);
+            {
+                int actual = nargs;
+
+                stackOffset_t nfixargs = p->numparams;
+
+                rtStack.Lock( L );
+
+                for ( ; actual < nfixargs; ++actual )
+                {
+                    if ( actual < newStackTopCount )
+                    {
+                        RtCtxItem newStackArgument = ciCtx.Pointer()->stack.GetStackItem( L, rtStack, actual );
+
+                        setnilvalue( newStackArgument.Pointer() );
+                    }
+                }
+
+                StkId stackTop = ciCtx.Pointer()->stack.TopMutable( L, rtStack );
+
+                stackOffset_t realArgOffset = ( funcOffsetAbsolute + 1 );
+
+                /* move fixed parameters to final position */
+                for ( stackOffset_t i = 0; i < nfixargs; i++ )
+                {
+                    if ( i < newStackTopCount )
+                    {
+                        RtCtxItem newStackArgument = ciCtx.Pointer()->stack.GetStackItem( L, rtStack, i );
+
+                        RtCtxItem srcOldStackArg = rtStack.GetStackItem( L, realArgOffset + i );
+
+                        setobj( L, newStackArgument.Pointer(), srcOldStackArg.Pointer() );
+                        setnilvalue( srcOldStackArg.Pointer() );
+                    }
+                }
+                
+                rtStack.Unlock( L );
+            }
+        }
+    }
+
+    if ( lcl != NULL )
+    {
+        Proto *p = lcl->p;
+
+        L->savedpc = p->code;  /* starting point */
 
         if (L->hookmask & LUA_MASKCALL)
         {
             L->savedpc++;  /* hooks assume 'pc' is already incremented */
+
             luaD_callhook(L, LUA_HOOKCALL, -1);
+
             L->savedpc--;  /* correct 'pc' */
         }
-        return PCRLUA;
+
+        precallResult = PCRLUA;
     }
-    else
+    else if ( ccl != NULL )
     {
-        /* if is a C function, call it */
-        CallInfo *ci;
+        // Return value of the C closure.
         int n = 0;
 
-        luaD_checkstack(L, LUA_MINSTACK);  /* ensure minimum stack size */
-
-        ci = inc_ci(L);  /* now `enter' new function */
-        ci->func = restorestack(L, funcr);
-        L->base = ci->base = ci->func + 1;
-        ci->top = L->top + LUA_MINSTACK;
-
-        lua_assert(ci->top <= L->stack_last);
-
-        ci->nresults = nresults;
-
-        if (L->hookmask & LUA_MASKCALL)
+        if ( L->hookmask & LUA_MASKCALL )
+        {
             luaD_callhook(L, LUA_HOOKCALL, -1);
+        }
 
-        lua_unlock(L);
-        n = (*curr_func(L)->GetCClosure()->f)(L);  /* do the actual call */
-        lua_lock(L);
+        {
+            lua_CFunction cfunc = ccl->f;
+
+            lua_unlock(L);
+            n = cfunc(L);  /* do the actual call */
+            lua_lock(L);
+        }
+
+        // Get the current on-stack count (as absolute offset).
+        stackOffset_t resultTopOffsetAbsolute = ciCtx.Pointer()->stack.GetTopOffset( L, rtStack );
 
         if ( n < 0 )
         {
-            luaD_poscall( L, L->top );
+            RtCtxItem firstResultCtx = index2stackadr( L, -1 );
+
+            luaD_poscall( L, &firstResultCtx, ci_model, resultTopOffsetAbsolute );
             lua_yield( L, 0 );
         }
         else
         {
-            luaD_poscall(L, L->top - n);
+            if ( n == 0 )
+            {
+                luaD_poscall( L, NULL, ci_model, resultTopOffsetAbsolute );
+            }
+            else
+            {
+                RtCtxItem firstResultCtx = index2stackadr( L, -n );
+
+                luaD_poscall(L, &firstResultCtx, ci_model, resultTopOffsetAbsolute);
+            }
         }
-        return PCRC;
+        
+        precallResult = PCRC;
     }
+
+    return precallResult;
 }
 
 
-static StkId callrethooks (lua_State *L, StkId firstResult) {
-  ptrdiff_t fr = savestack(L, firstResult);  /* next call may change stack */
-  luaD_callhook(L, LUA_HOOKRET, -1);
-  if (f_isLua(L->ci)) {  /* Lua function? */
-    while ((L->hookmask & LUA_MASKRET) && L->ci->tailcalls--) /* tail calls */
-      luaD_callhook(L, LUA_HOOKTAILRET, -1);
-  }
-  return restorestack(L, fr);
-}
-
-
-int luaD_poscall (lua_State *L, StkId firstResult)
+static inline void callrethooks (lua_State *L)
 {
-    StkId res;
-    int wanted, i;
-    CallInfo *ci;
+    luaD_callhook(L, LUA_HOOKRET, -1);
 
-    if (L->hookmask & LUA_MASKRET)
+    if ( f_isLua(L->ciStack.Top()) )
+    {  /* Lua function? */
+        while ( (L->hookmask & LUA_MASKRET) && L->ciStack.Top()->tailcalls-- ) /* tail calls */
+        {
+            luaD_callhook(L, LUA_HOOKTAILRET, -1);
+        }
+    }
+}
+
+int luaD_poscall (lua_State *L, RtCtxItem *firstResultCtx, eCallFrameModel callFrameBehavior, stackOffset_t resultTopOffset)
+{
+    if ( L->hookmask & LUA_MASKRET )
     {
-        firstResult = callrethooks(L, firstResult);
+        callrethooks(L);
     }
 
-    assert( L->ci != L->base_ci );
-
-    ci = L->ci--;
-    res = ci->func;  /* res == final position of 1st result */
-    wanted = ci->nresults;
-    L->base = (ci - 1)->base;  /* restore base */
-    L->savedpc = (ci - 1)->savedpc;  /* restore savedpc */
-
-    /* move results to correct place */
-    for (i = wanted; i != 0 && firstResult < L->top; i--)
+    int wanted;
     {
-        setobjs2s(L, res++, firstResult++);
+        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+
+        StkId res;
+        stackOffset_t oldOnStackCount = 0;
+        {
+            CallInfo *lastCI = L->ciStack.Top();
+            res = lastCI->func;  /* res == final position of 1st result */
+            wanted = lastCI->nresults;
+            oldOnStackCount = lastCI->stack.GetRelativeStackOffset( L, *rtStack, resultTopOffset ) + 1;
+        }
+
+        // Remove the stack frame.
+        L->ciStack.Pop( L );
+
+        // Get the pointer to the callinfo that we restored to.
+        CallInfo *restoredFrame = L->ciStack.Top();
+
+        L->savedpc = restoredFrame->savedpc;  /* restore savedpc */
+
+        /* move results to correct place */
+        RtStackView& currentStackFrame = restoredFrame->stack;
+
+        stackOffset_t actualResultOffsetAbsolute = currentStackFrame.GetStackOffsetAbsolute( L, *rtStack, res );
+
+        // When we leave this function, we want to have the top point to the last
+        // argument that we moved to the correct place. The count that we need to increment
+        // the top with is given by "wanted".
+
+        StkId firstResult = ( firstResultCtx ) ? firstResultCtx->Pointer() : NULL;
+
+        stackOffset_t firstResultOffsetAbsolute;
+
+        stackOffset_t reallyThereCount = 0;
+
+        if ( firstResult != NULL )
+        {
+            firstResultOffsetAbsolute = currentStackFrame.GetStackOffsetAbsolute( L, *rtStack, firstResult );
+
+            reallyThereCount = ( resultTopOffset - firstResultOffsetAbsolute ) + 1;
+        }
+
+        stackOffset_t givenParams = 0;
+
+        if ( wanted == LUA_MULTRET )
+        {
+            // If wanted is LUA_MULTRET, then we return as many values as the function provided us with.
+            if ( firstResult != NULL )
+            {
+                givenParams = reallyThereCount;
+            }
+        }
+        else
+        {
+            givenParams = wanted;
+        }
+
+        int preparedResultCount = 0;
+        {
+            if ( firstResult != NULL )
+            {
+                stackOffset_t moveCount = givenParams;
+
+                // Make sure we do not move more than is on the stack.
+                if ( moveCount > oldOnStackCount )
+                {
+                    moveCount = oldOnStackCount;
+                }
+
+                // Perform manual movement of stack items.
+                // This has to be secured properly!
+                lua_assert( firstResultOffsetAbsolute > actualResultOffsetAbsolute );
+
+                for ( stackOffset_t n = 0; n < moveCount; n++ )
+                {
+                    RtCtxItem dstItem = rtStack->GetStackItem( L, actualResultOffsetAbsolute + n );
+
+                    if ( n < reallyThereCount )
+                    {
+                        RtCtxItem srcItem = rtStack->GetStackItem( L, firstResultOffsetAbsolute + n );
+
+                        setobj( L, dstItem.Pointer(), srcItem.Pointer() );
+                    }
+                    else
+                    {
+                        setnilvalue( dstItem.Pointer() );
+                    }
+                }
+
+                preparedResultCount += moveCount;
+            }
+        }
+
+        // Prepare the remainder by setting them to nil.
+        for ( int n = preparedResultCount; n < givenParams; n++ )
+        {
+            RtCtxItem toBeNil = rtStack->GetStackItem( L, actualResultOffsetAbsolute + n );
+
+            setnilvalue( toBeNil.Pointer() );
+        }
+
+        // Set the top to where it is supposed to be.
+        // This is done if we are in the dynamic stack model.
+        stackOffset_t requiredStackTop = ( actualResultOffsetAbsolute + givenParams - 1 );
+
+        if ( callFrameBehavior == CALLFRAME_DYNAMIC )
+        {
+            currentStackFrame.SetTopOffset( L, *rtStack, requiredStackTop );
+        }
+
+        // Store the required stack top in the current stack frame.
+        restoredFrame->lastResultTop = requiredStackTop;
     }
 
-    while (i-- > 0)
-    {
-        setnilvalue(res++);
-    }
-
-    L->top = res;
-
-    assert( L->top != NULL );
-
-    return (wanted - LUA_MULTRET);  /* 0 if wanted == LUA_MULTRET */
+    return ( wanted - LUA_MULTRET );  /* return 0 if wanted == LUA_MULTRET */
 }
 
 
@@ -433,21 +646,23 @@ int luaD_poscall (lua_State *L, StkId firstResult)
 ** When returns, all the results are on the stack, starting at the original
 ** function position.
 */ 
-void luaD_call (lua_State *L, StkId func, int nResults)
+void luaD_call (lua_State *L, RtCtxItem& func, int nResults, eCallFrameModel callFrameBehavior, stackOffset_t topOffset)
 {
     callstack_ref ref( *L );
-    ptrdiff_t cioff = saveci( L, L->ci );
+    stackOffset_t cioff; L->ciStack.GetTopOffset( L, cioff );
 
     try
     {
-        if (luaD_precall( L, func, nResults) == PCRLUA )  /* is a Lua function? */
-            luaV_execute( L, 1 );  /* call it */
+        if ( luaD_precall( L, func, nResults, topOffset, callFrameBehavior ) == PCRLUA )  /* is a Lua function? */
+        {
+            luaV_execute( L, 1, callFrameBehavior );  /* call it */
+        }
     }
     catch( ... )
     {
         // Restore basic business
-        L->ci = restoreci( L, cioff );
-        L->base = L->ci->base;
+        L->ciStack.SetTopOffset( L, cioff );
+        //L->base = L->ciStack.Top()->base;
         throw;
     }
 
@@ -456,9 +671,8 @@ void luaD_call (lua_State *L, StkId func, int nResults)
 
 inline static int resume_error (lua_State *L, const char *msg)
 {
-    L->top = L->ci->base;
-    setsvalue2s(L, L->top, luaS_new(L, msg));
-    incr_top(L);
+    L->GetCurrentStackFrame().Clear( L, L->rtStack );
+    pushsvalue(L, luaS_new(L, msg));
     lua_unlock(L);
     return LUA_ERRRUN;
 }
@@ -490,7 +704,7 @@ LUA_API int lua_resume (lua_State *_L, int nargs)
 
     if ( Closure *evtCall = G(main)->events[LUA_EVENT_THREAD_CONTEXT_PUSH] )
     {
-        setclvalue( main, main->top++, evtCall );
+        pushclvalue( main, evtCall );
         lua_pushthreadex( main, L );
         lua_call( main, 1, 0 );
     }
@@ -502,7 +716,7 @@ LUA_API int lua_resume (lua_State *_L, int nargs)
 
     if ( Closure *evtCall = G(main)->events[LUA_EVENT_THREAD_CONTEXT_POP] )
     {
-        setclvalue( main, main->top++, evtCall );
+        pushclvalue( main, evtCall );
         lua_call( main, 0, 0 );
     }
 
@@ -526,31 +740,31 @@ LUA_API int lua_yield( lua_State *L, int nresults )
     // may execute code in such a way. Otherwise it is the programmer's mistake.
 
     lua_lock(L);
+    {
+        RtStackView::baseProtect baseProt = L->GetCurrentStackFrame().ProtectSlots( L, L->rtStack, -nresults ); /* protect stack slots below */
 
-    L->base = L->top - nresults;  /* protect stack slots below */
-
-    // Give back control to the previous thread
-    ((lua_Thread*)L)->yield();
-
+        // Give back control to the previous thread
+        ((lua_Thread*)L)->yield();
+    }
     lua_unlock(L);
     return 0;
 }
 
-int luaD_pcall (lua_State *L, Pfunc func, void *u, ptrdiff_t old_top, ptrdiff_t ef, lua_Debug *debug)
+int luaD_pcall (lua_State *L, Pfunc func, void *u, stackOffset_t old_top, stackOffset_t ef, lua_Debug *debug)
 {
     int status;
     ptrdiff_t old_errfunc = L->errfunc;
     std::string errmsg;
     L->errfunc = ef;
     status = luaD_rawrunprotected(L, func, u, errmsg, debug);
+
     if (status != 0)
     {  /* an error occurred? */
-        StkId oldtop = restorestack(L, old_top);
-        luaF_close(L, oldtop);  /* close eventual pending closures */
-        L->top = oldtop;
+        RtCtxItem oldtop = restorestack(L, old_top);
+        luaF_close(L, oldtop.Pointer());  /* close eventual pending closures */
+        L->GetCurrentStackFrame().SetTopOffset( L, L->rtStack, old_top );
         lua_pushlstring( L, errmsg.c_str(), errmsg.size() );
-        L->base = L->ci->base;
-        L->savedpc = L->ci->savedpc;
+        L->savedpc = L->ciStack.Top()->savedpc;
         restore_stack_limit(L);
     }
 
@@ -568,34 +782,39 @@ struct SParser {  /* data to `f_parser' */
   const char *name;
 };
 
-static void f_parser (lua_State *L, void *ud) {
-  int i;
-  Proto *tf;
-  LClosure *cl;
-  struct SParser *p = cast(struct SParser *, ud);
-  int c = luaZ_lookahead(p->z);
-  luaC_checkGC(L);
-  tf = ((c == LUA_SIGNATURE[0]) ? luaU_undump : luaY_parser)(L, p->z,
-                                                             &p->buff, p->name);
-  cl = luaF_newLclosure(L, tf->nups, hvalue(gt(L)));
-  cl->p = tf;
-  for (i = 0; i < tf->nups; i++)  /* initialize eventual upvalues */
-    cl->upvals[i] = luaF_newupval(L);
-  setclvalue(L, L->top, cl);
-  incr_top(L);
-}
+static void f_parser (lua_State *L, void *ud)
+{
+    struct SParser *p = cast(struct SParser *, ud);
+    int c = luaZ_lookahead(p->z);
 
+    luaC_checkGC(L);
+
+    Proto *tf = ((c == LUA_SIGNATURE[0]) ? luaU_undump : luaY_parser)(L, p->z, &p->buff, p->name);
+
+    LClosure *cl = luaF_newLclosure(L, tf->nups, hvalue(gt(L)));
+    cl->p = tf;
+
+    for ( int i = 0; i < tf->nups; i++ )  /* initialize eventual upvalues */
+    {
+        cl->upvals[i] = luaF_newupval(L);
+    }
+
+    pushclvalue(L, cl);
+}
 
 int luaD_protectedparser (lua_State *L, ZIO *z, const char *name)
 {
     struct SParser p;
-    int status;
     p.z = z; p.name = name;
     luaZ_initbuffer(L, &p.buff);
 
     lua_Debug deb;
 
-    status = luaD_pcall(L, f_parser, &p, savestack(L, L->top), L->errfunc, &deb);
+    stackOffset_t top_offset;
+
+    top_offset = L->GetCurrentStackFrame().GetTopOffset( L, L->rtStack );
+
+    int status = luaD_pcall(L, f_parser, &p, top_offset, L->errfunc, &deb);
 
     if ( status != 0 && deb.currentline != -1 )
     {

@@ -7,6 +7,7 @@
 
 #include "luacore.h"
 
+#include "lapi.hxx"
 #include "lfunc.hxx"
 
 // Global state plugin definitions.
@@ -17,13 +18,13 @@ closureTypeInfo_t closureTypeInfo( namespaceFactory );
 
 TValue* luaF_getcurraccessor( lua_State *L )
 {
-    if ( L->ci == L->base_ci )
-        return &L->storage;
-
-    if ( CClosure *cl = curr_func( L )->GetCClosure() )
+    if ( hascallingenv( L ) )
     {
-        setgcvalue( L, &L->env, cl->accessor );
-        return &L->env;
+        if ( CClosure *cl = curr_func( L )->GetCClosure() )
+        {
+            setgcvalue( L, &L->env, cl->accessor );
+            return &L->env;
+        }
     }
 
     return &L->storage;
@@ -97,7 +98,7 @@ TValue* CClosureMethodRedirectSuper::ReadUpValue( unsigned char index )
     return (TValue*)luaO_nilobject;
 }
 
-CClosureBasic::CClosureBasic( void *construction_params )
+CClosureBasic::CClosureBasic( global_State *g, void *construction_params ) : CClosure( g )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
@@ -140,7 +141,7 @@ TValue* CClosureBasic::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-CClosureMethod::CClosureMethod( void *construction_params )
+CClosureMethod::CClosureMethod( global_State *g, void *construction_params ) : CClosureMethodBase( g )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
@@ -184,7 +185,7 @@ TValue* CClosureMethod::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-CClosureMethodTrans::CClosureMethodTrans( void *construction_params )
+CClosureMethodTrans::CClosureMethodTrans( global_State *g, void *construction_params ) : CClosureMethodBase( g )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
@@ -230,7 +231,7 @@ TValue* CClosureMethodTrans::ReadUpValue( unsigned char index )
     return &upvalues[index];
 }
 
-LClosure::LClosure( void *construction_params )
+LClosure::LClosure( global_State *g, void *construction_params ) : Closure( g )
 {
     cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
@@ -309,6 +310,7 @@ void luaF_freeupval (lua_State *L, UpVal *u)
     lua_delete <UpVal> ( L, u );
 }
 
+// WARNING: do not rellocate stack in this function!
 UpVal *luaF_findupval (lua_State *L, StkId level)
 {
     global_State *g = G(L);
@@ -354,17 +356,14 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
 
                 if ( closureEnv )
                 {
-                    uv->u.l.prev = &closureEnv->uvhead;  /* double link it in `uvhead' list */
-                    uv->u.l.next = closureEnv->uvhead.u.l.next;
-                    uv->u.l.next->u.l.prev = uv;
-                    closureEnv->uvhead.u.l.next = uv;
+                    LIST_INSERT( closureEnv->uvhead.root, uv->u.l ); /* double link it in `uvhead' list */
 
-                    lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
+                    lua_assert( LIST_ISVALID( uv->u.l ) == true );
                 }
                 else
                 {
-                    uv->u.l.next = uv;
-                    uv->u.l.prev = uv;
+                    // Hack for no closure env, since the node must be valid.
+                    LIST_CLEAR( uv->u.l );
                 }
             }
         }
@@ -374,12 +373,12 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
 
 static void unlinkupval (UpVal *uv)
 {
-    lua_assert(uv->u.l.next->u.l.prev == uv && uv->u.l.prev->u.l.next == uv);
-    uv->u.l.next->u.l.prev = uv->u.l.prev;  /* remove from `uvhead' list */
-    uv->u.l.prev->u.l.next = uv->u.l.next;
+    lua_assert( LIST_ISVALID( uv->u.l ) == true );
+
+    LIST_REMOVE( uv->u.l );  /* remove from `uvhead' list */
 }
 
-UpVal::~UpVal()
+UpVal::~UpVal( void )
 {
     if ( v != &u.value )  /* is it open? */
     {
@@ -387,7 +386,8 @@ UpVal::~UpVal()
     }
 }
 
-void luaF_close (lua_State *L, StkId level)
+// WARNING: no stack rellocation in this function supported!
+void luaF_close (lua_State *L, StkId_const level)
 {
     UpVal *uv;
     global_State *g = G(L);
@@ -466,6 +466,26 @@ void luaF_freeproto (lua_State *L, Proto *p)
     lua_delete <Proto> ( L, p );
 }
 
+ConstValueAddress luaF_getprotoconstaddress (lua_State *L, Proto *p, int idx)
+{
+    ConstValueAddress theAddr;
+    {
+        global_State *g = G(L);
+
+        globalStateClosureEnvPlugin *closureEnv = closureEnvConnectingBridge.GetPluginStruct( g->config, g );
+
+        if ( closureEnv )
+        {
+            globalStateClosureEnvPlugin::ProtoConstValueAccessContext *valCtx = closureEnv->NewProtoConstValueAccessContext( L, p );
+
+            valCtx->theValue = &p->k[ idx ];
+
+            theAddr.Setup( L, valCtx );
+        }
+    }
+    return theAddr;
+}
+
 Proto::~Proto()
 {
 }
@@ -541,5 +561,11 @@ void luaF_runtimeinit( global_State *g )
 
 void luaF_runtimeshutdown( global_State *g )
 {
-    return;
+    // Clear memory.
+    globalStateClosureEnvPlugin *closureEnv = closureEnvConnectingBridge.GetPluginStruct( g->config, g );
+
+    if ( closureEnv )
+    {
+        closureEnv->ClearMemory( g );
+    }
 }

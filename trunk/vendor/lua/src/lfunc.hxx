@@ -8,6 +8,8 @@
 #include "lobject.h"
 #include "lstate.h"
 
+#include "lfunc.class.hxx"
+
 #include "lpluginutil.hxx"
 
 struct cclosureSharedConstructionParams
@@ -27,7 +29,7 @@ struct closureTypeInfoPlugin_t
             return sizeCclosure( params->nelems );
         }
 
-        size_t GetTypeSizeByObject( void *mem ) const
+        size_t GetTypeSizeByObject( const void *mem ) const
         {
             CClosureBasic *cl = (CClosureBasic*)mem;
        
@@ -44,7 +46,7 @@ struct closureTypeInfoPlugin_t
             return sizeCmethod( params->nelems );
         }
 
-        size_t GetTypeSizeByObject( void *mem ) const
+        size_t GetTypeSizeByObject( const void *mem ) const
         {
             CClosureMethod *method = (CClosureMethod*)mem;
 
@@ -61,7 +63,7 @@ struct closureTypeInfoPlugin_t
             return sizeCmethodt( params->nelems );
         }
 
-        size_t GetTypeSizeByObject( void *mem ) const
+        size_t GetTypeSizeByObject( const void *mem ) const
         {
             CClosureMethodTrans *method = (CClosureMethodTrans*)mem;
 
@@ -78,7 +80,7 @@ struct closureTypeInfoPlugin_t
             return sizeLclosure( params->nelems );
         }
 
-        size_t GetTypeSizeByObject( void *mem ) const
+        size_t GetTypeSizeByObject( const void *mem ) const
         {
             LClosure *cl = (LClosure*)mem;
             
@@ -98,73 +100,27 @@ struct closureTypeInfoPlugin_t
 
         // Set up types.
         closureTypeInfo =
-            typeSys.RegisterAbstractType <Closure> ( "closure" );
+            typeSys.RegisterAbstractType <Closure> ( "closure", cfg->grayobjTypeInfo );
         cclosureTypeInfo =
-            typeSys.RegisterAbstractType <CClosure> ( "cclosure" );
+            typeSys.RegisterAbstractType <CClosure> ( "cclosure", closureTypeInfo );
         cclosureMethodRedirectTypeInfo = 
-            typeSys.RegisterStructType <CClosureMethodRedirect> ( "cclosure_MethodRedirect" );
+            typeSys.RegisterStructType <CClosureMethodRedirect> ( "cclosure_MethodRedirect", cclosureTypeInfo );
         cclosureMethodRedirectSuperTypeInfo =
-            typeSys.RegisterStructType <CClosureMethodRedirectSuper> ( "cclosure_MethodRedirectSuper" );
+            typeSys.RegisterStructType <CClosureMethodRedirectSuper> ( "cclosure_MethodRedirectSuper", cclosureTypeInfo );
         cclosureBasicTypeInfo =
-            typeSys.RegisterDynamicStructType <CClosureBasic> ( "cclosure_Basic", &_cclosureBasicMeta );
+            typeSys.RegisterDynamicStructType <CClosureBasic> ( "cclosure_Basic", &_cclosureBasicMeta, false, cclosureTypeInfo );
         cclosureMethodBaseTypeInfo =
-            typeSys.RegisterAbstractType <CClosureMethodBase> ( "cclosure_MethodBase" );
+            typeSys.RegisterAbstractType <CClosureMethodBase> ( "cclosure_MethodBase", cclosureTypeInfo );
         cclosureMethodTypeInfo =
-            typeSys.RegisterDynamicStructType <CClosureMethod> ( "cclosure_Method", &_cclosureMethodMeta );
+            typeSys.RegisterDynamicStructType <CClosureMethod> ( "cclosure_Method", &_cclosureMethodMeta, false, cclosureMethodBaseTypeInfo );
         cclosureMethodTransTypeInfo =
-            typeSys.RegisterDynamicStructType <CClosureMethodTrans> ( "cclosure_MethodTrans", &_cclosureMethodTransMeta );
+            typeSys.RegisterDynamicStructType <CClosureMethodTrans> ( "cclosure_MethodTrans", &_cclosureMethodTransMeta, false, cclosureMethodBaseTypeInfo );
         lclosureTypeInfo =
-            typeSys.RegisterDynamicStructType <LClosure> ( "lclosure", &_lclosureMeta );
+            typeSys.RegisterDynamicStructType <LClosure> ( "lclosure", &_lclosureMeta, false, closureTypeInfo );
         upvalueTypeInfo =
-            typeSys.RegisterStructType <UpVal> ( "upvalue" );
+            typeSys.RegisterStructType <UpVal> ( "upvalue", cfg->gcobjTypeInfo );
         protoTypeInfo =
-            typeSys.RegisterStructType <Proto> ( "proto" );
-
-        // Set up inheritance information.
-        typeSys.SetTypeInfoInheritingClass(
-            closureTypeInfo,
-            cfg->grayobjTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            cclosureTypeInfo,
-            closureTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            cclosureMethodRedirectTypeInfo,
-            cclosureTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            cclosureMethodRedirectSuperTypeInfo,
-            cclosureTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            cclosureBasicTypeInfo,
-            cclosureTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            cclosureMethodBaseTypeInfo,
-            cclosureTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            cclosureMethodTypeInfo,
-            cclosureMethodBaseTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            cclosureMethodTransTypeInfo,
-            cclosureMethodBaseTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            lclosureTypeInfo,
-            closureTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            upvalueTypeInfo,
-            cfg->gcobjTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            protoTypeInfo,
-            cfg->grayobjTypeInfo
-        );
+            typeSys.RegisterStructType <Proto> ( "proto", cfg->grayobjTypeInfo );
     }
 
     inline void Shutdown( lua_config *cfg )
@@ -206,16 +162,80 @@ struct globalStateClosureEnvPlugin
 {
     inline globalStateClosureEnvPlugin( void )
     {
-        uvhead.u.l.prev = &uvhead;
-        uvhead.u.l.next = &uvhead;
+        LIST_CLEAR( uvhead.root );
     }
 
-    UpVal uvhead;  /* head of double-linked list of all open upvalues (NOT AN ACTUAL LUA OBJECT) */
+    RwList <UpVal> uvhead;  /* head of double-linked list of all open upvalues */
+
+    struct ProtoConstValueAccessContext : public ConstValueContext
+    {
+        LuaCachedConstructedClassAllocator <ProtoConstValueAccessContext> *_usedAlloc;
+
+        Proto *owningProto;
+
+        const TValue *theValue;
+
+        unsigned long refCount;
+
+        inline ProtoConstValueAccessContext( void )
+        {
+            this->_usedAlloc = NULL;
+            this->owningProto = NULL;
+            this->theValue = NULL;
+            this->refCount = 0;
+        }
+
+        void Reference( lua_State *L )
+        {
+            this->refCount++;
+        }
+
+        void Dereference( lua_State *L )
+        {
+            if ( this->refCount-- == 1 )
+            {
+                this->_usedAlloc->Free( this );
+            }
+        }
+
+        const TValue* const* GetValuePointer( void )
+        {
+            return &theValue;
+        }
+    };
+
+    LuaCachedConstructedClassAllocator <ProtoConstValueAccessContext> _constProtoValueAccessAlloc;
+
+    inline ProtoConstValueAccessContext* NewProtoConstValueAccessContext( lua_State *L, Proto *theProto )
+    {
+        ProtoConstValueAccessContext *valCtx = this->_constProtoValueAccessAlloc.Allocate( L );
+
+        valCtx->_usedAlloc = &this->_constProtoValueAccessAlloc;
+        valCtx->owningProto = theProto;
+
+        return valCtx;
+    }
+
+    inline void Initialize( global_State *g )
+    {
+        // TODO.
+    }
+
+    inline void ClearMemory( global_State *g )
+    {
+        // Deallocate the cached structures.
+        _constProtoValueAccessAlloc.Shutdown( g );
+    }
+
+    inline void Shutdown( global_State *g )
+    {
+        ClearMemory( g );
+    }
 };
 
 typedef PluginConnectingBridge
     <globalStateClosureEnvPlugin,
-        globalStateStructFactoryMeta <globalStateClosureEnvPlugin, globalStateFactory_t, lua_config>,
+        globalStateDependantStructFactoryMeta <globalStateClosureEnvPlugin, globalStateFactory_t, lua_config>,
     namespaceFactory_t>
         closureEnvConnectingBridge_t;
 

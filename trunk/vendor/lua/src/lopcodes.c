@@ -13,47 +13,60 @@
 
 /* ORDER OP */
 
-const char *const luaP_opnames[NUM_OPCODES+1] = {
-  "MOVE",
-  "LOADK",
-  "LOADBOOL",
-  "LOADNIL",
-  "GETUPVAL",
-  "GETGLOBAL",
-  "GETTABLE",
-  "SETGLOBAL",
-  "SETUPVAL",
-  "SETTABLE",
-  "NEWTABLE",
-  "SELF",
-  "ADD",
-  "SUB",
-  "MUL",
-  "DIV",
-  "MOD",
-  "POW",
-  "UNM",
-  "NOT",
-  "LEN",
-  "CONCAT",
-  "JMP",
-  "EQ",
-  "LT",
-  "LE",
-  "TEST",
-  "TESTSET",
-  "CALL",
-  "TAILCALL",
-  "RETURN",
-  "FORLOOP",
-  "FORPREP",
-  "TFORLOOP",
-  "SETLIST",
-  "CLOSE",
-  "CLOSURE",
-  "VARARG",
-  NULL
+const char *const luaP_opnames[NUM_OPCODES+1] =
+{
+    "MOVE",
+    "LOADK",
+    "LOADBOOL",
+    "LOADNIL",
+    "GETUPVAL",
+    "GETGLOBAL",
+    "GETTABLE",
+    "SETGLOBAL",
+    "SETUPVAL",
+    "SETTABLE",
+    "NEWTABLE",
+    "SELF",
+    "ADD",
+    "SUB",
+    "MUL",
+    "DIV",
+    "MOD",
+    "POW",
+    "UNM",
+    "NOT",
+    "LEN",
+    "CONCAT",
+    "JMP",
+    "EQ",
+    "LT",
+    "LE",
+    "TEST",
+    "TESTSET",
+    "CALL",
+    "TAILCALL",
+    "RETURN",
+    "FORLOOP",
+    "FORPREP",
+    "TFORLOOP",
+    "SETLIST",
+    "CLOSE",
+    "CLOSURE",
+    "VARARG",
+    NULL
 };
+
+const char* luaP_getopname( OpCode opcode )
+{
+    const char *opcodeName = "unknown";
+
+    if ( opcode < NUM_OPCODES )
+    {
+        opcodeName = luaP_opnames[ opcode ];
+    }
+
+    return opcodeName;
+}
 
 
 #define opmode(t,a,b,c,m) (((t)<<7) | ((a)<<6) | ((b)<<4) | ((c)<<2) | (m))

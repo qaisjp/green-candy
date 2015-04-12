@@ -11,21 +11,23 @@
 #include "lstate.h"
 
 
-#define pcRel(pc, p)	(cast(int, (pc) - (p)->code) - 1)
+FASTAPI int pcRel( const Instruction *pc, const Proto *p )              { return (cast(int, (pc) - (p)->code) - 1); }
 
-#define getline(f,pc)	(((f)->lineinfo) ? (f)->lineinfo[pc] : 0)
+FASTAPI int getline( const Proto *f, int pc )                           { return (((f)->lineinfo) ? (f)->lineinfo[pc] : 0); }
 
-#define resethookcount(L)	(L->hookcount = L->basehookcount)
+FASTAPI void resethookcount( lua_State *L )                             { (L->hookcount = L->basehookcount); }
 
 
-LUAI_FUNC void luaG_typeerror (lua_State *L, const TValue *o, const char *opname);
-LUAI_FUNC void luaG_concaterror (lua_State *L, StkId p1, StkId p2);
-LUAI_FUNC void luaG_aritherror (lua_State *L, const TValue *p1, const TValue *p2);
-LUAI_FUNC int luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2);
+LUAI_FUNC void luaG_typeerror (lua_State *L, ConstValueAddress& o, const char *opname);
+LUAI_FUNC void luaG_concaterror (lua_State *L, ConstValueAddress o, ConstValueAddress p2);
+LUAI_FUNC void luaG_aritherror (lua_State *L, ConstValueAddress p1, ConstValueAddress p2);
+LUAI_FUNC int luaG_ordererror (lua_State *L, ConstValueAddress& p1, ConstValueAddress& p2);
 LUAI_FUNC void luaG_runerror (lua_State *L, const char *fmt, ...);
 LUAI_FUNC void luaG_errormsg (lua_State *L);
 LUAI_FUNC bool luaG_checkcode (const Proto *pt);
 LUAI_FUNC bool luaG_checkopenop (Instruction i);
+LUAI_FUNC std::list <std::string> luaG_protodump(lua_State *L, const Proto *p);
+LUAI_FUNC std::list <std::string> luaG_stackdump(lua_State *L);
 
 class callstack_ref
 {

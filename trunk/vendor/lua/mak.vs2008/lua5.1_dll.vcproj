@@ -412,6 +412,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lfunc.class.c"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lfunc.gc.c"
 				>
 			</File>
@@ -638,6 +642,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\lfunc.class.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\lfunc.h"
 				>
 			</File>
@@ -683,6 +691,10 @@
 			</File>
 			<File
 				RelativePath="..\src\lpluginutil.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lstack.h"
 				>
 			</File>
 			<File

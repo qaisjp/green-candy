@@ -11,40 +11,31 @@
 #include "lobject.h"
 
 
-LUAI_FUNC const TValue *luaT_gettm (Table *events, TMS event, TString *ename);
+LUAI_FUNC bool luaT_gettm (lua_State *L, Table *events, TMS event, TString *ename, ConstValueAddress& outTM);
 LUAI_FUNC Table* luaT_getmetabyobj( lua_State *L, const TValue *o );
-LUAI_FUNC const TValue *luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event);
+LUAI_FUNC ConstValueAddress luaT_gettmbyobj (lua_State *L, const TValue *o, TMS event);
 LUAI_FUNC void luaT_init (lua_State *L);
 LUAI_FUNC unsigned int luaT_getnumtypes (lua_State *L);
 LUAI_FUNC int luaT_gettype (lua_State *L, unsigned int index);
 
-#ifdef LUA_USE_C_MACROS
-
-#define gfasttm(g,et,e) ((et) == NULL ? NULL : \
-  ((et)->flags & (1u<<(e))) ? NULL : luaT_gettm(et, e, (g)->tmname[e]))
-
-#define fasttm(l,et,e)	gfasttm(G(l), et, e)
-
-#else
-
-FASTAPI const TValue* gfasttm( global_State *g, Table *et, TMS e )
+FASTAPI ConstValueAddress gfasttm( global_State *g, Table *et, TMS e )
 {
-    if ( et == NULL )
-        return NULL;
+    ConstValueAddress retAddr;
 
-    const TValue *outTM = NULL;
-
-    if ( testbit( (et)->flags, (lu_byte)e ) == false )
+    if ( et != NULL )
     {
-        outTM = luaT_gettm(et, e, (g)->tmname[e]);
+        // Use the table optimization flags.
+        // They are reset on any table modification.
+        if ( testbit( (et)->flags, (lu_byte)e ) == false )
+        {
+            luaT_gettm( g->mainthread, et, e, (g)->tmname[e], retAddr );
+        }
     }
-
-    return outTM;
+    return retAddr;
 }
-FASTAPI const TValue* fasttm( lua_State *L, Table *et, TMS e )          { return gfasttm( G(L), et, e ); }
+FASTAPI ConstValueAddress fasttm( lua_State *L, Table *et, TMS e )      { return gfasttm( G(L), et, e ); }
 
-#endif
-
+// Table of old-style type names.
 LUAI_DATA const char *const luaT_typenames[];
 
 

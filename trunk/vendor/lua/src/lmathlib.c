@@ -10,6 +10,8 @@
 #include "lauxlib.h"
 #include "lualib.h"
 
+#include "ldebug.h"
+
 
 #undef PI
 #define PI (3.14159265358979323846)
@@ -247,16 +249,17 @@ static const luaL_Reg mathlib[] = {
 /*
 ** Open math library
 */
-LUALIB_API int luaopen_math (lua_State *L) {
-  luaL_register(L, LUA_MATHLIBNAME, mathlib);
-  lua_pushnumber(L, PI);
-  lua_setfield(L, -2, "pi");
-  lua_pushnumber(L, HUGE_VAL);
-  lua_setfield(L, -2, "huge");
+LUALIB_API int luaopen_math (lua_State *L)
+{
+    luaL_register(L, LUA_MATHLIBNAME, mathlib);
+    lua_pushnumber(L, PI);
+    lua_setfield(L, -2, "pi");
+    lua_pushnumber(L, HUGE_VAL);
+    lua_setfield(L, -2, "huge");
 #if defined(LUA_COMPAT_MOD)
-  lua_getfield(L, -1, "fmod");
-  lua_setfield(L, -2, "mod");
+    lua_getfield(L, -1, "fmod");
+    lua_setfield(L, -2, "mod");
 #endif
-  return 1;
+    return 1;
 }
 

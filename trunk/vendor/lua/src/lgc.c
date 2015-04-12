@@ -264,8 +264,8 @@ static size_t luaC_separatefinalization( lua_State *L, global_State *g, globalSt
                     debughook_shield shield( *L );
 
                     // Call it's destructor
-                    setclvalue( L, L->top, j->destructor );
-                    luaD_call( L, L->top++, 0 );
+                    pushclvalue( L, j->destructor );
+                    lua_call( L, 0, 0 );
                 }
                 break;
             default:
@@ -356,49 +356,56 @@ int Table::TraverseGC( global_State *g )
 
 static void checkstacksizes (lua_State *L, StkId max)
 {
-    int ci_used = cast_int( L->ci - L->base_ci );  /* number of `ci' in use */
-    int s_used = cast_int( max - L->stack );  /* part of stack in use */
+    stackOffset_t ci_used;  /* number of `ci' in use */
+    stackOffset_t s_used;  /* part of stack in use */
 
-    if ( L->size_ci > LUAI_MAXCALLS )  /* handling overflow? */
+    L->ciStack.GetTopOffset( L, ci_used );
+    s_used = L->rtStack.GetStackOffset( L, max );
+
+    // Check the ci stack size.
     {
-        return;  /* do not touch the stacks */
+        stackOffset_t ciStackSize = L->ciStack.GetSize();
+
+        if ( ciStackSize > LUAI_MAXCALLS )  /* handling overflow? */
+        {
+            return;  /* do not touch the stacks */
+        }
+
+        if ( 4*ci_used < ciStackSize && 2*BASIC_CI_SIZE < ciStackSize )
+        {
+            luaD_reallocCI( L, ciStackSize / 2 );  /* still big enough... */
+        }
+        condhardstacktests(luaD_reallocCI(L, ci_used + 1));
     }
 
-    if ( 4*ci_used < L->size_ci && 2*BASIC_CI_SIZE < L->size_ci )
+    // Check the value stack size.
     {
-        luaD_reallocCI(L, L->size_ci/2);  /* still big enough... */
-    }
-    condhardstacktests(luaD_reallocCI(L, ci_used + 1));
+        stackOffset_t rtStackSize = L->rtStack.GetSize();
 
-    if ( 4*s_used < L->stacksize && 2*(BASIC_STACK_SIZE+EXTRA_STACK) < L->stacksize )
-    {
-        luaD_reallocstack(L, L->stacksize/2);  /* still big enough... */
+        if ( 4*s_used < rtStackSize && 2*(BASIC_STACK_SIZE+EXTRA_STACK) < rtStackSize )
+        {
+            luaD_reallocstack( L, rtStackSize / 2 );  /* still big enough... */
+        }
+        condhardstacktests(luaD_reallocstack(L, s_used));
     }
-    condhardstacktests(luaD_reallocstack(L, s_used));
 }
-
 
 static void traversestack (global_State *g, lua_State *l)
 {
     markvalue( g, &l->storage );
     markvalue( g, gt(l) );
 
-    StkId lim = l->top;
+    rtStack_t& rtStack = l->rtStack;
 
-    for ( CallInfo *ci = l->base_ci; ci <= l->ci; ci++ )
-    {
-        lua_assert(ci->top <= l->stack_last);
+    rtStack.Lock( l );
 
-        if ( lim < ci->top )
-        {
-            lim = ci->top;
-        }
-    }
+    StkId stackTop = l->rtStack.Top();
+    StkId lim = stackTop;
 
     {
         StkId o;
 
-        for ( o = l->stack; o < l->top; o++ )
+        for ( o = l->rtStack.Base(); o < stackTop; o++ )
         {
             markvalue(g, o);
         }
@@ -410,6 +417,8 @@ static void traversestack (global_State *g, lua_State *l)
     }
 
     checkstacksizes(l, lim);
+
+    rtStack.Unlock( l );
 }
 
 size_t Table::Propagate( global_State *g )
@@ -469,7 +478,7 @@ size_t lua_State::Propagate( global_State *g )
     markmt( this );
 
     traversestack( g, this );
-    return sizeof(lua_State) + sizeof(TValue) * stacksize + sizeof(CallInfo) * size_ci;
+    return sizeof(lua_State) + sizeof(TValue) * this->rtStack.GetSize() + sizeof(CallInfo) * this->ciStack.GetSize();
 }
 
 
@@ -658,24 +667,28 @@ static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *g
             sweeplist( L, g, gcEnv, iter, MAX_LUMEM );
         }
 
-        if ( (curr->marked ^ WHITEBITS) & deadmask )
-        {  /* not dead? */
-            lua_assert( !isdead(g, curr) || testbit(curr->marked, FIXEDBIT) );
+        bool isAlive = false;
 
+        // Check the GC cycle flagging.
+        if ( !isAlive )
+        {
+            if ( (curr->marked ^ WHITEBITS) & deadmask )
+            {  
+                isAlive = true;
+            }
+        }
+
+        // TODO: add a GC keep-alive reference count and make sure its stable.
+
+        if ( isAlive )  /* not dead? */
+        {
             makewhite( g, curr );  /* make it white (for next cycle) */
 
             p.Increment();
         }
-        else
-        {  /* must erase `curr' */
-            lua_assert( isdead(g, curr) || deadmask == bitmask(SFIXEDBIT) );
-
+        else    /* must erase `curr' */
+        {
             p.Remove();
-
-            if ( curr == gcEnv->rootgc.root )  /* is the first element of the list? */
-            {
-                gcEnv->rootgc.root = curr->next;  /* adjust first */
-            }
 
             delete_gcobject( L, curr );
         }
@@ -716,15 +729,14 @@ inline static void GCTM (lua_State *L, global_State *g, globalStateGCEnv *gcEnv)
     // Put the tmudata back, after the mainthread.
     gcObjList_t::InsertAfter( g->mainthread, o );
 
-    if ( const TValue *tm = gfasttm(g, udata->metatable, TM_GC) )
+    if ( const TValue *tm = fasttm(L, udata->metatable, TM_GC) )
     {
         debughook_shield shield( *L );
 
-        setobj2s( L, L->top, tm );
-        setuvalue( L, L->top+1, udata );
-        L->top += 2;
+        pushtvalue( L, tm );
+        pushuvalue( L, udata );
 
-        luaD_call(L, L->top - 2, 0);
+        lua_call(L, 1, 0);
     }
 }
 
@@ -823,7 +835,7 @@ void luaC_finish( lua_State *L )
 
     if ( gcEnv )
     {
-        while (gcEnv->gcstate != GCSpause)
+        while (gcEnv->GCthread->status == THREAD_SUSPENDED && gcEnv->gcstate != GCSpause)
         {
             gcEnv->GCthread->resume();
         }
@@ -845,17 +857,39 @@ void luaC_fullgc (lua_State *L)
         /* finish any pending sweep phase */
         luaC_finish( L );
 
-        gcEnv->GCthread->resume();
-        
-        while ( gcEnv->gcstate != GCSpause )
+        if ( gcEnv->GCthread->status == THREAD_SUSPENDED )
         {
             gcEnv->GCthread->resume();
+            
+            while ( gcEnv->GCthread->status == THREAD_SUSPENDED && gcEnv->gcstate != GCSpause )
+            {
+                gcEnv->GCthread->resume();
+            }
         }
 
         gcEnv->GCcollect = 0;
 
         setthreshold(gcEnv);
     }
+}
+
+
+bool luaC_isready (lua_State *L)
+{
+    bool isReady = false;
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( G(L) );
+
+    if ( gcEnv )
+    {
+        // We are ready if the GCthread is alive.
+        if ( gcEnv->GCthread && gcEnv->GCthread->status == THREAD_SUSPENDED )
+        {
+            isReady = true;
+        }
+    }
+
+    return isReady;
 }
 
 
@@ -1114,7 +1148,7 @@ static int luaC_runtime( lua_State *L )
             // Notify the user; he may yield the runtime at his own will (or use lua_gcpaycost for the official API)
             if ( Closure *evtCall = G(L)->events[LUA_EVENT_GC_PROPAGATE] )
             {
-                setclvalue( L, L->top++, evtCall );
+                pushclvalue( L, evtCall );
                 lua_call( L, 0, 0 );
             }
 
@@ -1251,7 +1285,10 @@ void luaC_initthread( global_State *g )
     if ( gcEnv )
     {
         // Allocate the main garbage collector runtime and set it up
-        lua_Thread *L = gcEnv->GCthread = luaE_newthread( g->mainthread );
+        lua_Thread *L = luaE_newthread( g->mainthread );
+
+        // Set it as the main GC thread.
+        gcEnv->GCthread = L;
         
         if ( !L->AllocateRuntime() )
             throw lua_exception( g->mainthread, LUA_ERRRUN, "fatal: could not allocate GCthread" );
@@ -1320,11 +1357,9 @@ void luaC_shutdown( global_State *g )
                     {
                         // Since we are running on the GC thread, collection is disabled by design.
                         // Hence we are safe to loop the GC list.
-                        StkId funcPtr = L->top++;
-
-                        setclvalue( L, funcPtr, dfail );
-                        setgcvalue( L, L->top++, o );
-                        luaD_call( L, funcPtr, 0 );
+                        pushclvalue( L, dfail );
+                        pushgcvalue( L, o );
+                        lua_call( L, 1, 0 );
                     }
                     catch( ... )
                     {
@@ -1357,8 +1392,8 @@ void luaC_shutdown( global_State *g )
 
     do
     {  /* repeat until no more errors */
-        L->ci = L->base_ci;
-        L->base = L->top = L->ci->base;
+        L->ciStack.SetTopOffset( L, 0 );
+        L->GetCurrentStackFrame().Clear( L, L->rtStack );
         L->nCcalls = 0;
     } while (luaD_rawrunprotected(L, callallgcTM, NULL, errMsg, NULL) != 0);
 

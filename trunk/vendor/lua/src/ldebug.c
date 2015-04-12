@@ -25,11 +25,14 @@
 static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name);
 
 
-static int currentpc (lua_State *L, CallInfo *ci) {
-  if (!isLua(ci)) return -1;  /* function is not a Lua function? */
-  if (ci == L->ci)
-    ci->savedpc = L->savedpc;
-  return pcRel(ci->savedpc, ci_func(ci)->GetLClosure()->p);
+static inline int currentpc (lua_State *L, CallInfo *ci)
+{
+    if (!isLua(ci)) return -1;  /* function is not a Lua function? */
+    if (ci == L->ciStack.Top())
+    {
+        ci->savedpc = L->savedpc;
+    }
+    return pcRel(ci->savedpc, ci_func(ci)->GetLClosure()->p);
 }
 
 
@@ -73,26 +76,37 @@ LUA_API int lua_gethookcount (lua_State *L) {
 }
 
 
-LUA_API int lua_getstack (lua_State *L, int level, lua_Debug *ar) {
-  int status;
-  CallInfo *ci;
-  lua_lock(L);
-  for (ci = L->ci; level > 0 && ci > L->base_ci; ci--) {
-    level--;
-    if (f_isLua(ci))  /* Lua function? */
-      level -= ci->tailcalls;  /* skip lost tail calls */
-  }
-  if (level == 0 && ci > L->base_ci) {  /* level found? */
-    status = 1;
-    ar->i_ci = cast_int(ci - L->base_ci);
-  }
-  else if (level < 0) {  /* level is of a lost tail call? */
-    status = 1;
-    ar->i_ci = 0;
-  }
-  else status = 0;  /* no such level */
-  lua_unlock(L);
-  return status;
+LUA_API int lua_getstack (lua_State *L, int level, lua_Debug *ar)
+{
+    int status = 0;
+
+    lua_lock(L);
+
+    CallInfo *ci;
+
+    for ( ci = L->ciStack.Top(); level > 0 && ci > L->ciStack.Base(); ci-- )
+    {
+        level--;
+
+        if ( f_isLua(ci) )  /* Lua function? */
+        {
+            level -= ci->tailcalls;  /* skip lost tail calls */
+        }
+    }
+    if ( level == 0 && ci > L->ciStack.Base() )
+    {  /* level found? */
+        status = 1;
+        ar->i_ci = L->ciStack.GetStackOffset( L, ci );
+    }
+    else if ( level < 0 )
+    {  /* level is of a lost tail call? */
+        status = 1;
+        ar->i_ci = 0;
+    }
+
+    lua_unlock(L);
+
+    return status;
 }
 
 
@@ -101,41 +115,72 @@ static Proto *getluaproto (CallInfo *ci) {
 }
 
 
-static const char *findlocal (lua_State *L, CallInfo *ci, int n) {
-  const char *name;
-  Proto *fp = getluaproto(ci);
-  if (fp && (name = luaF_getlocalname(fp, n, currentpc(L, ci))) != NULL)
-    return name;  /* is a local variable in a Lua function */
-  else {
-    StkId limit = (ci == L->ci) ? L->top : (ci+1)->func;
-    if (limit - ci->base >= n && n > 0)  /* is 'n' inside 'ci' stack? */
-      return "(*temporary)";
-    else
-      return NULL;
-  }
+static const char *findlocal (lua_State *L, CallInfo *ci, int n)
+{
+    const char *name;
+    Proto *fp = getluaproto(ci);
+
+    if ( fp && (name = luaF_getlocalname(fp, n, currentpc(L, ci))) != NULL )
+    {
+        return name;  /* is a local variable in a Lua function */
+    }
+
+    stackOffset_t ciUsageCount = ci->stack.GetUsageCount( L, L->rtStack );
+
+    if ( n > 0 && n < ciUsageCount )  /* is 'n' inside 'ci' stack? */
+    {
+        return "(*temporary)";
+    }
+
+    // No idea.
+    return NULL;
 }
 
 
-LUA_API const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n) {
-  CallInfo *ci = L->base_ci + ar->i_ci;
-  const char *name = findlocal(L, ci, n);
-  lua_lock(L);
-  if (name)
-      luaA_pushobject(L, ci->base + (n - 1));
-  lua_unlock(L);
-  return name;
+LUA_API const char *lua_getlocal (lua_State *L, const lua_Debug *ar, int n)
+{
+    CiCtxItem ciCtx = L->ciStack.GetStackItem( L, ar->i_ci );
+    CallInfo *ci = ciCtx.Pointer();
+
+    const char *name = findlocal(L, ci, n);
+
+    lua_lock(L);
+
+    if ( name )
+    {
+        RtCtxItem readFromValue = ci->stack.GetStackItem( L, L->rtStack, n - 1 );
+
+        pushtvalue(L, readFromValue.Pointer());
+    }
+
+    lua_unlock(L);
+
+    return name;
 }
 
 
-LUA_API const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n) {
-  CallInfo *ci = L->base_ci + ar->i_ci;
-  const char *name = findlocal(L, ci, n);
-  lua_lock(L);
-  if (name)
-      setobjs2s(L, ci->base + (n - 1), L->top - 1);
-  L->top--;  /* pop value */
-  lua_unlock(L);
-  return name;
+LUA_API const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n)
+{
+    CiCtxItem ciCtx = L->ciStack.GetStackItem( L, ar->i_ci );
+    CallInfo *ci = ciCtx.Pointer();
+
+    const char *name = findlocal(L, ci, n);
+
+    lua_lock(L);
+
+    if ( name )
+    {
+        ConstValueAddress topItem = index2constadr( L, -1 );
+
+        RtCtxItem writeToValue = index2stackadr( L, n - 1 );
+
+        writeToValue.Set( *topItem.Pointer() );
+    }
+    popstack( L, 1 );  /* pop value */
+
+    lua_unlock(L);
+
+    return name;
 }
 
 
@@ -172,28 +217,30 @@ static void info_tailcall (lua_Debug *ar) {
 
 static void collectvalidlines (lua_State *L, Closure *f)
 {
-    if (f == NULL || f->isC)
+    if ( f == NULL || f->isC )
     {
-        setnilvalue(L->top);
+        pushnilvalue(L);
     }
     else
     {
         Table *t = luaH_new(L, 0, 0);
         LClosure *lcl = f->GetLClosure();
         int *lineinfo = lcl->p->lineinfo;
-        int i;
 
-        for (i=0; i<lcl->p->sizelineinfo; i++)
-            setbvalue(luaH_setnum(L, t, lineinfo[i]), 1);
+        for ( int i = 0; i < lcl->p->sizelineinfo; i++ )
+        {
+            ValueAddress lineinfoVar = luaH_setnum( L, t, lineinfo[i] );
 
-        sethvalue(L, L->top, t); 
+            setbvalue( lineinfoVar, 1 );
+        }
+
+        pushhvalue(L, t); 
     }
-    incr_top(L);
 }
 
 
-static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
-                    Closure *f, CallInfo *ci) {
+static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar, Closure *f, CallInfo *ci)
+{
   int status = 1;
   if (f == NULL) {
     info_tailcall(ar);
@@ -230,34 +277,57 @@ static int auxgetinfo (lua_State *L, const char *what, lua_Debug *ar,
   return status;
 }
 
+LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar)
+{
+    int status;
+    Closure *f = NULL;
+    CallInfo *ci = NULL;
 
-LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
-  int status;
-  Closure *f = NULL;
-  CallInfo *ci = NULL;
-  lua_lock(L);
-  if (*what == '>') {
-    StkId func = L->top - 1;
-    luai_apicheck(L, ttisfunction(func));
-    what++;  /* skip the '>' */
-    f = clvalue(func);
-    L->top--;  /* pop function */
-  }
-  else if (ar->i_ci != 0) {  /* no tail call? */
-    ci = L->base_ci + ar->i_ci;
-    lua_assert(ttisfunction(ci->func));
-    f = clvalue(ci->func);
-  }
-  status = auxgetinfo(L, what, ar, f, ci);
-  if (strchr(what, 'f')) {
-    if (f == NULL) setnilvalue(L->top);
-    else setclvalue(L, L->top, f);
-    incr_top(L);
-  }
-  if (strchr(what, 'L'))
-    collectvalidlines(L, f);
-  lua_unlock(L);
-  return status;
+    lua_lock(L);
+
+    if ( *what == '>' )
+    {
+        {
+            ConstValueAddress topItem = index2constadr( L, -1 );
+
+            luai_apicheck(L, ttisfunction(topItem));
+
+            what++;  /* skip the '>' */
+            f = clvalue(topItem);
+        }
+        popstack( L, 1 );  /* pop function */
+    }
+    else if ( ar->i_ci != 0 )
+    {  /* no tail call? */
+        ci = L->ciStack.GetStackItem( L, ar->i_ci ).Pointer();
+
+        lua_assert(ttisfunction(ci->func));
+
+        f = clvalue(ci->func);
+    }
+
+    status = auxgetinfo(L, what, ar, f, ci);
+
+    if ( strchr(what, 'f') )
+    {
+        if ( f == NULL )
+        {
+            pushnilvalue(L);
+        }
+        else
+        {
+            pushclvalue(L, f);
+        }
+    }
+
+    if ( strchr(what, 'L') )
+    {
+        collectvalidlines(L, f);
+    }
+
+    lua_unlock(L);
+
+    return status;
 }
 
 
@@ -275,31 +345,33 @@ LUA_API int lua_getinfo (lua_State *L, const char *what, lua_Debug *ar) {
 
 
 
-static int precheck (const Proto *pt) {
-  check(pt->maxstacksize <= MAXSTACK);
-  check(pt->numparams+(pt->is_vararg & VARARG_HASARG) <= pt->maxstacksize);
-  check(!(pt->is_vararg & VARARG_NEEDSARG) ||
-              (pt->is_vararg & VARARG_HASARG));
-  check(pt->sizeupvalues <= pt->nups);
-  check(pt->sizelineinfo == pt->sizecode || pt->sizelineinfo == 0);
-  check(pt->sizecode > 0 && GET_OPCODE(pt->code[pt->sizecode-1]) == OP_RETURN);
-  return 1;
+static int precheck (const Proto *pt)
+{
+    check(pt->maxstacksize <= MAXSTACK);
+    check(pt->numparams+(pt->is_vararg & VARARG_HASARG) <= pt->maxstacksize);
+    check(!(pt->is_vararg & VARARG_NEEDSARG) || (pt->is_vararg & VARARG_HASARG));
+    check(pt->sizeupvalues <= pt->nups);
+    check(pt->sizelineinfo == pt->sizecode || pt->sizelineinfo == 0);
+    check(pt->sizecode > 0 && GET_OPCODE(pt->code[pt->sizecode-1]) == OP_RETURN);
+    return 1;
 }
 
 
 #define checkopenop(pt,pc)	luaG_checkopenop((pt)->code[(pc)+1])
 
-bool luaG_checkopenop (Instruction i) {
-  switch (GET_OPCODE(i)) {
+bool luaG_checkopenop (Instruction i)
+{
+    switch (GET_OPCODE(i))
+    {
     case OP_CALL:
     case OP_TAILCALL:
     case OP_RETURN:
     case OP_SETLIST: {
-      check(GETARG_B(i) == 0);
-      return true;
+        check(GETARG_B(i) == 0);
+        return true;
     }
     default: return false;  /* invalid instruction after an open call */
-  }
+    }
 }
 
 
@@ -496,8 +568,8 @@ static const char *kname (Proto *p, int c) {
 }
 
 
-static const char *getobjname (lua_State *L, CallInfo *ci, int stackpos,
-                               const char **name) {
+static const char *getobjname (lua_State *L, CallInfo *ci, int stackpos, const char **name)
+{
     if (!isLua(ci))  /* a Lua function? */
         return NULL;
 
@@ -550,7 +622,8 @@ static const char *getobjname (lua_State *L, CallInfo *ci, int stackpos,
 }
 
 
-static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
+static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name)
+{
   Instruction i;
   if ((isLua(ci) && ci->tailcalls > 0) || !isLua(ci - 1))
     return NULL;  /* calling function is not Lua (or is unknown) */
@@ -563,66 +636,79 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name) {
     return NULL;  /* no useful name can be found */
 }
 
-
-/* only ANSI way to check whether a pointer points to an array */
-static int isinstack (CallInfo *ci, const TValue *o)
-{
-    StkId p;
-    for (p = ci->base; p < ci->top; p++)
-        if (o == p)
-            return 1;
-    return 0;
-}
-
-
-void luaG_typeerror (lua_State *L, const TValue *o, const char *op)
+void luaG_typeerror (lua_State *L, ConstValueAddress& o, const char *op)
 {
     const char *name = NULL;
     const char *t = luaT_typenames[ttype(o)];
-    const char *kind = (isinstack(L->ci, o)) ? getobjname(L, L->ci, cast_int(o - L->base), &name) : NULL;
+    const char *kind = NULL;
 
-    if (kind)
+    CallInfo *current_ci = L->ciStack.Top();
+    
+    if ( L->GetCurrentStackFrame().IsInStack( L, L->rtStack, o ) )
+    {
+        stackOffset_t objOffset = L->ciStack.Top()->stack.GetStackOffset( L, L->rtStack, o );
+
+        kind = getobjname(L, current_ci, objOffset, &name);
+    }
+
+    if ( kind )
         luaG_runerror(L, "attempt to %s %s " LUA_QS " (a %s value)", op, kind, name, t);
     else
         luaG_runerror(L, "attempt to %s a %s value", op, t);
 }
 
-
-void luaG_concaterror (lua_State *L, StkId p1, StkId p2)
+void luaG_concaterror (lua_State *L, ConstValueAddress p1, ConstValueAddress p2)
 {
-    if (ttisstring(p1) || ttisnumber(p1)) p1 = p2;
+    if ( ttisstring(p1) || ttisnumber(p1) )
+    {
+        p1 = p2;
+    }
+
     lua_assert(!ttisstring(p1) && !ttisnumber(p1));
+
     luaG_typeerror(L, p1, "concatenate");
 }
 
+void luaG_aritherror (lua_State *L, ConstValueAddress p1, ConstValueAddress p2)
+{
+    LocalValueAddress tmp;
 
-void luaG_aritherror (lua_State *L, const TValue *p1, const TValue *p2) {
-  TValue temp;
-  if (luaV_tonumber(p1, &temp) == NULL)
-    p2 = p1;  /* first operand is wrong */
-  luaG_typeerror(L, p2, "perform arithmetic on");
+    if ( luaV_tonumber(p1, tmp) == NULL )
+    {
+        p2 = p1;  /* first operand is wrong */
+    }
+
+    luaG_typeerror(L, p2, "perform arithmetic on");
 }
 
+int luaG_ordererror (lua_State *L, ConstValueAddress& p1, ConstValueAddress& p2)
+{
+    const char *t1 = luaT_typenames[ ttype(p1) ];
+    const char *t2 = luaT_typenames[ ttype(p2) ];
 
-int luaG_ordererror (lua_State *L, const TValue *p1, const TValue *p2) {
-  const char *t1 = luaT_typenames[ttype(p1)];
-  const char *t2 = luaT_typenames[ttype(p2)];
-  if (t1[2] == t2[2])
-    luaG_runerror(L, "attempt to compare two %s values", t1);
-  else
-    luaG_runerror(L, "attempt to compare %s with %s", t1, t2);
-  return 0;
+    if ( t1[2] == t2[2] )
+    {
+        luaG_runerror(L, "attempt to compare two %s values", t1);
+    }
+    else
+    {
+        luaG_runerror(L, "attempt to compare %s with %s", t1, t2);
+    }
+
+    return 0;
 }
 
+static void addinfo (lua_State *L, const char *msg)
+{
+    CallInfo *ci = L->ciStack.Top();
 
-static void addinfo (lua_State *L, const char *msg) {
-  CallInfo *ci = L->ci;
-  if (isLua(ci)) {  /* is Lua code? */
-    char buff[LUA_IDSIZE];  /* add file:line information */
-    int line = currentline(L, ci);
-    luaO_chunkid(buff, getstr(getluaproto(ci)->source), LUA_IDSIZE);
-    luaO_pushfstring(L, "%s:%d: %s", buff, line, msg);
-  }
+    if ( isLua(ci) )
+    {  /* is Lua code? */
+        char buff[LUA_IDSIZE];  /* add file:line information */
+        int line = currentline(L, ci);
+        luaO_chunkid(buff, getstr(getluaproto(ci)->source), LUA_IDSIZE);
+        luaO_pushfstring(L, "%s:%d: %s", buff, line, msg);
+    }
 }
 
 
@@ -650,3 +736,80 @@ void luaG_runerror (lua_State *L, const char *fmt, ...) {
   throw lua_exception( L, LUA_ERRRUN, lua_tostring( L, -1 ) );
 }
 
+std::list <std::string> luaG_protodump(lua_State *L, const Proto *p)
+{
+    std::list <std::string> protoDump;
+
+    int sizecode = p->sizecode;
+
+    for ( int n = 0; n < sizecode; n++ )
+    {
+        Instruction inst = p->code[ n ];
+
+        OpCode opcode = GET_OPCODE( inst );
+
+        const char *opName = luaP_getopname( opcode );
+
+        std::string instDescriptor = opName;
+
+        protoDump.push_back( instDescriptor );
+    }
+
+    return protoDump;
+}
+
+std::list <std::string> luaG_stackdump(lua_State *L)
+{
+    std::list <std::string> stackDump;
+
+    // Create a list of strings that represents the stack, with the most recent item at the top.
+    RtStackAddr& rtStack = L->rtStack.LockedAcquisition( L );
+    {
+        RtStackView& currentFrame = L->GetCurrentStackFrame();
+
+        stackOffset_t itemCount = currentFrame.GetUsageCount( L, *rtStack );
+
+        for ( stackOffset_t n = 0; n < itemCount; n++ )
+        {
+            RtCtxItem stackItem = currentFrame.GetStackItem( L, *rtStack, itemCount - n - 1 );
+
+            StkId_const iter = stackItem.Pointer();
+
+            // Put an info into the string list.
+            std::string debugString;
+
+            int type = ttype( iter );
+
+            const char *native_type_name = lua_typename( L, type );
+
+            // Add the type name.
+            if ( native_type_name )
+            {
+                debugString += native_type_name;
+                debugString += ' ';
+            }
+
+            if ( iscollectable( iter ) )
+            {
+                debugString += '[';
+
+                GCObject *gcobj = gcvalue(iter);
+
+                LuaRTTI *rttiObj = LuaTypeSystem::GetTypeStructFromObject( gcobj );
+
+                LuaTypeSystem::typeInfoBase *typeInfo = LuaTypeSystem::GetTypeInfoFromTypeStruct( rttiObj );
+
+                if ( const char *typeName = typeInfo->name )
+                {
+                    debugString += typeName;
+                }
+
+                debugString += ']';
+            }
+
+            stackDump.push_back( debugString );
+        }
+    }
+
+    return stackDump;
+}

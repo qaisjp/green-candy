@@ -8,6 +8,8 @@
 #include "lclass.h"
 #include "lvm.h"
 
+#include "lfunc.class.hxx"
+
 #include "lapi.hxx"
 
 
@@ -18,86 +20,109 @@
 
 LUA_API void lua_gettable (lua_State *L, int idx)
 {
-  const TValue *t;
-  lua_lock(L);
-  t = index2constadr(L, idx);
-  api_checkvalidindex(L, t);
-  luaV_gettable(L, t, L->top - 1, L->top - 1);
-  lua_unlock(L);
+    lua_lock(L);
+    ConstValueAddress t = index2constadr(L, idx);
+    api_checkvalidindex(L, t);
+    ValueAddress keyAndVal = index2adr( L, -1 );
+    luaV_gettable(L, t, keyAndVal.ConstCast(), keyAndVal);
+    lua_unlock(L);
 }
 
 
 LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
 {
-  const TValue *t;
-  TValue key;
-  lua_lock(L);
-  t = index2constadr(L, idx);
-  api_checkvalidindex(L, t);
-  setsvalue(L, &key, luaS_new(L, k));
-  luaV_gettable(L, t, &key, L->top);
-  api_incr_top(L);
-  lua_unlock(L);
+    lua_lock(L);
+
+    ConstValueAddress t = index2constadr(L, idx);
+    api_checkvalidindex(L, t);
+
+    LocalValueAddress key;
+
+    setsvalue(L, key, luaS_new(L, k));
+
+    {
+        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+
+        ValueAddress stackItem = newstackslot( L );
+
+        luaV_gettable( L, t, key.ConstCast(), stackItem );
+    }
+
+    lua_unlock(L);
 }
 
 
 LUA_API void lua_rawget (lua_State *L, int idx)
 {
-  const TValue *t;
-  lua_lock(L);
-  t = index2constadr(L, idx);
-  api_check(L, ttistable(t));
-  setobj2s(L, L->top - 1, luaH_get(hvalue(t), L->top - 1));
-  lua_unlock(L);
+    lua_lock(L);
+    ConstValueAddress t = index2constadr(L, idx);
+    api_check(L, ttistable(t));
+    {
+        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+
+        StkId stackTop = L->GetCurrentStackFrame().TopMutable( L, *rtStack );
+        
+        ConstValueAddress tableValueAddr = luaH_get(L, hvalue(t), stackTop);
+
+        setobj2s(L, stackTop, tableValueAddr);
+    }
+    lua_unlock(L);
 }
 
 
 LUA_API void lua_rawgeti (lua_State *L, int idx, int n)
 {
-  const TValue *o;
-  lua_lock(L);
-  o = index2constadr(L, idx);
-  api_check(L, ttistable(o));
-  setobj2s(L, L->top, luaH_getnum(hvalue(o), n));
-  api_incr_top(L);
-  lua_unlock(L);
+    lua_lock(L);
+
+    ConstValueAddress o = index2constadr(L, idx);
+    api_check(L, ttistable(o));
+
+    ConstValueAddress tableValueAddr = luaH_getnum(L, hvalue(o), n);
+
+    pushtvalue( L, tableValueAddr );
+
+    lua_unlock(L);
 }
 
 
 LUA_API void lua_createtable (lua_State *L, int narray, int nrec)
 {
-  lua_lock(L);
-  luaC_checkGC(L);
-  sethvalue(L, L->top, luaH_new(L, narray, nrec));
-  api_incr_top(L);
-  lua_unlock(L);
+    lua_lock(L);
+    luaC_checkGC(L);
+    pushhvalue(L, luaH_new(L, narray, nrec));
+    lua_unlock(L);
 }
 
 
 LUA_API int lua_getmetatable (lua_State *L, int objindex)
 {
-  Table *mt = NULL;
-  int res;
-  lua_lock(L);
-  mt = luaT_getmetabyobj( L, index2constadr(L, objindex) );
-  if (mt == NULL)
-    res = 0;
-  else {
-    sethvalue(L, L->top, mt);
-    api_incr_top(L);
-    res = 1;
-  }
-  lua_unlock(L);
-  return res;
+    Table *mt = NULL;
+    int res;
+    lua_lock(L);
+
+    {
+        ConstValueAddress t = index2constadr( L, objindex );
+
+        mt = luaT_getmetabyobj( L, t );
+    }
+
+    if ( mt == NULL )
+        res = 0;
+    else
+    {
+        pushhvalue(L, mt);
+        res = 1;
+    }
+    lua_unlock(L);
+    return res;
 }
 
 
 LUA_API void lua_getfenv (lua_State *L, int idx)
 {
-    const TValue *o;
     lua_lock(L);
 
-    o = index2constadr(L, idx);
+    ConstValueAddress o = index2constadr(L, idx);
     api_checkvalidindex(L, o);
 
     switch( ttype(o) )
@@ -108,25 +133,24 @@ LUA_API void lua_getfenv (lua_State *L, int idx)
 
             // Lua may not retrieve the environment of locked closures
             if ( cl->IsEnvLocked() )
-                setnilvalue( L->top );
+                pushnilvalue( L );
             else
-                setgcvalue(L, L->top, cl->env);
+                pushgcvalue(L, cl->env);
         }
         break;
     case LUA_TUSERDATA:
-        setgcvalue(L, L->top, uvalue(o)->env);
+        pushgcvalue(L, uvalue(o)->env);
         break;
     case LUA_TTHREAD:
-        setobj2s(L, L->top,  gt(thvalue(o)));
+        pushgcvalue(L, gcvalue(gt(thvalue(o))));
         break;
     case LUA_TCLASS:
-        setgcvalue(L, L->top, jvalue(o)->env);
+        pushgcvalue(L, jvalue(o)->env);
         break;
     default:
-        setnilvalue(L->top);
+        pushnilvalue(L);
         break;
     }
-    api_incr_top(L);
     lua_unlock(L);
 }
 
@@ -149,11 +173,11 @@ LUA_API void lua_pushmethodsuper( lua_State *L )
 
     if ( method->super )
     {
-        setclvalue( L, L->top++, method->super );
+        pushclvalue( L, method->super );
     }
     else
     {
-        setnilvalue( L->top++ );
+        pushnilvalue( L );
     }
 
     lua_unlock( L );
@@ -163,7 +187,9 @@ LUA_API void lua_getclass( lua_State *L )
 {
     lua_lock( L );
 
-    StkId classId = L->top - 1;
+    RtCtxItem classIdCtx = index2stackadr( L, -1 );
+
+    StkId classId = classIdCtx.Pointer();
 
     lua_assert( iscollectable( classId ) );
 

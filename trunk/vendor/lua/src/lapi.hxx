@@ -3,10 +3,17 @@
 
 #include "lstate.h"
 
+inline bool hascallingenv( lua_State *L )
+{
+    return ( L->ciStack.GetUsageCount( L ) != 1 );
+}
+
 inline GCObject *getcurrenv( lua_State *L )
 {
-    if ( L->ci == L->base_ci )  /* no enclosing function? */
+    if ( !hascallingenv( L ) )  /* no enclosing function? */
+    {
         return gcvalue(gt(L));  /* use global table as environment */
+    }
 
     return curr_func( L )->env;
 }

@@ -31,9 +31,9 @@
 /*
 ** Extra tags for non-values
 */
-#define LUA_TPROTO	(LAST_TAG+1)
-#define LUA_TUPVAL	(LAST_TAG+2)
-#define LUA_TDEADKEY	(LAST_TAG+3)
+#define LUA_TPROTO      (LAST_TAG+1)
+#define LUA_TUPVAL      (LAST_TAG+2)
+#define LUA_TDEADKEY    (LAST_TAG+3)
 
 /*
 ** Plugin variables.
@@ -116,12 +116,865 @@ struct global_State;
 // List of garbage collectible items.
 typedef SingleLinkedList <class GCObject> gcObjList_t;
 
+// Stack definitions.
+#include "lstack.h"
+
+// Forward declarations.
+FASTAPI void setnilvalue(TValue *obj);
+FASTAPI void setobj(lua_State *L, TValue *dstVal, const TValue *srcVal);
+
+struct rtStackMoveMan
+{
+    inline static void InitializeValue( lua_State *L, TValue *newValue )
+    {
+        setnilvalue( newValue );
+    }
+
+    inline static void SetItem( lua_State *L, const TValue *sourceItem, TValue *dstItem )
+    {
+        setobj( L, dstItem, sourceItem );
+    }
+};
+
+// Abstract type of the stack.
+typedef growingStack <TValue, rtStackMoveMan> rtStack_t;
+
+// Stack user type.
+template <typename stackType>
+struct StackView
+{
+    typedef typename stackType::itemType_t itemType_t;
+    typedef typename stackType::constItemType_t constItemType_t;
+    typedef typename stackType::stackItem_t stackItem_t;
+    typedef typename stackType::constStackItem_t constStackItem_t;
+    typedef typename stackType::CtxItem CtxItem;
+
+private:
+    stackItem_t base;
+    stackItem_t top;
+
+    inline stackOffset_t RelativeToAbsoluteOffset( lua_State *L, stackType& theStack, stackOffset_t relativeOffset, bool isSecure )
+    {
+        theStack.EnsureLocked();
+
+        // Convert the offset to a positive value/an array index.
+        stackOffset_t relativeBaseOffset = -1;
+
+        if ( this->base != NULL )
+        {
+            if ( relativeOffset < 0 )
+            {
+                if ( this->top != NULL )
+                {
+                    relativeBaseOffset = stackType::GetDeferredStackOffset( this->base, this->top ) + ( relativeOffset + 1 );
+                }
+            }
+            else
+            {
+                relativeBaseOffset = relativeOffset;
+            }
+        }
+
+        if ( isSecure == false )
+        {
+            lua_assert( relativeBaseOffset < this->GetUsageCount( L, theStack ) );
+        }
+
+        return relativeBaseOffset;
+    }
+
+public:
+    inline StackView( void )
+    {
+        this->base = NULL;
+        this->top = NULL;
+    }
+
+    inline void Initialize( stackItem_t base, stackItem_t top )
+    {
+        lua_assert( base != NULL );
+
+        this->base = base;
+        this->top = top;
+    }
+
+    inline void InitializeEx( lua_State *L, stackType& theStack, stackOffset_t baseOffset, stackOffset_t viewSpan )
+    {
+        theStack.Lock( L );
+
+        // Make sure we allocate enough items on the stack so we have its base.
+        {
+            stackOffset_t allocStackOffset = -1;
+            
+            bool hasTopOffset = theStack.GetTopOffset( L, allocStackOffset );
+
+            if ( !hasTopOffset || allocStackOffset < baseOffset )
+            {
+                theStack.SetTopOffset( L, baseOffset );
+            }
+        }
+
+        this->base = theStack.GetStackItem( L, baseOffset ).Pointer();
+        this->top = NULL;
+
+        lua_assert( this->base != NULL );
+
+        IncrementTop( L, theStack, viewSpan );
+
+        theStack.Unlock( L );
+    }
+
+    inline constStackItem_t Base( lua_State *L, stackType& theStack )
+    {
+        theStack.Lock( L );
+
+        constStackItem_t theBase = this->base;
+
+        theStack.Unlock( L );
+
+        return theBase;
+    }
+
+    // WARNING: use this function cautiously! it can easily corrupt the runtime!
+    inline stackItem_t BaseMutable( lua_State *L, stackType& theStack )
+    {
+        theStack.Lock( L );
+
+        stackItem_t theBase = this->base;
+
+        theStack.Unlock( L );
+
+        return theBase;
+    }
+
+    inline constStackItem_t Top( lua_State *L, stackType& theStack )
+    {
+        theStack.Lock( L );
+
+        constStackItem_t theTop = this->top;
+
+        theStack.Unlock( L );
+
+        return theTop;
+    }
+
+    inline stackItem_t TopMutable( lua_State *L, stackType& theStack )
+    {
+        theStack.EnsureLocked();
+
+        return this->top;
+    }
+
+    inline void SetBaseOffsetAbsolute( lua_State *L, stackType& theStack, stackOffset_t byOffset )
+    {
+        theStack.Lock( L );
+        {
+            CtxItem stackItem = theStack.GetStackItem( L, byOffset );
+
+            this->base = stackItem.Pointer();
+        }
+        theStack.Unlock( L );
+    }
+
+    inline stackOffset_t GetStackOffsetAbsolute( lua_State *L, stackType& theStack, constStackItem_t refPtr )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t offset = theStack.GetStackOffset( L, refPtr );
+
+        theStack.Unlock( L );
+
+        return offset;
+    }
+
+    inline stackOffset_t GetStackOffset( lua_State *L, stackType& theStack, constStackItem_t refPtr )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t offset = stackType::GetDeferredStackOffset( this->base, refPtr );
+
+        theStack.Unlock( L );
+
+        return offset;
+    }
+
+    inline CtxItem GetStackItem( lua_State *L, stackType& theStack, stackOffset_t offset )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t realOffset = RelativeToAbsoluteOffset( L, theStack, offset, true );
+
+        stackOffset_t stackUsageCount = this->GetUsageCount( L, theStack );
+
+        CtxItem result;
+       
+        if ( realOffset < stackUsageCount )
+        {
+            result = theStack.GetStackItemBasedOn( L, realOffset, this->base );
+        }
+
+        theStack.Unlock( L );
+
+        return result;
+    }
+
+    inline CtxItem GetStackItemOutbounds( lua_State *L, stackType& theStack, stackOffset_t offset )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t realOffset = RelativeToAbsoluteOffset( L, theStack, offset, true );
+
+        CtxItem result = theStack.GetStackItemBasedOn( L, realOffset, this->base );
+
+        theStack.Unlock( L );
+
+        return result;
+    }
+
+    inline void EnsureOutboundsSlots( lua_State *L, stackType& theStack, stackOffset_t maxIndex )
+    {
+        theStack.Lock( L );
+
+        // Get the size that underlying stack must at least have.
+        stackOffset_t reqStackSize = ( theStack.GetStackOffset( L, this->base ) + maxIndex + 1 );
+
+        // Allocate the stack.
+        stackOffset_t currentStackSize = theStack.GetUsageCount( L );
+
+        if ( reqStackSize > currentStackSize )
+        {
+            theStack.SetTopOffset( L, reqStackSize - 1 );
+        }
+
+        theStack.Unlock( L );
+    }
+
+    inline void IncrementTop( lua_State *L, stackType& theStack, stackOffset_t n )
+    {
+        theStack.EnsureLocked();
+
+        lua_assert( n >= 0 );
+
+        for ( stackOffset_t index = 0; index < n; index++ )
+        {
+            if ( this->top == NULL )
+            {
+                this->top = this->base;
+            }
+            else
+            {
+                lua_assert( this->top <= theStack.Top() );
+
+                if ( this->top == theStack.Top() )
+                {
+                    CtxItem resultVal = theStack.ObtainItemLocked( L );
+
+                    this->top = resultVal.Pointer();
+                }
+                else
+                {
+                    this->top++;
+                }
+            }
+        }
+    }
+
+    inline void DecrementTop( lua_State *L, stackType& theStack, stackOffset_t n )
+    {
+        theStack.EnsureLocked();
+
+        lua_assert( n >= 0 );
+
+        for ( stackOffset_t index = 0; index < n; index++ )
+        {
+            if ( this->top != NULL )
+            {
+                if ( this->top > this->base )
+                {
+                    this->top--;
+                }
+                else if ( this->top == this->base )
+                {
+                    this->top = NULL;
+                }
+            }
+        }
+    }
+
+    // WARNING: this operation may throw a memory exception; secure important stack routines with proper locks!
+    inline CtxItem ObtainItem( lua_State *L, stackType& theStack )
+    {
+        theStack.Lock( L );
+
+        IncrementTop( L, theStack, 1 );
+
+        stackOffset_t topOffset = theStack.GetStackOffset( L, this->top );
+
+        CtxItem resultVal = theStack.GetStackItem( L, topOffset );
+
+        lua_assert( this->top == resultVal.Pointer() );
+
+        theStack.Unlock( L );
+
+        return resultVal;
+    }
+
+    inline void PopCount( lua_State *L, stackType& theStack, stackOffset_t n )
+    {
+        theStack.Lock( L );
+
+        this->DecrementTop( L, theStack, n );
+
+        theStack.Unlock( L );
+    }
+
+    inline stackOffset_t GetUsageCountBasedOn( lua_State *L, stackType& theStack, constStackItem_t theBase )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t allocOffset = 0;
+
+        if ( theBase != NULL && this->top != NULL )
+        {
+            allocOffset = stackType::GetDeferredStackOffset( theBase, this->top );
+
+            allocOffset++;
+        }
+
+        theStack.Unlock( L );
+
+        return allocOffset;
+    }
+
+    inline stackOffset_t GetUsageCount( lua_State *L, stackType& theStack )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t result = GetUsageCountBasedOn( L, theStack, this->base );
+
+        theStack.Unlock( L );
+
+        return result;
+    }
+
+    inline void CrossMoveTopExtern( lua_State *L, stackType& srcStack, itemType_t *dstArray, stackOffset_t numMove )
+    {
+        if ( numMove > 0 )
+        {
+            srcStack.Lock( L );
+            {
+                 // Make sure we actually have the required amount of items on our virtual stack.
+                stackOffset_t currentStackUsageCount = this->GetUsageCount( L, srcStack );
+
+                lua_assert( currentStackUsageCount >= numMove );
+
+                if ( currentStackUsageCount >= numMove )
+                {
+                    // Perform an optimized copy of stack members.
+                    stackType::NativeCrossCopyExtern( L, dstArray, this->top - (numMove - 1), numMove );
+
+                    // Decrement the top by the number of items that should be moved
+                    // to the destination stack.
+                    this->DecrementTop( L, srcStack, numMove );
+                }
+            }
+            srcStack.Unlock( L );
+        }
+    }
+
+    inline void CrossCopyTopExtern( lua_State *L, stackType& srcStack, itemType_t *dstArray, stackOffset_t numCopy )
+    {
+        if ( numCopy > 0 )
+        {
+            srcStack.Lock( L );
+            {
+                // Make sure we have the necessary items that should be copied over.
+                stackOffset_t currentStackUsageCount = this->GetUsageCount( L, srcStack );
+
+                lua_assert( currentStackUsageCount >= numCopy );
+
+                if ( currentStackUsageCount >= numCopy )
+                {
+                    // Copy items from the source stack onto the destination array.
+                    stackType::NativeCrossCopyExtern( L, dstArray, this->top - (numCopy - 1), numCopy );
+                }
+            }
+            srcStack.Unlock( L );
+        }
+    }
+
+    inline void CrossMoveTop( lua_State *L, stackType& srcStack, StackView *dstView, stackType& dstStack, stackOffset_t numMove )
+    {
+        if ( numMove > 0 )
+        {
+            lua_assert( &srcStack != &dstStack );
+
+            srcStack.Lock( L );
+            dstStack.Lock( L );
+            {
+                // Make sure we actually have the required amount of items on our virtual stack.
+                stackOffset_t currentStackUsageCount = this->GetUsageCount( L, srcStack );
+
+                lua_assert( currentStackUsageCount >= numMove );
+
+                if ( currentStackUsageCount >= numMove )
+                {
+                    // Move the items that are currently being pointed at by the srcStack top
+                    // to the top of dstStack as pointed at by dstView.
+                    {
+                        // Preallocate the stack items on the destination stack view.
+                        dstView->IncrementTop( L, dstStack, numMove );
+
+                        stackOffset_t topRebaseCopyOffset = (numMove - 1);
+
+                        // Perform an optimized copy of stack members.
+                        stackType::NativeCrossCopyExtern( L, dstView->top - topRebaseCopyOffset, this->top - topRebaseCopyOffset, numMove );
+
+                        // Decrement the top by the number of items that have been moved
+                        // to the destination stack.
+                        this->DecrementTop( L, srcStack, numMove );
+                    }
+                }
+            }
+            dstStack.Unlock( L );
+            srcStack.Unlock( L );
+        }
+    }
+
+    inline void CrossCopyTop( lua_State *L, stackType& srcStack, StackView *dstView, stackType& dstStack, stackOffset_t numCopy )
+    {
+        if ( numCopy > 0 )
+        {
+            srcStack.Lock( L );
+            dstStack.Lock( L );
+            {
+                // Make sure we have the necessary items that should be copied over.
+                stackOffset_t currentStackUsageCount = this->GetUsageCount( L, srcStack );
+
+                lua_assert( currentStackUsageCount >= numCopy );
+
+                if ( currentStackUsageCount >= numCopy )
+                {
+                    // Preallocate the stack items on the destination view.
+                    dstView->IncrementTop( L, dstStack, numCopy );
+
+                    stackOffset_t topRebaseCopyOffset = (numCopy - 1);
+
+                    // Copy items from the source stack onto the destination stack based on their views.
+                    stackType::NativeCrossCopyExtern( L, dstView->top - topRebaseCopyOffset, this->top - topRebaseCopyOffset, numCopy );
+                }
+            }
+            dstStack.Unlock( L );
+            srcStack.Unlock( L );
+        }
+    }
+
+    // WARNING: returns absolute offset!
+    inline stackOffset_t GetTopOffset( lua_State *L, stackType& theStack )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t resultOffset;
+
+        if ( this->top != NULL )
+        {
+            resultOffset = theStack.GetStackOffset( L, this->top );
+        }
+        else
+        {
+            resultOffset = theStack.GetStackOffset( L, this->base ) - 1;
+        }
+
+        theStack.Unlock( L );
+
+        return resultOffset;
+    }
+
+    inline void SetTopOffset( lua_State *L, stackType& theStack, stackOffset_t topOffset )
+    {
+        theStack.Lock( L );
+
+        // Update the top of this stack view.
+        stackOffset_t curTopOff = this->GetTopOffset( L, theStack );
+
+        stackOffset_t topDiff = ( topOffset - curTopOff );
+
+        // Alright, we have to either increment or decrement the stack view top.
+        if ( topDiff > 0 )
+        {
+            this->IncrementTop( L, theStack, topDiff );
+        }
+        else if ( topDiff < 0 )
+        {
+            this->DecrementTop( L, theStack, -topDiff );
+        }
+
+        theStack.Unlock( L );
+    }
+
+    inline stackOffset_t GetAbsoluteStackOffset( lua_State *L, stackType& theStack, stackOffset_t relativeOffset, bool isSecure = false )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t baseOffset = theStack.GetStackOffset( L, this->base );
+
+        stackOffset_t relativeOffsetNormalized = this->RelativeToAbsoluteOffset( L, theStack, relativeOffset, isSecure );
+
+        theStack.Unlock( L );
+
+        return ( baseOffset + relativeOffsetNormalized );
+    }
+
+    inline stackOffset_t GetRelativeStackOffset( lua_State *L, stackType& theStack, stackOffset_t absoluteOffset )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t baseOffset = theStack.GetStackOffset( L, this->base );
+
+        theStack.Unlock( L );
+
+        return ( absoluteOffset - baseOffset );
+    }
+
+    inline void SetTopOffsetRelative( lua_State *L, stackType& theStack, stackOffset_t relativeOffset )
+    {
+        theStack.Lock( L );
+
+        stackOffset_t absoluteOffset = this->GetAbsoluteStackOffset( L, theStack, relativeOffset, true );
+
+        this->SetTopOffset( L, theStack, absoluteOffset );
+
+        theStack.Unlock( L );
+    }
+
+    inline void InsertItemAtExternal( lua_State *L, stackType& theStack, stackOffset_t index, constItemType_t *itemToBeInserted )
+    {
+        theStack.Lock( L );
+        {
+            CtxItem toBeInsertedAtCtx = this->GetStackItem( L, theStack, index );
+
+            // Increment the stack top.
+            this->IncrementTop( L, theStack, 1 );
+
+            stackItem_t toBeInsertedAt = toBeInsertedAtCtx.Pointer();
+            stackItem_t stackTop = this->top;
+
+            // Do the insertion.
+            stackType::ShiftedInsert( L, stackTop, toBeInsertedAt, itemToBeInserted );
+        }
+        theStack.Unlock( L );
+    }
+
+    inline void TopInsertItem( lua_State *L, stackType& theStack, stackOffset_t indexToInsertAt )
+    {
+        theStack.Lock( L );
+        {
+            // Perform an item insertion from the top of this stack view to the indicated position.
+            stackItem_t toBeInsertedAt = this->GetStackItem( L, theStack, indexToInsertAt ).Pointer();
+
+            lua_assert( toBeInsertedAt != NULL );
+
+            if ( toBeInsertedAt != NULL )
+            {
+                stackItem_t stackTop = this->top;
+
+                lua_assert( stackTop != NULL );
+
+                // Save the top of the stack view to a temporary slot.
+                itemType_t tmp;
+                stackType::movman_t::SetItem( L, stackTop, &tmp );
+
+                // Perform the insertion.
+                stackType::ShiftedInsert( L, stackTop, toBeInsertedAt, &tmp );
+            }
+        }
+        theStack.Unlock( L );
+    }
+
+    inline void TopSwapItem( lua_State *L, stackType& theStack, stackOffset_t indexToSwapWith )
+    {
+        theStack.Lock( L );
+        {
+            // Swaps the top of the stack view with the designated item.
+            stackItem_t toBeSwappedWith = this->GetStackItem( L, theStack, indexToSwapWith ).Pointer();
+
+            lua_assert( toBeSwappedWith != NULL );
+
+            if ( toBeSwappedWith != NULL )
+            {
+                stackItem_t stackTop = this->top;
+
+                lua_assert( stackTop != NULL );
+
+                // Save the top of the stack view to a temporary slot.
+                itemType_t tmp;
+                stackType::movman_t::SetItem( L, stackTop, &tmp );
+
+                // Perform the swap.
+                stackType::movman_t::SetItem( L, toBeSwappedWith, stackTop );
+                stackType::movman_t::SetItem( L, &tmp, toBeSwappedWith );
+            }
+        }
+        theStack.Unlock( L );
+    }
+
+    inline void RemoveItem( lua_State *L, stackType& theStack, stackOffset_t indexToRemoveAt )
+    {
+        theStack.Lock( L );
+        {
+            // Removes the item that is pointed at by indexToRemoveAt by collapsing the stack array.
+            stackItem_t toRemoveAt = this->GetStackItem( L, theStack, indexToRemoveAt ).Pointer();
+
+            if ( toRemoveAt != NULL )
+            {
+                {
+                    stackItem_t stackTop = this->top;
+
+                    lua_assert( stackTop != NULL );
+
+                    // Collapse the stack array.
+                    while ( ++toRemoveAt <= stackTop )
+                    {
+                        stackType::movman_t::SetItem( L, toRemoveAt, toRemoveAt - 1 );
+                    }
+                }
+
+                // Decrement the stack view top.
+                this->DecrementTop( L, theStack, 1 );
+            }
+        }
+        theStack.Unlock( L );
+    }
+
+    inline void MoveItems( lua_State *L, stackType& theStack, stackOffset_t srcOffset, stackOffset_t dstOffset, stackOffset_t moveCount )
+    {
+        if ( srcOffset != dstOffset )
+        {
+            theStack.Lock( L );
+            {
+                stackOffset_t usageCount = this->GetUsageCount( L, theStack );
+
+                for ( stackOffset_t n = 0; n < moveCount; n++ )
+                {
+                    stackOffset_t relative_seek = 0;
+
+                    if ( srcOffset < dstOffset )
+                    {
+                        relative_seek = ( moveCount - 1 - n );
+                    }
+                    else
+                    {
+                        relative_seek = n;
+                    }
+
+                    stackOffset_t real_srcOffset = srcOffset + relative_seek;
+                    stackOffset_t real_dstOffset = dstOffset + relative_seek;
+
+                    real_srcOffset = this->RelativeToAbsoluteOffset( L, theStack, real_srcOffset );
+                    real_dstOffset = this->RelativeToAbsoluteOffset( L, theStack, real_dstOffset );
+
+                    constStackItem_t srcItem =
+                        stackType::StackSelector(
+                            real_srcOffset,
+                            usageCount,
+                            this->base,
+                            this->top
+                        );
+                    stackItem_t dstItem =
+                        stackType::StackSelector(
+                            real_dstOffset,
+                            usageCount,
+                            this->base,
+                            this->top
+                        );
+
+                    // Move the item over.
+                    if ( srcItem != NULL && dstItem != NULL )
+                    {
+                        stackType::movman_t::SetItem( L, srcItem, dstItem );
+                    }
+                }
+            }
+            theStack.Unlock( L );
+        }
+    }
+
+    inline void OnRebasing( lua_State *L, stackType& theStack, constStackItem_t oldStack )
+    {
+        stackItem_t theStackBase = theStack.Base();
+
+        if ( theStackBase != NULL )
+        {
+            this->top = theStack.GetDeferredStackItem( oldStack, this->top );
+            this->base = theStack.GetDeferredStackItem( oldStack, this->base );
+
+            lua_assert( this->base != NULL );
+        }
+        else
+        {
+            this->top = NULL;
+            this->base = NULL;
+        }
+    }
+
+    inline bool IsInStack( lua_State *L, stackType& theStack, constStackItem_t refPtr )
+    {
+        bool isInStack = false;
+
+        theStack.EnsureLocked();
+
+        if ( this->base != NULL && this->top != NULL )
+        {
+            /* only ANSI way to check whether a pointer points to an array */
+            for ( StkId iter = this->base; iter <= this->top; iter++ )
+            {
+                if ( refPtr == iter )
+                {
+                    isInStack = true;
+                    break;
+                }
+            }
+        }
+
+        return isInStack;
+    }
+
+    inline void Clear( lua_State *L, stackType& theStack )
+    {
+        theStack.Lock( L );
+
+        this->top = NULL;
+
+        theStack.Unlock( L );
+    }
+
+    // Stack base incrementation item.
+    struct baseProtect
+    {
+    protected:
+        inline void Initialize( lua_State *L, StackView *theView, stackType& theStack, stackOffset_t setToOffset )
+        {
+            this->theView = theView;
+
+            theStack.Lock( L );
+
+            this->_savedAbsoluteBase = theStack.GetStackOffset( L, theView->base );
+
+            // Change the base.
+            {
+                CtxItem stackItem = theView->GetStackItem( L, theStack, setToOffset );
+
+                theView->base = stackItem.Pointer();
+            }
+
+            theStack.Unlock( L );
+        }
+            
+    public:
+        inline baseProtect( lua_State *L, StackView *theView, stackType& theStack, stackOffset_t setToOffset ) : L( L ), theStack( theStack )
+        {
+            Initialize( L, theView, theStack, setToOffset );
+        }
+
+        inline ~baseProtect( void )
+        {
+            theStack.Lock( L );
+
+            // Restore the stack base.
+            {
+                CtxItem stackItem = theStack.GetStackItem( L, this->_savedAbsoluteBase );
+
+                theView->base = stackItem.Pointer();
+            }
+
+            theStack.Unlock( L );
+        }
+
+        inline baseProtect( const baseProtect& right ) : L( right.L ), theStack( right.theStack )
+        {
+            this->theView = right.theView;
+            this->_savedAbsoluteBase = right._savedAbsoluteBase;
+        }
+
+        lua_State *L;
+        stackType& theStack;
+        StackView *theView;
+        stackOffset_t _savedAbsoluteBase;
+    };
+
+    FASTAPI baseProtect ProtectSlots( lua_State *L, stackType& theStack, stackOffset_t protectOffset )
+    {
+        return baseProtect( L, this, theStack, protectOffset );
+    }
+};
+
+// User-types for easier code writing.
+typedef StackView <rtStack_t> RtStackView;
+
+/*
+** informations about a call
+*/
+enum eCallFrameModel
+{
+    CALLFRAME_STATIC,       // used by the Lua scripts
+    CALLFRAME_DYNAMIC       // used by the C runtime
+};
+
+struct CallInfo
+{
+    RtStackView stack;   /* stack frame of this function */
+    StkId func;  /* function index in the stack (absolute) */
+    const Instruction *savedpc;
+    int nresults;  /* expected number of results from this function */
+
+    // Local variables of LClosure environments.
+    int tailcalls;  /* number of tail calls lost under this entry */
+
+    stackOffset_t lastResultTop;    // last top offset of a function result
+
+    // Virtual stack top that can be set by opcodes.
+    bool hasVirtualStackTop;
+    stackOffset_t virtualStackTop;
+};
+
+struct ciStackMoveMan
+{
+    inline static void InitializeValue( lua_State *L, CallInfo *newValue )
+    {
+        newValue->func = NULL;
+        newValue->nresults = 0;
+        newValue->savedpc = NULL;
+        newValue->tailcalls = 0;
+        newValue->lastResultTop = -1;
+        newValue->hasVirtualStackTop = false;
+        newValue->virtualStackTop = -1;
+    }
+
+    inline static void SetItem( lua_State *L, const CallInfo *sourceItem, CallInfo *dstItem )
+    {
+        *dstItem = *sourceItem;
+    }
+};
+
+typedef growingStack <CallInfo, ciStackMoveMan> ciStack_t;
+
+// Typedefs for easier addressing of protected stack items.
+typedef rtStack_t::CtxItem RtCtxItem;
+typedef ciStack_t::CtxItem CiCtxItem;
+
 // Type that holds garbage collectible Lua types.
 // NOTE: this type must only be allocated by LuaTypeSystem!
 // It must be preceeded by a LuaRTTI struct!
 class GCObject abstract : public gcObjList_t::node
 {
 public:
+    global_State *gstate;       // VM that this object belongs to.
+
+    inline GCObject( global_State *g )
+    {
+        this->gstate = g;
+    }
+
     virtual TString*    GetTString()        { return NULL; }
     virtual Udata*      GetUserData()       { return NULL; }
     virtual Closure*    GetClosure()        { return NULL; }
@@ -136,8 +989,8 @@ public:
     virtual void        MarkGC( global_State *g )       { }
 
     // Global indexing and new-indexing routines (since every object can potencially be accessed)
-    virtual void        Index( lua_State *L, const TValue *key, StkId val );
-    virtual void        NewIndex( lua_State *L, const TValue *key, StkId val );
+    virtual void        Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
+    virtual void        NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
 
     lu_byte tt;
     lu_byte marked;
@@ -148,7 +1001,15 @@ typedef SingleLinkedList <class GrayObject> grayObjList_t;
 class GrayObject abstract : public GCObject
 {
 public:
-    ~GrayObject() {}
+    inline GrayObject( global_State *g ) : GCObject( g )
+    {
+        return;
+    }
+
+    inline ~GrayObject( void )
+    {
+        return;
+    }
 
     void                MarkGC( global_State *g );
     virtual size_t      Propagate( global_State *g ) = 0;
@@ -176,7 +1037,7 @@ FASTAPI size_t _sizeudata( size_t baseSize, size_t n )      { return (baseSize +
 LUA_MAXALIGN class TString : public GCObject
 {
 public:
-    TString( void *construction_params );
+    TString( global_State *g, void *construction_params );
 
     ~TString();
 
@@ -188,7 +1049,7 @@ public:
 LUA_MAXALIGN class Udata : public GCObject
 {
 public:
-    Udata( void *construction_params );
+    Udata( global_State *g, void *construction_params );
 
     ~Udata();
 
@@ -205,7 +1066,10 @@ public:
 class Proto : public GrayObject
 {
 public:
-    inline Proto( void *construction_params )       {}
+    inline Proto( global_State *g, void *construction_params ) : GrayObject( g )
+    {
+        return;
+    }
 
     ~Proto();
 
@@ -258,10 +1122,12 @@ public:
 class UpVal : public GCObject
 {
 public:
-    inline UpVal( void )                            {}
-    inline UpVal( void *construction_params )       {}
+    inline UpVal( global_State *g, void *construction_params ) : GCObject( g )
+    {
+        return;
+    }
 
-    ~UpVal();
+    ~UpVal( void );
 
     void MarkGC( global_State *g );
 
@@ -270,11 +1136,7 @@ public:
     {
         TValue value;  /* the value (when closed) */
 
-        struct
-        {  /* double linked list (when open) */
-          UpVal *prev;
-          UpVal *next;
-        } l;
+        RwListEntry <UpVal> l;  /* node (when open) */
     } u;
 };
 
@@ -286,6 +1148,11 @@ public:
 class Closure abstract : public GrayObject
 {
 public:
+    inline Closure( global_State *g ) : GrayObject( g )
+    {
+        return;
+    }
+
     virtual                 ~Closure        ( void );
 
     int                     TraverseGC      ( global_State *g );
@@ -317,6 +1184,12 @@ public:
 class CClosure abstract : public Closure
 {
 public:
+    inline CClosure( global_State *g ) : Closure( g )
+    {
+        this->f = NULL;
+        this->accessor = NULL;
+    }
+
     ~CClosure();
 
     int TraverseGC( global_State *g );
@@ -328,41 +1201,10 @@ public:
     GCObject *accessor; // Usually the storage of the thread
 };
 
-class CClosureMethodRedirect : public CClosure
-{
-public:
-    inline CClosureMethodRedirect( void *construction_params )          {}
-
-    ~CClosureMethodRedirect();
-
-    size_t Propagate( global_State *g );
-
-    TValue* ReadUpValue( unsigned char index );
-
-    Closure* redirect;
-    Class* m_class;
-};
-
-class CClosureMethodRedirectSuper : public CClosure
-{
-public:
-    inline CClosureMethodRedirectSuper( void *construction_params )     {}
-
-    ~CClosureMethodRedirectSuper();
-
-    size_t Propagate( global_State *g );
-
-    TValue* ReadUpValue( unsigned char index );
-
-    Closure *redirect;
-    Class *m_class;
-    Closure *super;
-};
-
 class CClosureBasic : public CClosure
 {
 public:
-    CClosureBasic( void *construction_params );
+    CClosureBasic( global_State *g, void *construction_params );
 
     ~CClosureBasic();
 
@@ -373,52 +1215,10 @@ public:
     TValue upvalues[1];
 };
 
-class CClosureMethodBase abstract : public CClosure
-{
-public:
-    ~CClosureMethodBase();
-
-    size_t Propagate( global_State *g );
-
-    Class*          m_class;
-    lua_CFunction   method;
-    Closure*        super;
-};
-
-class CClosureMethod : public CClosureMethodBase
-{
-public:
-    CClosureMethod( void *construction_params );
-
-    ~CClosureMethod();
-
-    size_t Propagate( global_State *g );
-
-    TValue* ReadUpValue( unsigned char index );
-
-    TValue  upvalues[1];
-};
-
-class CClosureMethodTrans : public CClosureMethodBase
-{
-public:
-    CClosureMethodTrans( void *construction_params );
-
-    ~CClosureMethodTrans();
-
-    size_t Propagate( global_State *g );
-
-    TValue* ReadUpValue( unsigned char index );
-
-    unsigned char trans;
-    void *data;
-    TValue  upvalues[1];
-};
-
 class LClosure : public Closure
 {
 public:
-    LClosure( void *construction_params );
+    LClosure( global_State *g, void *construction_params );
 
     ~LClosure();
 
@@ -447,17 +1247,21 @@ typedef union TKey {
 } TKey;
 
 
-typedef struct Node {
-  TValue i_val;
-  TKey i_key;
-} Node;
+struct Node
+{
+    TValue i_val;
+    TKey i_key;
+};
 
 class Table : public GrayObject
 {
 public:
-    inline Table( void *construction_params )       {}
+    inline Table( global_State *g, void *construction_params ) : GrayObject( g )
+    {
+        return;
+    }
 
-    ~Table();
+    ~Table( void );
 
     bool GCRequiresBackBarrier( void ) const    { return true; }
 
@@ -466,8 +1270,8 @@ public:
 
     Table* GetTable()   { return this; }
 
-    void    Index( lua_State *L, const TValue *key, StkId val );
-    void    NewIndex( lua_State *L, const TValue *key, StkId val );
+    void    Index( lua_State *L, ConstValueAddress& key, ValueAddress& sval );
+    void    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
 
     lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
     lu_byte lsizenode;  /* log2 of size of `node' array */
@@ -484,7 +1288,10 @@ public:
 class Dispatch abstract : public GrayObject
 {
 public:
-    virtual ~Dispatch()                     {}
+    inline Dispatch( global_State *g ) : GrayObject( g )
+    {
+        return;
+    }
 
     size_t  Propagate( global_State *g );
 
@@ -494,6 +1301,11 @@ public:
 class ClassDispatch abstract : public Dispatch
 {
 public:
+    inline ClassDispatch( global_State *g ) : Dispatch( g )
+    {
+        this->m_class = NULL;
+    }
+
     size_t                  Propagate( global_State *g );
 
     bool                    GCRequiresBackBarrier( void ) const     { return true; }
@@ -506,30 +1318,39 @@ public:
 class ClassEnvDispatch : public ClassDispatch
 {
 public:
-    inline ClassEnvDispatch( void *construct_params )           {}
+    inline ClassEnvDispatch( global_State *g, void *construct_params ) : ClassDispatch( g )
+    {
+        return;
+    }
 
-    void                    Index( lua_State *L, const TValue *key, StkId val );
-    void                    NewIndex( lua_State *L, const TValue *key, StkId val );
+    void                    Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
+    void                    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
 };
 
 class ClassOutEnvDispatch : public ClassDispatch
 {
 public:
-    inline ClassOutEnvDispatch( void *construct_params )        {}
+    inline ClassOutEnvDispatch( global_State *g, void *construct_params ) : ClassDispatch( g )
+    {
+        return;
+    }
 
-    void                    Index( lua_State *L, const TValue *key, StkId val );
-    void                    NewIndex( lua_State *L, const TValue *key, StkId val );
+    void                    Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
+    void                    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
 };
 
 class ClassMethodDispatch : public ClassDispatch
 {
 public:
-    inline ClassMethodDispatch( void *construct_params )        {}
+    inline ClassMethodDispatch( global_State *g, void *construct_params ) : ClassDispatch( g )
+    {
+        this->m_prevEnv = NULL;
+    }
 
     size_t                  Propagate( global_State *g );
 
-    void                    Index( lua_State *L, const TValue *key, StkId val );
-    void                    NewIndex( lua_State *L, const TValue *key, StkId val );
+    void                    Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
+    void                    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
 
     GCObject*               m_prevEnv;
 };
@@ -557,17 +1378,20 @@ struct _methodCacheEntry : _methodRegisterInfo
 class Class : public GCObject, public virtual ILuaClass
 {
 public:
-    inline Class( void *construction_params )       {}
+    inline Class( global_State *g, void *construction_params ) : GCObject( g )
+    {
+        return;
+    }
 
-    ~Class();
+    ~Class( void );
 
     void    Propagate( lua_State *L );
 
     void    MarkGC( global_State *g );
     int     TraverseGC( global_State *g );
 
-    void    Index( lua_State *L, const TValue *key, StkId val );
-    void    NewIndex( lua_State *L, const TValue *key, StkId val );
+    void    Index( lua_State *L, ConstValueAddress& key, ValueAddress& val );
+    void    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
 
     Class*  GetClass()   { return this; }
 
@@ -593,8 +1417,7 @@ public:
     Dispatch*   AcquireEnvDispatcher( lua_State *L );
     Dispatch*   AcquireEnvDispatcherEx( lua_State *L, GCObject *env );
 
-    Closure*    GetMethodFrom( lua_State *L, const TString *name, Table *methodTable );
-    Closure*    GetMethod( lua_State *L, const TString *name, Table*& table );
+    Closure*    GetMethod( lua_State *L, TString *name, Table*& table );
     void    SetMethod( lua_State *L, TString *name, Closure *method, Table *table );
 
     FASTAPI void    RegisterMethod( lua_State *L, TString *name, bool handlers = false );
@@ -627,13 +1450,13 @@ public:
     void    PushInternStorage( lua_State *L );
     void    PushChildAPI( lua_State *L );
     void    PushParent( lua_State *L );
-    const TValue*   GetEnvValue( lua_State *L, const TValue *key );
-    const TValue*   GetEnvValueString( lua_State *L, const char *key );
+    ConstValueAddress   GetEnvValue( lua_State *L, const TValue *key );
+    ConstValueAddress   GetEnvValueString( lua_State *L, const char *key );
 
     void    RequestDestruction();
 
-    TValue* SetSuperMethod( lua_State *L );
-    const TValue*   GetSuperMethod( lua_State *L );
+    ValueAddress        SetSuperMethod( lua_State *L );
+    ConstValueAddress   GetSuperMethod( lua_State *L );
 
     lua_State *hostState;
 
@@ -699,27 +1522,15 @@ public:
 
 
 
-/*
-** informations about a call
-*/
-typedef struct CallInfo {
-  StkId base;  /* base for this function */
-  StkId func;  /* function index in the stack */
-  StkId	top;  /* top for this function */
-  const Instruction *savedpc;
-  int nresults;  /* expected number of results from this function */
-  int tailcalls;  /* number of tail calls lost under this entry */
-} CallInfo;
-
 class lua_State : public GrayObject, virtual public ILuaState
 {
 public:
-    lua_State( void )
+    lua_State( global_State *g ) : GrayObject( g )
     {
         // Set the runtime state.
         defaultAlloc.SetThread( this );
     }
-    virtual ~lua_State();
+    virtual ~lua_State( void );
 
     // lua_State is always the main thread
     virtual void    SetMainThread( bool enabled )       {}
@@ -732,17 +1543,33 @@ public:
 
     size_t Propagate( global_State *g );
 
-    StkId top;  /* first free slot in the stack */
-    StkId base;  /* base of current function */
+    // Private expansion of the stacks.
+    struct rtStackExp_t : public rtStack_t
+    {
+        inline rtStackExp_t( void )
+        {
+            // Lets do things clean.
+            this->runtimeThread = NULL;
+        }
+
+        void OnRebasing( lua_State *L, stackItem_t oldStack );
+        void OnResizing( lua_State *L, stackOffset_t oldSize );
+        void OnChangeTop( lua_State *L, stackItem_t oldTop );
+
+        // The stack must be linked to a runtime Lua thread.
+        lua_State *runtimeThread;
+    };
+
+    rtStackExp_t rtStack; /* stack of the runtime TValues */
+    ciStack_t ciStack; /* stack of the callinfo frames */
+
+    RtStackView& GetCurrentStackFrame( void )
+    {
+        return this->ciStack.Top()->stack;
+    }
+
     global_State *l_G;
-    CallInfo *ci;  /* call info for current function */
     const Instruction *savedpc;  /* 'savedpc' of current function */
-    StkId stack_last;  /* last free slot in the stack */
-    StkId stack;  /* stack base */
-    CallInfo *end_ci;  /* points after end of ci array*/
-    CallInfo *base_ci;  /* array of CallInfo's */
-    int stacksize;
-    int size_ci;  /* size of array `base_ci' */
     unsigned short nCcalls;  /* number of nested C calls */
     lu_byte hookmask;
     bool allowhook;
@@ -752,9 +1579,56 @@ public:
     TValue l_gt;  /* table of globals */
     TValue env;  /* temporary place for environments */
     gcObjList_t openupval;  /* list of open upvalues in this stack */
-    ptrdiff_t errfunc;  /* current error handling function (stack index) */
+    stackOffset_t errfunc;  /* current error handling function (stack index) */
     TValue storage;
     Table *mt[NUM_TAGS];  /* metatables for basic types */
+
+    // State-locked variable access.
+    // The variable must not be reallocatable.
+    // If no support for value-based locking is available (yet), this locking is sufficient.
+    template <typename valueType>
+    struct StateValueContext : public DataContext <valueType>
+    {
+        valueType *valPtr;
+
+        unsigned long refCount;
+
+        inline StateValueContext( lua_State *L, valueType *valPtr )
+        {
+            this->valPtr = valPtr;
+            this->refCount = 0;
+        }
+
+        void Reference( lua_State *L )
+        {
+            this->refCount++;
+
+            // TODO
+        }
+        
+        void Dereference( lua_State *L )
+        {
+            // TODO
+
+            this->refCount--;
+        }
+
+        valueType* const* GetValuePointer( void )
+        {
+            return &valPtr;
+        }
+    };
+
+    template <typename dataType>
+    FASTAPI StateValueContext <dataType>* NewStateValueContext( dataType *valPtr )
+    {
+        return new StateValueContext <dataType> ( this, valPtr );
+    }
+
+    FASTAPI ValueAddress GetTemporaryValue( void )
+    {
+        return ValueAddress( this, NewStateValueContext( &env ) );
+    }
 
     // Memory allocator for class memory.
     // It allocates memory with thread focus.
@@ -788,6 +1662,20 @@ public:
         }
     };
     LuaThreadRuntimeAllocator defaultAlloc;
+};
+
+typedef StructAddress <rtStack_t> RtStackAddr;
+typedef StructAddress <ciStack_t> CiStackAddr;
+
+struct LocalValueAddress : public ValueAddress
+{
+    TValue theValue;
+    TValue *theValuePtr;
+
+    inline LocalValueAddress( void ) : theValuePtr( &theValue ), ValueAddress( &theValuePtr )
+    {
+        return;
+    }
 };
 
 // General stuff.
@@ -833,9 +1721,11 @@ FASTAPI classType* lua_new( lua_State *L, LuaTypeSystem::typeInfoBase *theType, 
 {
     classType *outObj = NULL;
     {
-        LuaTypeSystem& typeSys = G(L)->config->typeSys;
+        global_State *g = G(L);
 
-        LuaRTTI *rtObj = typeSys.Construct( theType, construct_params );
+        LuaTypeSystem& typeSys = g->config->typeSys;
+
+        LuaRTTI *rtObj = typeSys.Construct( g, theType, construct_params );
 
         if ( rtObj )
         {
@@ -1111,82 +2001,6 @@ FASTAPI void checkliveness(global_State *g, TValue *obj)
 
 
 /* Macros to set values */
-#ifdef LUA_USE_C_MACROS
-
-#define setnilvalue(obj) ((obj)->tt=LUA_TNIL)
-
-#define setnvalue(obj,x) \
-  { TValue *i_o=(obj); i_o->value.n=(x); i_o->tt=LUA_TNUMBER; }
-
-#define setpvalue(obj,x) \
-  { TValue *i_o=(obj); i_o->value.p=(x); i_o->tt=LUA_TLIGHTUSERDATA; }
-
-#define setbvalue(obj,x) \
-  { TValue *i_o=(obj); i_o->value.b=(x) & 1; i_o->tt=LUA_TBOOLEAN; }
-
-#define setgcvalue(L,obj,x) \
-  { GCObject *inst = gcobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=inst->tt; \
-    checkliveness(G(L),i_o); }
-
-#define setsvalue(L,obj,x) \
-  { TString *inst = sobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TSTRING; \
-    checkliveness(G(L),i_o); }
-
-#define setuvalue(L,obj,x) \
-  { Udata *inst = uobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TUSERDATA; \
-    checkliveness(G(L),i_o); }
-
-#define setthvalue(L,obj,x) \
-  { lua_State *inst = thobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TTHREAD; \
-    checkliveness(G(L),i_o); }
-
-#define setclvalue(L,obj,x) \
-  { Closure *inst = clobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TFUNCTION; \
-    checkliveness(G(L),i_o); }
-
-#define sethvalue(L,obj,x) \
-  { Table *inst = hobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TTABLE; \
-    checkliveness(G(L),i_o); }
-
-#define setptvalue(L,obj,x) \
-  { Proto *inst = ptobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TPROTO; \
-    checkliveness(G(L),i_o); }
-
-#define setqvalue(L,obj,x) \
-  { Dispatch *inst = qobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TDISPATCH; \
-    checkliveness(G(L),i_o); }
-
-#define setjvalue(L,obj,x) \
-  { Class *inst = jobj(x); \
-    TValue *i_o=(obj); \
-    i_o->value.gc=inst; i_o->tt=LUA_TCLASS; \
-    checkliveness(G(L),i_o); }
-
-
-
-#define setobj(L,obj1,obj2) \
-  { const TValue *o2=(obj2); TValue *o1=(obj1); \
-    o1->value = o2->value; o1->tt=o2->tt; \
-    checkliveness(G(L),o1); }
-
-#else
-
 FASTAPI void setnilvalue(TValue *obj)       { obj->tt = LUA_TNIL; }
 FASTAPI void setnvalue(TValue *obj, lua_Number num )
 {
@@ -1231,7 +2045,90 @@ FASTAPI void setobj(lua_State *L, TValue *dstVal, const TValue *srcVal)
     checkliveness(G(L),dstVal);
 }
 
-#endif //LUA_USE_C_MACROS
+struct CtxStkItem
+{
+    lua_State *L;
+    rtStack_t& theStack;
+
+    StkId item;
+
+    inline CtxStkItem( lua_State *L ) : L( L ), theStack( L->rtStack )
+    {
+        theStack.Lock( L );
+
+        this->item = L->GetCurrentStackFrame().ObtainItem( L, theStack ).Pointer();
+    }
+
+    inline ~CtxStkItem( void )
+    {
+        theStack.Unlock( L );
+    }
+};
+FASTAPI void pushnilvalue( lua_State *L )
+{
+    CtxStkItem ctxItem( L ); setnilvalue( ctxItem.item );
+}
+FASTAPI void pushnvalue( lua_State *L, lua_Number n )
+{
+    CtxStkItem ctxItem( L ); setnvalue( ctxItem.item, n );
+}
+FASTAPI void pushpvalue( lua_State *L, void *ptr )
+{
+    CtxStkItem ctxItem( L ); setpvalue( ctxItem.item, ptr );
+}
+FASTAPI void pushbvalue( lua_State *L, bool b )
+{
+    CtxStkItem ctxItem( L ); setbvalue( ctxItem.item, b );
+}
+FASTAPI void pushgcvalue( lua_State *L, GCObject *obj )
+{
+    CtxStkItem ctxItem( L ); setgcvalue( L, ctxItem.item, obj );
+}
+FASTAPI void pushtvalue( lua_State *L, const TValue *o )
+{
+    CtxStkItem ctxItem( L ); setobj( L, ctxItem.item, o );
+}
+template <int typeDesc, typename objType>
+FASTAPI void pushvalue( lua_State *L, objType *obj )
+{
+    CtxStkItem ctxItem( L ); setvalue <typeDesc, objType> ( L, ctxItem.item, obj );
+}
+FASTAPI void pushsvalue( lua_State *L, TString *obj )                   { pushvalue <LUA_TSTRING> ( L, obj ); }
+FASTAPI void pushuvalue( lua_State *L, Udata *obj )                     { pushvalue <LUA_TUSERDATA> ( L, obj ); }
+FASTAPI void pushthvalue( lua_State *L, lua_State *obj )                { pushvalue <LUA_TTHREAD> ( L, obj ); }
+FASTAPI void pushclvalue( lua_State *L, Closure *obj )                  { pushvalue <LUA_TFUNCTION> ( L, obj ); }
+FASTAPI void pushhvalue( lua_State *L, Table *obj )                     { pushvalue <LUA_TTABLE> ( L, obj ); }
+FASTAPI void pushptvalue( lua_State *L, Proto *obj )                    { pushvalue <LUA_TPROTO> ( L, obj ); }
+FASTAPI void pushqvalue( lua_State *L, Dispatch *obj )                  { pushvalue <LUA_TDISPATCH> ( L, obj ); }
+FASTAPI void pushjvalue( lua_State *L, Class *obj )                     { pushvalue <LUA_TCLASS> ( L, obj ); }
+
+FASTAPI stackOffset_t rt_stackcount( lua_State *L )                     { return L->GetCurrentStackFrame().GetUsageCount( L, L->rtStack ); }
+
+FASTAPI stackOffset_t ci_alloccount( lua_State *L )                     { return L->GetCurrentStackFrame().GetUsageCount( L, L->rtStack ); }
+
+// Function to resolve stack indices.
+LUAI_FUNC stackOffset_t index2stackindex( lua_State *L, int idx );
+LUAI_FUNC RtCtxItem index2stackadr( lua_State *L, int idx, bool isSecure = false );
+ValueAddress fetchstackadr( lua_State *L, int idx );
+
+
+FASTAPI void readstkvalue( lua_State *L, TValue *dst, int idx )
+{
+    RtCtxItem stackItem = index2stackadr( L, idx );
+
+    stackItem.Get( *dst );
+}
+// TODO: this function is not thread safe!!!
+FASTAPI void popstkvalue( lua_State *L, TValue *dst )
+{
+    readstkvalue( L, dst, -1 );
+
+    L->ciStack.Top()->stack.PopCount( L, L->rtStack, 1 );
+}
+FASTAPI void popstack( lua_State *L, stackOffset_t count )
+{
+    L->ciStack.Top()->stack.PopCount( L, L->rtStack, count );
+}
 
 
 /*
@@ -1257,7 +2154,7 @@ FASTAPI void setobj(lua_State *L, TValue *dstVal, const TValue *srcVal)
 #else
 
 /* from stack to (same) stack */
-FASTAPI void setobjs2s(lua_State *L, StkId dstVal, const StkId srcVal)          { setobj(L, dstVal, srcVal); }
+FASTAPI void setobjs2s(lua_State *L, StkId dstVal, StkId_const srcVal)          { setobj(L, dstVal, srcVal); }
 /* to stack (not from same stack) */
 FASTAPI void setobj2s(lua_State *L, StkId dstVal, const TValue *srcVal)         { setobj(L, dstVal, srcVal); }
 FASTAPI void setsvalue2s(lua_State *L, StkId val, TString *obj)                 { setsvalue(L, val, obj); }
@@ -1273,22 +2170,23 @@ FASTAPI void setsvalue2n(lua_State *L, TValue *val, TString *obj)               
 
 #endif //LUA_USE_C_MACROS
 
+// Macros for stack management.
+FASTAPI ValueAddress newstackslot( lua_State *L )
+{
+    RtStackView& currentStackFrame = L->GetCurrentStackFrame();
+
+    RtCtxItem stackItem = currentStackFrame.ObtainItem( L, L->rtStack );
+
+    ValueContext *ctx = L->rtStack.GetNewVirtualStackItem( L, stackItem );
+
+    return ValueAddress( L, ctx );
+}
+
 // Macros to access lua_State stuff.
-#ifdef LUA_USE_C_MACROS
-
-#define curr_func(L)	(clvalue(L->ci->func))
-#define ci_func(ci)	(clvalue((ci)->func))
-#define f_isLua(ci)	(!ci_func(ci)->isC)
-#define isLua(ci)	(ttisfunction((ci)->func) && f_isLua(ci))
-
-#else
-
-FASTAPI Closure*    curr_func(lua_State *L)     { return (clvalue(L->ci->func)); }
+FASTAPI Closure*    curr_func(lua_State *L)     { return (clvalue(L->ciStack.Top()->func)); }
 FASTAPI Closure*    ci_func(CallInfo *ci)       { return (clvalue((ci)->func)); }
 FASTAPI bool        f_isLua(CallInfo *ci)       { return (!ci_func(ci)->isC); }
 FASTAPI bool        isLua(CallInfo *ci)         { return (ttisfunction((ci)->func) && f_isLua(ci)); }
-
-#endif
 
 // Macros for closures.
 #ifdef LUA_USE_C_MACROS
@@ -1311,8 +2209,6 @@ FASTAPI bool        isLua(CallInfo *ci)         { return (ttisfunction((ci)->fun
 #else
 
 FASTAPI size_t sizeCclosure( int n )            { return sizeof(CClosureBasic) + ( sizeof(TValue)*((n)-1) ); }
-FASTAPI size_t sizeCmethod( int n )             { return sizeof(CClosureMethod) + ( sizeof(TValue)*((n)-1) ); }
-FASTAPI size_t sizeCmethodt( int n )            { return sizeof(CClosureMethodTrans) + ( sizeof(TValue)*((n)-1) ); }
 FASTAPI size_t sizeLclosure( int n )            { return sizeof(LClosure) + ( sizeof(TValue*)*((n)-1) ); }
 
 FASTAPI bool iscfunction(const TValue *o)       { return (ttype(o) == LUA_TFUNCTION && clvalue(o)->isC); }
@@ -1369,6 +2265,7 @@ FASTAPI TValue* registry( lua_State *L )    { return &G(L)->l_registry; }
 #define sizenode(t)	(twoto((t)->lsizenode))
 
 
+// TODO: remove this, rather use a global_State variable.
 #define luaO_nilobject		(&luaO_nilobject_)
 
 LUAI_DATA const TValue luaO_nilobject_;
@@ -1380,10 +2277,10 @@ LUAI_FUNC int luaO_int2fb (unsigned int x);
 LUAI_FUNC int luaO_fb2int (int x);
 LUAI_FUNC int luaO_rawequalObj (const TValue *t1, const TValue *t2);
 LUAI_FUNC int luaO_str2d (const char *s, lua_Number *result);
-LUAI_FUNC const char *luaO_pushvfstring (lua_State *L, const char *fmt,
-                                                       va_list argp);
+LUAI_FUNC const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp);
 LUAI_FUNC const char *luaO_pushfstring (lua_State *L, const char *fmt, ...);
 LUAI_FUNC void luaO_chunkid (char *out, const char *source, size_t len);
+LUAI_FUNC ConstValueAddress luaO_getnilcontext( lua_State *L );
 
 // Module initialization.
 LUAI_FUNC void luaO_init( lua_config *cfg );

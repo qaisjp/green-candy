@@ -11,15 +11,14 @@
 #include "lobject.h"
 
 
-#define api_checknelems(L, n)	api_check(L, (n) <= (L->top - L->base))
-
-#define api_checkvalidindex(L, i)	api_check(L, (i) != luaO_nilobject)
-
-#if 0
-#define api_incr_top(L)   {api_check(L, L->top < L->ci->top); L->top++;}
-#else
-#define api_incr_top(L)   { if ( L->top >= L->ci->top ) { __asm { int 3 }; } L->top++;}
-#endif
+FASTAPI void api_checknelems( lua_State *L, stackOffset_t n )
+{
+    api_check( L, (n) <= rt_stackcount( L ) );
+}
+FASTAPI void api_checkvalidindex( lua_State *L, const TValue *i )
+{
+    api_check(L, (i) != luaO_nilobject);
+}
 
 LUAI_FUNC void luaA_pushobject (lua_State *L, const TValue *o);
 

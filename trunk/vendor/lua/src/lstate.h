@@ -9,6 +9,7 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #endif //_WIN32
 
@@ -19,10 +20,20 @@
 #include "ltm.h"
 #include "lfiber.h"
 
+// Helper functions to turn stack items into value addresses.
+FASTAPI ValueAddress stackitem2adr( lua_State *L, RtCtxItem& stackItem )
+{
+    return ValueAddress( L, L->rtStack.GetNewVirtualStackItem( L, stackItem ) );
+}
+FASTAPI ConstValueAddress stackitem2constadr( lua_State *L, RtCtxItem& stackItem )
+{
+    return ConstValueAddress( L, L->rtStack.GetNewVirtualStackItemConst( L, stackItem ) );
+}
 
-// Internal functions
-LUAI_FUNC TValue *index2adr (lua_State *L, int idx);
-LUAI_FUNC const TValue *index2constadr( lua_State *L, int idx );
+
+// Internal functions.
+LUAI_FUNC ValueAddress index2adr (lua_State *L, int idx);
+LUAI_FUNC ConstValueAddress index2constadr( lua_State *L, int idx );
 
 // Since we use advanced memory allocation techniques, we depend on custom
 // memory management templates.
@@ -43,7 +54,7 @@ enum eLuaThreadStatus : unsigned char
 class lua_Thread : public lua_State
 {
 public:
-    lua_Thread( void *construction_params );
+    lua_Thread( global_State *g, void *construction_params );
     ~lua_Thread();
 
     void    SetMainThread( bool enable )        { isMain = enable; }
