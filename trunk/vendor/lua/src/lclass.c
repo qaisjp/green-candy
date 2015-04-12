@@ -15,6 +15,7 @@
 
 #include "lfunc.h"
 #include "lfunc.class.hxx"
+#include "ldispatch.class.hxx"
 
 #include "lclass.hxx"
 
@@ -526,7 +527,7 @@ void Class::SetTransmit( int type, void *entity )
 	unsigned int idx = transCount++;
 
 	// Grow the array
-	trans = (trans_t*)luaM_realloc_( this->hostState, trans, idx * sizeof(trans_t), transCount * sizeof(trans_t) );
+	trans = (trans_t*)luaM_realloc__( this->gstate, trans, idx * sizeof(trans_t), transCount * sizeof(trans_t) );
 
 	// Append the item
     trans_t& item = trans[idx];
@@ -2068,9 +2069,49 @@ private:
     int         m_id;
 };
 
+Class::Class( global_State *g, void *construction_params ) : GCObject( g )
+{
+    // Link it into the GC system
+    luaC_linktmu( g, this, LUA_TCLASS );
+
+    this->env = NULL;
+    this->outenv = NULL;
+    this->storage = NULL;
+    this->internStorage = NULL;
+    this->childAPI = NULL;
+
+    this->forceSuper = NULL;
+    this->methodCache = NULL;   // only allocate once required
+
+    this->destroyed = false;
+    this->destroying = false;
+    this->reqDestruction = false;
+    this->inMethod = 0;
+    this->refCount = 0;
+    this->trans = NULL;
+	this->transCount = 0;
+    this->parent = NULL;
+    this->childCount = 0;
+    LIST_CLEAR( this->children.root );
+    this->destructor = NULL;
+}
+
+Class::~Class( void )
+{
+    // Free runtime data.
+    lua_assert( this->inMethod == 0 );
+
+    if ( void *trans = this->trans )
+    {
+        luaM_realloc__( this->gstate, trans, this->transCount * sizeof(Class::trans_t), 0 );
+    }
+}
+
 Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 {
-    lua_config *cfg = G(L)->config;
+    global_State *g = G(L);
+
+    lua_config *cfg = g->config;
 
     // Attempt to get the namespace class type info interface.
     namespaceClassTypeInfo *typeInfo = classTypeInfoPlugin.GetPluginStruct( cfg );
@@ -2096,22 +2137,10 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     // Allocate the class type object.
     Class *c = lua_new <Class> ( L, typeInfo->classTypeInfo );
 
-    // Link it into the GC system
-    luaC_linktmu( L, c, LUA_TCLASS );
-
-    c->hostState = G(L)->mainthread;
-
-    c->destroyed = false;
-    c->destroying = false;
-    c->reqDestruction = false;
-    c->inMethod = 0;
-    c->refCount = 0;
-    c->trans = NULL;
-	c->transCount = 0;
-    c->parent = NULL;
-    c->childCount = 0;
-    LIST_CLEAR( c->children.root );
-    c->destructor = NULL;
+    if ( !c )
+    {
+        return NULL;
+    }
 
     // Set up the environments
     c->env = luaQ_newclassenv( L, c );
@@ -2120,7 +2149,6 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
     c->internStorage = luaH_new( L, 0, 0 );
 
     c->forceSuper = new (L) Class::ForceSuperTable();
-    c->methodCache = NULL;  // only allocate once required
 
     lua_pushnil(L);
     popstack( L, 1 );
@@ -2218,28 +2246,22 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
 
 void luaJ_free( lua_State *L, Class *j )
 {
-    assert( j != NULL );
-
-    // Free runtime data.
-    {
-        lua_assert( j->inMethod == 0 );
-
-        luaM_realloc_( j->hostState, j->trans, j->transCount * sizeof(Class::trans_t), 0 );
-    }
-
     // Delete the class again.
-    lua_delete( L, j );
-}
-
-Class::~Class()
-{
+    lua_delete <Class> ( L, j );
 }
 
 void luaJ_construct( lua_State *L, int nargs )
 {
     Class *j = luaJ_new( L, nargs, 0 );
 
-    pushjvalue( L, j );
+    if ( j )
+    {
+        pushjvalue( L, j );
+    }
+    else
+    {
+        pushnilvalue( L );
+    }
 }
 
 // Basic protection for classes

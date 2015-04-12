@@ -34,11 +34,9 @@ struct lua_MainState : public lua_State
     inline void Initialize( global_State *g )
     {
         // Initialize the main thread.
-        this->l_G = g;
-
         g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);    // set a special GC flag so we do not collect the main thread
 
-        luaC_register( this, this, LUA_TTHREAD );
+        luaC_register( g, this, LUA_TTHREAD );
 
         set2bits(this->marked, FIXEDBIT, SFIXEDBIT);
 
@@ -186,7 +184,6 @@ static void f_luaopen (lua_State *L, void *ud)
 
 static inline void preinit_state (lua_State *L, global_State *g)
 {
-    L->l_G = g;
     L->hook = NULL;
     L->hookmask = 0;
     L->basehookcount = 0;
@@ -278,14 +275,52 @@ static void __stdcall luaE_guardedThreadEntryPoint( lua_Thread *L )
 
 #endif //_WIN32
 
+struct threadConstructionParams
+{
+    lua_State *runtimeThread;
+};
 
 lua_Thread::lua_Thread( global_State *g, void *construction_params ) : lua_State( g )
 {
-    isMain = false;
-    yieldDisabled = false;
-    callee = NULL;
-    fiber = NULL;
-	status = THREAD_SUSPENDED;
+    threadConstructionParams *params = (threadConstructionParams*)construction_params;
+
+    lua_State *rtThread = g->mainthread;
+
+    if ( params )
+    {
+        rtThread = params->runtimeThread;
+    }
+
+    this->isMain = false;
+    this->yieldDisabled = false;
+    this->callee = NULL;
+    this->fiber = NULL;
+	this->status = THREAD_SUSPENDED;
+
+    luaC_link(g, this, LUA_TTHREAD);
+
+    LIST_INSERT( g->threads.root, this->threadNode );  /* we need to be aware of all threads */
+
+    preinit_state(this, g);
+    stack_init(this, rtThread);  /* init stack */
+
+    setobj2n(rtThread, gt(this), gt(rtThread));  /* share table of globals */
+
+    // Share hooking properties.
+    this->hookmask = rtThread->hookmask;
+    this->basehookcount = rtThread->basehookcount;
+    this->hook = rtThread->hook;
+    resethookcount(this);
+
+    // Inherit the metatables
+    for ( unsigned int n = 0; n < NUM_TAGS; n++ )
+    {
+        this->mt[n] = rtThread->mt[n];
+    }
+
+    // Allocate the OS resources only if necessary!
+
+    lua_assert(iswhite(this));
 }
 
 // Factory for thread creation and destruction.
@@ -300,30 +335,11 @@ lua_Thread* luaE_newthread( lua_State *L )
     if ( !typeInfo )
         return NULL;
 
-    lua_Thread *L1 = lua_new <lua_Thread> ( L, typeInfo->luaThreadTypeInfo );
+    threadConstructionParams params;
+    params.runtimeThread = L;
 
-    if ( L1 )
-    {
-        luaC_link(L, L1, LUA_TTHREAD);
-        LIST_INSERT( g->threads.root, L1->threadNode );  /* we need to be aware of all threads */
-        preinit_state(L1, g);
-        stack_init(L1, L);  /* init stack */
-        setobj2n(L, gt(L1), gt(L));  /* share table of globals */
-        L1->hookmask = L->hookmask;
-        L1->basehookcount = L->basehookcount;
-        L1->hook = L->hook;
-        resethookcount(L1);
+    lua_Thread *L1 = lua_new <lua_Thread> ( L, typeInfo->luaThreadTypeInfo, &params );
 
-        // Inherit the metatables
-        for ( unsigned int n = 0; n < NUM_TAGS; n++ )
-        {
-            L1->mt[n] = L->mt[n];
-        }
-
-        // Allocate the OS resources only if necessary!
-
-        lua_assert(iswhite(L1));
-    }
     return L1;
 }
 
@@ -332,7 +348,7 @@ void luaE_freethread( lua_State *L, lua_State *L1 )
     lua_delete <lua_Thread> ( L, (lua_Thread*)L1 );
 }
 
-static void luaE_term()
+static void luaE_term( void )
 {
     lua_State *L;
 
@@ -372,7 +388,7 @@ void luaE_terminate( lua_Thread *L )
 	}
 }
 
-bool lua_Thread::AllocateRuntime()
+bool lua_Thread::AllocateRuntime( void )
 {
     if ( fiber )
         return true;
@@ -399,19 +415,20 @@ bool lua_Thread::AllocateRuntime()
     return false;
 }
 
-lua_State::~lua_State()
+lua_State::~lua_State( void )
 {
+    return;
 }
 
-lua_Thread::~lua_Thread()
+lua_Thread::~lua_Thread( void )
 {
     // unlist ourselves
-    LIST_REMOVE( threadNode );
+    LIST_REMOVE( this->threadNode );
 
     luaE_terminate( this );
     luai_userstatefree( this );
 
-    freestack( l_G->mainthread, this );
+    freestack( gstate->mainthread, this );
 }
 
 LUAI_FUNC void luaE_newenvironment( lua_State *L )

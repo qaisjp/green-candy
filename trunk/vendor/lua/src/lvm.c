@@ -19,6 +19,7 @@
 #include "ltm.h"
 #include "lvm.h"
 
+#include "lfunc.upval.hxx"
 
 
 /* limit for table tag-method chains (to avoid loops) */

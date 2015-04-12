@@ -630,6 +630,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ldispatch.class.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ldispatch.h"
 				>
 			</File>
@@ -651,6 +655,10 @@
 			</File>
 			<File
 				RelativePath="..\src\lfunc.hxx"
+				>
+			</File>
+			<File
+				RelativePath="..\src\lfunc.upval.hxx"
 				>
 			</File>
 			<File

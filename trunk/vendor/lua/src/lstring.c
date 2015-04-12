@@ -20,6 +20,8 @@
 struct stringConstructionParams
 {
     int length;
+    unsigned int hash;
+    lua_State *allocThread;
 };
 
 // String type information.
@@ -160,17 +162,61 @@ TString::TString( global_State *g, void *construction_params ) : GCObject( g )
 {
     stringConstructionParams *params = (stringConstructionParams*)construction_params;
 
-    this->len = params->length;
+    size_t strLength = 0;
+    unsigned int strHash = 0;
+
+    lua_State *L = g->mainthread;
+
+    if ( params )
+    {
+        strLength = params->length;
+        strHash = params->hash;
+        L = params->allocThread;
+    }
+
+    this->reserved = 0;
+    this->hash = strHash;
+    this->len = strLength;
+
+    luaC_register( g, this, LUA_TSTRING );
+
+    unsigned int h = strHash;
+
+    // Store this string in the global string table.
+    stringtable *tb = &g->strt;
+    h = lmod(h, tb->size);
+    tb->hash[h].Insert( this );  /* chain new entry */
+    tb->nuse++;
+
+    try
+    {
+        if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
+        {
+            luaS_resize(L, tb->size*2);  /* too crowded */
+        }
+    }
+    catch( ... )
+    {
+        // We are not in the string table anymore.
+        tb->hash[h].Remove( this );
+
+        tb->nuse--;
+
+        throw;
+    }
 }
 
-TString::~TString()
+TString::~TString( void )
 {
+    gstate->strt.nuse--;
 }
 
 static TString* newlstr (lua_State *L, const char *str, size_t l, unsigned int h)
 {
+    global_State *g = G(L);
+
     // Attempt to get the string type information.
-    stringTypeInfo_t *typeInfo = stringTypeInfo.GetPluginStruct( G(L)->config );
+    stringTypeInfo_t *typeInfo = stringTypeInfo.GetPluginStruct( g->config );
 
     // If we have no information about the string type, fail.
     if ( !typeInfo )
@@ -183,30 +229,17 @@ static TString* newlstr (lua_State *L, const char *str, size_t l, unsigned int h
 
     stringConstructionParams params;
     params.length = l;
+    params.hash = h;
+    params.allocThread = L;
 
     TString *ts = lua_new <TString> ( L, typeInfo->stringTypeInfo, &params );
 
     if ( ts )
     {
-        ts->len = l;
-        ts->hash = h;
-        
-        luaC_register( L, ts, LUA_TSTRING );
+        // Store the string that we want.
+        memcpy( ts+1, str, l*sizeof(char) );
 
-        ts->reserved = 0;
-
-        memcpy(ts+1, str, l*sizeof(char));
         ((char *)(ts+1))[l] = '\0';  /* ending 0 */
-
-        stringtable *tb = &G(L)->strt;
-        h = lmod(h, tb->size);
-        tb->hash[h].Insert( ts );  /* chain new entry */
-        tb->nuse++;
-
-        if (tb->nuse > cast(lu_int32, tb->size) && tb->size <= MAX_INT/2)
-        {
-            luaS_resize(L, tb->size*2);  /* too crowded */
-        }
     }
     return ts;
 }
@@ -325,8 +358,6 @@ void luaS_globalgc (lua_State *L)
 
 void luaS_free (lua_State *L, TString *s)
 {
-    G(L)->strt.nuse--;
-
     lua_delete <TString> ( L, s );
 }
 
@@ -334,11 +365,23 @@ Udata::Udata( global_State *g, void *construction_params ) : GCObject( g )
 {
     stringConstructionParams *params = (stringConstructionParams*)construction_params;
 
-    this->len = params->length;
+    int length = 0;
+
+    if ( params )
+    {
+        length = params->length;
+    }
+
+    this->len = length;
+    this->metatable = NULL;
+    this->env = NULL;
+
+    luaC_linktmu( g, this, LUA_TUSERDATA );
 }
 
-Udata::~Udata()
+Udata::~Udata( void )
 {
+    return;
 }
 
 Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
@@ -363,9 +406,6 @@ Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)
 
     if ( u )
     {
-        luaC_linktmu( L, u, LUA_TUSERDATA );
-        u->len = s;
-        u->metatable = NULL;
         u->env = e;
     }
     return u;

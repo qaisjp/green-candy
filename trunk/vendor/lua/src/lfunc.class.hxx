@@ -4,10 +4,7 @@
 class CClosureMethodRedirect : public CClosure
 {
 public:
-    inline CClosureMethodRedirect( global_State *g, void *construction_params ) : CClosure( g )
-    {
-        return;
-    }
+    CClosureMethodRedirect( global_State *g, void *construction_params );
 
     ~CClosureMethodRedirect( void );
 
@@ -22,10 +19,7 @@ public:
 class CClosureMethodRedirectSuper : public CClosure
 {
 public:
-    inline CClosureMethodRedirectSuper( global_State *g, void *construction_params ) : CClosure( g )
-    {
-        return;
-    }
+    CClosureMethodRedirectSuper( global_State *g, void *construction_params );
 
     ~CClosureMethodRedirectSuper( void );
 
@@ -41,10 +35,7 @@ public:
 class CClosureMethodBase abstract : public CClosure
 {
 public:
-    inline CClosureMethodBase( global_State *g ) : CClosure( g )
-    {
-        return;
-    }
+    CClosureMethodBase( global_State *g, void *construction_params );
 
     ~CClosureMethodBase( void );
 

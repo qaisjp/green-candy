@@ -9,6 +9,8 @@
 #include "lclass.h"
 #include "lvm.h"
 
+#include "lfunc.upval.hxx"
+
 #include "lapi.hxx"
 
 

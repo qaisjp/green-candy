@@ -18,6 +18,9 @@
 #include "lclass.h"
 #include "ltm.h"
 
+#include "lfunc.upval.hxx"
+#include "ldispatch.class.hxx"
+
 #include "lgc.internal.hxx"
 #include "lgc.interface.hxx"
 
@@ -589,67 +592,7 @@ static void cleartable ( grayObjList_t& theList )
 // Dispatch destruction of any GCObject.
 static void delete_gcobject( lua_State *L, GCObject *obj )
 {
-    int type = obj->tt;
-
-    if ( type == LUA_TSTRING )
-    {
-        TString *theString = (TString*)obj;
-
-        luaS_free( L, theString );
-    }
-    else if ( type == LUA_TTABLE )
-    {
-        Table *theTable = (Table*)obj;
-
-        luaH_free( L, theTable );
-    }
-    else if ( type == LUA_TFUNCTION )
-    {
-        Closure *theClosure = (Closure*)obj;
-
-        luaF_freeclosure( L, theClosure );
-    }
-    else if ( type == LUA_TUSERDATA )
-    {
-        Udata *data = (Udata*)obj;
-
-        luaS_freeudata( L, data );
-    }
-    else if ( type == LUA_TCLASS )
-    {
-        Class *theClass = (Class*)obj;
-
-        luaJ_free( L, theClass );
-    }
-    else if ( type == LUA_TDISPATCH )
-    {
-        Dispatch *theDispatch = (Dispatch*)obj;
-
-        luaQ_free( L, theDispatch );
-    }
-    else if ( type == LUA_TTHREAD )
-    {
-        lua_Thread *theThread = (lua_Thread*)obj;
-
-        luaE_freethread( L, theThread );
-    }
-    else if ( type == LUA_TPROTO )
-    {
-        Proto *theProto = (Proto*)obj;
-
-        luaF_freeproto( L, theProto );
-    }
-    else if ( type == LUA_TUPVAL )
-    {
-        UpVal *theUpValue = (UpVal*)obj;
-
-        luaF_freeupval( L, theUpValue );
-    }
-    else
-    {
-        // Unknown type detected; cannot delete.
-        assert( 0 );
-    }
+    lua_delete <GCObject> ( L, obj );
 }
 
 static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *gcEnv, gcObjList_t::removable_iterator& p, lu_mem count )
@@ -1010,20 +953,16 @@ void luaC_objbarriert( lua_State *L, Table *t, GCObject *o )
 }
 
 
-void luaC_register( lua_State *L, GCObject *o, lu_byte tt )
+void luaC_register( global_State *g, GCObject *o, lu_byte tt )
 {
-    global_State *g = G(L);
-
     // Put general stuff.
     o->marked = luaC_white(g);
     o->tt = tt;
 }
 
 
-void luaC_link (lua_State *L, GCObject *o, lu_byte tt)
+void luaC_link (global_State *g, GCObject *o, lu_byte tt)
 {
-    global_State *g = G(L);
-
     globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
     if ( gcEnv )
@@ -1031,18 +970,16 @@ void luaC_link (lua_State *L, GCObject *o, lu_byte tt)
         gcEnv->rootgc.Insert( o );
     }
 
-    luaC_register( L, o, tt );
+    luaC_register( g, o, tt );
 }
 
 
-void luaC_linktmu( lua_State *L, GCObject *o, lu_byte tt )
+void luaC_linktmu( global_State *g, GCObject *o, lu_byte tt )
 {
-    global_State *g = G(L);
-
     // Insert tmu items after the mainthread.
     gcObjList_t::InsertAfter( g->mainthread, o );
 
-    luaC_register( L, o, tt );
+    luaC_register( g, o, tt );
 }
 
 
