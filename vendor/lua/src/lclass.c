@@ -2096,6 +2096,12 @@ Class::Class( global_State *g, void *construction_params ) : GCObject( g )
     this->destructor = NULL;
 }
 
+Class::Class( const Class& right ) : GCObject( right )
+{
+    // TODO: think about how to clone a class.
+    throw lua_exception( this->gstate->mainthread, LUA_ERRRUN, "attempt to clone a runtime class", 1 );
+}
+
 Class::~Class( void )
 {
     // Free runtime data.

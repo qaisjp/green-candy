@@ -12,6 +12,8 @@
 
 #include "lapi.hxx"
 
+#include "ltable.hxx"
+
 
 /*
 ** set functions (stack -> Lua)
@@ -149,7 +151,13 @@ LUA_API int lua_setmetatable (lua_State *L, int objindex)
             if ( mt )
             {
                 luaC_objbarriert(L, h, mt);
-                mt->flags = 0;   // reset the metatable flags
+
+                tableNativeImplementation *nativeMetaTable = GetTableNativeImplementation( mt );
+
+                if ( nativeMetaTable )
+                {
+                    nativeMetaTable->flags = 0; // reset the metatable flags
+                }
             }
         }
         break;

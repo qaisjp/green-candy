@@ -18,21 +18,7 @@ LUAI_FUNC void luaT_init (lua_State *L);
 LUAI_FUNC unsigned int luaT_getnumtypes (lua_State *L);
 LUAI_FUNC int luaT_gettype (lua_State *L, unsigned int index);
 
-FASTAPI ConstValueAddress gfasttm( global_State *g, Table *et, TMS e )
-{
-    ConstValueAddress retAddr;
-
-    if ( et != NULL )
-    {
-        // Use the table optimization flags.
-        // They are reset on any table modification.
-        if ( testbit( (et)->flags, (lu_byte)e ) == false )
-        {
-            luaT_gettm( g->mainthread, et, e, (g)->tmname[e], retAddr );
-        }
-    }
-    return retAddr;
-}
+LUAI_FUNC ConstValueAddress gfasttm( global_State *g, Table *et, TMS e );
 FASTAPI ConstValueAddress fasttm( lua_State *L, Table *et, TMS e )      { return gfasttm( G(L), et, e ); }
 
 // Table of old-style type names.

@@ -415,6 +415,12 @@ bool lua_Thread::AllocateRuntime( void )
     return false;
 }
 
+lua_State::lua_State( const lua_State& right ) : GrayObject( right )
+{
+    // TODO: I think cloning a thread sometimes is possible.
+    throw lua_exception( this->gstate->mainthread, LUA_ERRRUN, "attempt to clone a thread", 1 );
+}
+
 lua_State::~lua_State( void )
 {
     return;

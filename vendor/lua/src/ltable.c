@@ -31,6 +31,8 @@
 
 #include "lpluginutil.hxx"
 
+#include "ltable.hxx"
+
 
 /*
 ** max size of array part is 2^MAXBITS
@@ -59,184 +61,11 @@
 
 #define hashpointer(t,p)	hashmod(t, IntPoint(p))
 
-
-// Table type information plugin.
-struct tableTypeInfoPlugin
-{
-    inline void Initialize( lua_config *cfg )
-    {
-        LuaTypeSystem& typeSys = cfg->typeSys;
-
-        // Register type information.
-        tableTypeInfo = typeSys.RegisterStructType <Table> ( "table" );
-
-        // Set inheritance information.
-        typeSys.SetTypeInfoInheritingClass(
-            tableTypeInfo,
-            cfg->grayobjTypeInfo
-        );
-    }
-
-    inline void Shutdown( lua_config *cfg )
-    {
-        LuaTypeSystem& typeSys = cfg->typeSys;
-
-        // Delete the types again.
-        typeSys.DeleteType( tableTypeInfo );
-    }
-
-    LuaTypeSystem::typeInfoBase *tableTypeInfo;
-};
-
+// Register the table type along with native implementation details.
 PluginDependantStructRegister <tableTypeInfoPlugin, namespaceFactory_t> tableTypeInfo( namespaceFactory );
 
-// Table access contexts for TValue reading and writing.
-template <typename valueType, bool updateBarrier>
-struct TableValueAccessContextTemplate : public DataContext <valueType>
-{
-    typedef LuaCachedConstructedClassAllocator <TableValueAccessContextTemplate> allocator_t;
-
-    allocator_t *_usedAlloc;
-
-    unsigned long refCount;
-
-    // These values have to be set on allocation.
-    Table *linkedTable;
-
-    TValue key;
-    valueType *value;
-
-    bool hasFetchedValuePointer;
-
-    inline TableValueAccessContextTemplate( void )
-    {
-        this->refCount = 0;
-        this->_usedAlloc = NULL;
-        this->linkedTable = NULL;
-        setnilvalue( &key );
-        this->value = NULL;
-        this->hasFetchedValuePointer = false;
-    }
-
-    void Reference( lua_State *L )
-    {
-        this->refCount++;
-    }
-
-    void Dereference( lua_State *L )
-    {
-        if ( updateBarrier && this->hasFetchedValuePointer )
-        {
-            // Update the table barrier.
-            luaC_barriert( L, this->linkedTable, this->value );
-        }
-
-        if ( this->refCount-- == 1 )
-        {
-            this->_usedAlloc->Free( this );
-        }
-    }
-
-    valueType* const* GetValuePointer( void )
-    {
-        this->hasFetchedValuePointer = true;
-
-        return &value;
-    }
-};
-
-typedef TableValueAccessContextTemplate <TValue, true> TableValueAccessContext;
-typedef TableValueAccessContextTemplate <const TValue, false> TableValueConstAccessContext;
-
-// Table environment plugin.
-struct globalStateTableEnvPlugin
-{
-    inline globalStateTableEnvPlugin( void )
-    {
-        // Set up the dummy node.
-        setnilvalue( &dummynode.i_key.nk );
-        dummynode.i_key.nk.next = NULL;
-        setnilvalue( &dummynode.i_val );
-    }
-
-    inline void Initialize( global_State *g )
-    {
-        return;
-    }
-
-    inline void ClearMemory( global_State *g )
-    {
-        _tvalueAccessAllocator.Shutdown( g );
-        _tvalueConstAccessAllocator.Shutdown( g );
-    }
-
-    inline void Shutdown( global_State *g )
-    {
-        ClearMemory( g );
-    }
-        
-    Node dummynode;
-
-    // Allocator for TValue access contexts.
-    TableValueAccessContext::allocator_t _tvalueAccessAllocator;
-    TableValueConstAccessContext::allocator_t _tvalueConstAccessAllocator;
-};
-
-typedef PluginConnectingBridge
-    <globalStateTableEnvPlugin,
-        globalStateDependantStructFactoryMeta <globalStateTableEnvPlugin, globalStateFactory_t, lua_config>,
-    namespaceFactory_t>
-        tableEnvConnectingBridge_t;
-
+// We also need to register the access to the global_State Table environment.
 tableEnvConnectingBridge_t tableEnvConnectingBridge( namespaceFactory );
-
-inline globalStateTableEnvPlugin* GetGlobalTableEnv( global_State *g )
-{
-    return tableEnvConnectingBridge.GetPluginStruct( g->config, g );
-}
-
-inline Node* GetDummyNode( global_State *g )
-{
-    globalStateTableEnvPlugin *globalEnv = GetGlobalTableEnv( g );
-
-    assert( globalEnv != NULL );
-
-    return &globalEnv->dummynode;
-}
-
-inline TableValueAccessContext* NewTableValueAccessContext( lua_State *L, Table *t )
-{
-    globalStateTableEnvPlugin *tableEnv = GetGlobalTableEnv( G(L) );
-
-    if ( tableEnv )
-    {
-        TableValueAccessContext *ctx = tableEnv->_tvalueAccessAllocator.Allocate( L );
-
-        ctx->_usedAlloc = &tableEnv->_tvalueAccessAllocator;
-        ctx->linkedTable = t;
-        ctx->hasFetchedValuePointer = false;
-
-        return ctx;
-    }
-    return NULL;
-}
-
-inline TableValueConstAccessContext* NewTableValueConstAccessContext( lua_State *L, Table *t )
-{
-    globalStateTableEnvPlugin *tableEnv = GetGlobalTableEnv( G(L) );
-
-    if ( tableEnv )
-    {
-        TableValueConstAccessContext *ctx = tableEnv->_tvalueConstAccessAllocator.Allocate( L );
-
-        ctx->_usedAlloc = &tableEnv->_tvalueConstAccessAllocator;
-        ctx->linkedTable = t;
-        ctx->hasFetchedValuePointer = false;
-
-        return ctx;
-    }
-    return NULL;
-}
 
 // Lua table environment initializator.
 void luaH_init( lua_config *cfg )
@@ -263,7 +92,7 @@ void luaH_clearRuntimeMemory( global_State *g )
 /*
 ** hash for lua_Numbers
 */
-static Node *hashnum (const Table *t, lua_Number n)
+static Node *hashnum (const tableNativeImplementation *t, lua_Number n)
 {
     if (luai_numeq(n, 0))  /* avoid problems with -0 */
     {
@@ -294,7 +123,7 @@ static Node *hashnum (const Table *t, lua_Number n)
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
 */
-static Node *mainposition (const Table *t, const TValue *key)
+static Node *mainposition (const tableNativeImplementation *t, const TValue *key)
 {
     switch (ttype(key))
     {
@@ -351,7 +180,7 @@ FASTAPI bool isarrayindex_unsigned( int index, int arraySize )
 ** elements in the array part, then elements in the hash part. The
 ** beginning of a traversal is signalled by -1.
 */
-static inline int findindex (lua_State *L, Table *t, ConstValueAddress& key )
+static inline int findindex (lua_State *L, tableNativeImplementation *t, ConstValueAddress& key )
 {
     if ( ttisnil(key) )
     {
@@ -391,30 +220,46 @@ static inline int findindex (lua_State *L, Table *t, ConstValueAddress& key )
 
 bool luaH_next( lua_State *L, Table *t )
 {
+    // Get the native implementation that we use for this table.
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
+
+    if ( !nativeTable )
+        return false;
+
     int i;
     {
         ConstValueAddress keyval = index2constadr( L, -1 );
 
-        i = findindex( L, t, keyval );  /* find original element */
+        i = findindex( L, nativeTable, keyval );  /* find original element */
 
         popstack( L, 1 );
     }
 
-    for ( i++; i < t->sizearray; i++ )
+    int sizearray = nativeTable->sizearray;
+
+    for ( i++; i < sizearray; i++ )
     {  /* try first array part */
-        if ( !ttisnil( &t->array[i] ) )
+        TValue& curItem = nativeTable->array[i];
+
+        if ( !ttisnil( &curItem ) )
         {  /* a non-nil value? */
             pushnvalue( L, cast_num(i+1) );
-            pushtvalue( L, &t->array[i] );
+            pushtvalue( L, &curItem );
             return true;
         }
     }
-    for ( i -= t->sizearray; i < sizenode(t); i++ )
+
+    int sizenode = sizenode(nativeTable);
+
+    for ( i -= sizearray; i < sizenode; i++ )
     {  /* then hash part */
-        if ( !ttisnil( gval(gnode(t, i)) ) )
+        Node *curNode = gnode(nativeTable, i);
+        TValue *curItem = gval(curNode);
+
+        if ( !ttisnil( curItem ) )
         {  /* a non-nil value? */
-            pushtvalue( L, key2tval(gnode(t, i)) );
-            pushtvalue( L, gval(gnode(t, i)) );
+            pushtvalue( L, key2tval(curNode) );
+            pushtvalue( L, curItem );
             return true;
         }
     }
@@ -425,319 +270,9 @@ bool luaH_next( lua_State *L, Table *t )
 
 /*
 ** {=============================================================
-** Rehash
+** Native Atomic Manipulation
 ** ==============================================================
 */
-
-static int computesizes (int nums[], int *narray)
-{
-    int i;
-    int twotoi;  /* 2^i */
-    int a = 0;  /* number of elements smaller than 2^i */
-    int na = 0;  /* number of elements to go to array part */
-    int n = 0;  /* optimal size for array part */
-
-    for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2)
-    {
-        if (nums[i] > 0)
-        {
-            a += nums[i];
-
-            if (a > twotoi/2)
-            {  /* more than half elements present? */
-                n = twotoi;  /* optimal size (till now) */
-                na = a;  /* all elements smaller than n will go to array part */
-            }
-        }
-        if (a == *narray)
-        {
-            break;  /* all elements already counted */
-        }
-    }
-
-    *narray = n;
-
-    lua_assert(*narray/2 <= na && na <= *narray);
-
-    return na;
-}
-
-static int countint (const TValue *key, int *nums)
-{
-    int k = arrayindex(key);
-
-    if ( isarrayindex( k, MAXASIZE ) )
-    {  /* is `key' an appropriate array index? */
-        nums[ ceillog2(k) ]++;  /* count as such */
-        return 1;
-    }
-
-    return 0;
-}
-
-static int numusearray (const Table *t, int *nums)
-{
-    int lg;
-    int ttlg;  /* 2^lg */
-    int ause = 0;  /* summation of `nums' */
-    int i = 1;  /* count to traverse all array keys */
-
-    for ( lg = 0, ttlg = 1; lg <= MAXBITS; lg++, ttlg*=2 )
-    {  /* for each slice */
-        int lc = 0;  /* counter */
-        int lim = ttlg;
-
-        if ( lim > t->sizearray )
-        {
-            lim = t->sizearray;  /* adjust upper limit */
-
-            if (i > lim)
-            {
-                break;  /* no more elements to count */
-            }
-        }
-        /* count elements in range (2^(lg-1), 2^lg] */
-        for ( ; i <= lim; i++ )
-        {
-            if ( !ttisnil(&t->array[i-1]) )
-            {
-                lc++;
-            }
-        }
-
-        nums[lg] += lc;
-        ause += lc;
-    }
-
-    return ause;
-}
-
-static int numusehash (const Table *t, int *nums, int *pnasize)
-{
-    int totaluse = 0;  /* total number of elements */
-    int ause = 0;  /* summation of `nums' */
-    int i = sizenode(t);
-
-    while ( i-- )
-    {
-        Node *n = &t->node[i];
-
-        if ( !ttisnil(gval(n)) )
-        {
-            ause += countint(key2tval(n), nums);
-            totaluse++;
-        }
-    }
-    *pnasize += ause;
-
-    return totaluse;
-}
-
-static void setarrayvector (lua_State *L, Table *t, int size)
-{
-    luaM_reallocvector( L, t->array, t->sizearray, size );
-
-    for ( int i = t->sizearray; i < size; i++ )
-    {
-        setnilvalue(&t->array[i]);
-    }
-    t->sizearray = size;
-}
-
-static void setnodevector (lua_State *L, Table *t, int size)
-{
-    int lsize;
-
-    if ( size == 0 )
-    {  /* no elements to hash part? */
-        t->node = GetDummyNode( G(L) );  /* use common `dummynode' */
-        lsize = 0;
-    }
-    else
-    {
-        lsize = ceillog2(size);
-
-        if ( lsize > MAXBITS )
-        {
-            luaG_runerror(L, "table overflow");
-        }
-
-        size = twoto(lsize);
-        t->node = luaM_newvector <Node> (L, size);
-
-        for ( int i = 0; i < size; i++ )
-        {
-            Node *n = gnode(t, i);
-
-            gnext(n) = NULL;
-
-            setnilvalue(gkey(n));
-            setnilvalue(gval(n));
-        }
-    }
-
-    t->lsizenode = cast_byte(lsize);
-    t->lastfree = gnode(t, size);  /* all positions are free */
-}
-
-static void resize (lua_State *L, Table *t, int nasize, int nhsize)
-{
-    int oldasize = t->sizearray;
-    int oldhsize = t->lsizenode;
-    Node *nold = t->node;  /* save old hash ... */
-
-    if ( nasize > oldasize )  /* array part must grow? */
-    {
-        setarrayvector(L, t, nasize);
-    }
-
-    /* create new hash part with appropriate size */
-    setnodevector(L, t, nhsize);  
-
-    if ( nasize < oldasize )
-    {  /* array part must shrink? */
-        t->sizearray = nasize;
-
-        /* re-insert elements from vanishing slice */
-        for ( int i = nasize; i < oldasize; i++ )
-        {
-            if ( !ttisnil(&t->array[i]) )
-            {
-                ValueAddress numObj = luaH_setnum(L, t, i+1);
-
-                setobjt2t(L, numObj, &t->array[i]);
-            }
-        }
-
-        /* shrink array */
-        luaM_reallocvector(L, t->array, oldasize, nasize);
-    }
-
-    /* re-insert elements from hash part */
-    for ( int i = twoto(oldhsize) - 1; i >= 0; i-- )
-    {
-        Node *old = nold+i;
-
-        if ( !ttisnil(gval(old)) )
-        {
-            ValueAddress tableItemPtr = luaH_set(L, t, key2tval(old));
-
-            setobjt2t( L, tableItemPtr, gval(old) );
-        }
-    }
-
-    if ( nold != GetDummyNode( G(L) ) )
-    {
-        luaM_freearray( L, nold, twoto(oldhsize) );  /* free old array */
-    }
-}
-
-void luaH_resizearray (lua_State *L, Table *t, int nasize)
-{
-    int nsize = (t->node == GetDummyNode( G(L) )) ? 0 : sizenode(t);
-    resize(L, t, nasize, nsize);
-}
-
-static void rehash (lua_State *L, Table *t, const TValue *ek)
-{
-    int nums[MAXBITS+1];  /* nums[i] = number of keys between 2^(i-1) and 2^i */
-
-    for ( int i = 0; i <= MAXBITS; i++ )
-    {
-        nums[i] = 0;  /* reset counts */
-    }
-
-    int nasize = numusearray(t, nums);  /* count keys in array part */
-    int totaluse = nasize;  /* all those keys are integer keys */
-    totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */
-    /* count extra key */
-    nasize += countint(ek, nums);
-    totaluse++;
-
-    /* compute new size for array part */
-    int na = computesizes(nums, &nasize);
-    /* resize the table to new computed sizes */
-    resize(L, t, nasize, totaluse - na);
-}
-
-
-/*
-** }=============================================================
-*/
-
-Table::Table( global_State *g, void *construction_params ) : GrayObject( g )
-{
-    // Initialize the table.
-    luaC_link(g, this, LUA_TTABLE);
-    this->metatable = NULL;
-    this->flags = cast_byte(~0);
-    /* temporary values (kept only if some malloc fails) */
-    this->array = NULL;
-    this->sizearray = 0;
-    this->lsizenode = 0;
-    this->node = GetDummyNode( g );
-    this->lastfree = NULL;
-}
-
-Table::~Table( void )
-{
-    // Clean up runtime data of the table.
-    lua_State *L = gstate->mainthread;
-
-    if ( this->node != GetDummyNode( gstate ) )
-    {
-        luaM_freearray( L, this->node, sizenode( this ) );
-    }
-
-    luaM_freearray( L, this->array, this->sizearray );
-}
-
-Table *luaH_new (lua_State *L, int narray, int nhash)
-{
-    global_State *g = G(L);
-
-    // Get the table type info plugin.
-    tableTypeInfoPlugin *typeInfo = tableTypeInfo.GetPluginStruct( g->config );
-
-    // No point in creating table if we cannot get our type information.
-    if ( !typeInfo )
-        return NULL;
-
-    // Construct the table using its factory.
-    Table *t = lua_new <Table> ( L, typeInfo->tableTypeInfo );
-
-    if ( t )
-    {
-        setarrayvector(L, t, narray);
-        setnodevector(L, t, nhash);
-    }
-    return t;
-}
-
-void luaH_free (lua_State *L, Table *t)
-{
-    // Destroy the table.
-    lua_delete <Table> ( L, t );
-}
-
-static inline Node* getfreepos (Table *t)
-{
-    if ( t->lastfree == NULL )
-    {
-        return NULL;
-    }
-
-    while ( t->lastfree-- > t->node )
-    {
-        if ( ttisnil( gkey(t->lastfree) ) )
-        {
-            return t->lastfree;
-        }
-    }
-    return NULL;  /* could not find a free place */
-}
-
-
 
 /*
 ** inserts a new key into a hash table; first, check whether key's main 
@@ -747,7 +282,7 @@ static inline Node* getfreepos (Table *t)
 ** position), new key goes to an empty position. 
 */
 template <typename valueType>
-bool _findkey( Table *t, const TValue *key, valueType*& valueOut )
+bool _findkey( tableNativeImplementation *t, const TValue *key, valueType*& valueOut )
 {
     bool foundValue = false;
 
@@ -805,73 +340,11 @@ bool _findkey( Table *t, const TValue *key, valueType*& valueOut )
     return foundValue;
 }
 
-static TValue* newkey (lua_State *L, Table *t, const TValue *key)
-{
-    // Get the dummy node.
-    const Node *dummynode = GetDummyNode( G(L) );
-
-    Node *mp = mainposition(t, key);
-
-    if ( !ttisnil(gval(mp)) || mp == dummynode )
-    {
-        Node *othern;
-        Node *n = getfreepos(t);  /* get a free place */
-
-        if (n == NULL)
-        {  /* cannot find a free place? */
-            rehash(L, t, key);  /* grow table */
-
-            TValue *newVal = NULL;
-
-            bool hasFoundKey = _findkey( t, key, newVal );
-
-            if ( !hasFoundKey )
-            {
-                newVal = newkey( L, t, key ); /* re-insert key into grown table */
-            }
-
-            lua_assert( newVal != NULL );
-            return newVal;
-        }
-
-        lua_assert(n != dummynode);
-
-        othern = mainposition(t, key2tval(mp));
-
-        if (othern != mp)
-        {  /* is colliding node out of its main position? */
-            /* yes; move colliding node into free position */
-            while (gnext(othern) != mp)
-            {
-                othern = gnext(othern);  /* find previous */
-            }
-
-            gnext(othern) = n;  /* redo the chain with `n' in place of `mp' */
-            *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
-            gnext(mp) = NULL;  /* now `mp' is free */
-
-            setnilvalue(gval(mp));
-        }
-        else
-        {  /* colliding node is in its own main position */
-            /* new node will go into free position */
-            gnext(n) = gnext(mp);  /* chain new position */
-            gnext(mp) = n;
-            mp = n;
-        }
-    }
-    gkey(mp)->value = key->value; gkey(mp)->tt = key->tt;
-    luaC_barriert(L, t, key);
-
-    lua_assert(ttisnil(gval(mp)));
-    return gval(mp);
-}
-
 /*
 ** search function for integers
 */
 template <typename valueType>
-bool _findkeybynum( Table *t, int key, valueType*& valueOut )
+bool _findkeybynum( tableNativeImplementation *t, int key, valueType*& valueOut )
 {
     bool valueFound = false;
 
@@ -914,31 +387,11 @@ bool _findkeybynum( Table *t, int key, valueType*& valueOut )
     return valueFound;
 }
 
-ConstValueAddress luaH_getnum (lua_State *L, Table *t, int key)
-{
-    ConstValueAddress retAddr;
-
-    const TValue *retValue = luaO_nilobject;
-    
-    // Give it access to the value.
-    _findkeybynum( t, key, retValue );
-    {
-        TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t );
-
-        setnvalue( &ctx->key, cast_num(key) );
-        ctx->value = retValue;
-
-        retAddr.Setup( L, ctx );
-    }
-
-    return retAddr;
-}
-
 /*
 ** search function for strings
 */
 template <typename valueType>
-bool _findkeybystr( Table *t, const TString *key, valueType*& valueOut )
+bool _findkeybystr( tableNativeImplementation *t, const TString *key, valueType*& valueOut )
 {
     bool valueFound = false;
 
@@ -970,14 +423,504 @@ bool _findkeybystr( Table *t, const TString *key, valueType*& valueOut )
     return valueFound;
 }
 
+static inline Node* getfreepos (tableNativeImplementation *t)
+{
+    if ( t->lastfree == NULL )
+    {
+        return NULL;
+    }
+
+    while ( t->lastfree-- > t->node )
+    {
+        if ( ttisnil( gkey(t->lastfree) ) )
+        {
+            return t->lastfree;
+        }
+    }
+    return NULL;  /* could not find a free place */
+}
+
+static int computesizes (int nums[], int *narray)
+{
+    int i;
+    int twotoi;  /* 2^i */
+    int a = 0;  /* number of elements smaller than 2^i */
+    int na = 0;  /* number of elements to go to array part */
+    int n = 0;  /* optimal size for array part */
+
+    for (i = 0, twotoi = 1; twotoi/2 < *narray; i++, twotoi *= 2)
+    {
+        if (nums[i] > 0)
+        {
+            a += nums[i];
+
+            if (a > twotoi/2)
+            {  /* more than half elements present? */
+                n = twotoi;  /* optimal size (till now) */
+                na = a;  /* all elements smaller than n will go to array part */
+            }
+        }
+        if (a == *narray)
+        {
+            break;  /* all elements already counted */
+        }
+    }
+
+    *narray = n;
+
+    lua_assert(*narray/2 <= na && na <= *narray);
+
+    return na;
+}
+
+static int countint (const TValue *key, int *nums)
+{
+    int k = arrayindex(key);
+
+    if ( isarrayindex( k, MAXASIZE ) )
+    {  /* is `key' an appropriate array index? */
+        nums[ ceillog2(k) ]++;  /* count as such */
+        return 1;
+    }
+
+    return 0;
+}
+
+static int numusearray (const tableNativeImplementation *t, int *nums)
+{
+    int lg;
+    int ttlg;  /* 2^lg */
+    int ause = 0;  /* summation of `nums' */
+    int i = 1;  /* count to traverse all array keys */
+
+    for ( lg = 0, ttlg = 1; lg <= MAXBITS; lg++, ttlg*=2 )
+    {  /* for each slice */
+        int lc = 0;  /* counter */
+        int lim = ttlg;
+
+        if ( lim > t->sizearray )
+        {
+            lim = t->sizearray;  /* adjust upper limit */
+
+            if (i > lim)
+            {
+                break;  /* no more elements to count */
+            }
+        }
+        /* count elements in range (2^(lg-1), 2^lg] */
+        for ( ; i <= lim; i++ )
+        {
+            if ( !ttisnil(&t->array[i-1]) )
+            {
+                lc++;
+            }
+        }
+
+        nums[lg] += lc;
+        ause += lc;
+    }
+
+    return ause;
+}
+
+static int numusehash (const tableNativeImplementation *t, int *nums, int *pnasize)
+{
+    int totaluse = 0;  /* total number of elements */
+    int ause = 0;  /* summation of `nums' */
+    int i = sizenode(t);
+
+    while ( i-- )
+    {
+        Node *n = &t->node[i];
+
+        if ( !ttisnil(gval(n)) )
+        {
+            ause += countint(key2tval(n), nums);
+            totaluse++;
+        }
+    }
+    *pnasize += ause;
+
+    return totaluse;
+}
+
+static void setarrayvector (lua_State *L, tableNativeImplementation *t, int size)
+{
+    int oldsize = t->sizearray;
+
+    luaM_reallocvector( L, t->array, oldsize, size );
+
+    for ( int i = oldsize; i < size; i++ )
+    {
+        setnilvalue(&t->array[i]);
+    }
+    t->sizearray = size;
+}
+
+static void setnodevector (lua_State *L, tableNativeImplementation *t, int size)
+{
+    int lsize;
+
+    if ( size == 0 )
+    {  /* no elements to hash part? */
+        t->node = GetDummyNode( G(L) );  /* use common `dummynode' */
+        lsize = 0;
+    }
+    else
+    {
+        lsize = ceillog2(size);
+
+        if ( lsize > MAXBITS )
+        {
+            luaG_runerror(L, "table overflow");
+        }
+
+        size = twoto(lsize);
+        t->node = luaM_newvector <Node> (L, size);
+
+        for ( int i = 0; i < size; i++ )
+        {
+            Node *n = gnode(t, i);
+
+            gnext(n) = NULL;
+
+            setnilvalue(gkey(n));
+            setnilvalue(gval(n));
+        }
+    }
+
+    t->lsizenode = cast_byte(lsize);
+    t->lastfree = gnode(t, size);  /* all positions are free */
+}
+
+static void resize (lua_State *L, Table *h, tableNativeImplementation *t, int nasize, int nhsize);
+
+static void rehash (lua_State *L, Table *h, tableNativeImplementation *t, const TValue *ek)
+{
+    int nums[MAXBITS+1];  /* nums[i] = number of keys between 2^(i-1) and 2^i */
+
+    for ( int i = 0; i <= MAXBITS; i++ )
+    {
+        nums[i] = 0;  /* reset counts */
+    }
+
+    int nasize = numusearray(t, nums);  /* count keys in array part */
+    int totaluse = nasize;  /* all those keys are integer keys */
+    totaluse += numusehash(t, nums, &nasize);  /* count keys in hash part */
+    /* count extra key */
+    nasize += countint(ek, nums);
+    totaluse++;
+
+    /* compute new size for array part */
+    int na = computesizes(nums, &nasize);
+    /* resize the table to new computed sizes */
+    resize(L, h, t, nasize, totaluse - na);
+}
+
+static TValue* newkey (lua_State *L, Table *h, tableNativeImplementation *t, const TValue *key)
+{
+    // Get the dummy node.
+    const Node *dummynode = GetDummyNode( G(L) );
+
+    Node *mp = mainposition(t, key);
+
+    if ( !ttisnil(gval(mp)) || mp == dummynode )
+    {
+        Node *othern;
+        Node *n = getfreepos(t);  /* get a free place */
+
+        if (n == NULL)
+        {  /* cannot find a free place? */
+            rehash(L, h, t, key);  /* grow table */
+
+            TValue *newVal = NULL;
+
+            bool hasFoundKey = _findkey( t, key, newVal );
+
+            if ( !hasFoundKey )
+            {
+                newVal = newkey( L, h, t, key ); /* re-insert key into grown table */
+            }
+
+            lua_assert( newVal != NULL );
+            return newVal;
+        }
+
+        lua_assert(n != dummynode);
+
+        othern = mainposition(t, key2tval(mp));
+
+        if (othern != mp)
+        {  /* is colliding node out of its main position? */
+            /* yes; move colliding node into free position */
+            while (gnext(othern) != mp)
+            {
+                othern = gnext(othern);  /* find previous */
+            }
+
+            gnext(othern) = n;  /* redo the chain with `n' in place of `mp' */
+            *n = *mp;  /* copy colliding node into free pos. (mp->next also goes) */
+            gnext(mp) = NULL;  /* now `mp' is free */
+
+            setnilvalue(gval(mp));
+        }
+        else
+        {  /* colliding node is in its own main position */
+            /* new node will go into free position */
+            gnext(n) = gnext(mp);  /* chain new position */
+            gnext(mp) = n;
+            mp = n;
+        }
+    }
+    gkey(mp)->value = key->value; gkey(mp)->tt = key->tt;
+    luaC_barriert(L, h, key);
+
+    lua_assert(ttisnil(gval(mp)));
+    return gval(mp);
+}
+
+// atomic operation.
+static TValue* settablenative( lua_State *L, Table *h, tableNativeImplementation *t, const TValue *key )
+{
+    TValue *returnValue = NULL;
+
+    bool valueExists = _findkey( t, key, returnValue );
+
+    // Reset optimization flags of the table.
+    t->flags = 0;
+
+    if ( !valueExists )
+    {
+        if (ttisnil(key))
+        {
+            luaG_runerror(L, "table index is nil");
+        }
+        else if (ttisnumber(key) && luai_numisnan(nvalue(key)))
+        {
+            luaG_runerror(L, "table index is NaN");
+        }
+
+        returnValue = newkey(L, h, t, key);
+    }
+
+    return returnValue;
+}
+
+// atomic operation.
+static TValue* settablenativestr( lua_State *L, Table *h, tableNativeImplementation *t, TString *key )
+{
+    TValue *returnValue = NULL;
+
+    bool hasValue = _findkeybystr( t, key, returnValue );
+
+    if ( !hasValue )
+    {
+        TValue k;
+        setsvalue(L, &k, key);
+        returnValue = newkey(L, h, t, &k);
+    }
+
+    return returnValue;
+}
+
+// atomic operation.
+static TValue* settablenativenum( lua_State *L, Table *h, tableNativeImplementation *t, int key )
+{
+    TValue *returnValue = NULL;
+
+    bool valueExists = _findkeybynum( t, key, returnValue );
+
+    if ( !valueExists )
+    {
+        TValue k;
+        setnvalue(&k, cast_num(key));
+        returnValue = newkey(L, h, t, &k);
+    }
+
+    return returnValue;
+}
+
+static void resize (lua_State *L, Table *h, tableNativeImplementation *t, int nasize, int nhsize)
+{
+    int oldasize = t->sizearray;
+    int oldhsize = t->lsizenode;
+    Node *nold = t->node;  /* save old hash ... */
+
+    if ( nasize > oldasize )  /* array part must grow? */
+    {
+        setarrayvector(L, t, nasize);
+    }
+
+    /* create new hash part with appropriate size */
+    setnodevector(L, t, nhsize);  
+
+    if ( nasize < oldasize )
+    {  /* array part must shrink? */
+        t->sizearray = nasize;
+
+        /* re-insert elements from vanishing slice */
+        for ( int i = nasize; i < oldasize; i++ )
+        {
+            if ( !ttisnil(&t->array[i]) )
+            {
+                TValue *numObj = settablenativenum(L, h, t, i+1);
+
+                setobjt2t(L, numObj, &t->array[i]);
+            }
+        }
+
+        /* shrink array */
+        luaM_reallocvector(L, t->array, oldasize, nasize);
+    }
+
+    /* re-insert elements from hash part */
+    for ( int i = twoto(oldhsize) - 1; i >= 0; i-- )
+    {
+        Node *old = nold+i;
+
+        if ( !ttisnil(gval(old)) )
+        {
+            TValue *tableItemPtr = settablenative(L, h, t, key2tval(old));
+
+            setobjt2t( L, tableItemPtr, gval(old) );
+        }
+    }
+
+    if ( nold != GetDummyNode( G(L) ) )
+    {
+        luaM_freearray( L, nold, twoto(oldhsize) );  /* free old array */
+    }
+}
+
+/*
+** {=============================================================
+** Rehash
+** ==============================================================
+*/
+
+void luaH_resizearray (lua_State *L, Table *t, int nasize)
+{
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
+
+    if ( nativeTable )
+    {
+        int nsize = (nativeTable->node == GetDummyNode( G(L) )) ? 0 : sizenode(nativeTable);
+        resize(L, t, nativeTable, nasize, nsize);
+    }
+}
+
+void luaH_ensureslots (lua_State *L, Table *h, int last)
+{
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( h );
+
+    if ( nativeTable )
+    {
+        if ( last > nativeTable->sizearray )  /* needs more space? */
+        {
+            luaH_resizearray(L, h, last);  /* pre-alloc it at once */
+        }
+    }
+}
+
+
+/*
+** }=============================================================
+*/
+
+Table::Table( global_State *g, void *construction_params ) : GrayObject( g )
+{
+    // Initialize the table.
+    luaC_link(g, this, LUA_TTABLE);
+    this->metatable = NULL;
+}
+
+Table::Table( const Table& right ) : GrayObject( right )
+{
+    luaC_link( this->gstate, this, LUA_TTABLE );
+    this->metatable = right.metatable;
+
+    // Data is cloned using the native implementation methods.
+}
+
+Table::~Table( void )
+{
+    // Cleaning up is done by the native table implementation.
+    return;
+}
+
+Table *luaH_new (lua_State *L, int narray, int nhash)
+{
+    global_State *g = G(L);
+
+    // Get the table type info plugin.
+    tableTypeInfoPlugin *typeInfo = tableTypeInfo.GetPluginStruct( g->config );
+
+    // No point in creating table if we cannot get our type information.
+    if ( !typeInfo )
+        return NULL;
+
+    // Construct the table using its factory.
+    Table *t = lua_new <Table> ( L, typeInfo->tableTypeInfo );
+
+    if ( t )
+    {
+        tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
+
+        if ( nativeTable )
+        {
+            setarrayvector(L, nativeTable, narray);
+            setnodevector(L, nativeTable, nhash);
+        }
+    }
+    return t;
+}
+
+void luaH_free (lua_State *L, Table *t)
+{
+    // Destroy the table.
+    lua_delete <Table> ( L, t );
+}
+
+ConstValueAddress luaH_getnum (lua_State *L, Table *t, int key)
+{
+    ConstValueAddress retAddr;
+
+    const TValue *retValue = luaO_nilobject;
+
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
+    
+    if ( nativeTable )
+    {
+        // Give it access to the value.
+        _findkeybynum( nativeTable, key, retValue );
+    }
+
+    {
+        TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t );
+
+        setnvalue( &ctx->key, cast_num(key) );
+        ctx->value = retValue;
+
+        retAddr.Setup( L, ctx );
+    }
+
+    return retAddr;
+}
+
 ConstValueAddress luaH_getstr (lua_State *L, Table *t, TString *key)
 {
     ConstValueAddress retAddr;
 
     const TValue *retValue = luaO_nilobject;
 
-    // Give it access to the value.
-    _findkeybystr( t, key, retValue );
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
+    
+    if ( nativeTable )
+    {
+        // Give it access to the value.
+        _findkeybystr( nativeTable, key, retValue );
+    }
+
     {
         TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t );
 
@@ -999,8 +942,14 @@ ConstValueAddress luaH_get (lua_State *L, Table *t, const TValue *key)
 
     const TValue *retValue = luaO_nilobject;
 
-    // Give access to the value.
-    _findkey( t, key, retValue );
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
+    
+    if ( nativeTable )
+    {
+        // Give access to the value.
+        _findkey( nativeTable, key, retValue );
+    }
+
     {
         TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t );
 
@@ -1017,40 +966,25 @@ ValueAddress luaH_set (lua_State *L, Table *t, const TValue *key)
 {
     ValueAddress retAddr;
 
-    TValue *returnValue = NULL;
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
+
+    if ( nativeTable )
     {
-        bool valueExists = _findkey( t, key, returnValue );
+        TValue *returnValue = settablenative( L, t, nativeTable, key );
 
-        // Reset optimization flags of the table.
-        t->flags = 0;
-
-        if ( !valueExists )
+        // Give access to the value.
         {
-            if (ttisnil(key))
-            {
-                luaG_runerror(L, "table index is nil");
-            }
-            else if (ttisnumber(key) && luai_numisnan(nvalue(key)))
-            {
-                luaG_runerror(L, "table index is NaN");
-            }
+            TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
 
-            returnValue = newkey(L, t, key);
+            setobj( L, &ctx->key, key );
+            ctx->value = returnValue;
+
+            retAddr.Setup( L, ctx );
         }
+
+        lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
     }
-
-    // Give access to the value.
-    {
-        TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
-
-        setobj( L, &ctx->key, key );
-        ctx->value = returnValue;
-
-        retAddr.Setup( L, ctx );
-    }
-
-    lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
-    
+        
     return retAddr;
 }
 
@@ -1058,29 +992,24 @@ ValueAddress luaH_setnum (lua_State *L, Table *t, int key)
 {
     ValueAddress retAddr;
 
-    TValue *returnValue = NULL;
-    {
-        bool valueExists = _findkeybynum( t, key, returnValue );
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
 
-        if ( !valueExists )
+    if ( nativeTable )
+    {
+        TValue *returnValue = settablenativenum( L, t, nativeTable, key );
+
+        // Give access to the value.
         {
-            TValue k;
-            setnvalue(&k, cast_num(key));
-            returnValue = newkey(L, t, &k);
+            TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
+
+            setnvalue( &ctx->key, cast_num(key) );
+            ctx->value = returnValue;
+
+            retAddr.Setup( L, ctx );
         }
+
+        lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
     }
-
-    // Give access to the value.
-    {
-        TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
-
-        setnvalue( &ctx->key, cast_num(key) );
-        ctx->value = returnValue;
-
-        retAddr.Setup( L, ctx );
-    }
-
-    lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
 
     return retAddr;
 }
@@ -1089,29 +1018,24 @@ ValueAddress luaH_setstr (lua_State *L, Table *t, TString *key)
 {
     ValueAddress retAddr;
 
-    TValue *returnValue = NULL;
-    {
-        bool hasValue = _findkeybystr( t, key, returnValue );
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
 
-        if ( !hasValue )
+    if ( nativeTable )
+    {
+        TValue *returnValue = settablenativestr( L, t, nativeTable, key );
+
+        // Give access to the value.
         {
-            TValue k;
-            setsvalue(L, &k, key);
-            returnValue = newkey(L, t, &k);
+            TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
+
+            setsvalue( L, &ctx->key, key );
+            ctx->value = returnValue;
+
+            retAddr.Setup( L, ctx );
         }
+
+        lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
     }
-
-    // Give access to the value.
-    {
-        TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
-
-        setsvalue( L, &ctx->key, key );
-        ctx->value = returnValue;
-
-        retAddr.Setup( L, ctx );
-    }
-
-    lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
 
     return retAddr;
 }
@@ -1177,50 +1101,48 @@ static inline int unbound_search (lua_State *L, Table *t, unsigned int j)
 */
 int luaH_getn (lua_State *L, Table *t)
 {
-    unsigned int j = t->sizearray;
+    int num = 0;
+    
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
 
-    if ( j > 0 && ttisnil(&t->array[j - 1]) )
+    if ( nativeTable )
     {
-        /* there is a boundary in the array part: (binary) search for it */
-        unsigned int i = 0;
+        unsigned int j = nativeTable->sizearray;
 
-        while ( j - i > 1 )
+        if ( j > 0 && ttisnil(&nativeTable->array[j - 1]) )
         {
-            unsigned int m = (i+j)/2;
+            /* there is a boundary in the array part: (binary) search for it */
+            unsigned int i = 0;
 
-            if ( ttisnil(&t->array[m - 1]) )
+            while ( j - i > 1 )
             {
-                j = m;
+                unsigned int m = (i+j)/2;
+
+                if ( ttisnil(&nativeTable->array[m - 1]) )
+                {
+                    j = m;
+                }
+                else
+                {
+                    i = m;
+                }
             }
-            else
-            {
-                i = m;
-            }
+
+            num = i;
         }
-
-        return i;
-    }
-    /* else must find a boundary in hash part */
-    else if ( t->node == GetDummyNode( G(L) ) )  /* hash part is empty? */
-    {
-        return j;  /* that is easy... */
-    }
-
-    // Fall back.
-    return unbound_search(L, t, j);
-}
-
-Table& luaH_copy( lua_State *L, const Table& t )
-{
-    Table& h = *luaH_new( L, t.sizearray, (int)pow( 2.0f, t.lsizenode ) );
-
-    for ( int n = 0; n < t.sizearray; n++ )
-    {
-        h.array[n].tt = t.array[n].tt;
-        h.array[n].value = t.array[n].value;
+        /* else must find a boundary in hash part */
+        else if ( nativeTable->node == GetDummyNode( G(L) ) )  /* hash part is empty? */
+        {
+            num = j;  /* that is easy... */
+        }
+        else
+        {
+            // Fall back.
+            num = unbound_search(L, t, j);
+        }
     }
 
-    return h;
+    return num;
 }
 
 #if defined(LUA_DEBUG)

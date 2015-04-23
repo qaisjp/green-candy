@@ -13,6 +13,7 @@
 #include "ltable.h"
 #include "ltm.h"
 
+#include "ltable.hxx"
 
 
 const char *const luaT_typenames[] = {
@@ -104,7 +105,13 @@ bool luaT_gettm (lua_State *L, Table *events, TMS event, TString *ename, ConstVa
 
     if (ttisnil(tm))
     {  /* no tag method? */
-        events->flags |= bitmask((lu_byte)event);  /* cache this fact */
+
+        tableNativeImplementation *nativeTable = GetTableNativeImplementation( events );
+
+        if ( nativeTable )
+        {
+            nativeTable->flags |= bitmask((lu_byte)event);  /* cache this fact */
+        }
         return false;
     }
     else
@@ -112,6 +119,27 @@ bool luaT_gettm (lua_State *L, Table *events, TMS event, TString *ename, ConstVa
         outTM = tm;
         return true;
     }
+}
+
+ConstValueAddress gfasttm( global_State *g, Table *et, TMS e )
+{
+    ConstValueAddress retAddr;
+
+    if ( et != NULL )
+    {
+        tableNativeImplementation *nativeTable = GetTableNativeImplementation( et );
+
+        if ( nativeTable != NULL )
+        {
+            // Use the table optimization flags.
+            // They are reset on any table modification.
+            if ( testbit( nativeTable->flags, (lu_byte)e ) == false )
+            {
+                luaT_gettm( g->mainthread, et, e, (g)->tmname[e], retAddr );
+            }
+        }
+    }
+    return retAddr;
 }
 
 inline Table* luaT_getmetabyobj( lua_State *L, const TValue *o )

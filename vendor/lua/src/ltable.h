@@ -9,15 +9,6 @@
 
 #include "lobject.h"
 
-
-#define gnode(t,i)	(&(t)->node[i])
-#define gkey(n)		(&(n)->i_key.nk)
-#define gval(n)		(&(n)->i_val)
-#define gnext(n)	((n)->i_key.nk.next)
-
-#define key2tval(n)	(&(n)->i_key.tvk)
-
-
 LUAI_FUNC ConstValueAddress     luaH_getnum (lua_State *L, Table *t, int key);
 LUAI_FUNC ValueAddress          luaH_setnum (lua_State *L, Table *t, int key);
 LUAI_FUNC ConstValueAddress     luaH_getstr (lua_State *L, Table *t, TString *key);
@@ -27,9 +18,9 @@ LUAI_FUNC ValueAddress          luaH_set (lua_State *L, Table *t, const TValue *
 LUAI_FUNC Table*                luaH_new (lua_State *L, int narray, int lnhash);
 LUAI_FUNC void                  luaH_free (lua_State *L, Table *t);
 LUAI_FUNC void                  luaH_resizearray (lua_State *L, Table *t, int nasize);
+LUAI_FUNC void                  luaH_ensureslots (lua_State *L, Table *t, int last);
 LUAI_FUNC bool                  luaH_next (lua_State *L, Table *t);
 LUAI_FUNC int                   luaH_getn (lua_State *L, Table *t);
-LUAI_FUNC Table&                luaH_copy( lua_State *L, const Table& t );
 
 
 #if defined(LUA_DEBUG)

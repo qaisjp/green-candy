@@ -726,6 +726,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\src\ltable.hxx"
+				>
+			</File>
+			<File
 				RelativePath="..\src\ltm.h"
 				>
 			</File>
