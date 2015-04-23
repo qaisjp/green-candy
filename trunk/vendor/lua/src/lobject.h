@@ -1053,6 +1053,7 @@ LUA_MAXALIGN class TString : public GCObject
 public:
     TString( global_State *g, void *construction_params );
 
+    // cannot clone strings; they are unique.
     TString( const TString& right );
 
     ~TString( void );
@@ -1144,6 +1145,7 @@ class Closure abstract : public GrayObject
 public:
                             Closure         ( global_State *g );
 
+                            // cannot clone closures; they are too complicated.
                             Closure         ( const Closure& right );
 
     virtual                 ~Closure        ( void );
@@ -1226,21 +1228,6 @@ public:
 /*
 ** Tables
 */
-
-typedef union TKey {
-    struct : TValue
-    {
-        struct Node *next;  /* for chaining */
-    } nk;
-    TValue tvk;
-} TKey;
-
-
-struct Node
-{
-    TValue i_val;
-    TKey i_key;
-};
 
 class Table : public GrayObject
 {

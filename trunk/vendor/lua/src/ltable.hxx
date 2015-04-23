@@ -1,6 +1,21 @@
 #ifndef _LUA_TABLE_NATIVE_IMPLEMENTATION_
 #define _LUA_TABLE_NATIVE_IMPLEMENTATION_
 
+typedef union TKey {
+    struct : TValue
+    {
+        struct Node *next;  /* for chaining */
+    } nk;
+    TValue tvk;
+} TKey;
+
+
+struct Node
+{
+    TValue i_val;
+    TKey i_key;
+};
+
 // Utility macros.
 #define gnode(t,i)	(&(t)->node[i])
 #define gkey(n)		(&(n)->i_key.nk)
@@ -177,8 +192,51 @@ struct tableNativeImplementation
 
     inline tableNativeImplementation( const tableNativeImplementation& right, global_State *g )
     {
-        // TODO: clone a table.
-        __asm int 3
+        this->flags = right.flags;
+
+        Node *rightNode = right.node;
+
+        Node *dummyNode = GetDummyNode( g );
+
+        Node *newNode = dummyNode;
+
+        if ( newNode != dummyNode )
+        {
+            int nodesize = sizenode(&right);
+
+            newNode = luaM_clonevector( g->mainthread, rightNode, nodesize );
+        }
+
+        this->node = newNode;
+        this->lsizenode = right.lsizenode;
+
+        // Now copy the last free identifier.
+        Node *rightLastfree = right.lastfree;
+
+        Node *newLastfree = NULL;
+
+        if ( rightLastfree != NULL )
+        {
+            // We need to work with offsets.
+            int lastfreeoff = ( rightLastfree - rightNode );
+
+            newLastfree = newNode + lastfreeoff;
+        }
+
+        this->lastfree = newLastfree;
+
+        // Now copy the array of TValues.
+        int sizearray = right.sizearray;
+
+        TValue *newArray = NULL;
+
+        if ( sizearray > 0 )
+        {
+            newArray = luaM_clonevector( g->mainthread, right.array, sizearray );
+        }
+
+        this->sizearray = sizearray;
+        this->array = newArray;
     }
 
     inline ~tableNativeImplementation( void )
