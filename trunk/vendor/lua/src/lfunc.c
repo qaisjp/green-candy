@@ -382,6 +382,11 @@ Closure::Closure( global_State *g ) : GrayObject( g )
     luaC_link(g, this, LUA_TFUNCTION);
 }
 
+Closure::Closure( const Closure& right ) : GrayObject( right )
+{
+    throw lua_exception( this->gstate->mainthread, LUA_ERRRUN, "attempt to clone a closure", 1 );
+}
+
 Closure::~Closure( void )
 {
     return;
@@ -572,6 +577,46 @@ Proto::Proto( global_State *g, void *construction_params ) : GrayObject( g )
     this->linedefined = 0;
     this->lastlinedefined = 0;
     this->source = NULL;
+}
+
+Proto::Proto( const Proto& right ) : GrayObject( right )
+{
+    luaC_link( this->gstate, this, LUA_TPROTO );
+
+    // Clone everything.
+    this->source = right.source;
+
+    int sizek = right.sizek;
+    int sizecode = right.sizecode;
+    int sizelineinfo = right.sizelineinfo;
+    int sizep = right.sizep;
+    int sizelocvars = right.sizelocvars;
+
+    int nups = right.nups;
+
+    this->sizek = sizek;
+    this->sizecode = sizecode;
+    this->sizelineinfo = sizelineinfo;
+    this->sizep = sizep;
+    this->sizelocvars = sizelocvars;
+
+    this->linedefined = right.linedefined;
+    this->lastlinedefined = right.lastlinedefined;
+    this->nups = nups;
+    this->numparams = right.numparams;
+    this->is_vararg = right.is_vararg;
+    this->maxstacksize = right.maxstacksize;
+
+    // Clone data arrays.
+    lua_State *L = this->gstate->mainthread;
+
+    this->k =           luaM_clonevector( L, right.k, sizek );
+    this->code =        luaM_clonevector( L, right.code, sizecode );
+    this->lineinfo =    luaM_clonevector( L, right.lineinfo, sizelineinfo );
+    this->p =           luaM_clonevector( L, right.p, sizep );
+    this->locvars =     luaM_clonevector( L, right.locvars, sizelocvars );
+
+    this->upvalues =    luaM_clonevector( L, right.upvalues, nups );
 }
 
 Proto::~Proto( void )

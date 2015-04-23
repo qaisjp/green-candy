@@ -20,6 +20,7 @@
 
 #include "lfunc.upval.hxx"
 #include "ldispatch.class.hxx"
+#include "ltable.hxx"
 
 #include "lgc.internal.hxx"
 #include "lgc.interface.hxx"
@@ -326,32 +327,37 @@ int Table::TraverseGC( global_State *g )
         weakvalue = false;
     }
 
-    if ( !weakvalue )
+    tableNativeImplementation *nativeTable = GetTableNativeImplementation( this );
+
+    if ( nativeTable )
     {
-        i = sizearray;
+        if ( !weakvalue )
+        {
+            i = nativeTable->sizearray;
+
+            while ( i-- )
+            {
+                markvalue( g, &nativeTable->array[i] );
+            }
+        }
+        i = sizenode( nativeTable );
 
         while ( i-- )
         {
-            markvalue( g, &array[i] );
-        }
-    }
-    i = sizenode( this );
+            Node *n = gnode( nativeTable, i );
+            lua_assert( ttype(gkey(n)) != LUA_TDEADKEY || ttisnil(gval(n)) );
 
-    while ( i-- )
-    {
-        Node *n = gnode( this, i );
-        lua_assert( ttype(gkey(n)) != LUA_TDEADKEY || ttisnil(gval(n)) );
+            if (ttisnil( gval(n)) )
+                removeentry( n );  /* remove empty entries */
+            else
+            {
+                lua_assert( !ttisnil(gkey(n)) );
 
-        if (ttisnil( gval(n)) )
-            removeentry( n );  /* remove empty entries */
-        else
-        {
-            lua_assert( !ttisnil(gkey(n)) );
-
-            if (!weakkey)
-                markvalue( g, gkey(n) );
-            if (!weakvalue)
-                markvalue( g, gval(n) );
+                if (!weakkey)
+                    markvalue( g, gkey(n) );
+                if (!weakvalue)
+                    markvalue( g, gval(n) );
+            }
         }
     }
     return weakkey || weakvalue;
@@ -431,8 +437,10 @@ size_t Table::Propagate( global_State *g )
         black2gray( this );  /* keep it gray */
     }
 
-    return sizeof(Table) + sizeof(TValue) * sizearray +
-        sizeof(Node) * sizenode( this );
+    const tableNativeImplementation *nativeTable = GetTableConstNativeImplementation( this );
+
+    return sizeof(Table) + sizeof(TValue) * nativeTable->sizearray +
+        sizeof(Node) * sizenode( nativeTable );
 }
 
 static void markmt( lua_State *L )
@@ -553,35 +561,43 @@ static void cleartable ( grayObjList_t& theList )
     {
         GrayObject *grayObj = LIST_GETITEM( GrayObject, iter.Resolve(), gclist );
 
+        // We only expect tables here!
         Table *h = gco2h(grayObj);
-        int i = h->sizearray;
+        lua_assert( h != NULL );
 
-        lua_assert(testbit(h->marked, VALUEWEAKBIT) || testbit(h->marked, KEYWEAKBIT));
+        tableNativeImplementation *nativeTable = GetTableNativeImplementation( h );
 
-        if ( testbit(h->marked, VALUEWEAKBIT) )
+        if ( nativeTable )
         {
-            while ( i-- )
-            {
-                TValue *o = &h->array[i];
+            int i = nativeTable->sizearray;
 
-                if ( iscleared(o, 0) )  /* value was collected? */
+            lua_assert(testbit(h->marked, VALUEWEAKBIT) || testbit(h->marked, KEYWEAKBIT));
+
+            if ( testbit(h->marked, VALUEWEAKBIT) )
+            {
+                while ( i-- )
                 {
-                    setnilvalue(o);  /* remove value */
+                    TValue *o = &nativeTable->array[i];
+
+                    if ( iscleared(o, 0) )  /* value was collected? */
+                    {
+                        setnilvalue(o);  /* remove value */
+                    }
                 }
             }
-        }
 
-        i = sizenode(h);
+            i = sizenode(nativeTable);
 
-        while ( i-- )
-        {
-            Node *n = gnode(h, i);
-
-            if ( !ttisnil(gval(n)) && /* non-empty entry? */ (iscleared(key2tval(n), 1) || iscleared(gval(n), 0)) )
+            while ( i-- )
             {
-                setnilvalue(gval(n));  /* remove value ... */
+                Node *n = gnode(nativeTable, i);
 
-                removeentry(n);  /* remove entry from table */
+                if ( !ttisnil(gval(n)) && /* non-empty entry? */ (iscleared(key2tval(n), 1) || iscleared(gval(n), 0)) )
+                {
+                    setnilvalue(gval(n));  /* remove value ... */
+
+                    removeentry(n);  /* remove entry from table */
+                }
             }
         }
         

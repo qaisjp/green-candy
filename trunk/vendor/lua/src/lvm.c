@@ -868,10 +868,7 @@ reentry:  /* entry point */
 
                 int last = ((c-1)*LFIELDS_PER_FLUSH) + n;
 
-                if ( last > h->sizearray )  /* needs more space? */
-                {
-                    luaH_resizearray(L, h, last);  /* pre-alloc it at once */
-                }
+                luaH_ensureslots( L, h, last );
 
                 stackOffset_t raAbsoluteOffset = currentFrame->stack.GetStackOffsetAbsolute( L, *bcframe.rtStack, ra.Pointer() );
 

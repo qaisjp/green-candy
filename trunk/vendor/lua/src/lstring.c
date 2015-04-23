@@ -206,6 +206,12 @@ TString::TString( global_State *g, void *construction_params ) : GCObject( g )
     }
 }
 
+TString::TString( const TString& right ) : GCObject( right )
+{
+    // We do not support cloning strings, as they are globally unique.
+    throw lua_exception( right.gstate->mainthread, LUA_ERRRUN, "attempt to clone a string", 1 );
+}
+
 TString::~TString( void )
 {
     gstate->strt.nuse--;
@@ -377,6 +383,28 @@ Udata::Udata( global_State *g, void *construction_params ) : GCObject( g )
     this->env = NULL;
 
     luaC_linktmu( g, this, LUA_TUSERDATA );
+}
+
+Udata::Udata( const Udata& right ) : GCObject( right )
+{
+    size_t dataLen = right.len;
+
+    // Clone this userdata.
+    this->len = dataLen;
+    this->metatable = right.metatable;
+    this->env = right.env;
+
+    // Clone over the string stuff.
+    if ( dataLen != 0 )
+    {
+        void *dataPtr = ( this + 1 );
+
+        const void *srcDataPtr = ( &right + 1 );
+
+        memcpy( dataPtr, srcDataPtr, dataLen );
+    }
+
+    luaC_linktmu( this->gstate, this, LUA_TUSERDATA );
 }
 
 Udata::~Udata( void )

@@ -977,6 +977,13 @@ public:
         this->marked = 0;
     }
 
+    inline GCObject( const GCObject& right ) : gcObjList_t::node()
+    {
+        this->gstate = right.gstate;
+        this->tt = right.tt;
+        this->marked = right.marked;
+    }
+
     virtual TString*    GetTString()        { return NULL; }
     virtual Udata*      GetUserData()       { return NULL; }
     virtual Closure*    GetClosure()        { return NULL; }
@@ -1004,6 +1011,11 @@ class GrayObject abstract : public GCObject
 {
 public:
     inline GrayObject( global_State *g ) : GCObject( g )
+    {
+        return;
+    }
+
+    inline GrayObject( const GrayObject& right ) : GCObject( right ), gclist()
     {
         return;
     }
@@ -1041,6 +1053,8 @@ LUA_MAXALIGN class TString : public GCObject
 public:
     TString( global_State *g, void *construction_params );
 
+    TString( const TString& right );
+
     ~TString( void );
 
     lu_byte reserved;
@@ -1052,6 +1066,8 @@ LUA_MAXALIGN class Udata : public GCObject
 {
 public:
     Udata( global_State *g, void *construction_params );
+
+    Udata( const Udata& right );
 
     ~Udata( void );
 
@@ -1069,6 +1085,8 @@ class Proto : public GrayObject
 {
 public:
     Proto( global_State *g, void *construction_params );
+
+    Proto( const Proto& right );
 
     ~Proto( void );
 
@@ -1125,6 +1143,9 @@ class Closure abstract : public GrayObject
 {
 public:
                             Closure         ( global_State *g );
+
+                            Closure         ( const Closure& right );
+
     virtual                 ~Closure        ( void );
 
     int                     TraverseGC      ( global_State *g );
@@ -1226,6 +1247,8 @@ class Table : public GrayObject
 public:
     Table( global_State *g, void *construction_params );
 
+    Table( const Table& right );
+
     ~Table( void );
 
     bool GCRequiresBackBarrier( void ) const    { return true; }
@@ -1238,13 +1261,7 @@ public:
     void    Index( lua_State *L, ConstValueAddress& key, ValueAddress& sval );
     void    NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val );
 
-    lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
-    lu_byte lsizenode;  /* log2 of size of `node' array */
     Table *metatable;
-    TValue *array;  /* array part */
-    Node *node;
-    Node *lastfree;  /* any free position is before this position */
-    int sizearray;  /* size of `array' array */
 };
 
 #include "lstrtable.h"
@@ -1257,6 +1274,8 @@ public:
     {
         return;
     }
+
+    Dispatch( const Dispatch& right );
 
     size_t  Propagate( global_State *g );
 
@@ -1287,6 +1306,8 @@ class Class : public GCObject, public virtual ILuaClass
 {
 public:
     Class( global_State *g, void *construction_params );
+
+    Class( const Class& right );
 
     ~Class( void );
 
@@ -1433,6 +1454,9 @@ public:
         // Set the runtime state.
         defaultAlloc.SetThread( this );
     }
+
+    lua_State( const lua_State& right );
+
     virtual ~lua_State( void );
 
     // lua_State is always the main thread
@@ -1832,6 +1856,8 @@ template <typename bitMask> FASTAPI bool test2bits(bitMask x, bitMask b1, bitMas
 #endif //LUA_USE_C_MACROS
 
 
+// TODO: improve this flag mess.
+
 /*
 ** Layout for bit use in `marked' field:
 ** bit 0 - object is white (type 0)
@@ -2011,7 +2037,7 @@ FASTAPI stackOffset_t ci_alloccount( lua_State *L )                     { return
 // Function to resolve stack indices.
 LUAI_FUNC stackOffset_t index2stackindex( lua_State *L, int idx );
 LUAI_FUNC RtCtxItem index2stackadr( lua_State *L, int idx, bool isSecure = false );
-ValueAddress fetchstackadr( lua_State *L, int idx );
+LUAI_FUNC ValueAddress fetchstackadr( lua_State *L, int idx );
 
 
 FASTAPI void readstkvalue( lua_State *L, TValue *dst, int idx )
@@ -2164,7 +2190,6 @@ FASTAPI TValue* registry( lua_State *L )    { return &G(L)->l_registry; }
 
 
 #define twoto(x)	(1<<(x))
-#define sizenode(t)	(twoto((t)->lsizenode))
 
 
 // TODO: remove this, rather use a global_State variable.

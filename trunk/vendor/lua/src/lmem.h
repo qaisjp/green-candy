@@ -67,6 +67,8 @@ template <typename structType>
 FASTAPI structType* luaM_newvector( lua_State *L, size_t n )
 {
     structType *vecOut = NULL;
+
+    if ( n != 0 )
     {
         void *mem = luaM_reallocv( L, NULL, 0, n, sizeof( structType ) );
 
@@ -75,6 +77,30 @@ FASTAPI structType* luaM_newvector( lua_State *L, size_t n )
             for ( size_t i = 0; i < n; i++ )
             {
                 new ((structType*)mem + i) structType;
+            }
+
+            vecOut = (structType*)mem;
+        }
+    }
+
+    return vecOut;
+}
+template <typename structType>
+FASTAPI structType* luaM_clonevector( lua_State *L, structType *srcVector, size_t n )
+{
+    structType *vecOut = NULL;
+
+    if ( n != 0 )
+    {
+        void *mem = luaM_reallocv( L, NULL, 0, n, sizeof( structType ) );
+
+        if ( mem )
+        {
+            for ( size_t i = 0; i < n; i++ )
+            {
+                const structType& srcObj = srcVector[ i ];
+
+                new ((structType*)mem + i) structType( srcObj );
             }
 
             vecOut = (structType*)mem;

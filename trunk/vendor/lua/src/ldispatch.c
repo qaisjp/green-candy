@@ -67,6 +67,12 @@ struct dispatchTypeInfoPlugin_t
 
 PluginDependantStructRegister <dispatchTypeInfoPlugin_t, namespaceFactory_t> dispatchTypeInfoPlugin( namespaceFactory, namespaceFactory_t::ANONYMOUS_PLUGIN_ID );
 
+// We cannot clone dispatches.
+Dispatch::Dispatch( const Dispatch& right ) : GrayObject( right )
+{
+    throw lua_exception( this->gstate->mainthread, LUA_ERRRUN, "attempt to clone a dispatch", 1 );
+}
+
 ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
 {
     ClassEnvDispatch *outObj = NULL;
