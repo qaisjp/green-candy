@@ -76,18 +76,12 @@ struct globalStateMainStateFactoryMeta
     {
         LuaTypeSystem& typeSys = cfgStruct->typeSys;
 
-        luaStateTypeInfo = typeSys.RegisterStructType <lua_MainState> ( "main_state" );
-        luaThreadTypeInfo = typeSys.RegisterStructType <lua_Thread> ( "coroutine" );
+        luaStateTypeInfo = typeSys.RegisterStructType <lua_MainState> ( "main_state", cfgStruct->grayobjTypeInfo );
+        luaThreadTypeInfo = typeSys.RegisterStructType <lua_Thread> ( "coroutine", cfgStruct->grayobjTypeInfo );
 
-        // Set inheritance information.
-        typeSys.SetTypeInfoInheritingClass(
-            luaStateTypeInfo,
-            cfgStruct->grayobjTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            luaThreadTypeInfo,
-            cfgStruct->grayobjTypeInfo
-        );
+        // Set inheritance properties.
+        typeSys.SetTypeInfoExclusive( luaStateTypeInfo, true );
+        typeSys.SetTypeInfoExclusive( luaThreadTypeInfo, true );
 
         refCount = 0;
         endingPointPluginOffset = globalStateFactory_t::INVALID_PLUGIN_OFFSET;
@@ -428,13 +422,17 @@ lua_State::~lua_State( void )
 
 lua_Thread::~lua_Thread( void )
 {
+    global_State *g = this->gstate;
+
     // unlist ourselves
     LIST_REMOVE( this->threadNode );
 
     luaE_terminate( this );
     luai_userstatefree( this );
 
-    freestack( gstate->mainthread, this );
+    freestack( g->mainthread, this );
+
+    luaC_unlink( g, this );
 }
 
 LUAI_FUNC void luaE_newenvironment( lua_State *L )
@@ -447,6 +445,13 @@ LUAI_FUNC void luaE_newenvironment( lua_State *L )
     {
         L->mt[n] = NULL;
     }
+}
+
+LUAI_FUNC LuaTypeSystem::typeInfoBase* luaE_getmainthreadtype( global_State *g )
+{
+    globalStateMainStateFactoryMeta *metaInfo = mainLuaStateConnectingBridge.GetMetaStruct( g->config );
+
+    return metaInfo->luaStateTypeInfo;
 }
 
 // Entry point to the Lua library (old style).
@@ -684,7 +689,8 @@ LUA_API void lua_close (lua_State *L)
 }
 
 // MTA specific
-LUA_API lua_State* lua_getmainstate (lua_State *L) {
-  return G(L)->mainthread;
+LUA_API lua_State* lua_getmainstate (lua_State *L)
+{
+    return G(L)->mainthread;
 }
 

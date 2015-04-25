@@ -1,14 +1,14 @@
 #ifndef _LUA_TABLE_NATIVE_IMPLEMENTATION_
 #define _LUA_TABLE_NATIVE_IMPLEMENTATION_
 
-typedef union TKey {
+typedef union TKey
+{
     struct : TValue
     {
         struct Node *next;  /* for chaining */
     } nk;
     TValue tvk;
 } TKey;
-
 
 struct Node
 {
@@ -192,22 +192,50 @@ struct tableNativeImplementation
 
     inline tableNativeImplementation( const tableNativeImplementation& right, global_State *g )
     {
+        lua_State *L = g->mainthread;
+
         this->flags = right.flags;
 
         Node *rightNode = right.node;
 
         Node *dummyNode = GetDummyNode( g );
 
-        Node *newNode = dummyNode;
+        Node *newNodes = rightNode;
 
-        if ( newNode != dummyNode )
+        if ( newNodes != dummyNode )
         {
             int nodesize = sizenode(&right);
 
-            newNode = luaM_clonevector( g->mainthread, rightNode, nodesize );
+            newNodes = luaM_newvector <Node> ( L, nodesize );
+
+            for ( int i = 0; i < nodesize; i++ )
+            {
+                const Node *srcNode = &rightNode[i];
+
+                Node *newItem = &newNodes[i];
+
+                // Decide about node linkage.
+                const Node *srcNextNode = gnext(srcNode);
+
+                if ( srcNextNode == NULL )
+                {
+                    gnext(newItem) = NULL;
+                }
+                else
+                {
+                    // Link into our array.
+                    int nodeoff = ( srcNextNode - rightNode );
+
+                    gnext(newItem) = &newNodes[ nodeoff ];
+                }
+
+                // Copy values.
+                setobj( L, gkey(newItem), gkey(srcNode) );
+                setobj( L, gval(newItem), gval(srcNode) );
+            }
         }
 
-        this->node = newNode;
+        this->node = newNodes;
         this->lsizenode = right.lsizenode;
 
         // Now copy the last free identifier.
@@ -220,7 +248,7 @@ struct tableNativeImplementation
             // We need to work with offsets.
             int lastfreeoff = ( rightLastfree - rightNode );
 
-            newLastfree = newNode + lastfreeoff;
+            newLastfree = newNodes + lastfreeoff;
         }
 
         this->lastfree = newLastfree;

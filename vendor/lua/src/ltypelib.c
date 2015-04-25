@@ -197,12 +197,143 @@ static int typelib_regtypes( lua_State *L )
     return 1;
 }
 
+static int typelib_create( lua_State *L )
+{
+    const char *typeName = lua_tostring( L, 1 );
+
+    if ( !typeName )
+    {
+        throw lua_exception( L, LUA_ERRRUN, "no typename provided for type creation", 1 );
+    }
+
+    global_State *g = G(L);
+
+    LuaTypeSystem& typeSys = g->config->typeSys;
+
+    LuaTypeSystem::typeInfoBase *regTypeInfo = typeSys.ResolveTypeInfo( typeName, NULL );
+
+    bool hasPushedObject = false;
+
+    if ( regTypeInfo )
+    {
+        // Prohibit construction of exclusive types.
+        if ( typeSys.IsTypeInfoExclusive( regTypeInfo ) == false )
+        {
+            // It must inherit from GCObject. Otherwise we cannot pass it to the runtime.
+            if ( typeSys.IsTypeInheritingFrom( g->config->gcobjTypeInfo, regTypeInfo ) )
+            {
+                // Create it and push it onto the stack.
+                GCObject *luaObject = lua_new <GCObject> ( L, regTypeInfo );
+
+                if ( luaObject )
+                {
+                    pushgcvalue( L, luaObject );
+
+                    hasPushedObject = true;
+                }
+            }
+        }
+    }
+
+    if ( !hasPushedObject )
+    {
+        pushbvalue( L, false );
+    }
+
+    return 1;
+}
+
+static int typelib_clone( lua_State *L )
+{
+    // Clone any given GC object.
+    ConstValueAddress givenObj = index2constadr( L, 1 );
+
+    if ( !iscollectable( givenObj ) )
+    {
+        throw lua_exception( L, LUA_ERRRUN, "first argument to cloning prototype is not an object", 1 );
+    }
+
+    global_State *g = G(L);
+
+    LuaTypeSystem& typeSys = g->config->typeSys;
+
+    GCObject *gcObj = gcvalue( givenObj );
+    
+    GCObject *newObj = NULL;
+    {
+        const LuaRTTI *rtSrcObj = LuaTypeSystem::GetTypeStructFromObject( gcObj );
+
+        LuaRTTI *rtClonedObj = typeSys.Clone( rtSrcObj );
+
+        if ( rtClonedObj )
+        {
+            newObj = (GCObject*)LuaTypeSystem::GetObjectFromTypeStruct( rtClonedObj );
+        }
+    }
+
+    if ( newObj )
+    {
+        pushgcvalue( L, newObj );
+    }
+    else
+    {
+        pushbvalue( L, false );
+    }
+
+    return 1;
+}
+
+static int typelib_destroy( lua_State *L )
+{
+    // TODO.
+    pushbvalue( L, false );
+    return 1;
+}
+
+static int typelib_isexclusive( lua_State *L )
+{
+    const char *typeName = lua_tostring( L, 1 );
+
+    if ( !typeName )
+    {
+        throw lua_exception( L, LUA_ERRRUN, "no typename provided", 1 );
+    }
+
+    global_State *g = G(L);
+
+    LuaTypeSystem& typeSys = g->config->typeSys;
+
+    LuaTypeSystem::typeInfoBase *regTypeInfo = typeSys.ResolveTypeInfo( typeName, NULL );
+
+    bool hasPushedValue = false;
+
+    if ( regTypeInfo )
+    {
+        bool isExclusive = typeSys.IsTypeInfoExclusive( regTypeInfo );
+
+        pushbvalue( L, isExclusive );
+
+        hasPushedValue = true;
+    }
+
+    if ( !hasPushedValue )
+    {
+        pushbvalue( L, false );
+    }
+
+    return 1;
+}
+
 static const luaL_Reg _typelibFuncs[] =
 {
     { "iscollectable", typelib_iscollectable },
     { "hierarchy", typelib_hierarchy },
     { "rttype", typelib_rttype },
     { "regtypes", typelib_regtypes },
+    { "create", typelib_create },
+    { "clone", typelib_clone },
+    { "destroy", typelib_destroy },
+    { "isexclusive", typelib_isexclusive },
     { NULL, NULL }
 };
 

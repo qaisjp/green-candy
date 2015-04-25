@@ -24,8 +24,7 @@ public:
 };
 
 // Private UpVal API.
-
-
 LUAI_FUNC void luaC_linkupval (lua_State *L, UpVal *uv);
+LUAI_FUNC void luaC_unlinkupval (lua_State *L, UpVal *uv);
 
 #endif //_LUA_UPVALUE_MANAGED_SLOT_

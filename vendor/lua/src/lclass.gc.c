@@ -39,10 +39,22 @@ int Class::TraverseGC( global_State *g )
     if ( destructor )
         markobject( g, destructor );
 
-    markobject( g, env );
-    markobject( g, outenv );
-    markobject( g, storage );
-    markobject( g, internStorage );
+    if ( Dispatch *classEnv = this->env )
+    {
+        markobject( g, classEnv );
+    }
+    if ( Dispatch *classOutEnv = this->outenv )
+    {
+        markobject( g, classOutEnv );
+    }
+    if ( Table *classStorage = this->storage )
+    {
+        markobject( g, classStorage );
+    }
+    if ( Table *classInternStorage = this->internStorage )
+    {
+        markobject( g, classInternStorage );
+    }
 
     if ( parent )
     {
@@ -77,13 +89,20 @@ int Class::TraverseGC( global_State *g )
         LIST_FOREACH_END
     }
 
-    forceSuper->TraverseGC( g );
+    if ( Class::ForceSuperTable *forceSuper = this->forceSuper )
+    {
+        forceSuper->TraverseGC( g );
+    }
 
     if ( methodCache )
+    {
         methodCache->TraverseGC( g );
+    }
 
     for ( envList_t::const_iterator iter = envInherit.begin(); iter != envInherit.end(); iter++ )
+    {
         markobject( g, *iter );
+    }
 
     return 0;
 }

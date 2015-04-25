@@ -159,10 +159,15 @@ ConstValueAddress luaT_gettmbyobj( lua_State *L, const TValue *o, TMS event )
 {
     if ( ttype(o) == LUA_TCLASS )
     {
-        ConstValueAddress res = luaH_getstr( L, jvalue(o)->storage, G(L)->tmname[event] );
+        Table *classStorage = jvalue(o)->storage;
 
-        if ( res )
-            return res;
+        if ( classStorage )
+        {
+            ConstValueAddress res = luaH_getstr( L, classStorage, G(L)->tmname[event] );
+
+            if ( res )
+                return res;
+        }
     }
     Table *mt = luaT_getmetabyobj( L, o );
     return (mt ? luaH_getstr( L, mt, G(L)->tmname[event] ) : luaO_getnilcontext( L ));

@@ -26,28 +26,15 @@ struct dispatchTypeInfoPlugin_t
     inline void Initialize( lua_config *cfg )
     {
         // Create type information.
-        dispatchTypeInfo = cfg->typeSys.RegisterAbstractType <Dispatch> ( "dispatch" );
-        dispatchClassEnvTypeInfo = cfg->typeSys.RegisterStructType <ClassEnvDispatch> ( "dispatch_ClassEnv" );
-        dispatchClassOutEnvTypeInfo = cfg->typeSys.RegisterStructType <ClassOutEnvDispatch> ( "dispatch_ClassOutEnv" );
-        dispatchClassMethodEnvTypeInfo = cfg->typeSys.RegisterStructType <ClassMethodDispatch> ( "dispatch_ClassMethodEnv" );
+        dispatchTypeInfo = cfg->typeSys.RegisterAbstractType <Dispatch> ( "dispatch", cfg->grayobjTypeInfo );
+        dispatchClassEnvTypeInfo = cfg->typeSys.RegisterStructType <ClassEnvDispatch> ( "dispatch_ClassEnv", dispatchTypeInfo );
+        dispatchClassOutEnvTypeInfo = cfg->typeSys.RegisterStructType <ClassOutEnvDispatch> ( "dispatch_ClassOutEnv", dispatchTypeInfo );
+        dispatchClassMethodEnvTypeInfo = cfg->typeSys.RegisterStructType <ClassMethodDispatch> ( "dispatch_ClassMethodEnv", dispatchTypeInfo );
 
-        // Set inheritance rules.
-        cfg->typeSys.SetTypeInfoInheritingClass(
-            dispatchTypeInfo,
-            cfg->grayobjTypeInfo
-        );
-        cfg->typeSys.SetTypeInfoInheritingClass(
-            dispatchClassEnvTypeInfo,
-            dispatchTypeInfo
-        );
-        cfg->typeSys.SetTypeInfoInheritingClass(
-            dispatchClassOutEnvTypeInfo,
-            dispatchTypeInfo
-        );
-        cfg->typeSys.SetTypeInfoInheritingClass(
-            dispatchClassMethodEnvTypeInfo,
-            dispatchTypeInfo
-        );
+        // Set up properties.
+        cfg->typeSys.SetTypeInfoExclusive( this->dispatchClassEnvTypeInfo, true );
+        cfg->typeSys.SetTypeInfoExclusive( this->dispatchClassOutEnvTypeInfo, true );
+        cfg->typeSys.SetTypeInfoExclusive( this->dispatchClassMethodEnvTypeInfo, true );
     }
 
     inline void Shutdown( lua_config *cfg )
@@ -67,10 +54,22 @@ struct dispatchTypeInfoPlugin_t
 
 PluginDependantStructRegister <dispatchTypeInfoPlugin_t, namespaceFactory_t> dispatchTypeInfoPlugin( namespaceFactory, namespaceFactory_t::ANONYMOUS_PLUGIN_ID );
 
+Dispatch::Dispatch( global_State *g ) : GrayObject( g )
+{
+    luaC_link( g, this, LUA_TDISPATCH );
+}
+
 // We cannot clone dispatches.
 Dispatch::Dispatch( const Dispatch& right ) : GrayObject( right )
 {
     throw lua_exception( this->gstate->mainthread, LUA_ERRRUN, "attempt to clone a dispatch", 1 );
+}
+
+Dispatch::~Dispatch( void )
+{
+    global_State *g = this->gstate;
+
+    luaC_unlink( g, this );
 }
 
 ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
@@ -87,7 +86,6 @@ ClassEnvDispatch* luaQ_newclassenv( lua_State *L, Class *j )
 
             if ( q )
             {
-                luaC_link( g, q, LUA_TDISPATCH );
                 q->m_class = j;
 
                 outObj = q;
@@ -111,7 +109,6 @@ ClassOutEnvDispatch* luaQ_newclassoutenv( lua_State *L, Class *j )
 
             if ( q )
             {
-                luaC_link( g, q, LUA_TDISPATCH );
                 q->m_class = j;
 
                 outObj = q;
@@ -135,7 +132,6 @@ ClassMethodDispatch* luaQ_newclassmethodenv( lua_State *L, Class *j, GCObject *p
 
             if ( q )
             {
-                luaC_link( g, q, LUA_TDISPATCH );
                 q->m_class = j;
                 luaC_objbarrier( L, q, j );
                 q->m_prevEnv = prevEnv;
