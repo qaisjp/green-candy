@@ -975,13 +975,28 @@ public:
         this->gstate = g;
         this->tt = LUA_TNONE;
         this->marked = 0;
-    }
+
+        // Flags that are internally used by the GC.
+        this->gcflags.isGCActive = false;
+        this->gcflags.isGCGrayActive = false;
+    }   
 
     inline GCObject( const GCObject& right ) : gcObjList_t::node()
     {
         this->gstate = right.gstate;
         this->tt = right.tt;
         this->marked = right.marked;
+
+        // Even if we clone from another object, we do not inherit their GC list status.
+        this->gcflags.isGCActive = false;
+        this->gcflags.isGCGrayActive = false;
+    }
+
+    inline ~GCObject( void )
+    {
+        // Make sure we are not on the GC list.
+        lua_assert( this->gcflags.isGCActive == false );
+        lua_assert( this->gcflags.isGCGrayActive == false );
     }
 
     virtual TString*    GetTString()        { return NULL; }
@@ -1003,6 +1018,13 @@ public:
 
     lu_byte tt;
     lu_byte marked;
+
+    // Special GC flags.
+    struct
+    {
+        unsigned char isGCActive : 1;
+        unsigned char isGCGrayActive : 1;
+    } gcflags;
 };
 
 typedef SingleLinkedList <class GrayObject> grayObjList_t;
@@ -1257,12 +1279,11 @@ public:
 class Dispatch abstract : public GrayObject
 {
 public:
-    inline Dispatch( global_State *g ) : GrayObject( g )
-    {
-        return;
-    }
+    Dispatch( global_State *g );
 
     Dispatch( const Dispatch& right );
+
+    ~Dispatch( void );
 
     size_t  Propagate( global_State *g );
 
@@ -1444,7 +1465,7 @@ public:
 
     lua_State( const lua_State& right );
 
-    virtual ~lua_State( void );
+    ~lua_State( void );
 
     // lua_State is always the main thread
     virtual void    SetMainThread( bool enabled )       {}

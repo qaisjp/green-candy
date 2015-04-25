@@ -83,13 +83,19 @@ int Closure::TraverseGC( global_State *g )
 
 int LClosure::TraverseGC( global_State *g )
 {
-    unsigned int i;
-    lua_assert( nupvalues == p->nups );
+    lu_byte nupvalues = this->nupvalues;
 
-    markobject( g, p );
+    if ( Proto *p = this->p )
+    {
+        lua_assert( nupvalues == p->nups );
 
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
+        markobject( g, p );
+    }
+
+    for ( unsigned int i = 0; i < nupvalues; i++ )  /* mark its upvalues */
+    {
         markobject( g, upvals[i] );
+    }
 
     return Closure::TraverseGC( g );
 }

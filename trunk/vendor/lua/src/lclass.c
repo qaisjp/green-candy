@@ -2104,13 +2104,18 @@ Class::Class( const Class& right ) : GCObject( right )
 
 Class::~Class( void )
 {
+    global_State *g = this->gstate;
+
     // Free runtime data.
     lua_assert( this->inMethod == 0 );
 
     if ( void *trans = this->trans )
     {
-        luaM_realloc__( this->gstate, trans, this->transCount * sizeof(Class::trans_t), 0 );
+        luaM_realloc__( g, trans, this->transCount * sizeof(Class::trans_t), 0 );
     }
+
+    // Unregister from GC.
+    luaC_unlinktmu( g, this );
 }
 
 Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )

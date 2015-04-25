@@ -33,7 +33,14 @@ struct stringTypeInfo_t
         {
             stringConstructionParams *params = (stringConstructionParams*)construction_params;
 
-            return _sizestring( sizeof( TString ), params->length );
+            int length = 0;
+
+            if ( params )
+            {
+                length = params->length;
+            }
+
+            return _sizestring( sizeof( TString ), length );
         }
 
         size_t GetTypeSizeByObject( const void *langObj ) const
@@ -50,7 +57,14 @@ struct stringTypeInfo_t
         {
             stringConstructionParams *params = (stringConstructionParams*)construction_params;
 
-            return _sizeudata( sizeof( Udata ), params->length );
+            int length = 0;
+
+            if ( params )
+            {
+                length = params->length;
+            }
+
+            return _sizeudata( sizeof( Udata ), length );
         }
 
         size_t GetTypeSizeByObject( const void *langObj ) const
@@ -69,18 +83,11 @@ struct stringTypeInfo_t
         LuaTypeSystem& typeSys = cfg->typeSys;
 
         // Register the string type.
-        stringTypeInfo = typeSys.RegisterDynamicStructType <TString> ( "string", &_stringMetaInfo, false );
-        udataTypeInfo = typeSys.RegisterDynamicStructType <Udata> ( "udata", &_stringMetaInfo, false );
+        stringTypeInfo = typeSys.RegisterDynamicStructType <TString> ( "string", &_stringMetaInfo, false, cfg->gcobjTypeInfo );
+        udataTypeInfo = typeSys.RegisterDynamicStructType <Udata> ( "udata", &_udataMetaInfo, false, cfg->gcobjTypeInfo );
 
-        // Set up the inheritance.
-        typeSys.SetTypeInfoInheritingClass(
-            stringTypeInfo,
-            cfg->gcobjTypeInfo
-        );
-        typeSys.SetTypeInfoInheritingClass(
-            udataTypeInfo,
-            cfg->gcobjTypeInfo
-        );
+        // Set up properties.
+        typeSys.SetTypeInfoExclusive( stringTypeInfo, true );
     }
 
     inline void Shutdown( lua_config *cfg )
@@ -204,6 +211,9 @@ TString::TString( global_State *g, void *construction_params ) : GCObject( g )
 
         throw;
     }
+
+    // Strings are always on the GC.
+    this->gcflags.isGCActive = true;
 }
 
 TString::TString( const TString& right ) : GCObject( right )
@@ -214,7 +224,24 @@ TString::TString( const TString& right ) : GCObject( right )
 
 TString::~TString( void )
 {
-    gstate->strt.nuse--;
+    global_State *g = this->gstate;
+
+    stringtable *tb = &g->strt;
+
+    if ( this->gcflags.isGCActive == true )
+    {
+        // Remove ourselves from the hash list.
+        unsigned int h = this->hash;
+
+        h = lmod(h, tb->size);
+
+        tb->hash[h].Remove( this );
+
+        this->gcflags.isGCActive = false;
+    }
+
+    // Decrease the global string count.
+    tb->nuse--;
 }
 
 static TString* newlstr (lua_State *L, const char *str, size_t l, unsigned int h)
@@ -409,7 +436,9 @@ Udata::Udata( const Udata& right ) : GCObject( right )
 
 Udata::~Udata( void )
 {
-    return;
+    global_State *g = this->gstate;
+
+    luaC_unlinktmu( g, this );
 }
 
 Udata *luaS_newudata (lua_State *L, size_t s, GCObject *e)

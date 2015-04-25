@@ -379,7 +379,7 @@ Closure::Closure( global_State *g ) : GrayObject( g )
     this->env = NULL;
     this->genFlags = 0;
 
-    luaC_link(g, this, LUA_TFUNCTION);
+    luaC_link( g, this, LUA_TFUNCTION );
 }
 
 Closure::Closure( const Closure& right ) : GrayObject( right )
@@ -389,7 +389,9 @@ Closure::Closure( const Closure& right ) : GrayObject( right )
 
 Closure::~Closure( void )
 {
-    return;
+    global_State *g = this->gstate;
+
+    luaC_unlink( g, this );
 }
 
 void luaF_freeclosure (lua_State *L, Closure *c)
@@ -506,6 +508,14 @@ UpVal::~UpVal( void )
     {
         unlinkupval( this );  /* remove from open list */
     }
+    else
+    {
+        global_State *g = this->gstate;
+
+        lua_State *L = g->mainthread;
+
+        luaC_unlinkupval( L, this );
+    }
 }
 
 // WARNING: no stack rellocation in this function supported!
@@ -581,7 +591,9 @@ Proto::Proto( global_State *g, void *construction_params ) : GrayObject( g )
 
 Proto::Proto( const Proto& right ) : GrayObject( right )
 {
-    luaC_link( this->gstate, this, LUA_TPROTO );
+    global_State *g = this->gstate;
+
+    luaC_link( g, this, LUA_TPROTO );
 
     // Clone everything.
     this->source = right.source;
@@ -608,7 +620,7 @@ Proto::Proto( const Proto& right ) : GrayObject( right )
     this->maxstacksize = right.maxstacksize;
 
     // Clone data arrays.
-    lua_State *L = this->gstate->mainthread;
+    lua_State *L = g->mainthread;
 
     this->k =           luaM_clonevector( L, right.k, sizek );
     this->code =        luaM_clonevector( L, right.code, sizecode );
@@ -621,7 +633,9 @@ Proto::Proto( const Proto& right ) : GrayObject( right )
 
 Proto::~Proto( void )
 {
-    lua_State *L = gstate->mainthread;
+    global_State *g = this->gstate;
+
+    lua_State *L = g->mainthread;
     
     // Free all used resources.
     luaM_freearray(L, this->code, this->sizecode);
@@ -630,6 +644,8 @@ Proto::~Proto( void )
     luaM_freearray(L, this->lineinfo, this->sizelineinfo);
     luaM_freearray(L, this->locvars, this->sizelocvars);
     luaM_freearray(L, this->upvalues, this->sizeupvalues);
+
+    luaC_unlink( g, this );
 }
 
 void luaF_freeproto (lua_State *L, Proto *p)

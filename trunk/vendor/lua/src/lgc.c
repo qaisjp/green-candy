@@ -71,7 +71,10 @@ void Udata::MarkGC( global_State *g )
         markobject( g, mt );
     }
 
-    markobject( g, env );
+    if ( GCObject *env = this->env )
+    {
+        markobject( g, env );
+    }
 }
 
 void Class::MarkGC( global_State *g )
@@ -605,12 +608,6 @@ static void cleartable ( grayObjList_t& theList )
     }
 }
 
-// Dispatch destruction of any GCObject.
-static void delete_gcobject( lua_State *L, GCObject *obj )
-{
-    lua_delete <GCObject> ( L, obj );
-}
-
 static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *gcEnv, gcObjList_t::removable_iterator& p, lu_mem count )
 {
     int deadmask = otherwhite(g);
@@ -649,7 +646,11 @@ static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *g
         {
             p.Remove();
 
-            delete_gcobject( L, curr );
+            // The object is not on the list anymore.
+            // NOTE: this does not mean that it were on the central GC list anyway (i.e. string sweeping).
+            curr->gcflags.isGCActive = false;
+
+            lua_delete <GCObject> ( L, curr );
         }
     }
 }
@@ -968,7 +969,6 @@ void luaC_objbarriert( lua_State *L, Table *t, GCObject *o )
     }
 }
 
-
 void luaC_register( global_State *g, GCObject *o, lu_byte tt )
 {
     // Put general stuff.
@@ -976,30 +976,79 @@ void luaC_register( global_State *g, GCObject *o, lu_byte tt )
     o->tt = tt;
 }
 
-
-void luaC_link (global_State *g, GCObject *o, lu_byte tt)
+void luaC_link( global_State *g, GCObject *o, lu_byte tt )
 {
     globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
     if ( gcEnv )
     {
+        lua_assert( o->gcflags.isGCActive == false );
+
         gcEnv->rootgc.Insert( o );
+
+        o->gcflags.isGCActive = true;
     }
 
     luaC_register( g, o, tt );
 }
 
+void luaC_unlink( global_State *g, GCObject *o )
+{
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        // We could have been removed by the GC manager using optimization.
+        if ( o->gcflags.isGCActive == true )
+        {
+            gcEnv->rootgc.Remove( o );
+
+            o->gcflags.isGCActive = false;
+        }
+    }
+
+    o->tt = LUA_TNONE;
+    o->marked = 0;
+}
 
 void luaC_linktmu( global_State *g, GCObject *o, lu_byte tt )
 {
-    // Insert tmu items after the mainthread.
-    gcObjList_t::InsertAfter( g->mainthread, o );
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        lua_assert( o->gcflags.isGCActive == false );
+
+        // Insert tmu items after the mainthread.
+        gcObjList_t::InsertAfter( g->mainthread, o );
+
+        o->gcflags.isGCActive = true;
+    }
 
     luaC_register( g, o, tt );
 }
 
+void luaC_unlinktmu( global_State *g, GCObject *o )
+{
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
-void luaC_linkupval (lua_State *L, UpVal *uv)
+    if ( gcEnv )
+    {
+        // We could have been removed by the GC manager using optimization.
+        if ( o->gcflags.isGCActive == true )
+        {
+            // Remove from the main list.
+            gcEnv->rootgc.Remove( o );
+
+            o->gcflags.isGCActive = false;
+        }
+    }
+
+    o->tt = LUA_TNONE;
+    o->marked = 0;
+}
+
+void luaC_linkupval( lua_State *L, UpVal *uv )
 {
     global_State *g = G(L);
 
@@ -1007,7 +1056,11 @@ void luaC_linkupval (lua_State *L, UpVal *uv)
 
     if ( gcEnv )
     {
-        gcEnv->rootgc.Insert( uv ); /* link upvalue into `rootgc' list */
+        lua_assert( uv->gcflags.isGCActive == false );
+
+        gcEnv->rootgc.Insert( uv ); /* link upvalue into 'rootgc' list */
+
+        uv->gcflags.isGCActive = true;
 
         if (isgray(uv))
         { 
@@ -1022,6 +1075,24 @@ void luaC_linkupval (lua_State *L, UpVal *uv)
 
                 lua_assert(gcEnv->gcstate != GCSfinalize && gcEnv->gcstate != GCSpause);
             }
+        }
+    }
+}
+
+void luaC_unlinkupval( lua_State *L, UpVal *uv )
+{
+    global_State *g = G(L);
+
+    globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
+
+    if ( gcEnv )
+    {
+        // We could have been removed by the GC manager using optimization.
+        if ( uv->gcflags.isGCActive == true )
+        {
+            gcEnv->rootgc.Remove( uv );
+
+            uv->gcflags.isGCActive = false;
         }
     }
 }

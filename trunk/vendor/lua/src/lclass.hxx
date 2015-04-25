@@ -23,13 +23,10 @@ struct namespaceClassTypeInfo
         LuaTypeSystem& typeSys = cfg->typeSys;
 
         // Create all type information.
-        this->classTypeInfo = typeSys.RegisterStructType <Class> ( "class" );
+        this->classTypeInfo = typeSys.RegisterStructType <Class> ( "class", cfg->gcobjTypeInfo );
 
-        // Set up inheritance.
-        typeSys.SetTypeInfoInheritingClass(
-            this->classTypeInfo,
-            cfg->gcobjTypeInfo
-        );
+        // Set up properties.
+        typeSys.SetTypeInfoExclusive( this->classTypeInfo, true );
     }
 
     inline void Shutdown( lua_config *cfg )

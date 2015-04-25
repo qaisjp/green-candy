@@ -844,8 +844,11 @@ Table::Table( const Table& right ) : GrayObject( right )
 
 Table::~Table( void )
 {
+    global_State *g = this->gstate;
+
     // Cleaning up is done by the native table implementation.
-    return;
+    
+    luaC_unlink( g, this );
 }
 
 Table *luaH_new (lua_State *L, int narray, int nhash)

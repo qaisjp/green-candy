@@ -28,7 +28,14 @@ struct closureTypeInfoPlugin_t
         {
             cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-            return sizeCclosure( params->nelems );
+            int nelems = 0;
+
+            if ( params )
+            {
+                nelems = params->nelems;
+            }
+
+            return sizeCclosure( nelems );
         }
 
         size_t GetTypeSizeByObject( const void *mem ) const
@@ -45,7 +52,14 @@ struct closureTypeInfoPlugin_t
         {
             cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-            return sizeCmethod( params->nelems );
+            int nelems = 0;
+
+            if ( params )
+            {
+                nelems = params->nelems;
+            }
+
+            return sizeCmethod( nelems );
         }
 
         size_t GetTypeSizeByObject( const void *mem ) const
@@ -62,7 +76,14 @@ struct closureTypeInfoPlugin_t
         {
             cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-            return sizeCmethodt( params->nelems );
+            int nelems = 0;
+
+            if ( params )
+            {
+                nelems = params->nelems;
+            }
+
+            return sizeCmethodt( nelems );
         }
 
         size_t GetTypeSizeByObject( const void *mem ) const
@@ -79,7 +100,14 @@ struct closureTypeInfoPlugin_t
         {
             cclosureSharedConstructionParams *params = (cclosureSharedConstructionParams*)construction_params;
 
-            return sizeLclosure( params->nelems );
+            int nelems = 0;
+
+            if ( params )
+            {
+                nelems = params->nelems;
+            }
+
+            return sizeLclosure( nelems );
         }
 
         size_t GetTypeSizeByObject( const void *mem ) const
@@ -123,6 +151,15 @@ struct closureTypeInfoPlugin_t
             typeSys.RegisterStructType <UpVal> ( "upvalue", cfg->gcobjTypeInfo );
         protoTypeInfo =
             typeSys.RegisterStructType <Proto> ( "proto", cfg->grayobjTypeInfo );
+
+        // Set up properties.
+        typeSys.SetTypeInfoExclusive( this->cclosureMethodRedirectTypeInfo, true );
+        typeSys.SetTypeInfoExclusive( this->cclosureMethodRedirectSuperTypeInfo, true );
+        typeSys.SetTypeInfoExclusive( this->cclosureBasicTypeInfo, true );
+        typeSys.SetTypeInfoExclusive( this->cclosureMethodTypeInfo, true );
+        typeSys.SetTypeInfoExclusive( this->cclosureMethodTransTypeInfo, true );
+        typeSys.SetTypeInfoExclusive( this->lclosureTypeInfo, true );
+        typeSys.SetTypeInfoExclusive( this->upvalueTypeInfo, true );
     }
 
     inline void Shutdown( lua_config *cfg )

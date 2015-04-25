@@ -133,13 +133,26 @@ LUA_API void lua_getfenv (lua_State *L, int idx)
 
             // Lua may not retrieve the environment of locked closures
             if ( cl->IsEnvLocked() )
+            {
                 pushnilvalue( L );
+            }
             else
                 pushgcvalue(L, cl->env);
         }
         break;
     case LUA_TUSERDATA:
-        pushgcvalue(L, uvalue(o)->env);
+        {
+            GCObject *udEnv = uvalue(o)->env;
+
+            if ( udEnv )
+            {
+                pushgcvalue( L, udEnv );
+            }
+            else
+            {
+                pushnilvalue( L );
+            }
+        }
         break;
     case LUA_TTHREAD:
         pushgcvalue(L, gcvalue(gt(thvalue(o))));

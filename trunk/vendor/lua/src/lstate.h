@@ -110,6 +110,7 @@ public:
 
 LUAI_FUNC lua_Thread* luaE_newthread (lua_State *L);
 LUAI_FUNC void luaE_newenvironment( lua_State *L );
+LUAI_FUNC LuaTypeSystem::typeInfoBase* luaE_getmainthreadtype( global_State *g );
 LUAI_FUNC void luaE_terminate( lua_Thread *L );
 LUAI_FUNC void luaE_freethread (lua_State *L, lua_State *L1);
 
