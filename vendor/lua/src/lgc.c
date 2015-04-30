@@ -628,8 +628,21 @@ static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *g
         // Check the GC cycle flagging.
         if ( !isAlive )
         {
+            // Herp derp. This is a logical clusterfuck that nobody wants to explain, but bears the core of the Lua GC!
+            /*
+                The Lua GC is an asynchronous incremental runtime that 
+            */
             if ( (curr->marked ^ WHITEBITS) & deadmask )
             {  
+                isAlive = true;
+            }
+        }
+
+        // Check the global refererence count.
+        if ( !isAlive )
+        {
+            if ( curr->GetGCRefCount() != 0 )
+            {
                 isAlive = true;
             }
         }
@@ -980,6 +993,8 @@ void luaC_link( global_State *g, GCObject *o, lu_byte tt )
 {
     globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
+    luaC_register( g, o, tt );
+
     if ( gcEnv )
     {
         lua_assert( o->gcflags.isGCActive == false );
@@ -988,8 +1003,6 @@ void luaC_link( global_State *g, GCObject *o, lu_byte tt )
 
         o->gcflags.isGCActive = true;
     }
-
-    luaC_register( g, o, tt );
 }
 
 void luaC_unlink( global_State *g, GCObject *o )
@@ -1015,6 +1028,8 @@ void luaC_linktmu( global_State *g, GCObject *o, lu_byte tt )
 {
     globalStateGCEnv *gcEnv = GetGlobalGCEnvironment( g );
 
+    luaC_register( g, o, tt );
+
     if ( gcEnv )
     {
         lua_assert( o->gcflags.isGCActive == false );
@@ -1024,8 +1039,6 @@ void luaC_linktmu( global_State *g, GCObject *o, lu_byte tt )
 
         o->gcflags.isGCActive = true;
     }
-
-    luaC_register( g, o, tt );
 }
 
 void luaC_unlinktmu( global_State *g, GCObject *o )

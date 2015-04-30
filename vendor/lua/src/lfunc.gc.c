@@ -46,30 +46,36 @@ void UpVal::MarkGC( global_State *g )
 */
 int Proto::TraverseGC( global_State *g )
 {
-    int i;
-
     if ( source )
         stringmark( source );
 
-    for ( i=0; i<sizek; i++ )  /* mark literals */
-        markvalue(g, &k[i]);
+    for ( int i = 0; i < sizek; i++ )  /* mark literals */
+    {
+        markvalue( g, &k[i] );
+    }
 
-    for ( i=0; i<sizeupvalues; i++ )
+    for ( int i = 0; i < sizeupvalues; i++ )
     {  /* mark upvalue names */
-        if ( upvalues[i] )
-            stringmark( upvalues[i] );
+        if ( TString *upval_name = upvalues[i] )
+        {
+            stringmark( upval_name );
+        }
     }
 
-    for ( i=0; i<sizep; i++ )
+    for ( int i = 0; i < sizep; i++ )
     {  /* mark nested protos */
-        if ( p[i] )
-            markobject( g, p[i] );
+        if ( Proto *curr_p = p[i] )
+        {
+            markobject( g, curr_p );
+        }
     }
 
-    for (i=0; i<sizelocvars; i++)
+    for ( int i = 0; i < sizelocvars; i++)
     {  /* mark local-variable names */
-        if ( locvars[i].varname )
-            stringmark( locvars[i].varname );
+        if ( TString *locvar_name = locvars[i].varname )
+        {
+            stringmark( locvar_name );
+        }
     }
 
     return 0;
@@ -126,10 +132,10 @@ size_t CClosureMethodRedirectSuper::Propagate( global_State *g )
 
 size_t CClosureBasic::Propagate( global_State *g )
 {
-    unsigned int i;
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
+    for ( unsigned int i = 0; i < nupvalues; i++ )  /* mark its upvalues */
+    {
         markvalue( g, &upvalues[i] );
+    }
 
     return CClosure::Propagate( g ) + sizeCclosure( nupvalues );
 }
@@ -146,20 +152,20 @@ size_t CClosureMethodBase::Propagate( global_State *g )
 
 size_t CClosureMethod::Propagate( global_State *g )
 {
-    unsigned int i;
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
+    for ( unsigned int i = 0; i < nupvalues; i++ )  /* mark its upvalues */
+    {
         markvalue( g, &upvalues[i] );
+    }
 
     return CClosureMethodBase::Propagate( g ) + sizeCmethod( nupvalues );
 }
 
 size_t CClosureMethodTrans::Propagate( global_State *g )
 {
-    unsigned int i;
-
-    for ( i=0; i<nupvalues; i++ )  /* mark its upvalues */
+    for ( unsigned int i = 0; i < nupvalues; i++ )  /* mark its upvalues */
+    {
         markvalue( g, &upvalues[i] );
+    }
 
     return CClosureMethodBase::Propagate( g ) + sizeCmethodt( nupvalues );
 }

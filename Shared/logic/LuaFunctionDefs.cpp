@@ -416,22 +416,29 @@ namespace LuaFunctionDefs
         time_t timer;
         time( &timer );
 
-        switch( lua_type( L, 1 ) )
-        {
-        case LUA_TNUMBER:
-        case LUA_TSTRING:
-            timer = (time_t)lua_tonumber( L, 1 );
+        int top = lua_gettop( L );
 
-            if ( timer < 0 )
+        if ( top >= 1 )
+        {
+            switch( lua_type( L, 1 ) )
             {
-                lua_pushboolean( L, false );
-                return 1;
+            case LUA_TNUMBER:
+            case LUA_TSTRING:
+                timer = (time_t)lua_tonumber( L, 1 );
+
+                if ( timer < 0 )
+                {
+                    lua_pushboolean( L, false );
+                    return 1;
+                }
+
+                break;
             }
+
+            lua_settop( L, 0 );
         }
 
         tm *time = localtime( &timer );
-
-        lua_settop( L, 1 );
 
         lua_newtable( L );
         lua_pushlstring( L, "second", 6 );
@@ -455,16 +462,16 @@ namespace LuaFunctionDefs
         lua_pushlstring( L, "timestamp", 9 );
         lua_pushnumber( L, (double)timer );
 
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
-        lua_rawset( L, 2 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
+        lua_rawset( L, 1 );
         return 1;
     }
 

@@ -86,7 +86,7 @@ static LUA_DECLARE( constructor )
     return 0;
 }
 
-CResource::CResource( CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root ) : Resource( main, id, name, root )
+CResource::CResource( CResourceManager *manager, CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root ) : Resource( main, id, name, root )
 {
     lua_State *L = *main;
 
@@ -95,8 +95,16 @@ CResource::CResource( CLuaMain& main, unsigned short id, const filePath& name, C
     lua_pushcclosure( L, constructor, 1 );
     luaJ_extend( L, -2, 0 );
     lua_pop( L, 1 );
+
+    this->m_resMan = manager;
+    this->m_luaMain = &main;
 }
 
 CResource::~CResource()
 {
+    // Delete our lua main.
+    if ( CLuaMain *luaMain = this->m_luaMain )
+    {
+        this->m_resMan->GetLuaManager().Remove( luaMain );
+    }
 }

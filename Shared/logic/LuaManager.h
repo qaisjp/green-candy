@@ -234,6 +234,11 @@ public:
         {
             return m_system.PCallStackVoid( args );
         }
+
+        inline lua_State* GetLuaState( void )
+        {
+            return this->m_lua;
+        }
     };
 
     friend class context;

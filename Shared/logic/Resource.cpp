@@ -81,6 +81,11 @@ Resource::Resource( LuaMain& main, unsigned short id, const filePath& name, CFil
 
 Resource::~Resource()
 {
+    // Delete its file root.
+    if ( CFileTranslator *resRoot = &this->m_fileRoot )
+    {
+        delete resRoot;
+    }
 }
 
 bool Resource::GetFullMetaPath( const char *path, filePath& absPath )

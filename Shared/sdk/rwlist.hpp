@@ -29,7 +29,7 @@
 #define LIST_EMPTY(link) ( (link).next == &(link) )
 #endif //_DEBUG
 
-#else
+#else //USE_MACRO_LIST
 
 // Optimized versions.
 // Not prone to bugs anymore.
@@ -42,7 +42,7 @@ template <typename listType>    inline void LIST_CLEAR( listType& link )        
 template <typename listType>    inline void LIST_INITNODE( listType& link )                     { link.prev = NULL; link.next = NULL; }
 template <typename listType>    inline bool LIST_EMPTY( listType& link )                        { return link.prev == &link && link.next == &link; }
 
-#endif
+#endif //USE_MACRO_LIST
 
 // These have to be macros unfortunately.
 // Special macros used by RenderWare only.

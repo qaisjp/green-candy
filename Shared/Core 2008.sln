@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 10.00
-# Visual C++ Express 2008
+# Visual Studio 2008
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Core", "..\MTA10\core\_Core 2008.vcproj", "{4C71249E-EA08-4A3D-9AEF-28707ACC6531}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0008960E-E0DD-41A6-8265-00B31DDB4C21} = {0008960E-E0DD-41A6-8265-00B31DDB4C21}
@@ -60,15 +60,15 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CEGUI - FalagardBase", "..\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Dependencies", "Dependencies", "{F99764D6-7D93-4557-8474-EA06D4BD3801}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "..\vendor\zlib\zlib 2008.vcproj", "{CCABBC2E-172D-46FD-BC43-5A9FCD295112}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "..\vendor\zlib\vs2008\zlib.vcproj", "{CCABBC2E-172D-46FD-BC43-5A9FCD295112}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pcre", "..\vendor\pcre\pcre 2008.vcproj", "{39452ACC-FF12-488D-94B6-301B4EFBB606}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcurl", "..\vendor\curl\lib\libcurl 2008.vcproj", "{2B98A079-89D3-4970-B0C2-39996636BAE6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libcurl", "..\vendor\curl\vs2008\libcurl.vcproj", "{2B98A079-89D3-4970-B0C2-39996636BAE6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ehs", "..\vendor\ehs\vs2008\ehs 2008.vcproj", "{ECC4BA90-6AA5-4630-AEA9-F923FB633C7D}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "json", "..\vendor\json-c\json 2008.vcproj", "{38D753E1-5341-42E1-94AD-B2C503F1FC37}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "json", "..\vendor\json-c\vs2008\json.vcproj", "{38D753E1-5341-42E1-94AD-B2C503F1FC37}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpng", "..\vendor\libpng\projects\vs2008\libpng.vcproj", "{0008960E-E0DD-41A6-8265-00B31DDB4C21}"
 EndProject
@@ -76,7 +76,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua5.1_dll", "..\vendor\lua
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pme", "..\vendor\pme\vs2008\pme 2008.vcproj", "{35DC1C50-0CDF-4F3A-B847-2D76DE134053}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqlite", "..\vendor\sqlite\sqlite.vcproj", "{71C9B848-4138-4D4A-B131-1A42E7AC66B6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sqlite", "..\vendor\sqlite\vs2008\sqlite.vcproj", "{71C9B848-4138-4D4A-B131-1A42E7AC66B6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Launch", "..\MTA10\launch\_Launch 2008.vcproj", "{C9188AB9-F099-4370-85DC-876B3904B939}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -92,7 +92,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Client - Launch", "..\MTA10
 		{916D94E2-FB0B-4992-A52C-3698CCBB0A41} = {916D94E2-FB0B-4992-A52C-3698CCBB0A41}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua_interpret", "..\lua_interpret\lua_interpret.vcproj", "{B2743453-2FC6-4B60-B8FA-CA87F9995411}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua_interpret", "..\lua_interpret\build_2008\lua_interpret.vcproj", "{B2743453-2FC6-4B60-B8FA-CA87F9995411}"
 	ProjectSection(ProjectDependencies) = postProject
 		{0008960E-E0DD-41A6-8265-00B31DDB4C21} = {0008960E-E0DD-41A6-8265-00B31DDB4C21}
 		{CCABBC2E-172D-46FD-BC43-5A9FCD295112} = {CCABBC2E-172D-46FD-BC43-5A9FCD295112}
@@ -104,13 +104,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua_interpret", "..\lua_int
 		{8EEECEE6-A6EC-BC48-8E76-22B87825444B} = {8EEECEE6-A6EC-BC48-8E76-22B87825444B}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jpeg", "..\vendor\jpeg\win32\jpeg_2008.vcproj", "{5997CB54-C80C-4422-89AA-81B6ADFA7F86}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "jpeg", "..\vendor\jpeg\win32\vs2008\jpeg_2008.vcproj", "{5997CB54-C80C-4422-89AA-81B6ADFA7F86}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "freetype", "..\vendor\freetype-2.4.12\builds\win32\vc2008\freetype.vcproj", "{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileSystem", "..\FileSystem\FileSystem.vcproj", "{6E793DA8-5641-4BBB-BCB0-43BF10682E14}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FileSystem", "..\FileSystem\vs2008\FileSystem.vcproj", "{6E793DA8-5641-4BBB-BCB0-43BF10682E14}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CCABBC2E-172D-46FD-BC43-5A9FCD295112} = {CCABBC2E-172D-46FD-BC43-5A9FCD295112}
+	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtga", "..\vendor\libtga\win32\libtga\libtga.vcproj", "{342072D6-3177-4099-B31B-58CE0537C746}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libtga", "..\vendor\libtga\win32\vs2008\libtga.vcproj", "{342072D6-3177-4099-B31B-58CE0537C746}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -532,6 +535,9 @@ Global
 		{8EEECEE6-A6EC-BC48-8E76-22B87825444B} = {F99764D6-7D93-4557-8474-EA06D4BD3801}
 		{35DC1C50-0CDF-4F3A-B847-2D76DE134053} = {F99764D6-7D93-4557-8474-EA06D4BD3801}
 		{71C9B848-4138-4D4A-B131-1A42E7AC66B6} = {F99764D6-7D93-4557-8474-EA06D4BD3801}
+		{5997CB54-C80C-4422-89AA-81B6ADFA7F86} = {F99764D6-7D93-4557-8474-EA06D4BD3801}
+		{78B079BD-9FC7-4B9E-B4A6-96DA0F00248B} = {F99764D6-7D93-4557-8474-EA06D4BD3801}
+		{342072D6-3177-4099-B31B-58CE0537C746} = {F99764D6-7D93-4557-8474-EA06D4BD3801}
 	EndGlobalSection
 	GlobalSection(DPCodeReviewSolutionGUID) = preSolution
 		DPCodeReviewSolutionGUID = {00000000-0000-0000-0000-000000000000}

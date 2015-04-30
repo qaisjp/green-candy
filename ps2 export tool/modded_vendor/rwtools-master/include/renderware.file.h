@@ -58,7 +58,7 @@ protected:
             assert( 0 );
         }
 
-        long streamOffsetANSI = offset;
+        long streamOffsetANSI = (long)offset;
 
         int seekSuccess = this->fileInterface->SeekStream( this->fptr, streamOffsetANSI, offsetANSI );
 
@@ -70,7 +70,7 @@ protected:
 
     std::streampos seekpos( std::streamoff offset, std::ios_base::openmode openmode )
     {
-        long streamOffsetANSI = offset;
+        long streamOffsetANSI = (long)offset;
 
         int seekSuccess = this->fileInterface->SeekStream( this->fptr, streamOffsetANSI, SEEK_SET );
 
@@ -100,7 +100,7 @@ protected:
         if ( n < 0 )
             return -1;
 
-        size_t readCount = this->fileInterface->ReadStream( this->fptr, outBuffer, n );
+        size_t readCount = this->fileInterface->ReadStream( this->fptr, outBuffer, (long)n );
 
         return (std::streamsize)readCount;
     }
@@ -110,7 +110,7 @@ protected:
         if ( n < 0 )
             return -1;
 
-        size_t writeCount = this->fileInterface->WriteStream( this->fptr, inputBuffer, n );
+        size_t writeCount = this->fileInterface->WriteStream( this->fptr, inputBuffer, (long)n );
 
         return (std::streamsize)writeCount;
     }

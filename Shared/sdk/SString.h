@@ -19,7 +19,9 @@
 #include <stdarg.h>
 
 #ifdef WIN32
-    #define va_copy(dest, orig) (dest) = (orig)
+#ifndef va_copy
+#define va_copy(dest, orig) (dest) = (orig)
+#endif //va_copy
 #endif
 
 class SString : public std::string

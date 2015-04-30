@@ -370,6 +370,9 @@ typedef int sig_atomic_t;
 #define EINTR            WSAEINTR
 #undef  EINVAL           /* override definition in errno.h */
 #define EINVAL           WSAEINVAL
+
+#if 0
+
 #define EWOULDBLOCK      WSAEWOULDBLOCK
 #define EINPROGRESS      WSAEINPROGRESS
 #define EALREADY         WSAEALREADY
@@ -411,6 +414,8 @@ typedef int sig_atomic_t;
 #define EDQUOT           WSAEDQUOT
 #define ESTALE           WSAESTALE
 #define EREMOTE          WSAEREMOTE
+#endif
+
 #endif
 
 

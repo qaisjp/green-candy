@@ -191,6 +191,8 @@ LUA_API void lua_constructclassex( lua_State *L, int nargs, unsigned int flags )
     Class *c = luaJ_new( L, nargs, flags );
     pushjvalue( L, c );
 
+    c->DereferenceGC( L );
+
     lua_unlock( L );
 }
 

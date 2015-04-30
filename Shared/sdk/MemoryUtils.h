@@ -404,11 +404,13 @@ struct AnonymousPluginStructRegistry
         // Call all assignment operators.
         bool cloneSuccess = true;
 
+        registeredPlugins_t::iterator iter = regPlugins.begin();
+
         try
         {
-            for ( unsigned int n = 0; n < this->regPlugins.size(); n++ )
+            for ( ; iter != regPlugins.end(); iter++ )
             {
-                registered_plugin& regPluginInfo = this->regPlugins.at( n );
+                registered_plugin& regPluginInfo = *iter;
 
                 bool assignSuccess = regPluginInfo.descriptor->OnPluginAssign(
                     dstPluginObj, srcPluginObj,

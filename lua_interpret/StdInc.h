@@ -19,8 +19,10 @@
 
 #define MEM_INTERRUPT( x )  { if ( !( x ) ) __asm int 3 }
 //#define USE_HEAP_DEBUGGING
-//#define USE_FULL_PAGE_HEAP
-//#define PAGE_HEAP_INTEGRITY_CHECK
+#define USE_FULL_PAGE_HEAP
+#define PAGE_HEAP_INTEGRITY_CHECK
+//#define PAGE_HEAP_MEMORY_STATS
+//#define USE_HEAP_STACK_TRACE
 #include <debugsdk/DbgHeap.h>
 #include <debugsdk/DbgTrace.h>
 
@@ -62,6 +64,7 @@ extern CFileSystem *fileSystem;
 extern CFileTranslator *modFileRoot;
 
 extern lua_State *userLuaState;
+extern lua_State *lua_vm_state;
 extern CResourceManager *resMan;
 
 #endif //_MAIN_

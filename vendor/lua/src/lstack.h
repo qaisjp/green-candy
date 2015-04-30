@@ -2,6 +2,8 @@
 #ifndef _LUA_STACK_UTILITIES_
 #define _LUA_STACK_UTILITIES_
 
+#include <algorithm>
+
 template <typename dataType>
 struct DataContext
 {

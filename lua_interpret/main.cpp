@@ -15,14 +15,13 @@
 
 #include <SharedUtil.hpp>
 
-using namespace std;
+lua_State *userLuaState = NULL;
 
-lua_State *userLuaState;
+lua_State *lua_vm_state = NULL;
 
-static lua_State *state;
-static CEvents *events;
-static CLuaManager *manager;
-CResourceManager *resMan;
+static CEvents *events = NULL;
+static CLuaManager *manager = NULL;
+CResourceManager *resMan = NULL;
 
 static CResource *benchResource = NULL;
 
@@ -30,6 +29,10 @@ CFileTranslator *modFileRoot;
 
 __forceinline void lua_exec( LuaManager::context *context, const std::string& cmd )
 {
+    // TODO: properly use the call context.
+
+    lua_State *state = context->GetLuaState();
+
     int top = lua_gettop( state );
 
     if ( luaL_loadbuffer( state, cmd.c_str(), cmd.size(), "@cmdline" ) != 0 )
@@ -55,7 +58,7 @@ __forceinline void lua_exec( LuaManager::context *context, const std::string& cm
     if ( now == top )
         return;
 
-    cout << "> ";
+    std::cout << "> ";
 
     for ( int n = top; n != now; n++ )
     {
@@ -75,7 +78,7 @@ __forceinline void lua_exec( LuaManager::context *context, const std::string& cm
 
         if ( !strRep )
         {
-            cout << type;
+            std::cout << type;
 
             if ( strcmp( type, "class" ) == 0 )
             {
@@ -83,23 +86,23 @@ __forceinline void lua_exec( LuaManager::context *context, const std::string& cm
                 
                 const char *typeString = lua_tostring( state, -1 );
 
-                cout << " [";
+                std::cout << " [";
 
                 if ( typeString )
-                    cout << typeString;
+                    std::cout << typeString;
                 else
-                    cout << "unknown";
+                    std::cout << "unknown";
 
                 lua_pop( state, 1 );
 
-                cout << "]";
+                std::cout << "]";
             }
         }
         else
         {
-            cout << strRep;
-            cout << " [";
-            cout << type;
+            std::cout << strRep;
+            std::cout << " [";
+            std::cout << type;
 
             if ( strcmp( type, "class" ) == 0 )
             {
@@ -107,24 +110,24 @@ __forceinline void lua_exec( LuaManager::context *context, const std::string& cm
                 
                 const char *typeString = lua_tostring( state, -1 );
 
-                cout << ", ";
+                std::cout << ", ";
 
                 if ( typeString )
-                    cout << typeString;
+                    std::cout << typeString;
                 else
-                    cout << "unknown";
+                    std::cout << "unknown";
 
                 lua_pop( state, 1 );
             }
 
-            cout << "]";
+            std::cout << "]";
         }
 
         if ( n + 1 != now )
-            cout << ", ";
+            std::cout << ", ";
     }
 
-    cout << "\n";
+    std::cout << "\n";
 
     lua_settop( state, top );
 }
@@ -134,10 +137,10 @@ void handleError( const lua_exception& e )
     switch( e.status() )
     {
     case LUA_ERRRUN:
-        cout << "error\n";
+        std::cout << "error\n";
         break;
     case LUA_ERRSYNTAX:
-        cout << "syntax_error\n";
+        std::cout << "syntax_error\n";
         break;
     }
 
@@ -145,10 +148,10 @@ void handleError( const lua_exception& e )
     e.getDebug( debug );
 
     if ( debug.currentline != -1 )
-        cout << debug.short_src << ' ';
+        std::cout << debug.short_src << ' ';
 
-    cout << e.what();
-    cout << "\n";
+    std::cout << e.what();
+    std::cout << "\n";
 }
 
 static LuaManager::context *execContext = NULL;
@@ -156,6 +159,8 @@ static LuaManager::context *execContext = NULL;
 static HANDLE threadHandle = NULL;
 static HANDLE processCmdEvent = NULL;
 static HANDLE consoleInputHandle = NULL;
+
+static CFileSystem *fsHandle = NULL;
 
 __forceinline void shutdown_interpreter( void )
 {
@@ -165,10 +170,14 @@ __forceinline void shutdown_interpreter( void )
     {
         benchResource->Destroy();
         benchResource->DecrementMethodStack();
+
+        benchResource = NULL;
     }
 
     if ( execContext )
+    {
         delete execContext;
+    }
 
     resMan->Delete();
     manager->Shutdown();
@@ -177,7 +186,10 @@ __forceinline void shutdown_interpreter( void )
 
     luagl_shutdownDrivers();
 
-    delete fileSystem;
+    if ( fsHandle )
+    {
+        CFileSystem::Destroy( fsHandle );
+    }
 }
 
 static bool do_runtime = true;
@@ -199,7 +211,7 @@ static std::string cmdLine;
 
 static DWORD __stdcall HandleConsoleInput( LPVOID param )
 {
-    while ( getline( cin, cmdLine ) )
+    while ( getline( std::cin, cmdLine ) )
     {
         cmdLinePushed = true;
 
@@ -250,16 +262,17 @@ bool lint_loadscript( lua_State *L, const char *script, const char *path )
 {
     if ( luaL_loadbuffer( L, script, strlen( script ), ( std::string( "@" ) + path ).c_str() ) != 0 )
     {
-        cout << "failed to load library " << path << "\n";
-        cout << lua_tostring( L, -1 ) << "\n";
+        std::cout << "failed to load library " << path << "\n";
+        std::cout << lua_tostring( L, -1 ) << "\n";
+
         lua_pop( L, 1 );
         return false;
     }
 
     if ( lua_pcall( L, 0, 0, 0 ) != 0 )
     {
-        cout << "failed to run library " << path << "\n";
-        cout << lua_tostring( L, -1 ) << "\n";
+        std::cout << "failed to run library " << path << "\n";
+        std::cout << lua_tostring( L, -1 ) << "\n";
 
         lua_pop( L, 1 );
         return false;
@@ -290,7 +303,9 @@ struct testExceptionHandler : public DbgTrace::IExceptionHandler
             }
             else
             {
-                printf( "Segmentation fault; traceback...\n%s", runtimeSnapShot->ToString().c_str() );
+                std::string traceBack = runtimeSnapShot->ToString();
+
+                printf( "Segmentation fault; traceback...\n%s", traceBack.c_str() );
             }
 
             printf( "hit enter to continue\n" );
@@ -303,12 +318,14 @@ struct testExceptionHandler : public DbgTrace::IExceptionHandler
 
 int _main( int argc, char *argv[] )
 {
-    cout << "MTA:Lua Interpreter v1.0, by (c)Martin Turski (visit mtasa.com)\nCompiled on " __DATE__ "\n\n";
+    std::cout << "MTA:Lua Interpreter v1.0, by (c)Martin Turski (visit mtasa.com)\nCompiled on " __DATE__ "\n\n";
 
     events = new CEvents;
     manager = new CLuaManager( *events );
     resMan = new CResourceManager( *manager );
-    userLuaState = state = manager->GetVirtualMachine();
+    userLuaState = lua_vm_state = manager->GetVirtualMachine();
+
+    lua_State *state = lua_vm_state;
 
     // Initialize components here
     luagl_initDrivers();
@@ -318,7 +335,8 @@ int _main( int argc, char *argv[] )
     signal( SIGTERM, signal_handler );
     signal( SIGBREAK, signal_handler );
 
-    new CFileSystem();
+    // Initialize the FileSystem library.
+    fsHandle = CFileSystem::Create();
 
     SetConsoleCtrlHandler( ControlHandler, true );
 
@@ -332,7 +350,7 @@ int _main( int argc, char *argv[] )
     if ( fileRoot->Exists( "/luabench/" ) )
     {
         // Include everything from /luabench/
-        cout << "starting luaBench files...\n";
+        std::cout << "starting luaBench files...\n";
 
         modFileRoot = fileSystem->CreateTranslator( "/luabench/" );
 
@@ -342,16 +360,16 @@ int _main( int argc, char *argv[] )
         benchResource = resMan->Load( "luabench" );
         userLuaState = state = benchResource->GetVM().GetVirtualMachine();
 
-        cout << "\nlogged in as 'luabench'\n";
+        std::cout << "\nlogged in as 'luabench'\n";
     }
     else
     {
         modFileRoot = fileRoot;
 
-        benchResource = resMan->Create( "/", "guest" );
+        benchResource = resMan->Create( filePath( "/" ), "guest" );
         userLuaState = state = benchResource->GetVM().GetVirtualMachine();
 
-        cout << "logged in as 'guest'\n";
+        std::cout << "logged in as 'guest'\n";
     }
 
     // Reference our main resource.
@@ -376,7 +394,7 @@ int _main( int argc, char *argv[] )
         }
     }
 
-    cout << '\n';
+    std::cout << '\n';
 
     // Get the console handlers
     consoleInputHandle = GetStdHandle( STD_INPUT_HANDLE );
@@ -462,7 +480,7 @@ int _main( int argc, char *argv[] )
             }
             catch( lua_exception& e )
             {
-                cout << "runtime_";
+                std::cout << "runtime_";
 
                 handleError( e );
 
@@ -474,7 +492,7 @@ int _main( int argc, char *argv[] )
     }
     catch( ... )
     {
-        cout << "terminated";
+        std::cout << "terminated";
     }
 
     shutdown_interpreter();
@@ -490,4 +508,7 @@ int main( int argc, char *argv[] )
     _main( argc, argv );
 
     DbgTrace::UnregisterExceptionHandler( &myHandler );
+
+    // Debug memory.
+    DbgHeap_CheckActiveBlocks();
 }

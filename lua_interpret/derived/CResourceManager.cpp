@@ -35,7 +35,9 @@ static inline void loadscript( const filePath& path, void *ud )
     buff.push_back( 0 );
 
     if ( lint_loadscript( state, &buff[0], relPath.c_str() ) )
-        cout << "init: " << relPath << "\n";
+    {
+        std::cout << "init: " << relPath << "\n";
+    }
 }
 
 CResource* CResourceManager::Create( const filePath& absPath, const std::string& name )
@@ -45,10 +47,27 @@ CResource* CResourceManager::Create( const filePath& absPath, const std::string&
     if ( !fileRoot )
         return NULL;
 
-    CResource *res = new CResource( *m_luaManager.Create( name, *fileRoot ), 0, filePath( name ), *fileRoot );
+    filePath resName( name.c_str(), name.size() );
 
-    m_resources.push_back( res );
-    m_resByName[name] = res;
+    CResource *res =
+        new CResource(
+            this,
+            *m_luaManager.Create( name, *fileRoot ),
+            0,
+            resName,
+            *fileRoot
+        );
+
+    if ( res )
+    {
+        // The resource must be made a child of the resource manager.
+        bool wasMade = res->SetParent( this );
+
+        assert( wasMade == true );
+
+        m_resources.push_back( res );
+        m_resByName[ resName ] = res;
+    }
     return res;
 }
 

@@ -13,8 +13,6 @@
 #ifndef _BASE_SCRIPT_DEBUGGING_
 #define _BASE_SCRIPT_DEBUGGING_
 
-using namespace std;
-
 class ScriptDebugging
 {
 public:

@@ -11,6 +11,7 @@
 #include <string>
 #include <bitset>
 #include <assert.h>
+#include <algorithm>
 
 #include <DynamicTypeSystem.h>
 

@@ -157,7 +157,7 @@ unsigned int TumblerHash( const char *str, unsigned int len )
         hash ^= mod_lookup[(curChar + lastChar + tab_off) % tab_len];
 
         tab_off = (tab_off + 1) % tabLen;
-        tab_len = tabLen - min( tabLen - tab_off - 1, curChar & (~len) );
+        tab_len = tabLen - std::min( tabLen - tab_off - 1, curChar & (~len) );
 
         lastChar = curChar;
     }

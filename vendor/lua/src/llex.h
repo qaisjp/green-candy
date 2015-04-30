@@ -52,18 +52,19 @@ typedef struct Token {
 } Token;
 
 
-typedef struct LexState {
-  int current;  /* current character (charint) */
-  int linenumber;  /* input line counter */
-  int lastline;  /* line of last token `consumed' */
-  Token t;  /* current token */
-  Token lookahead;  /* look ahead token */
-  struct FuncState *fs;  /* `FuncState' is private to the parser */
-  lua_State *L;
-  ZIO *z;  /* input stream */
-  Mbuffer *buff;  /* buffer for tokens */
-  TString *source;  /* current source name */
-  char decpoint;  /* locale decimal point */
+typedef struct LexState
+{
+    int current;  /* current character (charint) */
+    int linenumber;  /* input line counter */
+    int lastline;  /* line of last token `consumed' */
+    Token t;  /* current token */
+    Token lookahead;  /* look ahead token */
+    SingleLinkedList <struct FuncState> fsList;  /* `FuncState' is private to the parser */
+    lua_State *L;
+    ZIO *z;  /* input stream */
+    Mbuffer *buff;  /* buffer for tokens */
+    TString *source;  /* current source name */
+    char decpoint;  /* locale decimal point */
 } LexState;
 
 

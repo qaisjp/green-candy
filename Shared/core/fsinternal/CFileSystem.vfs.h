@@ -229,7 +229,7 @@ struct CVirtualFileSystem
 
             children.push_back( dir );
 
-            childrenMap.insert( std::make_pair( dirName, dir ) );
+            childrenMap.insert( std::pair <std::string, directory*> ( dirName.convert_ansi(), dir ) );
 
             return *dir;
         }
@@ -269,7 +269,7 @@ struct CVirtualFileSystem
 
             files.push_back( &entry );
 
-            fileNameMap.insert( std::make_pair( fileName, &entry ) );
+            fileNameMap.insert( std::make_pair <std::string, file*> ( fileName, &entry ) );
 
             return entry;
         }
@@ -567,7 +567,9 @@ struct CVirtualFileSystem
 
         for ( ; iter != tree.end(); ++iter )
         {
-            curDir = &curDir->GetDirectory( *iter );
+            const filePath& thePathToken = *iter;
+
+            curDir = &curDir->GetDirectory( thePathToken );
         }
 
         return curDir;
@@ -580,7 +582,11 @@ struct CVirtualFileSystem
         dirTree::const_iterator iter = tree.begin();
 
         for ( ; iter != tree.end(); ++iter )
-            curDir = &curDir->GetDirectory( *iter );
+        {
+            const filePath& thePath = *iter;
+
+            curDir = &curDir->GetDirectory( thePath );
+        }
 
         return *curDir;
     }

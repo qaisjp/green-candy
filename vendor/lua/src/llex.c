@@ -113,15 +113,19 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l)
 {
     lua_State *L = ls->L;
     TString *ts = luaS_newlstr(L, str, l);
-    ValueAddress o = luaH_setstr(L, ls->fs->h, ts);  /* entry for `str' */
+
+    FuncState *fs = GetCurrentFuncState( ls );
+
+    ValueAddress o = luaH_setstr(L, fs->h, ts);  /* entry for `str' */
+
     if (ttisnil(o))
     {
         setbvalue(o, 1);  /* make sure `str' will not be collected */
         luaC_checkGC(L);
     }
+
     return ts;
 }
-
 
 static void inclinenumber (LexState *ls) {
   int old = ls->current;
@@ -133,18 +137,18 @@ static void inclinenumber (LexState *ls) {
     luaX_syntaxerror(ls, "chunk has too many lines");
 }
 
+void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source)
+{
+    ls->decpoint = '.';
+    ls->L = L;
+    ls->lookahead.token = TK_EOS;  /* no look-ahead token */
+    ls->z = z;
+    ls->linenumber = 1;
+    ls->lastline = 1;
+    ls->source = source;
+    luaZ_resizebuffer(ls->L, ls->buff, LUA_MINBUFFER);  /* initialize buffer */
 
-void luaX_setinput (lua_State *L, LexState *ls, ZIO *z, TString *source) {
-  ls->decpoint = '.';
-  ls->L = L;
-  ls->lookahead.token = TK_EOS;  /* no look-ahead token */
-  ls->z = z;
-  ls->fs = NULL;
-  ls->linenumber = 1;
-  ls->lastline = 1;
-  ls->source = source;
-  luaZ_resizebuffer(ls->L, ls->buff, LUA_MINBUFFER);  /* initialize buffer */
-  next(ls);  /* read first char */
+    next(ls);  /* read first char */
 }
 
 

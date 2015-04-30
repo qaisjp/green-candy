@@ -44,6 +44,9 @@
         PAGE_HEAP_MEMORY_STATS
             Once the module terminates, all leaked memory is counted and free'd. Statistics
             are printed using OutputDebugString. This option only works with PAGE_HEAP_INTEGRITY_CHECK.
+    USE_HEAP_STACK_TRACE
+        Performs a stacktrace for every allocation made. This setting is useful to track down complicated
+        memory leak situations. Use this only in very controlled scenarios, since it can use a lot of memory.
 
     You can define the macro MEM_INTERRUPT( bool_expr ) yourself. The most basic content is a redirect
     to assert( bool_expr ). If bool_expr is false, a memory error occured. MEM_INTERRUPT can be invoked
@@ -51,18 +54,19 @@
 
     Note that debugging application memory usage in general spawns additional meta-data depending on the
     configuration. Using USE_FULL_PAGE_HEAP, the application will quickly go out of allocatable memory since
-    huge chunks are allocated. Your main appplication may not get to properly initialize itself; test in
+    huge chunks are allocated. Your main application may not get to properly initialize itself; test in
     a controlled environment instead!
 
     FEATURE SET:
         finds memory leaks,
         finds invalid (page heap) object free requests,
-        detects memory corruption
+        detects memory corruption,
+        callstack traces of memory leaks
 
     DEPENDENCIES:
         COSUtils.h
 
-    version 1.2
+    version 1.3
 */
 
 #ifdef USE_HEAP_DEBUGGING
@@ -236,6 +240,19 @@ inline static void _win32_freeMem( void *ptr )
     _win32_freeMemPage( intro );
 }
 
+inline static size_t _win32_getAllocSize( void *ptr )
+{
+    if ( !ptr )
+        return 0;
+
+    void *valid_ptr = (void*)( (_memIntro*)PAGE_MEM_ADJUST( ptr ) + 1 );
+    MEM_INTERRUPT( valid_ptr == ptr );
+
+    _memIntro *intro = (_memIntro*)valid_ptr - 1;
+
+    return intro->objSize;
+}
+
 inline static void* _win32_reallocMem( void *ptr, size_t newSize )
 {
     if ( !ptr || !newSize )
@@ -269,7 +286,7 @@ inline static void* _win32_reallocMem( void *ptr, size_t newSize )
             if ( !reallocSuccess )
             {
                 // Allocate a new page region of memory.
-                void *newMem = _win32_allocMem( constructNewSize );
+                void *newMem = _win32_allocMem( newSize );
 
                 // Only process this request if the NT kernel could fetch a new page for us.
                 if ( newMem != NULL )
@@ -347,30 +364,37 @@ inline static void OutputDebugStringFormat( const char *fmt, ... )
 
     OutputDebugString( buf );
 }
+#endif //PAGE_HEAP_MEMORY_STATS
 
 inline static void _win32_shutdownHeap( void )
 {
     // Make sure the DebugHeap manager is not damaged.
     LIST_VALIDATE( g_privateMemory.root );
     
+#ifdef PAGE_HEAP_MEMORY_STATS
+    // Memory debugging statistics.
     unsigned int blockCount = 0;
     unsigned int pageCount = 0;
     size_t memLeaked = 0;
+#endif //PAGE_HEAP_MEMORY_STATS
 
     // Check all blocks in order and free them
     while ( !LIST_EMPTY( g_privateMemory.root ) )
     {
         _memIntro *item = LIST_GETITEM( _memIntro, g_privateMemory.root.next, memList );
     
-        // Keep track of stats
+#ifdef PAGE_HEAP_MEMORY_STATS
+        // Keep track of stats.
         blockCount++;
         pageCount += MEM_PAGE_MOD( item->objSize + sizeof(_memIntro) + sizeof(_memOutro) );
         memLeaked += item->objSize;
+#endif //PAGE_HEAP_MEMORY_STATS
 
         _win32_freeMem( item + 1 );
     }
 
-    if ( blockCount )
+#ifdef PAGE_HEAP_MEMORY_STATS
+    if ( blockCount != 0 )
     {
         OutputDebugString( "Heap Memory Leak Protocol:\n" );
         OutputDebugStringFormat(
@@ -382,17 +406,8 @@ inline static void _win32_shutdownHeap( void )
     }
     else
         OutputDebugString( "No memory leaks detected." );
-}
-#else
-inline static void _win32_shutdownHeap( void )
-{
-    LIST_VALIDATE( g_privateMemory.root );
-
-    // Check all blocks in order and free them
-    while ( !LIST_EMPTY( g_privateMemory.root ) )
-        _win32_freeMem( LIST_GETITEM( _memIntro, g_privateMemory.root.next, memList ) );
-}
 #endif //PAGE_HEAP_MEMORY_STATS
+}
 
 #else
 inline static void _win32_initHeap( void )
@@ -482,27 +497,196 @@ inline void DbgMemAllocEvent( void *memPtr, size_t memSize )
     }
 }
 
+// General debug block header.
+struct _debugBlockHeader
+{
+#ifdef USE_HEAP_STACK_TRACE
+    std::string callStackPrint;
+#endif //USE_HEAP_STACK_TRACE
+    RwListEntry <_debugBlockHeader> node;
+};
+
+static bool _isInManager = false;
+static RwList <_debugBlockHeader> _dbgAllocBlocks;
+
+inline bool _doesRequireBlockHeader( void )
+{
+    bool doesRequire = false;
+
+#ifdef USE_HEAP_STACK_TRACE
+    doesRequire = true;
+#endif
+
+    return doesRequire;
+}
+
+inline void _fillDebugBlockHeader( _debugBlockHeader *blockHeader, bool shouldInitExpensiveExtensions )
+{
+    // Construct the header.
+    new (blockHeader) _debugBlockHeader;
+
+    LIST_APPEND( _dbgAllocBlocks.root, blockHeader->node );
+
+    // Fill it depending on extensions.
+#ifdef USE_HEAP_STACK_TRACE
+    if ( shouldInitExpensiveExtensions )
+    {
+        DbgTrace::IEnvSnapshot *snapshot = DbgTrace::CreateEnvironmentSnapshot();
+
+        if ( snapshot )
+        {
+            blockHeader->callStackPrint = snapshot->ToString();
+
+            delete snapshot;
+        }
+    }
+#endif
+}
+
+inline void _killDebugBlockHeader( _debugBlockHeader *blockHeader )
+{
+    // Unlist us.
+    LIST_REMOVE( blockHeader->node );
+
+    blockHeader->~_debugBlockHeader();
+}
+
 inline void* DbgMallocNative( size_t memSize )
 {
-    void *memPtr = _win32_allocMem( memSize );
+    void *memPtr = NULL;
 
-    DbgMemAllocEvent( memPtr, memSize );
+    size_t requiredMemBlockSize = memSize;
+
+    bool requiresBlockHeader = _doesRequireBlockHeader();
+
+    if ( requiresBlockHeader )
+    {
+        // Add a debug block header.
+        requiredMemBlockSize += sizeof( _debugBlockHeader );
+    }
+
+    bool resetManagerFlag = false;
+
+    if ( _isInManager == false )
+    {
+        _isInManager = true;
+
+        resetManagerFlag = true;
+    }
+
+    // Allocate the memory.
+    memPtr = _win32_allocMem( requiredMemBlockSize );
+
+    DbgMemAllocEvent( memPtr, requiredMemBlockSize );
+
+    if ( requiresBlockHeader )
+    {
+        _debugBlockHeader *blockHeader = (_debugBlockHeader*)memPtr;
+
+        _fillDebugBlockHeader( blockHeader, resetManagerFlag == true );
+
+        memPtr = ( blockHeader + 1 );
+    }
+
+    if ( resetManagerFlag )
+    {
+        _isInManager = false;
+    }
 
     return memPtr;
 }
 
 inline void* DbgReallocNative( void *memPtr, size_t newSize )
 {
-    void *newPtr = _win32_reallocMem( memPtr, newSize );
+    bool requiresBlockHeader = _doesRequireBlockHeader();
 
-    DbgMemAllocEvent( memPtr, newSize );
+    void *newPtr = NULL;
+
+    size_t actualNewMemSize = newSize;
+
+    if ( requiresBlockHeader )
+    {
+        actualNewMemSize += sizeof( _debugBlockHeader );
+
+        // Delete the old block header.
+        _debugBlockHeader *oldBlockHeader = (_debugBlockHeader*)memPtr - 1;
+
+        _killDebugBlockHeader( oldBlockHeader );
+
+        memPtr = oldBlockHeader;
+    }
+
+    // ReAllocate the memory.
+    newPtr = _win32_reallocMem( memPtr, actualNewMemSize );
+
+    DbgMemAllocEvent( newPtr, actualNewMemSize );
+
+    if ( requiresBlockHeader )
+    {
+        _debugBlockHeader *blockHeader = (_debugBlockHeader*)newPtr;
+
+        _fillDebugBlockHeader( blockHeader, true );
+
+        newPtr = ( blockHeader + 1 );
+    }
 
     return newPtr;
 }
 
 inline void DbgFreeNative( void *memPtr )
 {
-    _win32_freeMem( memPtr );
+    bool requiresBlockHeader = _doesRequireBlockHeader();
+
+    void *actualMemPtr = memPtr;
+
+    if ( requiresBlockHeader )
+    {
+        _debugBlockHeader *blockHeader = (_debugBlockHeader*)memPtr - 1;
+
+        // Deconstruct the header.
+        _killDebugBlockHeader( blockHeader );
+
+        actualMemPtr = blockHeader;
+    }
+
+    _win32_freeMem( actualMemPtr );
+}
+
+inline bool DbgAllocGetSizeNative( void *memPtr, size_t& sizeOut )
+{
+    bool couldGetSize = false;
+
+    size_t theSizeOut = 0;
+
+    bool requiresHeaders = _doesRequireBlockHeader();
+
+    void *blockPtr = memPtr;
+    {
+        if ( requiresHeaders )
+        {
+            blockPtr = (_debugBlockHeader*)memPtr - 1;
+        }
+    }
+
+#ifdef USE_FULL_PAGE_HEAP
+    {
+        theSizeOut = _win32_getAllocSize( blockPtr );
+
+        couldGetSize = true;
+    }
+#endif //USE_FULL_PAGE_HEAP
+
+    if ( couldGetSize )
+    {
+        if ( requiresHeaders )
+        {
+            theSizeOut -= sizeof( _debugBlockHeader );
+        }
+
+        sizeOut = theSizeOut;
+    }
+
+    return couldGetSize;
 }
 
 void* operator new( size_t memSize ) throw(std::bad_alloc)
@@ -517,11 +701,15 @@ void* operator new( size_t memSize ) throw(std::bad_alloc)
 
 void* operator new( size_t memSize, const std::nothrow_t ) throw()
 {
+    MEM_INTERRUPT( memSize != 0 );
+
     return DbgMallocNative( memSize );
 }
 
 void* operator new[]( size_t memSize ) throw(std::bad_alloc)
 {
+    MEM_INTERRUPT( memSize != 0 );
+
     void *mem = DbgMallocNative( memSize );
 
     if ( !mem )
@@ -532,6 +720,8 @@ void* operator new[]( size_t memSize ) throw(std::bad_alloc)
 
 void* operator new[]( size_t memSize, const std::nothrow_t ) throw()
 {
+    MEM_INTERRUPT( memSize != 0 );
+
     return DbgMallocNative( memSize );
 }
 
@@ -545,19 +735,31 @@ void operator delete[]( void *ptr ) throw()
     DbgFreeNative( ptr );
 }
 
+bool DbgAllocGetSize( void *ptr, size_t& sizeOut )
+{
+    return DbgAllocGetSizeNative( ptr, sizeOut );
+}
+
 void* DbgMalloc( size_t size )
 {
+    MEM_INTERRUPT( size != 0 );
+
     return DbgMallocNative( size );
 }
 
 void* DbgRealloc( void *ptr, size_t size )
 {
+    MEM_INTERRUPT( size != 0 );
+
     return DbgReallocNative( ptr, size );
 }
 
 void DbgFree( void *ptr )
 {
-    DbgFreeNative( ptr );
+    if ( ptr != NULL )
+    {
+        DbgFreeNative( ptr );
+    }
 }
 
 #endif
@@ -575,6 +777,8 @@ void DbgHeap_Init( void )
     _nativeAlloc = new (malloc(sizeof(DebugFullPageHeapAllocator))) DebugFullPageHeapAllocator();
 
     _win32_initHeap();
+
+    LIST_CLEAR( _dbgAllocBlocks.root );
 #endif
 }
 
@@ -587,7 +791,34 @@ void DbgHeap_Validate( void )
 #endif
 }
 
-// Debug heap memory callback routines.
+// DebugHeap memory checkup routine.
+// Loops through all memory blocks and tells you about their callstacks.
+// Use this in combination with breakpoints.
+#pragma optimize("", off)
+
+void DbgHeap_CheckActiveBlocks( void )
+{
+#ifdef USE_HEAP_DEBUGGING
+    // First we must verify that our memory is in a valid state.
+    _win32_validateMemory();
+
+#ifdef USE_HEAP_STACK_TRACE
+    // Now loop through all blocks.
+    LIST_FOREACH_BEGIN( _debugBlockHeader, _dbgAllocBlocks.root, node )
+
+        const std::string& callstack = item->callStackPrint;
+
+        __asm nop       // PUT BREAKPOINT HERE.
+
+    LIST_FOREACH_END
+#endif //USE_HEAP_STACK_TRACE
+
+#endif //USE_HEAP_DEBUGGING
+}
+
+#pragma optimize("", on)
+
+// DebugHeap memory callback routines.
 // Call these to set specific callbacks for memory watching.
 void DbgHeap_SetMemoryAllocationWatch( pfnMemoryAllocWatch allocWatchCallback )
 {

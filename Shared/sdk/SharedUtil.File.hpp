@@ -161,7 +161,7 @@ filePath SharedUtil::MakeUniquePath( const filePath& path )
 
     SString ext;
 
-    bool hasExtention = SharedUtil::ExtractExtention( SString( std::string( path ) ), NULL, &ext );
+    bool hasExtention = SharedUtil::ExtractExtention( SString( path.convert_ansi() ), NULL, &ext );
 
     if ( hasExtention )
     {

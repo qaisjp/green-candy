@@ -45,6 +45,8 @@ namespace DbgTrace
         return "C:\\Users\\The_GTA\\Desktop\\mta_green\\symbols";
     }
 
+    static bool _isDebugManagerInitialized = false;
+
     struct Win32DebugManager
     {
         volatile bool isInitialized;
@@ -82,10 +84,14 @@ namespace DbgTrace
             this->d_StackWalk = NULL;
 
             InitializeCriticalSection( &debugLock );
+
+            _isDebugManagerInitialized = true;
         }
 
         AINLINE ~Win32DebugManager( void )
         {
+            _isDebugManagerInitialized = false;
+
             Shutdown();
 
             // Delete the debug library.
@@ -209,6 +215,11 @@ namespace DbgTrace
             return isInitialized;
         }
 
+        AINLINE bool IsInDebugPhase( void ) const
+        {
+            return this->isInsideDebugPhase;
+        }
+
         AINLINE void End( void )
         {
             assert( isInsideDebugPhase == true );
@@ -231,7 +242,7 @@ namespace DbgTrace
             {
                 // Get Information about the stack frame contents.
                 InternalSymbolInfo addrSymbolInfo;
-                addrSymbolInfo.SizeOfStruct = sizeof( InternalSymbolInfo );
+                addrSymbolInfo.SizeOfStruct = sizeof( SYMBOL_INFO );
                 addrSymbolInfo.MaxNameLen = NUMELMS( addrSymbolInfo.Name_extended ) + NUMELMS( addrSymbolInfo.Name );
 
                 DWORD64 displacementPtr;
@@ -491,6 +502,17 @@ namespace DbgTrace
 
     IEnvSnapshot* CreateEnvironmentSnapshot( void )
     {
+        if ( _isDebugManagerInitialized == false )
+        {
+            return NULL;
+        }
+
+        if ( debugMan.IsInDebugPhase() )
+        {
+            // If the debug manager is busy already, we cannot continue.
+            return NULL;
+        }
+
         CONTEXT theContext;
 #if 0
         memset( &theContext, 0, sizeof( theContext ) );
