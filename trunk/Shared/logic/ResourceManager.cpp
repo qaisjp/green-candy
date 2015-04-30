@@ -85,7 +85,7 @@ ResourceManager::~ResourceManager()
 
 Resource* ResourceManager::Get( const char *name )
 {
-    Resource **res = MapFind( m_resByName, name );
+    Resource **res = MapFind( m_resByName, filePath( name ) );
 
     if ( !res )
         return NULL;
@@ -185,7 +185,7 @@ bool ResourceManager::FileCopy( Resource *res, const char *src, const char *dst 
     if ( res == dstRes )
         return res->FileCopy( src, dst );
 
-    return resFileRoot->Copy( res->GetName() + '/' + src, dstRes->GetName() + '/' + dst );
+    return resFileRoot->Copy( res->GetName() + "/" + src, dstRes->GetName() + "/" + dst );
 }
 
 bool ResourceManager::FileRename( Resource *res, const char *src, const char *dst )
@@ -198,7 +198,7 @@ bool ResourceManager::FileRename( Resource *res, const char *src, const char *ds
     if ( res == dstRes )
         return res->FileRename( src, dst );
 
-    return resFileRoot->Rename( res->GetName() + '/' + src, dstRes->GetName() + '/' + dst );
+    return resFileRoot->Rename( res->GetName() + "/" + src, dstRes->GetName() + "/" + dst );
 }
 
 size_t ResourceManager::FileSize( Resource *res, const char *path )

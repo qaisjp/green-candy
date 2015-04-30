@@ -1428,6 +1428,10 @@ static LUA_DECLARE( createFrameBuffer )
 
         fbo = new glFrameBufferEXT( L, driver, bufIndex );
     }
+    else
+    {
+        throw lua_exception( L, LUA_ERRRUN, "driver does not support FBO", 1 );
+    }
 
     fbo->SetParent( driver );
     fbo->PushStack( L );

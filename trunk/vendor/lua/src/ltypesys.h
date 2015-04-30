@@ -8,7 +8,7 @@
 
 // Type sentry struct of the Lua type system.
 // It notes the programmer that the struct has RTTI.
-// Classes must inherit from this if they want RTTI support.
+// All types that are constructed using the DynamicTypeSystem automatically inherit from this.
 typedef GenericRTTI LuaRTTI;
 
 // This class manages type information of the Lua runtime.

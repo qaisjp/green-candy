@@ -17,8 +17,12 @@
 
 static int filesystem_open( lua_State *L )
 {
+    int theTop = lua_gettop( L );
+
     luaL_checktype( L, 1, LUA_TSTRING );
     luaL_checktype( L, 2, LUA_TSTRING );
+
+    lua_settop( L, 2 );
 
     CFile *file = ((CFileTranslator*)lua_getmethodtrans( L ))->Open( lua_tostring( L, 1 ), lua_tostring( L, 2 ) );
 
@@ -623,17 +627,30 @@ int luafsys_init( lua_State *L )
 
 void luafilesystem_open( lua_State *L )
 {
+    int cur_top = lua_gettop( L );
+
     lua_newtable( L );
     luaL_openlib( L, NULL, fsysLib, 0 );
 
+    int that_top = lua_gettop( L );
+
     lua_pushlstring( L, "getRoot", 7 );
+
+    int no_top = lua_gettop( L );
 
     lua_pushcclosure( L, luafsys_init, 0 );
     lua_call( L, 0, 1 );
 
+    int so_top = lua_gettop( L );
+
     lua_pushlstring( L, "root", 4 );
 
+    int wut_top = lua_gettop( L );
+
     lua_pushvalue( L, -2 );
+
+    int so_wut = lua_gettop( L );
+
     lua_rawset( L, -5 );
 
     lua_pushcclosure( L, luafsys_getRoot, 1 );

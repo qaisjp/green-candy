@@ -19,10 +19,14 @@ class CResource : public Resource
 {
     friend class CResourceManager;
 public:
-                                CResource( CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root );
-                                ~CResource();
+                                CResource( CResourceManager *manager, CLuaMain& main, unsigned short id, const filePath& name, CFileTranslator& root );
+                                ~CResource( void );
 
     CFileTranslator*            GetFileRoot( void )         { return &m_fileRoot; }
+
+protected:
+    CResourceManager*   m_resMan;
+    CLuaMain*           m_luaMain;
 };
 
 #endif //_LUA_RESOURCE_DERIVED_

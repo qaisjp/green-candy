@@ -1,3 +1,6 @@
+r586
+- fixed a palettization issue where target rasters had too little depth when coming from compressed formats - fixed PS2 texture target properties (it now properly converts all input)
+---------------------
 r585
 - added generic extension block storage so that extensions are preserved for all RenderWare objects
 ---------------------

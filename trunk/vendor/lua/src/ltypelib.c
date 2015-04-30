@@ -324,6 +324,40 @@ static int typelib_isexclusive( lua_State *L )
     return 1;
 }
 
+static int typelib_isabstract( lua_State *L )
+{
+    const char *typeName = lua_tostring( L, 1 );
+
+    if ( !typeName )
+    {
+        throw lua_exception( L, LUA_ERRRUN, "no typename provided", 1 );
+    }
+
+    global_State *g = G(L);
+
+    LuaTypeSystem& typeSys = g->config->typeSys;
+
+    LuaTypeSystem::typeInfoBase *regTypeInfo = typeSys.ResolveTypeInfo( typeName, NULL );
+
+    bool hasPushedValue = false;
+
+    if ( regTypeInfo )
+    {
+        bool isAbstract = typeSys.IsTypeInfoAbstract( regTypeInfo );
+
+        pushbvalue( L, isAbstract );
+
+        hasPushedValue = true;
+    }
+
+    if ( !hasPushedValue )
+    {
+        pushbvalue( L, false );
+    }
+
+    return 1;
+}
+
 static const luaL_Reg _typelibFuncs[] =
 {
     { "iscollectable", typelib_iscollectable },
@@ -334,6 +368,7 @@ static const luaL_Reg _typelibFuncs[] =
     { "clone", typelib_clone },
     { "destroy", typelib_destroy },
     { "isexclusive", typelib_isexclusive },
+    { "isabstract", typelib_isabstract },
     { NULL, NULL }
 };
 

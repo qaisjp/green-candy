@@ -12,6 +12,8 @@
 #ifndef _FILESYSTEM_STL_COMPAT_
 #define _FILESYSTEM_STL_COMPAT_
 
+#include <algorithm>
+
 namespace FileSystem
 {
     // CFile to std::streambuf wrapper.
@@ -48,9 +50,9 @@ namespace FileSystem
                 assert( 0 );
             }
 
-            long streamOffsetANSI = offset;
+            long long streamOffsetANSI = offset;
 
-            int seekSuccess = this->underlyingStream->Seek( streamOffsetANSI, offsetANSI );
+            int seekSuccess = this->underlyingStream->SeekNative( streamOffsetANSI, offsetANSI );
 
             if ( seekSuccess == -1 )
                 return -1;
@@ -60,9 +62,9 @@ namespace FileSystem
 
         std::streampos seekpos( std::streamoff offset, std::ios_base::openmode openmode )
         {
-            long streamOffsetANSI = offset;
+            long long streamOffsetANSI = offset;
 
-            int seekSuccess = this->underlyingStream->Seek( streamOffsetANSI, SEEK_SET );
+            int seekSuccess = this->underlyingStream->SeekNative( streamOffsetANSI, SEEK_SET );
 
             if ( seekSuccess == -1 )
                 return -1;
@@ -90,7 +92,12 @@ namespace FileSystem
             if ( n < 0 )
                 return -1;
 
-            size_t readCount = this->underlyingStream->Read( outBuffer, 1, n );
+            if ( n > 0x7FFFFFFF )
+                return -1;
+
+            long realSize = (long)n;
+
+            size_t readCount = this->underlyingStream->Read( outBuffer, 1, realSize );
 
             return (std::streamsize)readCount;
         }
@@ -100,7 +107,12 @@ namespace FileSystem
             if ( n < 0 )
                 return -1;
 
-            size_t writeCount = this->underlyingStream->Write( inputBuffer, 1, n );
+            if ( n > 0x7FFFFFFF )
+                return -1;
+
+            long realSize = (long)n;
+
+            size_t writeCount = this->underlyingStream->Write( inputBuffer, 1, realSize );
 
             return (std::streamsize)writeCount;
         }

@@ -879,7 +879,7 @@ void CIMGArchiveTranslator::GenerateFileHeaderStructure( directory& baseDir, hea
     {
         directory *childDir = *iter;
 
-        GenerateFileHeaderStructure( baseDir, genOut );
+        GenerateFileHeaderStructure( *childDir, genOut );
     }
 
     // Now perform operation on us.
@@ -989,8 +989,6 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
             if ( srcStream )
             {
                 // If we need to compress, we need to dump a compressed copy.
-                CFile *destinationHandle = NULL;
-
                 if ( destinationHandle == NULL && requiresCompression )
                 {
                     CFileTranslator *compressRoot = this->GetCompressRoot();
@@ -1018,20 +1016,23 @@ void CIMGArchiveTranslator::GenerateArchiveStructure( directory& baseDir, archiv
                 {
                     CFileTranslator *fileRoot = this->GetUnpackRoot();
 
-                    // Create the file in the target directory and put data into it.
-                    CFile *dstStream = fileRoot->Open( relativePath, "wb" );
-
-                    if ( dstStream )
+                    if ( fileRoot )
                     {
-                        // We should extract the stream instead.
-                        isExtraction = true;
+                        // Create the file in the target directory and put data into it.
+                        CFile *dstStream = fileRoot->Open( relativePath, "wb" );
 
-                        // Give the destination handle to the runtime.
-                        destinationHandle = dstStream;
-                    }
-                    else
-                    {
-                        assert( 0 );
+                        if ( dstStream )
+                        {
+                            // We should extract the stream instead.
+                            isExtraction = true;
+
+                            // Give the destination handle to the runtime.
+                            destinationHandle = dstStream;
+                        }
+                        else
+                        {
+                            assert( 0 );
+                        }
                     }
                 }
 

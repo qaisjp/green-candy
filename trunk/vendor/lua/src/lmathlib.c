@@ -202,7 +202,8 @@ static int math_random (lua_State *L) {
 }
 
 
-static int math_randomseed (lua_State *L) {
+static int math_randomseed (lua_State *L)
+{
     // MTA Specific
     // lua_tointegerW wraps out of range numbers (luaL_checkint clips values below -1^32 and above 1^32)
     srand(lua_tointegerW(L, 1));
@@ -256,10 +257,6 @@ LUALIB_API int luaopen_math (lua_State *L)
     lua_setfield(L, -2, "pi");
     lua_pushnumber(L, HUGE_VAL);
     lua_setfield(L, -2, "huge");
-#if defined(LUA_COMPAT_MOD)
-    lua_getfield(L, -1, "fmod");
-    lua_setfield(L, -2, "mod");
-#endif
     return 1;
 }
 

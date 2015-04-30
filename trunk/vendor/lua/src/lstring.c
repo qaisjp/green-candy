@@ -384,6 +384,7 @@ void luaS_globalgc (lua_State *L)
         if ( luaZ_sizebuffer(&stringEnv->buff) > LUA_MINBUFFER*2 )
         {  /* buffer too big? */
             size_t newsize = luaZ_sizebuffer(&stringEnv->buff) / 2;
+
             luaZ_resizebuffer(L, &stringEnv->buff, newsize);
         }
     }

@@ -2153,105 +2153,115 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
         return NULL;
     }
 
-    // Set up the environments
-    c->env = luaQ_newclassenv( L, c );
-    c->outenv = luaQ_newclassoutenv( L, c );
-    c->storage = luaH_new( L, 0, 0 );
-    c->internStorage = luaH_new( L, 0, 0 );
+    try
+    {
+        // Set up the environments
+        c->env = luaQ_newclassenv( L, c ); c->env->DereferenceGC( L );
+        c->outenv = luaQ_newclassoutenv( L, c ); c->outenv->DereferenceGC( L );
+        c->storage = luaH_new( L, 0, 0 ); c->storage->DereferenceGC( L );
+        c->internStorage = luaH_new( L, 0, 0 );
 
-    c->forceSuper = new (L) Class::ForceSuperTable();
+        c->forceSuper = new (L) Class::ForceSuperTable();
 
-    lua_pushnil(L);
-    popstack( L, 1 );
+        lua_pushnil(L);
+        popstack( L, 1 );
 
-    // Perform a temporary keep
-    ClassConstructionAllocation construction( L, c );
+        // Perform a temporary keep
+        ClassConstructionAllocation construction( L, c );
 
 #if 0
-    // Register the previous environment
-    // Update: this ain't workin' anymore; causing troubles.
-    // Was a stupid optimization for memory saving anyway.
-    lua_pushvalue( L, LUA_ENVIRONINDEX );
-    c->EnvPutBack( L );
+        // Register the previous environment
+        // Update: this ain't workin' anymore; causing troubles.
+        // Was a stupid optimization for memory saving anyway.
+        lua_pushvalue( L, LUA_ENVIRONINDEX );
+        c->EnvPutBack( L );
 #endif
 
-    // Init the forceSuper table
-    Class::forceSuperItem destrItem;
-    destrItem.cb = classmethod_fsDestroyHandler;
-    destrItem.cbNative = classmethod_fsDestroyHandlerNative;
-    c->forceSuper->SetItem( L, luaS_new( L, "destroy" ), destrItem );
+        // Init the forceSuper table
+        Class::forceSuperItem destrItem;
+        destrItem.cb = classmethod_fsDestroyHandler;
+        destrItem.cbNative = classmethod_fsDestroyHandlerNative;
+        c->forceSuper->SetItem( L, luaS_new( L, "destroy" ), destrItem );
 
-    // Create a class-only storage
-    pushhvalue( L, c->internStorage );
-    
-    if ( !( flags & LCLASS_API_NO_ENV_AWARENESS ) )
-    {
-        // Distribute the environment
-        pushqvalue( L, c->env );
-        lua_setfield( L, -2, "_ENV" );
-        pushqvalue( L, c->outenv );
-        lua_setfield( L, -2, "_OUTENV" );
+        // Create a class-only storage
+        pushhvalue( L, c->internStorage );
+        
+        if ( !( flags & LCLASS_API_NO_ENV_AWARENESS ) )
+        {
+            // Distribute the environment
+            pushqvalue( L, c->env );
+            lua_setfield( L, -2, "_ENV" );
+            pushqvalue( L, c->outenv );
+            lua_setfield( L, -2, "_OUTENV" );
 
-        // Only set the this pointer if required.
+            // Only set the this pointer if required.
+            pushjvalue( L, c );
+            lua_setfield( L, -2, "this" );
+        }
+
+        // Set some internal functions
+        c->RegisterInterfaceAt( L, internStorage_interface, 0, c->internStorage );
+
+        if ( !( flags & LCLASS_API_NOENVDISPATCH ) )
+        {
+            // Include the env dispatcher API
+            c->RegisterInterfaceAt( L, internStorage_envDispatch_interface, 0, c->internStorage );
+        }
+
+        // Pop the internal storage
+        popstack( L, 1 );
+
+        // Register the interface
+        if ( !( flags & LCLASS_NOPARENTING ) )
+        {
+            // Add functionality for Lua parenting
+            c->RegisterInterface( L, classmethods_parenting, 0 );
+        }
+
+        // Register the light interface
+        c->RegisterInterface( L, classmethods_c, 0 );
+
+        pushhvalue( L, c->storage );
+
+        // Prepare the destructor
         pushjvalue( L, c );
-        lua_setfield( L, -2, "this" );
+
+        pushjvalue( L, c );
+        lua_pushcclosure( L, classmethod_destructor, 1 );
+
+        Closure *theDestructor = NULL;
+        {
+            ConstValueAddress topItem = index2constadr( L, -1 );
+
+            theDestructor = clvalue( topItem );
+        }
+
+        c->destructor = theDestructor;
+        luaC_forceupdatef( L, theDestructor );
+
+        lua_pushcclosure( L, classmethod_fsDestroyRoot, 2 );
+
+        lua_setfield( L, -2, "destroy" );
+
+        popstack( L, 1 );
+
+        // Apply the environment to the constructor
+        constructor->env = c->AcquireEnvDispatcherEx( L, constructor->env );
+        luaC_objbarrier( L, constructor, c->env );
+
+        // Call the constructor (class as first arg)
+        pushjvalue( L, c );
+        lua_insert( L, -nargs - 1 );
+
+        lua_call( L, nargs + 1, 0 );
     }
-
-    // Set some internal functions
-    c->RegisterInterfaceAt( L, internStorage_interface, 0, c->internStorage );
-
-    if ( !( flags & LCLASS_API_NOENVDISPATCH ) )
+    catch( ... )
     {
-        // Include the env dispatcher API
-        c->RegisterInterfaceAt( L, internStorage_envDispatch_interface, 0, c->internStorage );
+        c->DereferenceGC( L );
+
+        throw;
     }
 
-    // Pop the internal storage
-    popstack( L, 1 );
-
-    // Register the interface
-    if ( !( flags & LCLASS_NOPARENTING ) )
-    {
-        // Add functionality for Lua parenting
-        c->RegisterInterface( L, classmethods_parenting, 0 );
-    }
-
-    // Register the light interface
-    c->RegisterInterface( L, classmethods_c, 0 );
-
-    pushhvalue( L, c->storage );
-
-    // Prepare the destructor
-    pushjvalue( L, c );
-
-    pushjvalue( L, c );
-    lua_pushcclosure( L, classmethod_destructor, 1 );
-
-    Closure *theDestructor = NULL;
-    {
-        ConstValueAddress topItem = index2constadr( L, -1 );
-
-        theDestructor = clvalue( topItem );
-    }
-
-    c->destructor = theDestructor;
-    luaC_forceupdatef( L, theDestructor );
-
-    lua_pushcclosure( L, classmethod_fsDestroyRoot, 2 );
-
-    lua_setfield( L, -2, "destroy" );
-
-    popstack( L, 1 );
-
-    // Apply the environment to the constructor
-    constructor->env = c->AcquireEnvDispatcherEx( L, constructor->env );
-    luaC_objbarrier( L, constructor, c->env );
-
-    // Call the constructor (class as first arg)
-    pushjvalue( L, c );
-    lua_insert( L, -nargs - 1 );
-
-    lua_call( L, nargs + 1, 0 );
     return c;
 }
 
@@ -2268,6 +2278,8 @@ void luaJ_construct( lua_State *L, int nargs )
     if ( j )
     {
         pushjvalue( L, j );
+
+        j->DereferenceGC( L );
     }
     else
     {

@@ -308,9 +308,15 @@ const SString& LuaMain::GetFunctionTag( int refID )
 
             // Make sure this function isn't defined in a string
             if ( debugInfo.source[0] == '@' && ParseRelative( debugInfo.source, src ) )
-                strText = SString( "@%s:%d", src.GetFilename(), debugInfo.currentline != -1 ? debugInfo.currentline : debugInfo.linedefined, refID );
+            {
+                std::string fileNamePart = FileSystem::GetFileNameItem( src.c_str(), true, NULL, NULL );
+
+                strText = SString( "@%s:%d", fileNamePart.c_str(), debugInfo.currentline != -1 ? debugInfo.currentline : debugInfo.linedefined, refID );
+            }
             else
+            {
                 strText = SString( "@func_%d %s", refID, debugInfo.short_src );
+            }
         }
         else
             strText = SString( "@func_%d NULL", refID );

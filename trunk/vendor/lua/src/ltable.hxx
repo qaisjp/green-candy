@@ -1,14 +1,11 @@
 #ifndef _LUA_TABLE_NATIVE_IMPLEMENTATION_
 #define _LUA_TABLE_NATIVE_IMPLEMENTATION_
 
-typedef union TKey
+struct TKey
 {
-    struct : TValue
-    {
-        struct Node *next;  /* for chaining */
-    } nk;
     TValue tvk;
-} TKey;
+    struct Node *next;  /* for chaining */
+};
 
 struct Node
 {
@@ -17,14 +14,18 @@ struct Node
 };
 
 // Utility macros.
+#define twoto(x)	(1<<(x))
+
 #define gnode(t,i)	(&(t)->node[i])
-#define gkey(n)		(&(n)->i_key.nk)
+#define gkey(n)		(&(n)->i_key.tvk)
 #define gval(n)		(&(n)->i_val)
-#define gnext(n)	((n)->i_key.nk.next)
+#define gnext(n)	((n)->i_key.next)
 
 #define key2tval(n)	(&(n)->i_key.tvk)
 
 #define sizenode(t)	(twoto((t)->lsizenode))
+
+#define ceillog2(x)	(luaO_log2((x)-1) + 1)
 
 
 #include "lpluginutil.hxx"
@@ -93,8 +94,8 @@ struct globalStateTableEnvPlugin
     inline globalStateTableEnvPlugin( void )
     {
         // Set up the dummy node.
-        setnilvalue( &dummynode.i_key.nk );
-        dummynode.i_key.nk.next = NULL;
+        setnilvalue( &dummynode.i_key.tvk );
+        dummynode.i_key.next = NULL;
         setnilvalue( &dummynode.i_val );
     }
 
@@ -238,33 +239,47 @@ struct tableNativeImplementation
         this->node = newNodes;
         this->lsizenode = right.lsizenode;
 
-        // Now copy the last free identifier.
-        Node *rightLastfree = right.lastfree;
-
-        Node *newLastfree = NULL;
-
-        if ( rightLastfree != NULL )
+        try
         {
-            // We need to work with offsets.
-            int lastfreeoff = ( rightLastfree - rightNode );
+            // Now copy the last free identifier.
+            Node *rightLastfree = right.lastfree;
 
-            newLastfree = newNodes + lastfreeoff;
+            Node *newLastfree = NULL;
+
+            if ( rightLastfree != NULL )
+            {
+                // We need to work with offsets.
+                int lastfreeoff = ( rightLastfree - rightNode );
+
+                newLastfree = newNodes + lastfreeoff;
+            }
+
+            this->lastfree = newLastfree;
+
+            // Now copy the array of TValues.
+            int sizearray = right.sizearray;
+
+            TValue *newArray = NULL;
+
+            if ( sizearray > 0 )
+            {
+                newArray = luaM_clonevector( g->mainthread, right.array, sizearray );
+            }
+
+            this->sizearray = sizearray;
+            this->array = newArray;
         }
-
-        this->lastfree = newLastfree;
-
-        // Now copy the array of TValues.
-        int sizearray = right.sizearray;
-
-        TValue *newArray = NULL;
-
-        if ( sizearray > 0 )
+        catch( ... )
         {
-            newArray = luaM_clonevector( g->mainthread, right.array, sizearray );
-        }
+            if ( newNodes && newNodes != dummyNode )
+            {
+                int nodesize = sizenode(&right);
 
-        this->sizearray = sizearray;
-        this->array = newArray;
+                luaM_freearray( g->mainthread, newNodes, nodesize );
+            }
+
+            throw;
+        }
     }
 
     inline ~tableNativeImplementation( void )
@@ -288,19 +303,19 @@ struct tableNativeImplementation
         // Clean up runtime data of the table.
         lua_State *L = g->mainthread;
 
-        if ( this->node != NULL )
+        if ( Node *node = this->node )
         {
-            if ( this->node != GetDummyNode( g ) )
+            if ( node != GetDummyNode( g ) )
             {
-                luaM_freearray( L, this->node, sizenode( this ) );
+                luaM_freearray( L, node, sizenode( this ) );
             }
 
             this->node = NULL;
         }
 
-        if ( this->array != NULL )
+        if ( TValue *array = this->array )
         {
-            luaM_freearray( L, this->array, this->sizearray );
+            luaM_freearray( L, array, this->sizearray );
 
             this->array = NULL;
         }

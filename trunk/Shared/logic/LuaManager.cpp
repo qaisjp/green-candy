@@ -169,7 +169,7 @@ static void *l_alloc (void *ud, void *ptr, size_t osize, size_t nsize) {
     return realloc(ptr, nsize);
 }
 
-static void* _lua_allocate( _memAllocatorInfo *info, void *ptr, size_t, size_t nsize )
+static void* _lua_allocate( _memAllocatorInfo *info, void *ptr, size_t osize, size_t nsize )
 {
 #ifndef USE_HEAP_DEBUGGING
     if ( nsize == 0 )
@@ -184,6 +184,18 @@ static void* _lua_allocate( _memAllocatorInfo *info, void *ptr, size_t, size_t n
 
     return HeapReAlloc( info->heap, 0, ptr, nsize );
 #else
+    if ( osize != 0 && ptr != NULL )
+    {
+        size_t actualOldSize;
+
+        bool gotActualOldSize = DbgAllocGetSize( ptr, actualOldSize );
+
+        if ( gotActualOldSize && actualOldSize != osize )
+        {
+            __asm int 3
+        }
+    }
+
     if ( nsize == 0 )
     {
         DbgFree( ptr );
@@ -632,7 +644,7 @@ LuaMain* LuaManager::Get( lua_State *lua )
     lua = lua_getmainstate( lua );
 
     // Find a matching VM in our list
-    list <LuaMain*>::const_iterator iter = IterBegin();
+    std::list <LuaMain*>::const_iterator iter = IterBegin();
 
     for ( ; iter != IterEnd(); ++iter )
     {

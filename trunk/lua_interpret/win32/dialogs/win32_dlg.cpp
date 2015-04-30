@@ -572,7 +572,7 @@ static AINLINE bool GetExtendedKeyUpdate( WPARAM wparam, LPARAM lparam, bool isD
 
 LRESULT CALLBACK DialogProcedure( HWND myWindow, UINT msg, WPARAM wparam, LPARAM lparam )
 {
-    lua_State *L = userLuaState;
+    lua_State *L = lua_vm_state;    // TODO: maybe use a different Lua thread for handling window messages.
     Win32Dialog *dlg = (Win32Dialog*)GetWindowLong( myWindow, GWL_USERDATA );
 
     if ( !dlg )

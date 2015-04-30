@@ -30,6 +30,7 @@
 
 /*
 ** Extra tags for non-values
+** TODO: remove this, since it is a hack.
 */
 #define LUA_TPROTO      (LAST_TAG+1)
 #define LUA_TUPVAL      (LAST_TAG+2)
@@ -78,7 +79,8 @@ class GCObject;
 /*
 ** Union of all Lua values
 */
-typedef union {
+typedef union
+{
   GCObject *gc;
   void *p;
   lua_Number n;
@@ -89,12 +91,10 @@ typedef union {
 /*
 ** Tagged Values
 */
-
-#define TValuefields	Value value; int tt
-
 struct TValue
 {
-    TValuefields;
+    Value value;
+    int tt;
 };
 
 class TString;
@@ -976,6 +976,10 @@ public:
         this->tt = LUA_TNONE;
         this->marked = 0;
 
+        // At construction time, we want to keep an object alive forever.
+        // Once an object is safely placed into the Lua environment, you have to decrement the GC ref count!
+        this->gcRefCount = 1;
+
         // Flags that are internally used by the GC.
         this->gcflags.isGCActive = false;
         this->gcflags.isGCGrayActive = false;
@@ -1025,6 +1029,15 @@ public:
         unsigned char isGCActive : 1;
         unsigned char isGCGrayActive : 1;
     } gcflags;
+
+private:
+    volatile unsigned int gcRefCount;   // reference count to keep an object alive by C++ runtime.
+
+public:
+    void ReferenceGC( lua_State *L )            { this->gcRefCount++; }
+    void DereferenceGC( lua_State *L )          { this->gcRefCount--; }
+
+    unsigned int GetGCRefCount( void ) const    { return this->gcRefCount; }
 };
 
 typedef SingleLinkedList <class GrayObject> grayObjList_t;
@@ -1809,22 +1822,22 @@ FASTAPI const Proto*        ptobj(const GCObject *o)    { return gcobj_cast <con
 
 #define l_isfalse(o)	(ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0))
 #else
-FASTAPI lua_Number  nvalue(const TValue *o)         { return check_exp(ttisnumber(o), (o)->value.n); }
-FASTAPI TString*    rawtsvalue(const TValue *o)     { return check_exp(ttisstring(o), sobj((o)->value.gc)); }
-FASTAPI bool        bvalue(const TValue *o)         { return check_exp(ttisboolean(o), (o)->value.b); }
+FASTAPI lua_Number      nvalue(const TValue *o)         { return check_exp(ttisnumber(o), (o)->value.n); }
+FASTAPI TString*        rawtsvalue(const TValue *o)     { return check_exp(ttisstring(o), sobj((o)->value.gc)); }
+FASTAPI bool            bvalue(const TValue *o)         { return check_exp(ttisboolean(o), (o)->value.b); }
 
-FASTAPI GCObject*     gcvalue(const TValue *o)        { return check_exp(iscollectable(o), gcobj((o)->value.gc)); }
-FASTAPI void*         pvalue(const TValue *o)         { return check_exp(ttislightuserdata(o), (o)->value.p); }
-FASTAPI TString*      tsvalue(const TValue *o)        { return check_exp(ttisstring(o), sobj((o)->value.gc)); }
-FASTAPI char*         rawuvalue(const TValue *o)      { return (char*)check_exp(ttisuserdata(o), uobj((o)->value.gc)); }
-FASTAPI Udata*        uvalue(const TValue *o)         { return check_exp(ttisuserdata(o), uobj((o)->value.gc)); }
-FASTAPI Closure*      clvalue(const TValue *o)        { return check_exp(ttisfunction(o), clobj((o)->value.gc)); }
-FASTAPI Table*        hvalue(const TValue *o)         { return check_exp(ttistable(o), hobj((o)->value.gc)); }
-FASTAPI lua_State*    thvalue(const TValue *o)        { return check_exp(ttisthread(o), thobj((o)->value.gc)); }
-FASTAPI Dispatch*     qvalue(const TValue *o)         { return check_exp(ttisdispatch(o), qobj((o)->value.gc)); }
-FASTAPI Class*        jvalue(const TValue *o)         { return check_exp(ttisclass(o), jobj((o)->value.gc)); }
+FASTAPI GCObject*       gcvalue(const TValue *o)        { return check_exp(iscollectable(o), gcobj((o)->value.gc)); }
+FASTAPI void*           pvalue(const TValue *o)         { return check_exp(ttislightuserdata(o), (o)->value.p); }
+FASTAPI TString*        tsvalue(const TValue *o)        { return check_exp(ttisstring(o), sobj((o)->value.gc)); }
+FASTAPI char*           rawuvalue(const TValue *o)      { return (char*)check_exp(ttisuserdata(o), uobj((o)->value.gc)); }
+FASTAPI Udata*          uvalue(const TValue *o)         { return check_exp(ttisuserdata(o), uobj((o)->value.gc)); }
+FASTAPI Closure*        clvalue(const TValue *o)        { return check_exp(ttisfunction(o), clobj((o)->value.gc)); }
+FASTAPI Table*          hvalue(const TValue *o)         { return check_exp(ttistable(o), hobj((o)->value.gc)); }
+FASTAPI lua_State*      thvalue(const TValue *o)        { return check_exp(ttisthread(o), thobj((o)->value.gc)); }
+FASTAPI Dispatch*       qvalue(const TValue *o)         { return check_exp(ttisdispatch(o), qobj((o)->value.gc)); }
+FASTAPI Class*          jvalue(const TValue *o)         { return check_exp(ttisclass(o), jobj((o)->value.gc)); }
 
-FASTAPI bool        l_isfalse(const TValue *o)    { return (ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0)); }
+FASTAPI bool            l_isfalse(const TValue *o)      { return (ttisnil(o) || (ttisboolean(o) && bvalue(o) == 0)); }
 #endif //LUA_USE_C_MACROS
 
 /*
@@ -1891,29 +1904,6 @@ template <typename bitMask> FASTAPI bool test2bits(bitMask x, bitMask b1, bitMas
 #define SFIXEDBIT	    ((lu_byte)6)
 #define WHITEBITS	    ((lu_byte)bit2mask(WHITE0BIT, WHITE1BIT))
 
-#ifdef LUA_USE_C_MACROS
-
-#define iswhite(x)      test2bits((x)->marked, WHITE0BIT, WHITE1BIT)
-#define isblack(x)      testbit((x)->marked, BLACKBIT)
-#define isgray(x)	(!isblack(x) && !iswhite(x))
-
-#define otherwhite(g)	(g->currentwhite ^ WHITEBITS)
-#define isdead(g,v)	((v)->marked & otherwhite(g) & WHITEBITS)
-
-#define changewhite(x)	((x)->marked ^= WHITEBITS)
-#define gray2black(x)	l_setbit((x)->marked, BLACKBIT)
-
-#define valiswhite(x)	(iscollectable(x) && iswhite(gcvalue(x)))
-
-#define checkconsistency(obj) \
-  lua_assert(!iscollectable(obj) || (ttype(obj) == (obj)->value.gc->tt))
-
-#define checkliveness(g,obj) \
-  lua_assert(!iscollectable(obj) || \
-  ((ttype(obj) == (obj)->value.gc->tt) && !isdead(g, (obj)->value.gc)))
-
-#else
-
 FASTAPI bool iswhite(const GCObject *x)         { return test2bits((lu_byte)(x)->marked, WHITE0BIT, WHITE1BIT); }
 FASTAPI bool isblack(const GCObject *x)         { return testbit((lu_byte)(x)->marked, BLACKBIT); }
 FASTAPI bool isgray(const GCObject *x)          { return (!isblack(x) && !iswhite(x)); }
@@ -1932,8 +1922,6 @@ FASTAPI void checkconsistency(TValue *obj)
 
 FASTAPI void checkliveness(global_State *g, TValue *obj)
 { lua_assert(!iscollectable(obj) || ((ttype(obj) == (obj)->value.gc->tt) && !isdead(g, (obj)->value.gc))); }
-
-#endif //LUA_USE_C_MACROS
 
 
 /* Macros to set values */
@@ -2193,19 +2181,13 @@ FASTAPI TValue* registry( lua_State *L )    { return &G(L)->l_registry; }
 /*
 ** `module' operation for hashing (size is always a power of 2)
 */
-#define lmod(s,size) \
-	(check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
-
-
-#define twoto(x)	(1<<(x))
+#define lmod(s,size)        (check_exp((size&(size-1))==0, (cast(int, (s) & ((size)-1)))))
 
 
 // TODO: remove this, rather use a global_State variable.
 #define luaO_nilobject		(&luaO_nilobject_)
 
 LUAI_DATA const TValue luaO_nilobject_;
-
-#define ceillog2(x)	(luaO_log2((x)-1) + 1)
 
 LUAI_FUNC int luaO_log2 (unsigned int x);
 LUAI_FUNC int luaO_int2fb (unsigned int x);

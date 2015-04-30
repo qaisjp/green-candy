@@ -603,18 +603,18 @@ Proto::Proto( const Proto& right ) : GrayObject( right )
     int sizelineinfo = right.sizelineinfo;
     int sizep = right.sizep;
     int sizelocvars = right.sizelocvars;
-
-    int nups = right.nups;
+    int sizeupvalues = right.sizeupvalues;
 
     this->sizek = sizek;
     this->sizecode = sizecode;
     this->sizelineinfo = sizelineinfo;
     this->sizep = sizep;
     this->sizelocvars = sizelocvars;
+    this->sizeupvalues = sizeupvalues;
 
     this->linedefined = right.linedefined;
     this->lastlinedefined = right.lastlinedefined;
-    this->nups = nups;
+    this->nups = right.nups;
     this->numparams = right.numparams;
     this->is_vararg = right.is_vararg;
     this->maxstacksize = right.maxstacksize;
@@ -622,13 +622,87 @@ Proto::Proto( const Proto& right ) : GrayObject( right )
     // Clone data arrays.
     lua_State *L = g->mainthread;
 
-    this->k =           luaM_clonevector( L, right.k, sizek );
-    this->code =        luaM_clonevector( L, right.code, sizecode );
-    this->lineinfo =    luaM_clonevector( L, right.lineinfo, sizelineinfo );
-    this->p =           luaM_clonevector( L, right.p, sizep );
-    this->locvars =     luaM_clonevector( L, right.locvars, sizelocvars );
+    TValue *k = luaM_clonevector( L, right.k, sizek );
 
-    this->upvalues =    luaM_clonevector( L, right.upvalues, nups );
+    try
+    {
+        Instruction *code = luaM_clonevector( L, right.code, sizecode );
+
+        try
+        {
+            int *lineinfo = luaM_clonevector( L, right.lineinfo, sizelineinfo );
+
+            try
+            {
+                Proto **p = luaM_clonevector( L, right.p, sizep );
+
+                try
+                {
+                    LocVar *locvars = luaM_clonevector( L, right.locvars, sizelocvars );
+
+                    try
+                    {
+                        this->upvalues = luaM_clonevector( L, right.upvalues, sizeupvalues );
+                    }
+                    catch( ... )
+                    {
+                        if ( locvars )
+                        {
+                            luaM_freearray( L, locvars, sizelocvars );
+                        }
+
+                        throw;
+                    }
+
+                    this->locvars = locvars;
+                }
+                catch( ... )
+                {
+                    if ( p )
+                    {
+                        luaM_freearray( L, p, sizep );
+                    }
+
+                    throw;
+                }
+
+                this->p = p;
+            }
+            catch( ... )
+            {
+                if ( lineinfo )
+                {
+                    luaM_freearray( L, lineinfo, sizelineinfo );
+                }
+
+                throw;
+            }
+
+            this->lineinfo = lineinfo;
+        }
+        catch( ... )
+        {
+            if ( code )
+            {
+                luaM_freearray( L, code, sizecode );
+            }
+
+            throw;
+        }
+
+        this->code = code;
+    }
+    catch( ... )
+    {
+        if ( k )
+        {
+            luaM_freearray( L, k, sizek );
+        }
+
+        throw;
+    }
+
+    this->k = k;
 }
 
 Proto::~Proto( void )

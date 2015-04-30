@@ -49,6 +49,9 @@ struct _fileSystemAllocator
 };
 static _fileSystemAllocator _memAlloc;
 
+// Global string for the double-dot.
+const filePath _dirBack( ".." );
+
 /*=======================================
     CFileSystem
 
@@ -59,12 +62,49 @@ static _fileSystemAllocator _memAlloc;
 =======================================*/
 static bool _hasBeenInitialized = false;
 
+// Integrity check function.
+// If this fails, then CFileSystem cannot boot.
+inline bool _CheckLibraryIntegrity( void )
+{
+    // Check all data types.
+    bool isValid = true;
+
+    if ( sizeof(fsBool_t) != 1 ||
+         sizeof(fsChar_t) != 1 || sizeof(fsUChar_t) != 1 ||
+         sizeof(fsShort_t) != 2 || sizeof(fsUShort_t) != 2 ||
+         sizeof(fsInt_t) != 4 || sizeof(fsUInt_t) != 4 ||
+         sizeof(fsWideInt_t) != 8 || sizeof(fsUWideInt_t) != 8 ||
+         sizeof(fsFloat_t) != 4 ||
+         sizeof(fsDouble_t) != 8 )
+    {
+        isValid = false;
+    }
+
+    if ( !isValid )
+    {
+        // Notify the developer.
+        __asm int 3
+    }
+
+    return isValid;
+}
+
 // Creators of the CFileSystem instance.
 // Those are the entry points to this static library.
 CFileSystem* CFileSystem::Create( void )
 {
     // Make sure that there is no second CFileSystem class alive.
     assert( _hasBeenInitialized == false );
+
+    // Make sure our environment can run CFileSystem in the first place.
+    // I need to sort out some compatibility problems before allowing a x64 build.
+    bool isLibraryBootable = _CheckLibraryIntegrity();
+
+    if ( !isLibraryBootable )
+    {
+        // We failed some critical integrity tests.
+        return NULL;
+    }
 
     // Register addons.
     CFileSystemNative::RegisterZIPDriver();
@@ -75,15 +115,18 @@ CFileSystem* CFileSystem::Create( void )
 
     if ( instance )
     {
-        char cwd[1024];
-        getcwd( cwd, 1023 );
+        // Get the application current directory and store it in "fileRoot" global.
+        {
+            char cwd[1024];
+            getcwd( cwd, 1023 );
 
-        // Make sure it is a correct directory
-        filePath cwd_ex( cwd );
-        cwd_ex += '\\';
+            // Make sure it is a correct directory
+            filePath cwd_ex( cwd );
+            cwd_ex += '\\';
 
-        // Every application should be able to access itself
-        fileRoot = instance->CreateTranslator( cwd_ex );
+            // Every application should be able to access itself
+            fileRoot = instance->CreateTranslator( cwd_ex );
+        }
 
         // Set the global fileSystem variable.
         fileSystem = instance;
@@ -105,6 +148,14 @@ void CFileSystem::Destroy( CFileSystem *lib )
 
     if ( nativeLib )
     {
+        // Delete the main fileRoot access point.
+        if ( CFileTranslator *rootAppDir = fileRoot )
+        {
+            delete rootAppDir;
+
+            fileRoot = NULL;
+        }
+
         _fileSysFactory.Destroy( _memAlloc, nativeLib );
 
         // Unregister all addons.
@@ -112,6 +163,9 @@ void CFileSystem::Destroy( CFileSystem *lib )
         CFileSystemNative::UnregisterZIPDriver();
 
         delete openFiles;
+
+        // Zero the main FileSystem access point.
+        fileSystem = NULL;
 
         // We have successfully destroyed FileSystem activity.
         _hasBeenInitialized = false;

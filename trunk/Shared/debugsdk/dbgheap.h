@@ -31,6 +31,7 @@ void operator delete[]( void *ptr ) throw();
 // Malloc functions
 void* DbgMalloc( size_t size );
 void* DbgRealloc( void *ptr, size_t size );
+bool DbgAllocGetSize( void *ptr, size_t& sizeOut );
 void DbgFree( void *ptr );
 
 #pragma warning(pop)
@@ -41,6 +42,7 @@ typedef void (__cdecl*pfnMemoryAllocWatch)( void *memPtr, size_t memSize );
 
 void DbgHeap_Init( void );
 void DbgHeap_Validate( void );
+void DbgHeap_CheckActiveBlocks( void );
 void DbgHeap_SetMemoryAllocationWatch( pfnMemoryAllocWatch allocWatchCallback );
 void DbgHeap_Shutdown( void );
 

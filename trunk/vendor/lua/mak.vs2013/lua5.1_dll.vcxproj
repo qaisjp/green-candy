@@ -1,0 +1,230 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F8C326DE-0845-459E-87DF-72A6EBF815BC}</ProjectGuid>
+    <RootNamespace>lua51_dll</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>../bin/</OutDir>
+    <IntDir>../obj/lua5.1_dll/$(Configuration)_2013/</IntDir>
+    <TargetName>lua5.1d</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>../bin/</OutDir>
+    <IntDir>../obj/lua5.1_dll/$(Configuration)_2013/</IntDir>
+    <TargetName>lua5.1</TargetName>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared</AdditionalIncludeDirectories>
+      <StringPooling>true</StringPooling>
+      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <OpenMPSupport>false</OpenMPSupport>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>luacore.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)\luacore_precompiled_2013.pch</PrecompiledHeaderOutputFile>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName)_2013.pdb</ProgramDatabaseFile>
+      <ImportLibrary>../lib/lua5.1_d_2013.lib</ImportLibrary>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/lua5.1.def</ModuleDefinitionFile>
+    </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y ..\bin\lua5.1d.dll "$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\"
+xcopy /y ..\bin\lua5.1d.dll "$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\mods\deathmatch\"
+xcopy /y ..\bin\lua5.1d.dll "..\..\..\lint_out\"
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared</AdditionalIncludeDirectories>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <StringPooling>true</StringPooling>
+      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <OpenMPSupport>false</OpenMPSupport>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>luacore.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderOutputFile>$(IntDir)\luacore_precompiled_2013.pch</PrecompiledHeaderOutputFile>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName)_2013.pdb</ProgramDatabaseFile>
+      <ImportLibrary>../lib/lua5.1_2013.lib</ImportLibrary>
+      <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <ModuleDefinitionFile>../src/lua5.1.def</ModuleDefinitionFile>
+    </Link>
+    <PostBuildEvent>
+      <Command>xcopy /y ..\bin\lua5.1.dll "$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\"
+xcopy /y ..\bin\lua5.1.dll "$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\server\mods\deathmatch\"
+xcopy /y ..\bin\lua5.1.dll "..\..\..\lint_out\"
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\lapi.access.c" />
+    <ClCompile Include="..\src\lapi.c" />
+    <ClCompile Include="..\src\lapi.config.c" />
+    <ClCompile Include="..\src\lapi.exec.c" />
+    <ClCompile Include="..\src\lapi.gc.c" />
+    <ClCompile Include="..\src\lapi.get.c" />
+    <ClCompile Include="..\src\lapi.misc.c" />
+    <ClCompile Include="..\src\lapi.push.c" />
+    <ClCompile Include="..\src\lapi.set.c" />
+    <ClCompile Include="..\src\lapi.stack.c" />
+    <ClCompile Include="..\src\lauxlib.c" />
+    <ClCompile Include="..\src\lbaselib.c" />
+    <ClCompile Include="..\src\lclass.c" />
+    <ClCompile Include="..\src\lclass.gc.c" />
+    <ClCompile Include="..\src\lclasslib.c" />
+    <ClCompile Include="..\src\lcode.c" />
+    <ClCompile Include="..\src\ldblib.c" />
+    <ClCompile Include="..\src\ldebug.c" />
+    <ClCompile Include="..\src\ldispatch.c" />
+    <ClCompile Include="..\src\ldo.c" />
+    <ClCompile Include="..\src\ldump.c" />
+    <ClCompile Include="..\src\lfiber.c" />
+    <ClCompile Include="..\src\lfunc.c" />
+    <ClCompile Include="..\src\lfunc.class.c" />
+    <ClCompile Include="..\src\lfunc.gc.c" />
+    <ClCompile Include="..\src\lgc.c" />
+    <ClCompile Include="..\src\linit.c" />
+    <ClCompile Include="..\src\liolib.c" />
+    <ClCompile Include="..\src\llex.c" />
+    <ClCompile Include="..\src\lmathlib.c" />
+    <ClCompile Include="..\src\lmem.c" />
+    <ClCompile Include="..\src\loadlib.c" />
+    <ClCompile Include="..\src\lobject.c" />
+    <ClCompile Include="..\src\lopcodes.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\src\loslib.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\src\lparser.c" />
+    <ClCompile Include="..\src\lstate.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\src\lstring.c" />
+    <ClCompile Include="..\src\lstrlib.c" />
+    <ClCompile Include="..\src\lstrtable.c" />
+    <ClCompile Include="..\src\ltable.c" />
+    <ClCompile Include="..\src\ltablib.c" />
+    <ClCompile Include="..\src\ltm.c" />
+    <ClCompile Include="..\src\ltypelib.c" />
+    <ClCompile Include="..\src\lundump.c" />
+    <ClCompile Include="..\src\lvm.c" />
+    <ClCompile Include="..\src\lzio.c" />
+    <ClCompile Include="..\src\print.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\lapi.h" />
+    <ClInclude Include="..\src\lapi.hxx" />
+    <ClInclude Include="..\src\lauxlib.h" />
+    <ClInclude Include="..\src\lclass.h" />
+    <ClInclude Include="..\src\lclass.hxx" />
+    <ClInclude Include="..\src\lclasslib.h" />
+    <ClInclude Include="..\src\lcode.h" />
+    <ClInclude Include="..\src\ldebug.h" />
+    <ClInclude Include="..\src\ldispatch.class.hxx" />
+    <ClInclude Include="..\src\ldispatch.h" />
+    <ClInclude Include="..\src\ldo.h" />
+    <ClInclude Include="..\src\lfiber.h" />
+    <ClInclude Include="..\src\lfunc.class.hxx" />
+    <ClInclude Include="..\src\lfunc.h" />
+    <ClInclude Include="..\src\lfunc.hxx" />
+    <ClInclude Include="..\src\lfunc.upval.hxx" />
+    <ClInclude Include="..\src\lgc.h" />
+    <ClInclude Include="..\src\lgc.interface.hxx" />
+    <ClInclude Include="..\src\lgc.internal.hxx" />
+    <ClInclude Include="..\src\llex.h" />
+    <ClInclude Include="..\src\llimits.h" />
+    <ClInclude Include="..\src\lmem.h" />
+    <ClInclude Include="..\src\lobject.h" />
+    <ClInclude Include="..\src\lopcodes.h" />
+    <ClInclude Include="..\src\lparser.h" />
+    <ClInclude Include="..\src\lpluginutil.hxx" />
+    <ClInclude Include="..\src\lstack.h" />
+    <ClInclude Include="..\src\lstate.h" />
+    <ClInclude Include="..\src\lstate.lowlevel.hxx" />
+    <ClInclude Include="..\src\lstring.h" />
+    <ClInclude Include="..\src\lstrtable.h" />
+    <ClInclude Include="..\src\ltable.h" />
+    <ClInclude Include="..\src\ltable.hxx" />
+    <ClInclude Include="..\src\ltm.h" />
+    <ClInclude Include="..\src\ltypelib.h" />
+    <ClInclude Include="..\src\ltypesys.h" />
+    <ClInclude Include="..\src\lua.etc.h" />
+    <ClInclude Include="..\src\lua.h" />
+    <ClInclude Include="..\src\luaconf.h" />
+    <ClInclude Include="..\src\luacore.h" />
+    <ClInclude Include="..\src\lualib.h" />
+    <ClInclude Include="..\src\lundump.h" />
+    <ClInclude Include="..\src\lutils.h" />
+    <ClInclude Include="..\src\lvm.h" />
+    <ClInclude Include="..\src\lzio.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\src\lua5.1.def" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -132,7 +132,7 @@ static inline bool _File_ParseRelativeTree( const char *path, const dirTree& roo
     return true;
 }
 
-static const filePath _dirBack( ".." );
+extern const filePath _dirBack;
 
 static inline bool _File_ParseDeriviation( const dirTree& curTree, dirTree::const_iterator treeIter, dirTree& output, size_t sizeDiff, bool file )
 {

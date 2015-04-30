@@ -337,13 +337,6 @@ typedef long long LUA_WIDE_INTEGER;
 #undef LUA_COMPAT_LOADLIB
 
 /*
-@@ LUA_COMPAT_MOD controls compatibility with old math.mod function.
-** CHANGE it to undefined as soon as your programs use 'math.fmod' or
-** the new '%' operator instead of 'math.mod'.
-*/
-#define LUA_COMPAT_MOD
-
-/*
 @@ LUA_COMPAT_LSTR controls compatibility with old long string nesting
 @* facility.
 ** CHANGE it to 2 if you want the old behaviour, or undefine it to turn
