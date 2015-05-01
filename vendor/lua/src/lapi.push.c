@@ -51,10 +51,27 @@ LUA_API void lua_pushwideinteger( lua_State *L, lua_WideInteger n )
 
 LUA_API void lua_pushlstring (lua_State *L, const char *s, size_t len)
 {
-  lua_lock(L);
-  luaC_checkGC(L);
-  pushsvalue(L, luaS_newlstr(L, s, len));
-  lua_unlock(L);
+    lua_lock(L);
+    luaC_checkGC(L);
+
+    TString *newStr = luaS_newlstr(L, s, len);
+
+    try
+    {
+        pushsvalue(L, newStr);
+    }
+    catch( ... )
+    {
+        // Exception safety is very important in C++ code.
+        // Because code does not only fail when it is bad.
+        newStr->DereferenceGC( L );
+        throw;
+    }
+
+    // Since the new string is on the stack now, we can dereference it.
+    newStr->DereferenceGC( L );
+
+    lua_unlock(L);
 }
 
 
@@ -100,12 +117,26 @@ LUA_API void lua_pushcclosure (lua_State *L, lua_CFunction fn, int n)
     lua_lock(L);
     luaC_checkGC(L);
     api_checknelems(L, n);
+
     CClosureBasic *cl = luaF_newCclosure(L, n, getcurrenv(L));
     cl->f = fn;
 
-    L->GetCurrentStackFrame().CrossMoveTopExtern( L, L->rtStack, cl->upvalues, n );
+    // Account for any kind of failure.
+    try
+    {
+        L->GetCurrentStackFrame().CrossMoveTopExtern( L, L->rtStack, cl->upvalues, n );
 
-    pushclvalue(L, cl);
+        pushclvalue(L, cl);
+    }
+    catch( ... )
+    {
+        cl->DereferenceGC( L );
+        throw;
+    }
+
+    // Since the closure now resides on the stack, we can dereference it.
+    cl->DereferenceGC( L );
+
     lua_unlock(L);
 }
 

@@ -18,6 +18,8 @@
 #include "lparser.h"
 #include "ltable.h"
 
+#include "lcode.hxx"
+
 
 #define hasjumps(e)	((e)->t != (e)->f)
 

@@ -224,17 +224,29 @@ static void collectvalidlines (lua_State *L, Closure *f)
     else
     {
         Table *t = luaH_new(L, 0, 0);
-        LClosure *lcl = f->GetLClosure();
-        int *lineinfo = lcl->p->lineinfo;
 
-        for ( int i = 0; i < lcl->p->sizelineinfo; i++ )
+        try
         {
-            ValueAddress lineinfoVar = luaH_setnum( L, t, lineinfo[i] );
+            LClosure *lcl = f->GetLClosure();
+            int *lineinfo = lcl->p->lineinfo;
 
-            setbvalue( lineinfoVar, 1 );
+            for ( int i = 0; i < lcl->p->sizelineinfo; i++ )
+            {
+                ValueAddress lineinfoVar = luaH_setnum( L, t, lineinfo[i] );
+
+                setbvalue( lineinfoVar, 1 );
+            }
+
+            pushhvalue(L, t);
+        }
+        catch( ... )
+        {
+            t->DereferenceGC( L );
+            throw;
         }
 
-        pushhvalue(L, t); 
+        // Since the table is now on the stack, we can dereference it.
+        t->DereferenceGC( L );
     }
 }
 

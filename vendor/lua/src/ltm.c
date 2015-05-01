@@ -23,34 +23,45 @@ const char *const luaT_typenames[] = {
 };
 
 
-void luaT_init (lua_State *L) {
-  static const char *const luaT_eventname[] = {  /* ORDER TM */
-    "__index",
-    "__newindex",
-    "__gc",
-    "__mode",
-    "__eq",
-    "__add",
-    "__sub",
-    "__mul",
-    "__div",
-    "__mod",
-    "__pow",
-    "__unm",
-    "__len",
-    "__lt",
-    "__le",
-    "__concat",
-    "__call",
-    "__redirect",
-    "__metatable",
-    "__type"
-  };
-  int i;
-  for (i=0; i<TM_N; i++) {
-    G(L)->tmname[i] = luaS_new(L, luaT_eventname[i]);
-    luaS_fix(G(L)->tmname[i]);  /* never collect these names */
-  }
+void luaT_init (lua_State *L)
+{
+    static const char *const luaT_eventname[] =
+    {  /* ORDER TM */
+        "__index",
+        "__newindex",
+        "__gc",
+        "__mode",
+        "__eq",
+        "__add",
+        "__sub",
+        "__mul",
+        "__div",
+        "__mod",
+        "__pow",
+        "__unm",
+        "__len",
+        "__lt",
+        "__le",
+        "__concat",
+        "__call",
+        "__redirect",
+        "__metatable",
+        "__type"
+    };
+
+    global_State *g = G(L);
+
+    for ( int i = 0; i < TM_N; i++ )
+    {
+        TString *cachedTMName = luaS_new(L, luaT_eventname[i]);
+
+        g->tmname[i] = cachedTMName;
+
+        luaS_fix(cachedTMName);  /* never collect these names */
+
+        // Since we fixed the TM name, we can dereference it.
+        cachedTMName->DereferenceGC( L );
+    }
 }
 
 #define _LUA_NUMELMS(x)     ( sizeof(x) / sizeof(*x) )

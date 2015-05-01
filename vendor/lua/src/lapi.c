@@ -258,6 +258,10 @@ LUA_API lua_State *lua_newthread (lua_State *L)
     luaC_checkGC(L);
     L1 = luaE_newthread(L);
     pushthvalue(L, L1);
+
+    // Since the new thread is now on the Lua stack, we can dereference it.
+    L1->DereferenceGC( L );
+
     lua_unlock(L);
     luai_userstatethread(L, L1);
     return L1;

@@ -20,6 +20,8 @@
 #include "lstring.h"
 #include "ltable.h"
 
+#include "lparser.hxx"
+#include "lcode.hxx"
 
 
 #define hasmultret(k)		((k) == VCALL || (k) == VVARARG)
@@ -27,18 +29,6 @@
 #define getlocvar(fs, i)	((fs)->f->locvars[(fs)->actvar[i]])
 
 #define luaY_checklimit(fs,v,l,m)	if ((v)>(l)) errorlimit(fs,l,m)
-
-
-/*
-** nodes for block list (list of active blocks)
-*/
-typedef struct BlockCnt {
-  struct BlockCnt *previous;  /* chain */
-  int breaklist;  /* list of jumps out of this loop */
-  lu_byte nactvar;  /* # active locals outside the breakable structure */
-  lu_byte upval;  /* true if some variable in the block is an upvalue */
-  lu_byte isbreakable;  /* true if `block' is a loop */
-} BlockCnt;
 
 
 
@@ -123,11 +113,6 @@ static void init_exp (expdesc *e, expkind k, int i)
     e->f = e->t = NO_JUMP;
     e->k = k;
     e->u.s.info = i;
-}
-
-inline FuncState* GetCurrentFuncState( LexState *ls )
-{
-    return (FuncState*)ls->fsList.GetFirst();
 }
 
 static void codestring (LexState *ls, expdesc *e, TString *s)
@@ -222,10 +207,16 @@ static int searchvar (FuncState *fs, TString *n) {
 }
 
 
-static void markupval (FuncState *fs, int level) {
-  BlockCnt *bl = fs->bl;
-  while (bl && bl->nactvar > level) bl = bl->previous;
-  if (bl) bl->upval = 1;
+static void markupval (FuncState *fs, int level)
+{
+    BlockCnt *bl = (BlockCnt*)fs->blockList.GetFirst();
+
+    while (bl && bl->nactvar > level)
+    {
+        bl = (BlockCnt*)bl->next;
+    }
+
+    if (bl) bl->upval = 1;
 }
 
 
@@ -253,14 +244,11 @@ static int singlevaraux (FuncState *fs, TString *n, expdesc *var, int base)
         {  /* not found at current level; try upper one */
             FuncState *upperState = (FuncState*)fs->next;
 
-            if ( upperState )
+            if (singlevaraux(upperState, n, var, 0) != VGLOBAL)
             {
-                if (singlevaraux(upperState, n, var, 0) != VGLOBAL)
-                {
-                    var->u.s.info = indexupvalue(fs, n, var);  /* else was LOCAL or UPVAL */
-                    var->k = VUPVAL;  /* upvalue in this level */
-                    return VUPVAL;
-                }
+                var->u.s.info = indexupvalue(fs, n, var);  /* else was LOCAL or UPVAL */
+                var->k = VUPVAL;  /* upvalue in this level */
+                return VUPVAL;
             }
         }
     }
@@ -322,16 +310,17 @@ static void enterblock (FuncState *fs, BlockCnt *bl, lu_byte isbreakable)
     bl->isbreakable = isbreakable;
     bl->nactvar = fs->nactvar;
     bl->upval = 0;
-    bl->previous = fs->bl;
-    fs->bl = bl;
+    fs->blockList.Insert( bl );
     lua_assert(fs->freereg == fs->nactvar);
 }
 
 static void leaveblock (FuncState *fs)
 {
-    BlockCnt *bl = fs->bl;
+    BlockCnt *bl = (BlockCnt*)fs->blockList.GetFirst();
 
-    fs->bl = bl->previous;
+    // Remove the current block from visibility.
+    fs->blockList.RemoveFirst();
+
     removevars(fs->ls, bl->nactvar);
 
     if ( bl->upval )
@@ -395,7 +384,7 @@ static void open_func (LexState *ls, FuncState *fs)
     fs->np = 0;
     fs->nlocvars = 0;
     fs->nactvar = 0;
-    fs->bl = NULL;
+    fs->blockList.Clear();
     f->source = ls->source;
     f->maxstacksize = 2;  /* registers 0/1 are always valid */
     fs->h = luaH_new(L, 0, 0);
@@ -425,13 +414,13 @@ static void close_func (LexState *ls)
     luaM_reallocvector(L, f->upvalues, f->sizeupvalues, f->nups);
     f->sizeupvalues = f->nups;
     lua_assert(luaG_checkcode(f) == true);
-    lua_assert(fs->bl == NULL);
+    lua_assert(fs->blockList.IsEmpty() == true);
     
     // Remove this function state from existence.
     ls->fsList.RemoveFirst();
 
-    // Dereference the proto and the table again.
-    f->DereferenceGC( L );
+    // Dereference the table again.
+    // We keep the reference on the proto, because it is the result object.
     fs->h->DereferenceGC( L );
 
     /* last token read was anchored in defunct function; must reanchor it */
@@ -447,24 +436,43 @@ Proto *luaY_parser (lua_State *L, ZIO *z, Mbuffer *buff, const char *name)
     struct LexState lexstate;
     struct FuncState funcstate;
     lexstate.buff = buff;
-    luaX_setinput(L, &lexstate, z, luaS_new(L, name));
 
-    open_func(&lexstate, &funcstate);
+    TString *inputNameString = luaS_new(L, name);
+
     try
     {
-        funcstate.f->is_vararg = VARARG_ISVARARG;  /* main func. is always vararg */
+        luaX_setinput(L, &lexstate, z, inputNameString );
 
-        luaX_next(&lexstate);  /* read first token */
+        open_func(&lexstate, &funcstate);
+        try
+        {
+            funcstate.f->is_vararg = VARARG_ISVARARG;  /* main func. is always vararg */
 
-        chunk(&lexstate);
-        check(&lexstate, TK_EOS);
+            luaX_next(&lexstate);  /* read first token */
+
+            chunk(&lexstate);
+            check(&lexstate, TK_EOS);
+        }
+        catch( ... )
+        {
+            close_func(&lexstate);
+
+            // We do not need the proto anymore.
+            funcstate.f->DereferenceGC( L );
+            throw;
+        }
+        close_func(&lexstate);
+
+        // The result is funcstate.f, which is a referenced proto.
     }
     catch( ... )
     {
-        close_func(&lexstate);
+        // When done parsing, we should clear up the string.
+        inputNameString->DereferenceGC( L );
         throw;
     }
-    close_func(&lexstate);
+
+    inputNameString->DereferenceGC( L );
 
     lua_assert(funcstate.next == NULL);
     lua_assert(funcstate.f->nups == 0);
@@ -725,10 +733,16 @@ static void body (LexState *ls, expdesc *e, int needself, int line)
     catch( ... )
     {
         close_func(ls);
+
+        // We do not need the proto anymore.
+        new_fs.f->DereferenceGC( ls->L );
         throw;
     }
     close_func(ls);
     pushclosure(ls, &new_fs, e);
+
+    // Terminate the FuncState again.
+    new_fs.f->DereferenceGC( ls->L );
 }
 
 static int explist1 (LexState *ls, expdesc *v)
@@ -1211,13 +1225,13 @@ static int cond (LexState *ls)
 static void breakstat (LexState *ls)
 {
     FuncState *fs = GetCurrentFuncState( ls );
-    BlockCnt *bl = fs->bl;
+    BlockCnt *bl = (BlockCnt*)fs->blockList.GetFirst();
     int upval = 0;
 
     while (bl && !bl->isbreakable)
     {
         upval |= bl->upval;
-        bl = bl->previous;
+        bl = (BlockCnt*)bl->next;
     }
 
     if (!bl)
@@ -1299,32 +1313,32 @@ static int exp1 (LexState *ls)
 
 static void forbody (LexState *ls, int base, int line, int nvars, int isnum)
 {
-  /* forbody -> DO block */
-  BlockCnt bl;
-  FuncState *fs = GetCurrentFuncState( ls );
+    /* forbody -> DO block */
+    BlockCnt bl;
+    FuncState *fs = GetCurrentFuncState( ls );
 
-  adjustlocalvars(ls, 3);  /* control variables */
+    adjustlocalvars(ls, 3);  /* control variables */
 
-  checknext(ls, TK_DO);
+    checknext(ls, TK_DO);
 
-  int prep = isnum ? luaK_codeAsBx(fs, OP_FORPREP, base, NO_JUMP) : luaK_jump(fs);
+    int prep = isnum ? luaK_codeAsBx(fs, OP_FORPREP, base, NO_JUMP) : luaK_jump(fs);
 
-  enterblock(fs, &bl, 0);  /* scope for declared variables */
+    enterblock(fs, &bl, 0);  /* scope for declared variables */
 
-  adjustlocalvars(ls, nvars);
-  luaK_reserveregs(fs, nvars);
-  block(ls);
+    adjustlocalvars(ls, nvars);
+    luaK_reserveregs(fs, nvars);
+    block(ls);
 
-  leaveblock(fs);  /* end of scope for declared variables */
+    leaveblock(fs);  /* end of scope for declared variables */
 
-  luaK_patchtohere(fs, prep);
+    luaK_patchtohere(fs, prep);
 
-  int endfor = (isnum) ?
-      luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP) : luaK_codeABC(fs, OP_TFORLOOP, base, 0, nvars);
+    int endfor = (isnum) ?
+        luaK_codeAsBx(fs, OP_FORLOOP, base, NO_JUMP) : luaK_codeABC(fs, OP_TFORLOOP, base, 0, nvars);
 
-  luaK_fixline(fs, line);  /* pretend that `OP_FOR' starts the loop */
+    luaK_fixline(fs, line);  /* pretend that `OP_FOR' starts the loop */
 
-  luaK_patchlist(fs, (isnum ? endfor : luaK_jump(fs)), prep + 1);
+    luaK_patchlist(fs, (isnum ? endfor : luaK_jump(fs)), prep + 1);
 }
 
 

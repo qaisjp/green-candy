@@ -282,9 +282,8 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l)
 {
     unsigned int h = cast(unsigned int, l);  /* seed */
     size_t step = (l>>5)+1;  /* if string is too long, don't hash all its chars */
-    size_t l1;
 
-    for (l1=l; l1>=step; l1-=step)  /* compute hash */
+    for (size_t l1=l; l1>=step; l1-=step)  /* compute hash */
     {
         h = h ^ ((h<<5)+(h>>2)+cast(unsigned char, str[l1-1]));
     }
@@ -305,6 +304,12 @@ TString *luaS_newlstr (lua_State *L, const char *str, size_t l)
                 // TODO: this does not belong here.
                 changewhite(o);
             }
+
+            // When returning an already existing string, we increase its reference count.
+            // This is for one to complement the behaviour of returning a new string.
+            // Another reason is purely logical, as the GC ref count is a usage count.
+            ts->ReferenceGC( L );
+
             return ts;
         }
     }
@@ -367,7 +372,13 @@ int luaS_concat (lua_State *L, int topOffset, int total)
         // Write the result string.
         ValueAddress outString = index2adr( L, topOffset - n + 1 );
 
-        setsvalue(L, outString, luaS_newlstr(L, buffer, tl));
+        TString *concatResultString = luaS_newlstr(L, buffer, tl);
+
+        // No exception is throw in atomic prototypes like these.
+        setsvalue(L, outString, concatResultString);
+
+        // Since the concat result string is on the stack now, we can dereference it.
+        concatResultString->DereferenceGC( L );
     }
 
     return n;

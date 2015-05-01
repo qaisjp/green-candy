@@ -34,11 +34,15 @@ struct lua_MainState : public lua_State
     inline void Initialize( global_State *g )
     {
         // Initialize the main thread.
-        g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);    // set a special GC flag so we do not collect the main thread
+
+        // Currentwhite is the flag used by the propagation runtime to determine alive objects.
+        // We start the runtime with the "WHITE0BIT" basically the starting bit out of the two.
+        // Any object that has the "fixed" bit is not collected either.
+        g->currentwhite = bit2mask(WHITE0BIT, FIXEDBIT);
 
         luaC_register( g, this, LUA_TTHREAD );
 
-        set2bits(this->marked, FIXEDBIT, SFIXEDBIT);
+        // This thread is never collected as it has a ref-count.
 
         for ( unsigned int i = 0; i < NUM_TAGS; i++ )
         {
@@ -171,7 +175,16 @@ static void f_luaopen (lua_State *L, void *ud)
     luaS_resize(L, MINSTRTABSIZE);  /* initial size of string table */
     luaT_init(L);
     luaX_init(L);
-    luaS_fix(luaS_newliteral(L, MEMERRMSG));
+
+    // We want to especially make the memory error message string cached.
+    {
+        TString *memErrString = luaS_newliteral(L, MEMERRMSG);
+
+        luaS_fix( memErrString );
+
+        memErrString->DereferenceGC( L );
+    }
+
     luaC_setthreshold( L, 4*g->totalbytes );
 }
 
@@ -187,7 +200,14 @@ static inline void preinit_state (lua_State *L, global_State *g)
     L->nCcalls = 0;
     L->savedpc = NULL;
     L->errfunc = 0;
-    sethvalue( L, &L->storage, luaH_new( L, 0, 0 ) );
+
+    Table *newStorageTable = luaH_new( L, 0, 0 );
+
+    sethvalue( L, &L->storage, newStorageTable );
+
+    // Since the storage table is now on the reference thread, we can dereference the table.
+    newStorageTable->DereferenceGC( L );
+
     setnilvalue(gt(L));
 }
 
@@ -438,7 +458,12 @@ lua_Thread::~lua_Thread( void )
 LUAI_FUNC void luaE_newenvironment( lua_State *L )
 {
     Table *g = luaH_new( L, 0, 2 );
+
     sethvalue( L, gt(L), g );
+
+    // Since the new environment is now living on the thread, we can dereference it.
+    g->DereferenceGC( L );
+
     luaC_objbarriert( L, g, L );
 
     for ( unsigned int n = 0; n < NUM_TAGS; n++ )
@@ -596,7 +621,13 @@ inline lua_State *_newstatetemplate( lua_config *cfg, bool hasUniqueConfig, bool
                 luaC_init( g );
                 preinit_state( L, g );
                 luaE_newenvironment( L );   // create the first environment; threads will inherit it
-                sethvalue(L, &g->l_registry, luaH_new(L, 0, 2));  /* registry */
+
+                Table *registryTable = luaH_new(L, 0, 2);
+
+                sethvalue(L, &g->l_registry, registryTable);  /* registry */
+
+                // Since the registry table is now living on the global_State, we can dereference it.
+                registryTable->DereferenceGC( L );
 
                 // To properly initialize the main state, we must call post-state initializators.
                 luaS_stateinit( L );

@@ -82,7 +82,21 @@ LUA_API void lua_concat (lua_State *L, int n)
     }
     else if (n == 0)
     {  /* push empty string */
-        pushsvalue(L, luaS_newlstr(L, "", 0));
+        TString *emptyStr = luaS_newlstr(L, "", 0);
+
+        try
+        {
+            pushsvalue(L, emptyStr);
+        }
+        catch( ... )
+        {
+            // Even pushing things onto the stack can trigger exceptions.
+            emptyStr->DereferenceGC( L );
+            throw;
+        }
+
+        // Since the empty string is on the stack now, we can dereference it.
+        emptyStr->DereferenceGC( L );
     }
     /* else n == 1; nothing to do */
     lua_unlock(L);
@@ -92,8 +106,22 @@ LUA_API void *lua_newuserdata (lua_State *L, size_t size)
 {
     lua_lock(L);
     luaC_checkGC(L);
+
     Udata *u = luaS_newudata(L, size, getcurrenv(L));
-    pushuvalue(L, u);
+
+    try
+    {
+        pushuvalue(L, u);
+    }
+    catch( ... )
+    {
+        u->DereferenceGC( L );
+        throw;
+    }
+
+    // Since the userdata is now on the stack, we can dereference it.
+    u->DereferenceGC( L );
+
     lua_unlock(L);
     return u + 1;
 }

@@ -99,6 +99,10 @@ __forceinline Closure* class_getDelayedMethodRegister( lua_State *L, Class *j, T
     Closure *res = reg->Create( L, j );
 
     j->SetMethod( L, methName, res, reg->GetMethodTable() );
+
+    // Now that we stored this method in the class, we can dereference it.
+    res->DereferenceGC( L );
+
     j->methodCache->DeleteNode( L, node );
     return res;
 }
@@ -683,12 +687,36 @@ ConstValueAddress Class::GetEnvValue( lua_State *L, const TValue *key )
 ConstValueAddress Class::GetEnvValueString( lua_State *L, const char *name )
 {
     TString *key = luaS_new( L, name );
-    ConstValueAddress res = luaH_getstr( L, internStorage, key );
 
-    if ( ttype( res ) != LUA_TNIL )
-        return res;
+    try
+    {
+        {
+            ConstValueAddress res = luaH_getstr( L, internStorage, key );
 
-    return class_getFromStorageString( L, this, key, false );
+            if ( ttype( res ) != LUA_TNIL )
+            {
+                key->DereferenceGC( L );
+                return res;
+            }
+        }
+
+        {
+            ConstValueAddress res = class_getFromStorageString( L, this, key, false );
+
+            // We do not need the string anymore.
+            key->DereferenceGC( L );
+
+            return res;
+        }
+    }
+    catch( ... )
+    {
+        key->DereferenceGC( L );
+        throw;
+    }
+
+    // Never reached.
+    return ConstValueAddress();
 }
 
 void Class::RequestDestruction()
@@ -1052,6 +1080,10 @@ static int classmethod_envAcquireDispatcher( lua_State *L )
         env = ((CClosureMethodBase*)curr_func( L ))->m_class->AcquireEnvDispatcher( L );
 
     pushqvalue( L, env );
+
+    // Since the environment is on the stack, we can dereference it.
+    env->DereferenceGC( L );
+
     return 1;
 }
 
@@ -1174,6 +1206,9 @@ static Closure* classmethod_fsDestroyHandler( lua_State *L, Closure *newMethod, 
     j->destructor = cl;
     luaC_forceupdatef( L, cl );
 
+    // Since the closure is stored on the class already, we can dereference it.
+    cl->DereferenceGC( L );
+
     // The actual new constructor we apply to the class
     CClosureBasic *retCl = luaF_newCclosure( L, 3, j->env );
     setclvalue( L, &retCl->upvalues[0], prevDest );
@@ -1194,7 +1229,12 @@ static Closure* classmethod_fsDestroyHandlerNative( lua_State *L, lua_CFunction 
     cl->f = proto;
     cl->isEnvLocked = true;
 
-    return classmethod_fsDestroyHandler( L, cl, j, prevMethod );
+    Closure *actualMethod = classmethod_fsDestroyHandler( L, cl, j, prevMethod );
+
+    // The closure should be stored inside actualMethod now, so lets dereference it.
+    cl->DereferenceGC( L );
+
+    return actualMethod;
 }
 
 void ClassMethodDispatch::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
@@ -1219,12 +1259,18 @@ Dispatch* Class::AcquireEnvDispatcherEx( lua_State *L, GCObject *curEnv )
 {
     // If the environment matches any of the inherited ones, we skip creating a dispatcher
     if ( curEnv == env )
+    {
+        env->ReferenceGC( L );
         return env;
+    }
 
     for ( envList_t::const_iterator iter = envInherit.begin(); iter != envInherit.end(); iter++ )
     {
         if ( curEnv == *iter )
+        {
+            env->ReferenceGC( L );
             return env;
+        }
     }
 
     // Create the dispatcher which accesses class env first then curEnv
@@ -1246,7 +1292,13 @@ Closure* Class::GetMethod( lua_State *L, TString *name, Table*& table )
         if ( ttype( val ) == LUA_TFUNCTION )
         {
             table = internStorage;
-            return clvalue( val );
+
+            Closure *retCl = clvalue( val );
+
+            // We reference it, as we return it.
+            retCl->ReferenceGC( L );
+
+            return retCl;
         }
     }
 
@@ -1256,7 +1308,13 @@ Closure* Class::GetMethod( lua_State *L, TString *name, Table*& table )
         if ( ttype( val ) == LUA_TFUNCTION )
         {
             table = storage;
-            return clvalue( val );
+
+            Closure *retCl = clvalue( val );
+
+            // We reference it, as we return it.
+            retCl->ReferenceGC( L );
+
+            return retCl;
         }
     }
 
@@ -1271,6 +1329,8 @@ Closure* Class::GetMethod( lua_State *L, TString *name, Table*& table )
             
             Closure *cl = reg->Create( L, this );
             methodCache->DeleteNode( L, node );     // remove as it no longer serves a purpose
+
+            // The closure is referenced, because it was just created.
 
             return cl;
         }
@@ -1299,58 +1359,92 @@ __forceinline void Class::RegisterMethod( lua_State *L, TString *methName, bool 
     Table *methTable;
     Closure *prevMethod = GetMethod( L, methName, methTable ); // Acquire the previous method
 
-    // Get the method closure and check whether we can apply it
-    Closure *cl = NULL;
+    try
     {
-        ConstValueAddress topAddr = index2constadr( L, -1 );
+        // Get the method closure and check whether we can apply it
+        Closure *cl = NULL;
+        {
+            ConstValueAddress topAddr = index2constadr( L, -1 );
 
-        cl = clvalue( topAddr );
+            cl = clvalue( topAddr );
+        }
+
+        // We cannot apply the method if the environment is locked.
+        // It usually is an indicator that the closure is a class method already.
+        if ( cl->IsEnvLocked() )
+            throw lua_exception( L, LUA_ERRRUN, "attempt to set a class method whose environment is locked" );
+
+        // Apply the environment to the new method
+        cl->env = AcquireEnvDispatcherEx( L, cl->env );
+        luaC_objbarrier( L, cl, cl->env );
+
+        // Since the Dispatch object is now stored in the closure, we can dereference it.
+        cl->env->DereferenceGC( L );
+
+        // Lock its environment so the scripter cannot break the class system.
+        cl->isEnvLocked = true;
+
+        Closure *handler;
+
+        if ( !handlers )
+            goto defaultHandler;
+
+        Class::forceSuperItem *item = forceSuper->GetItem( methName );
+
+        if ( item && item->cb )
+        {
+            handler = item->cb( L, cl, this, prevMethod );
+	    }
+	    else
+	    {
+    defaultHandler:
+            if ( prevMethod )
+            {
+                CClosureMethodRedirectSuper *redirect = luaF_newCmethodredirectsuper( L, env, cl, this, prevMethod );
+                redirect->f = classmethod_super;
+
+                handler = redirect;
+            }
+            else
+            {
+                CClosureMethodRedirect *redirect = luaF_newCmethodredirect( L, env, cl, this );
+                redirect->f = classmethod_root;
+
+                handler = redirect;
+            }
+	    }
+
+        try
+        {
+            // Store the new method
+            SetMethod( L, methName, handler, methTable );
+        }
+        catch( ... )
+        {
+            // Setting the method into the class can actually fail.
+            // We have to account for that.
+            handler->DereferenceGC( L );
+            throw;
+        }
+
+        // Since the new method has been stored now, we can dereference it.
+        handler->DereferenceGC( L );
     }
-
-    // We cannot apply the method if the environment is locked.
-    // It usually is an indicator that the closure is a class method already.
-    if ( cl->IsEnvLocked() )
-        throw lua_exception( L, LUA_ERRRUN, "attempt to set a class method whose environment is locked" );
-
-    // Apply the environment to the new method
-    cl->env = AcquireEnvDispatcherEx( L, cl->env );
-    luaC_objbarrier( L, cl, cl->env );
-
-    // Lock its environment so the scripter cannot break the class system.
-    cl->isEnvLocked = true;
-
-    Closure *handler;
-
-    if ( !handlers )
-        goto defaultHandler;
-
-    Class::forceSuperItem *item = forceSuper->GetItem( methName );
-
-    if ( item && item->cb )
+    catch( ... )
     {
-        handler = item->cb( L, cl, this, prevMethod );
-	}
-	else
-	{
-defaultHandler:
+        // Make sure we really free this reference.
         if ( prevMethod )
         {
-            CClosureMethodRedirectSuper *redirect = luaF_newCmethodredirectsuper( L, env, cl, this, prevMethod );
-            redirect->f = classmethod_super;
-
-            handler = redirect;
+            prevMethod->DereferenceGC( L );
         }
-        else
-        {
-            CClosureMethodRedirect *redirect = luaF_newCmethodredirect( L, env, cl, this );
-            redirect->f = classmethod_root;
+        throw;
+    }
 
-            handler = redirect;
-        }
-	}
-
-    // Store the new method
-    SetMethod( L, methName, handler, methTable );
+    if ( prevMethod )
+    {
+        // Since we stored the previous method in the closure, we can dereference it.
+        prevMethod->DereferenceGC( L );
+    }
 
     // Pop the raw function
     popstack( L, 1 );
@@ -1516,8 +1610,20 @@ defaultHandler:
         }
 	}
 
-    // Store the new method
-    j->SetMethod( L, methName, handler, methTable );
+    try
+    {
+        // Store the new method
+        j->SetMethod( L, methName, handler, methTable );
+    }
+    catch( ... )
+    {
+        // Settings things into the table can yield in an exception, so be careful.
+        handler->DereferenceGC( L );
+        throw;
+    }
+
+    // We can now dereference the new method.
+    handler->DereferenceGC( L );
 }
 
 __forceinline void Class::RegisterMethod( lua_State *L, TString *methName, lua_CFunction proto, _methodRegisterInfo& info, bool handlers )
@@ -1525,7 +1631,25 @@ __forceinline void Class::RegisterMethod( lua_State *L, TString *methName, lua_C
     Table *methTable;
     Closure *prevMethod = GetMethod( L, methName, methTable ); // Acquire the previous method
 
-    class_setMethod( L, this, methName, proto, prevMethod, methTable, info, handlers );
+    try
+    {
+        class_setMethod( L, this, methName, proto, prevMethod, methTable, info, handlers );
+    }
+    catch( ... )
+    {
+        if ( prevMethod )
+        {
+            prevMethod->DereferenceGC( L );
+        }
+
+        throw;
+    }
+
+    // Since the previous method is supposed to be stored in the method, we can dereference it now.
+    if ( prevMethod )
+    {
+        prevMethod->DereferenceGC( L );
+    }
 
     // Pop the upvalues
     popstack( L, info.numUpValues );
@@ -1536,8 +1660,26 @@ __forceinline void Class::RegisterMethodAt( lua_State *L, TString *methName, lua
     Table *methTable;
     Closure *prevMethod = GetMethod( L, methName, methTable );
 
-    // Use the user-specified methodTable
-    class_setMethod( L, this, methName, proto, prevMethod, methodTable, info, handlers );
+    try
+    {
+        // Use the user-specified methodTable
+        class_setMethod( L, this, methName, proto, prevMethod, methodTable, info, handlers );
+    }
+    catch( ... )
+    {
+        if ( prevMethod )
+        {
+            prevMethod->DereferenceGC( L );
+        }
+
+        throw;
+    }
+
+    // We have to dereference here to prevent an object leak.
+    if ( prevMethod )
+    {
+        prevMethod->DereferenceGC( L );
+    }
 
     // Pop the upvalues
     popstack( L, info.numUpValues );
@@ -1545,9 +1687,22 @@ __forceinline void Class::RegisterMethodAt( lua_State *L, TString *methName, lua
 
 void Class::RegisterMethod( lua_State *L, const char *name, bool handlers )
 {
-    // WARNING: just creating a string is not right!!!!
-    // TODO: fix this!!!
-    RegisterMethod( L, luaS_new( L, name ), handlers );
+    // This method is now secure since Lua objects are always alive by default due to supplemental GC ref counting.
+
+    TString *nameString = luaS_new( L, name );
+
+    try
+    {
+        RegisterMethod( L, nameString, handlers );
+    }
+    catch( ... )
+    {
+        // Even class method registration is allowed to throw exceptions, so make it safe.
+        nameString->DereferenceGC( L );
+        throw;
+    }
+
+    nameString->DereferenceGC( L );
 }
 
 void Class::RegisterMethod( lua_State *L, const char *name, lua_CFunction proto, int nupval, bool handlers )
@@ -1555,7 +1710,19 @@ void Class::RegisterMethod( lua_State *L, const char *name, lua_CFunction proto,
     _methodRegisterInfo info;
     info.numUpValues = nupval;
 
-    RegisterMethod( L, luaS_new( L, name ), proto, info, handlers );
+    TString *nameString = luaS_new( L, name );
+
+    try
+    {
+        RegisterMethod( L, nameString, proto, info, handlers );
+    }
+    catch( ... )
+    {
+        nameString->DereferenceGC( L );
+        throw;
+    }
+
+    nameString->DereferenceGC( L );
 }
 
 void Class::RegisterInterface( lua_State *L, const luaL_Reg *intf, int nupval, bool handlers )
@@ -1570,7 +1737,21 @@ void Class::RegisterInterface( lua_State *L, const luaL_Reg *intf, int nupval, b
             lua_pushvalue( L, -nupval );
         }
 
-        RegisterMethod( L, luaS_new( L, name ), intf->func, info, handlers );
+        TString *nameString = luaS_new( L, name );
+
+        try
+        {
+            RegisterMethod( L, nameString, intf->func, info, handlers );
+        }
+        catch( ... )
+        {
+            // I do not care whether you use exception handling or not.
+            // The code has to be valid.
+            nameString->DereferenceGC( L );
+            throw;
+        }
+
+        nameString->DereferenceGC( L );
 
         intf++;
     }
@@ -1588,7 +1769,20 @@ void Class::RegisterInterfaceAt( lua_State *L, const luaL_Reg *intf, int nupval,
             lua_pushvalue( L, -nupval );
         }
 
-        RegisterMethodAt( L, luaS_new( L, name ), intf->func, methodTable, info, handlers );
+        TString *nameString = luaS_new( L, name );
+
+        try
+        {
+            RegisterMethodAt( L, nameString, intf->func, methodTable, info, handlers );
+        }
+        catch( ... )
+        {
+            // Otherwise we end up with code that is deemed valid because it works like 90% of the time.
+            nameString->DereferenceGC( L );
+            throw;
+        }
+
+        nameString->DereferenceGC( L );
 
         intf++;
     }
@@ -1601,7 +1795,20 @@ void Class::RegisterMethodTrans( lua_State *L, const char *name, lua_CFunction p
     info.transID = trans;
     info.numUpValues = nupval;
 
-    RegisterMethod( L, luaS_new( L, name ), proto, info, handlers );
+    TString *nameString = luaS_new( L, name );
+
+    try
+    {
+        RegisterMethod( L, nameString, proto, info, handlers );
+    }
+    catch( ... )
+    {
+        // That was the problem of the original Lua 5.1 implementation. It sucks.
+        nameString->DereferenceGC( L );
+        throw;
+    }
+
+    nameString->DereferenceGC( L );
 }
 
 void Class::RegisterInterfaceTrans( lua_State *L, const luaL_Reg *intf, int nupval, int trans, bool handlers )
@@ -1618,7 +1825,19 @@ void Class::RegisterInterfaceTrans( lua_State *L, const luaL_Reg *intf, int nupv
             lua_pushvalue( L, -nupval );
         }
 
-        RegisterMethod( L, luaS_new( L, intf->name ), intf->func, info, handlers );
+        TString *nameString = luaS_new( L, intf->name );
+
+        try
+        {
+            RegisterMethod( L, nameString, intf->func, info, handlers );
+        }
+        catch( ... )
+        {
+            nameString->DereferenceGC( L );
+            throw;
+        }
+
+        nameString->DereferenceGC( L );
 
         intf++;
     }
@@ -1638,7 +1857,19 @@ void Class::RegisterInterfaceTransAt( lua_State *L, const luaL_Reg *intf, int nu
             lua_pushvalue( L, -nupval );
         }
 
-        RegisterMethodAt( L, luaS_new( L, intf->name ), intf->func, methodTable, info, handlers );
+        TString *nameString = luaS_new( L, intf->name );
+
+        try
+        {
+            RegisterMethodAt( L, nameString, intf->func, methodTable, info, handlers );
+        }
+        catch( ... )
+        {
+            nameString->DereferenceGC( L );
+            throw;
+        }
+
+        nameString->DereferenceGC( L );
 
         intf++;
     }
@@ -1646,23 +1877,35 @@ void Class::RegisterInterfaceTransAt( lua_State *L, const luaL_Reg *intf, int nu
 
 void Class::RegisterLightMethod( lua_State *L, const char *_name )
 {
-    // WARNING: using strings like this is very dangerous with the GC!
-    // TODO: fix this !!!!!
+    // It is now a secure string method :3
+    // Thanks to supplemental GC ref counting.
 
     // Light methods go directly into the environment
     TString *name = luaS_new( L, _name );
-    Closure *cl = NULL;
-    {
-        ConstValueAddress topItem = index2constadr( L, -1 );
 
-        cl = clvalue( topItem );
+    try
+    {
+        Closure *cl = NULL;
+        {
+            ConstValueAddress topItem = index2constadr( L, -1 );
+
+            cl = clvalue( topItem );
+        }
+
+        // Pop the closure from the top.
+        popstack( L, 1 );
+
+        // They go into storage only
+        SetMethod( L, name, cl, storage );
+    }
+    catch( ... )
+    {
+        name->DereferenceGC( L );
+        throw;
     }
 
-    // Pop the closure from the top.
-    popstack( L, 1 );
-
-    // They go into storage only
-    SetMethod( L, name, cl, storage );
+    // We do not need the name anymore.
+    name->DereferenceGC( L );
 }
 
 void Class::RegisterLightMethodTrans( lua_State *L, const char *name, int trans )
@@ -1703,6 +1946,9 @@ void Class::RegisterLightInterface( lua_State *L, const luaL_Reg *intf, void *ud
         }
         cl->env = AcquireEnvDispatcherEx( L, cl->env );
         luaC_objbarrier( L, cl, cl->env );
+
+        // Since the Dispatch object is now stored inside of the closure, we can dereference it.
+        cl->env->DereferenceGC( L );
 
         RegisterLightMethod( L, intf->name );
 
@@ -1774,17 +2020,28 @@ static int classmethod_getChildren( lua_State *L )
 {
     Class& j = *((CClosureMethodBase*)curr_func( L ))->m_class;
 
-    Table& tab = *luaH_new( L, j.childCount, 0 );
-    unsigned int n = 1;
+    Table *tab = luaH_new( L, j.childCount, 0 );
 
-    LIST_FOREACH_BEGIN( Class, j.children.root, child_iter )
-        ValueAddress numObj = luaH_setnum( L, &tab, n++ );
+    try
+    {
+        unsigned int n = 1;
 
-        setjvalue( L, numObj, item );
-        luaC_objbarriert( L, &tab, item );
-    LIST_FOREACH_END
+        LIST_FOREACH_BEGIN( Class, j.children.root, child_iter )
+            ValueAddress numObj = luaH_setnum( L, tab, n++ );
 
-    pushhvalue( L, &tab );
+            setjvalue( L, numObj, item );
+            luaC_objbarriert( L, tab, item );
+        LIST_FOREACH_END
+
+        pushhvalue( L, tab );
+    }
+    catch( ... )
+    {
+        tab->DereferenceGC( L );
+        throw;
+    }
+
+    tab->DereferenceGC( L );
     return 1;
 }
 
@@ -1927,7 +2184,13 @@ static int classmethod_setParent( lua_State *L )
 
     // Allow internal storage access to it
     {
-        ValueAddress stm = luaH_setstr( L, j.internStorage, luaS_new( L, "childAPI" ) );
+        TString *childAPIString = luaS_new( L, "childAPI" );
+
+        ValueAddress stm = luaH_setstr( L, j.internStorage, childAPIString );
+
+        // We do not need the key string anymore.
+        childAPIString->DereferenceGC( L );
+
         setjvalue( L, stm, j.childAPI );
         luaC_objbarriert( L, j.internStorage, j.childAPI );
     }
@@ -2159,7 +2422,7 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
         c->env = luaQ_newclassenv( L, c ); c->env->DereferenceGC( L );
         c->outenv = luaQ_newclassoutenv( L, c ); c->outenv->DereferenceGC( L );
         c->storage = luaH_new( L, 0, 0 ); c->storage->DereferenceGC( L );
-        c->internStorage = luaH_new( L, 0, 0 );
+        c->internStorage = luaH_new( L, 0, 0 ); c->internStorage->DereferenceGC( L );
 
         c->forceSuper = new (L) Class::ForceSuperTable();
 
@@ -2181,7 +2444,13 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
         Class::forceSuperItem destrItem;
         destrItem.cb = classmethod_fsDestroyHandler;
         destrItem.cbNative = classmethod_fsDestroyHandlerNative;
-        c->forceSuper->SetItem( L, luaS_new( L, "destroy" ), destrItem );
+
+        TString *destroyNameString = luaS_new( L, "destroy" );
+
+        c->forceSuper->SetItem( L, destroyNameString, destrItem );
+
+        // Used the string, so lets dereference it again.
+        destroyNameString->DereferenceGC( L );
 
         // Create a class-only storage
         pushhvalue( L, c->internStorage );
@@ -2248,6 +2517,9 @@ Class* luaJ_new( lua_State *L, int nargs, unsigned int flags )
         // Apply the environment to the constructor
         constructor->env = c->AcquireEnvDispatcherEx( L, constructor->env );
         luaC_objbarrier( L, constructor, c->env );
+
+        // Since the Dispatch is now stored inside of the constructor closure, we can dereference it.
+        constructor->env->DereferenceGC( L );
 
         // Call the constructor (class as first arg)
         pushjvalue( L, c );
@@ -2337,6 +2609,9 @@ static int extend_handler( lua_State *L )
     Class *j = ((CClosureMethodBase*)curr_func( L ))->m_class;
 
     extender->env = j->AcquireEnvDispatcherEx( L, extender->env );
+
+    // Since the Dispatch is now stored in the closure, we can dereference it.
+    extender->env->DereferenceGC( L );
 
     j->Push( L );
     lua_insert( L, 2 );

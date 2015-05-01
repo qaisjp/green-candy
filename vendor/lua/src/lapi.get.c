@@ -36,17 +36,31 @@ LUA_API void lua_getfield (lua_State *L, int idx, const char *k)
     ConstValueAddress t = index2constadr(L, idx);
     api_checkvalidindex(L, t);
 
-    LocalValueAddress key;
+    TString *newFieldString = luaS_new(L, k);
 
-    setsvalue(L, key, luaS_new(L, k));
-
+    try
     {
-        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+        LocalValueAddress key;
 
-        ValueAddress stackItem = newstackslot( L );
+        setsvalue(L, key, newFieldString);
 
-        luaV_gettable( L, t, key.ConstCast(), stackItem );
+        {
+            RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
+
+            ValueAddress stackItem = newstackslot( L );
+
+            luaV_gettable( L, t, key.ConstCast(), stackItem );
+        }
     }
+    catch( ... )
+    {
+        // NEVER forget to account for exceptions being thrown at any point in the runtime.
+        newFieldString->DereferenceGC( L );
+        throw;
+    }
+
+    // We do not need the field string anymore.
+    newFieldString->DereferenceGC( L );
 
     lua_unlock(L);
 }
@@ -89,7 +103,23 @@ LUA_API void lua_createtable (lua_State *L, int narray, int nrec)
 {
     lua_lock(L);
     luaC_checkGC(L);
-    pushhvalue(L, luaH_new(L, narray, nrec));
+
+    // We need to safely create a table and push it onto the stack.
+    Table *newTable = luaH_new(L, narray, nrec);
+
+    try
+    {
+        pushhvalue(L, newTable);
+    }
+    catch( ... )
+    {
+        // Stack exceptions are possible, out of memory or too big stack, for example.
+        newTable->DereferenceGC( L );
+        throw;
+    }
+
+    newTable->DereferenceGC( L );
+
     lua_unlock(L);
 }
 

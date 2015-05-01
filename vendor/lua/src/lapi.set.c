@@ -43,13 +43,27 @@ LUA_API void lua_setfieldl( lua_State *L, int idx, const char *k, size_t l )
     ConstValueAddress t = index2constadr(L, idx);
     api_checkvalidindex(L, t);
     {
-        LocalValueAddress key;
-        setsvalue(L, key, luaS_newlstr(L, k, l));
+        TString *newKeyString = luaS_newlstr(L, k, l);
 
-        ConstValueAddress valItem = index2constadr( L, -1 );
+        // Important to catch exceptions because this is a fairly complicated operation!
+        try
+        {
+            LocalValueAddress key;
+            setsvalue(L, key, newKeyString);
 
-        luaV_settable(L, t, key.ConstCast(), valItem);
-        popstack( L, 1 );  /* pop value */
+            ConstValueAddress valItem = index2constadr( L, -1 );
+
+            luaV_settable(L, t, key.ConstCast(), valItem);
+            popstack( L, 1 );  /* pop value */
+        }
+        catch( ... )
+        {
+            newKeyString->DereferenceGC( L );
+            throw;
+        }
+
+        // We do not need the key string anymore.
+        newKeyString->DereferenceGC( L );
     }
     lua_unlock(L);
 }

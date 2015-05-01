@@ -109,11 +109,23 @@ struct CCallS {  /* data to `f_Ccall' */
 static void f_Ccall (lua_State *L, void *ud)
 {
     struct CCallS *c = cast(struct CCallS *, ud);
-    CClosure *cl;
-    cl = luaF_newCclosure(L, 0, getcurrenv(L));
-    cl->f = c->func;
-    pushclvalue(L, cl);  /* push function */
-    pushpvalue(L, c->ud);  /* push only argument */
+    CClosure *cl = luaF_newCclosure(L, 0, getcurrenv(L));
+
+    try
+    {
+        cl->f = c->func;
+        pushclvalue(L, cl);  /* push function */
+        pushpvalue(L, c->ud);  /* push only argument */
+    }
+    catch( ... )
+    {
+        // We must account for stack failures.
+        cl->DereferenceGC( L );
+        throw;
+    }
+
+    // Since the function is on stack now, it can be dereferenced from GC keep-alive.
+    cl->DereferenceGC( L );
 
     RtCtxItem funcCtx = index2stackadr( L, -2 );
 

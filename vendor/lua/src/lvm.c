@@ -54,7 +54,14 @@ int luaV_tostring (lua_State *L, ValueAddress& obj)
         char s[LUAI_MAXNUMBER2STR];
         lua_Number n = nvalue(obj);
         lua_number2str(s, n);
-        setsvalue(L, obj, luaS_new(L, s));
+
+        TString *numberString = luaS_new(L, s);
+
+        setsvalue(L, obj, numberString);
+
+        // Since the number string is now on the stack, we can dereference it.
+        numberString->DereferenceGC( L );
+
         return 1;
     }
 }
@@ -1050,7 +1057,12 @@ reentry:  /* entry point */
                 int b = GETARG_B(i);
                 int c = GETARG_C(i);
 
-                sethvalue(L, ra, luaH_new(L, luaO_fb2int(b), luaO_fb2int(c)));
+                Table *newTable = luaH_new(L, luaO_fb2int(b), luaO_fb2int(c));
+
+                sethvalue(L, ra, newTable);
+
+                // Since the table is now living on the stack, we can dereference it.
+                newTable->DereferenceGC( L );
 
                 Protect(luaC_checkGC(L));
                 break;
@@ -1240,25 +1252,38 @@ reentry:  /* entry point */
 
                 LClosure *lcl = luaF_newLclosure( L, nup, cl->env );
 
-                Closure *ncl = lcl;
-                lcl->p = p;
-
-                for ( int j = 0; j < nup; j++, pc++ )
+                try
                 {
-                    if ( GET_OPCODE(*pc) == OP_GETUPVAL )
-                    {
-                        lcl->upvals[j] = cl->upvals[ GETARG_B(*pc) ];
-                    }
-                    else
-                    {
-                        lua_assert(GET_OPCODE(*pc) == OP_MOVE);
+                    Closure *ncl = lcl;
+                    lcl->p = p;
 
-                        RtCtxItem stackItem = index2stackadr( L, GETARG_B(*pc) + 1 );
+                    for ( int j = 0; j < nup; j++, pc++ )
+                    {
+                        if ( GET_OPCODE(*pc) == OP_GETUPVAL )
+                        {
+                            lcl->upvals[j] = cl->upvals[ GETARG_B(*pc) ];
+                        }
+                        else
+                        {
+                            lua_assert(GET_OPCODE(*pc) == OP_MOVE);
 
-                        lcl->upvals[j] = luaF_findupval(L, stackItem.Pointer());
+                            RtCtxItem stackItem = index2stackadr( L, GETARG_B(*pc) + 1 );
+
+                            lcl->upvals[j] = luaF_findupval(L, stackItem.Pointer());
+                        }
                     }
+                    setclvalue(L, ra, ncl);
                 }
-                setclvalue(L, ra, ncl);
+                catch( ... )
+                {
+                    // Even bytecode can throw exceptions, so account for that.
+                    lcl->DereferenceGC( L );
+                    throw;
+                }
+
+                // Since the Lua closure is now on the stack, we can dereference it.
+                lcl->DereferenceGC( L );
+
                 Protect(luaC_checkGC(L));
                 break;
             }
