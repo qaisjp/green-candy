@@ -92,6 +92,9 @@ inline TString* GetSuperString( lua_State *L )
         {
             classEnv->superCached = theString;
         }
+
+        // Since we store the "super" string in the global class environment now, we can dereference it.
+        theString->DereferenceGC( L );
     }
 
     return theString;

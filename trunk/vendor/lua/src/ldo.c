@@ -39,11 +39,37 @@ void luaD_seterrorobj (lua_State *L, int errcode)
     switch( errcode )
     {
     case LUA_ERRMEM: {
-        pushsvalue(L, luaS_newliteral(L, MEMERRMSG));
+        TString *memErrorString = luaS_newliteral(L, MEMERRMSG);
+
+        try
+        {
+            pushsvalue(L, memErrorString);
+        }
+        catch( ... )
+        {
+            memErrorString->DereferenceGC( L );
+            throw;
+        }
+
+        // Since the error string is on the stack, we can free it now.
+        memErrorString->DereferenceGC( L );
         break;
     }
     case LUA_ERRERR: {
-        pushsvalue(L, luaS_newliteral(L, "error in error handling"));
+        TString *errorErrorString = luaS_newliteral(L, "error in error handling");
+
+        try
+        {
+            pushsvalue(L, errorErrorString);
+        }
+        catch( ... )
+        {
+            errorErrorString->DereferenceGC( L );
+            throw;
+        }
+
+        // Since the error string is on the stack now, we can dereference it.
+        errorErrorString->DereferenceGC( L );
         break;
     }
     case LUA_ERRSYNTAX:
@@ -674,7 +700,22 @@ void luaD_call (lua_State *L, RtCtxItem& func, int nResults, eCallFrameModel cal
 inline static int resume_error (lua_State *L, const char *msg)
 {
     L->GetCurrentStackFrame().Clear( L, L->rtStack );
-    pushsvalue(L, luaS_new(L, msg));
+
+    TString *errorString = luaS_new(L, msg);
+
+    try
+    {
+        pushsvalue(L, errorString);
+    }
+    catch( ... )
+    {
+        errorString->DereferenceGC( L );
+        throw;
+    }
+
+    // Since the error string is now on the stack, we can dereference it.
+    errorString->DereferenceGC( L );
+
     lua_unlock(L);
     return LUA_ERRRUN;
 }
@@ -793,15 +834,48 @@ static void f_parser (lua_State *L, void *ud)
 
     Proto *tf = ((c == LUA_SIGNATURE[0]) ? luaU_undump : luaY_parser)(L, p->z, &p->buff, p->name);
 
-    LClosure *cl = luaF_newLclosure(L, tf->nups, hvalue(gt(L)));
-    cl->p = tf;
-
-    for ( int i = 0; i < tf->nups; i++ )  /* initialize eventual upvalues */
+    try
     {
-        cl->upvals[i] = luaF_newupval(L);
+        LClosure *cl = luaF_newLclosure(L, tf->nups, gcvalue(gt(L)));
+
+        cl->p = tf;
+
+        try
+        {
+
+            for ( int i = 0; i < tf->nups; i++ )  /* initialize eventual upvalues */
+            {
+                UpVal *theUpValue = luaF_newupval(L);
+
+                cl->upvals[i] = theUpValue;
+
+                // Since the upvalue is now stored in a reference Lua closure, we can dereference it.
+                theUpValue->DereferenceGC( L );
+            }
+
+            pushclvalue(L, cl);
+        }
+        catch( ... )
+        {
+            // Pushing on the stack failure or memory allocation failure.
+            // Everything has to be accounted for.
+            cl->DereferenceGC( L );
+            throw;
+        }
+
+        // Since the Lua closure is now on the stack, we can dereference it.
+        cl->DereferenceGC( L );
+    }
+    catch( ... )
+    {
+        tf->DereferenceGC( L );
+        throw;
     }
 
-    pushclvalue(L, cl);
+    // Dereference the proto aswell.
+    tf->DereferenceGC( L );
+
+    lua_assert( tf->GetGCRefCount() == 0 );
 }
 
 int luaD_protectedparser (lua_State *L, ZIO *z, const char *name)

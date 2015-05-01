@@ -229,6 +229,9 @@ static int typelib_create( lua_State *L )
                 {
                     pushgcvalue( L, luaObject );
 
+                    // Since the object is now on the stack, we can dereference it.
+                    luaObject->DereferenceGC( L );
+
                     hasPushedObject = true;
                 }
             }
@@ -274,6 +277,9 @@ static int typelib_clone( lua_State *L )
     if ( newObj )
     {
         pushgcvalue( L, newObj );
+
+        // Since the object is now on the stack, we can dereference it.
+        newObj->DereferenceGC( L );
     }
     else
     {

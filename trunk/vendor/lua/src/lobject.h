@@ -1034,8 +1034,8 @@ private:
     volatile unsigned int gcRefCount;   // reference count to keep an object alive by C++ runtime.
 
 public:
-    void ReferenceGC( lua_State *L )            { this->gcRefCount++; }
-    void DereferenceGC( lua_State *L )          { this->gcRefCount--; }
+    void ReferenceGC( lua_State *L );
+    void DereferenceGC( lua_State *L );
 
     unsigned int GetGCRefCount( void ) const    { return this->gcRefCount; }
 };
@@ -1901,7 +1901,7 @@ template <typename bitMask> FASTAPI bool test2bits(bitMask x, bitMask b1, bitMas
 #define KEYWEAKBIT	    ((lu_byte)3)
 #define VALUEWEAKBIT	((lu_byte)4)
 #define FIXEDBIT	    ((lu_byte)5)
-#define SFIXEDBIT	    ((lu_byte)6)
+// free bits: 6 and 7
 #define WHITEBITS	    ((lu_byte)bit2mask(WHITE0BIT, WHITE1BIT))
 
 FASTAPI bool iswhite(const GCObject *x)         { return test2bits((lu_byte)(x)->marked, WHITE0BIT, WHITE1BIT); }
@@ -1910,7 +1910,31 @@ FASTAPI bool isgray(const GCObject *x)          { return (!isblack(x) && !iswhit
 
 FASTAPI lu_byte otherwhite(global_State *g)     { return g->currentwhite ^ WHITEBITS; }
 
-FASTAPI bool isdead(global_State *g, const GCObject *v)     { return ( ((v)->marked & otherwhite(g) & WHITEBITS) != 0 ); }
+FASTAPI bool isdead(global_State *g, const GCObject *v)
+{
+    // NOTE: this method is not an absolute check.
+    // it just reflects the current state of the GC runtime.
+
+    bool isAlive = false;
+
+    if ( isAlive == false )
+    {
+        if ( ((v)->marked & otherwhite(g) & WHITEBITS) == 0 )
+        {
+            isAlive = true;
+        }
+    }
+
+    if ( isAlive == false )
+    {
+        if ( v->GetGCRefCount() != 0 )
+        {
+            isAlive = true;
+        }
+    }
+
+    return !isAlive;
+}
 
 FASTAPI void changewhite(GCObject *x)   { ((x)->marked ^= WHITEBITS); }
 FASTAPI void gray2black(GCObject *x)    { l_setbit((x)->marked, BLACKBIT); }

@@ -182,6 +182,7 @@ xcopy /y ..\bin\lua5.1.dll "..\..\..\lint_out\"
     <ClInclude Include="..\src\lclass.hxx" />
     <ClInclude Include="..\src\lclasslib.h" />
     <ClInclude Include="..\src\lcode.h" />
+    <ClInclude Include="..\src\lcode.hxx" />
     <ClInclude Include="..\src\ldebug.h" />
     <ClInclude Include="..\src\ldispatch.class.hxx" />
     <ClInclude Include="..\src\ldispatch.h" />
@@ -200,6 +201,7 @@ xcopy /y ..\bin\lua5.1.dll "..\..\..\lint_out\"
     <ClInclude Include="..\src\lobject.h" />
     <ClInclude Include="..\src\lopcodes.h" />
     <ClInclude Include="..\src\lparser.h" />
+    <ClInclude Include="..\src\lparser.hxx" />
     <ClInclude Include="..\src\lpluginutil.hxx" />
     <ClInclude Include="..\src\lstack.h" />
     <ClInclude Include="..\src\lstate.h" />

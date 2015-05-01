@@ -482,6 +482,9 @@ UpVal *luaF_findupval (lua_State *L, StkId level)
                     LIST_CLEAR( uv->u.l );
                 }
             }
+
+            // We can now dereference it from GC.
+            uv->DereferenceGC( L );
         }
     }
     return uv;

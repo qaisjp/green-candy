@@ -70,16 +70,19 @@ static lua_Number LoadNumber(LoadState* S)
 
 static TString* LoadString(LoadState* S)
 {
- size_t size;
- LoadVar(S,size);
- if (size==0)
-  return NULL;
- else
- {
-  char* s=luaZ_openspace(S->L,S->b,size);
-  LoadBlock(S,s,size);
-  return luaS_newlstr(S->L,s,size-1);		/* remove trailing '\0' */
- }
+    size_t size;
+    LoadVar(S,size);
+
+    if (size==0)
+    {
+        return NULL;
+    }
+    
+    char *s = luaZ_openspace( S->L, S->b, size );
+
+    LoadBlock( S, s, size );
+
+    return luaS_newlstr( S->L, s, size-1 );     /* remove trailing '\0' */
 }
 
 static void LoadCode(LoadState* S, Proto* f)
@@ -94,63 +97,115 @@ static Proto* LoadFunction(LoadState* S, TString* p);
 
 static void LoadConstants(LoadState* S, Proto* f)
 {
- int i,n;
- n=LoadInt(S);
- f->k=luaM_newvector <TValue> (S->L,n);
- f->sizek=n;
- for (i=0; i<n; i++) setnilvalue(&f->k[i]);
- for (i=0; i<n; i++)
- {
-  TValue* o=&f->k[i];
-  int t=LoadChar(S);
-  switch (t)
-  {
-   case LUA_TNIL:
-   	setnilvalue(o);
-	break;
-   case LUA_TBOOLEAN:
-   	setbvalue(o,LoadChar(S)!=0);
-	break;
-   case LUA_TNUMBER:
-	setnvalue(o,LoadNumber(S));
-	break;
-   case LUA_TSTRING:
-	setsvalue2n(S->L,o,LoadString(S));
-	break;
-   default:
-	error(S,"bad constant");
-	break;
-  }
- }
- n=LoadInt(S);
- f->p=luaM_newvector <Proto*> (S->L,n);
- f->sizep=n;
- for (i=0; i<n; i++) f->p[i]=NULL;
- for (i=0; i<n; i++) f->p[i]=LoadFunction(S,f->source);
+    int numValues = LoadInt(S);
+
+    f->k = luaM_newvector <TValue> ( S->L, numValues );
+    f->sizek = numValues;
+
+    for (int i = 0; i < numValues; i++)
+    {
+        setnilvalue( &f->k[i] );
+    }
+    for (int i = 0; i < numValues; i++)
+    {
+        TValue *o = &f->k[i];
+
+        int t = LoadChar(S);
+
+        switch (t)
+        {
+        case LUA_TNIL:
+            setnilvalue(o);
+            break;
+        case LUA_TBOOLEAN:
+            setbvalue(o,LoadChar(S)!=0);
+            break;
+        case LUA_TNUMBER:
+            setnvalue(o,LoadNumber(S));
+            break;
+        case LUA_TSTRING:
+        {
+            TString *loadedString = LoadString(S);
+
+            // Atomic prototypes like these are guarranteed to throw no exceptions.
+            setsvalue2n( S->L, o, loadedString );
+
+            // Since the loaded string is now stored in the Proto and the proto is referenced by default, we can dereference the string.
+            loadedString->DereferenceGC( S->L );
+            break;
+        }
+        default:
+            error(S,"bad constant");
+            break;
+        }
+    }
+
+    int numProtos = LoadInt(S);
+
+    f->p = luaM_newvector <Proto*> ( S->L, numProtos );
+    f->sizep = numProtos;
+
+    for (int i = 0; i < numProtos; i++)
+    {
+        f->p[i] = NULL;
+    }
+    for (int i = 0; i < numProtos; i++)
+    {
+        Proto *subProto = LoadFunction(S,f->source);
+
+        f->p[i] = subProto;
+
+        // Since we store the subproto in an actual already reference proto, we can dereference it.
+        subProto->DereferenceGC( S->L );
+    }
 }
 
 static void LoadDebug(LoadState* S, Proto* f)
 {
- int i,n;
- n=LoadInt(S);
- f->lineinfo=luaM_newvector <int> (S->L,n);
- f->sizelineinfo=n;
- LoadVector(S,f->lineinfo,n,sizeof(int));
- n=LoadInt(S);
- f->locvars=luaM_newvector <LocVar> (S->L,n);
- f->sizelocvars=n;
- for (i=0; i<n; i++) f->locvars[i].varname=NULL;
- for (i=0; i<n; i++)
- {
-  f->locvars[i].varname=LoadString(S);
-  f->locvars[i].startpc=LoadInt(S);
-  f->locvars[i].endpc=LoadInt(S);
- }
- n=LoadInt(S);
- f->upvalues=luaM_newvector <TString*> (S->L,n);
- f->sizeupvalues=n;
- for (i=0; i<n; i++) f->upvalues[i]=NULL;
- for (i=0; i<n; i++) f->upvalues[i]=LoadString(S);
+    int numLineInfo = LoadInt(S);
+    f->lineinfo = luaM_newvector <int> ( S->L, numLineInfo );
+    f->sizelineinfo = numLineInfo;
+
+    LoadVector( S, f->lineinfo, numLineInfo, sizeof(int) );
+
+    int numLocVars = LoadInt(S);
+    f->locvars = luaM_newvector <LocVar> ( S->L, numLocVars );
+    f->sizelocvars = numLocVars;
+
+    for (int i = 0; i < numLocVars; i++)
+    {
+        f->locvars[i].varname = NULL;
+    }
+    for (int i = 0; i < numLocVars; i++)
+    {
+        TString *varNameString = LoadString(S);
+
+        f->locvars[i].varname = varNameString;
+
+        // Since the variable name string is now stored in a reference prototype, we can dereference the string.
+        varNameString->DereferenceGC( S->L );
+
+        f->locvars[i].startpc = LoadInt(S);
+        f->locvars[i].endpc = LoadInt(S);
+    }
+
+    int numUpValueNames = LoadInt(S);
+    f->upvalues = luaM_newvector <TString*> ( S->L, numUpValueNames );
+    f->sizeupvalues = numUpValueNames;
+
+    for (int i = 0; i < numUpValueNames; i++)
+    {
+        f->upvalues[i] = NULL;
+    }
+    for (int i = 0; i < numUpValueNames; i++)
+    {
+        TString *upValueNameString = LoadString(S);
+
+        f->upvalues[i] = upValueNameString;
+
+        // Since the upvalue name string is now stored in a reference prototype, we can dereference it.
+        upValueNameString->DereferenceGC( S->L );
+    }
 }
 
 static Proto* LoadFunction(LoadState* S, TString* p)
@@ -158,29 +213,43 @@ static Proto* LoadFunction(LoadState* S, TString* p)
     callstack_ref cref( *S->L );
 
     Proto *f = luaF_newproto( S->L );
-    pushptvalue( S->L, f );
 
-    f->source = LoadString(S);
-
-    if ( f->source == NULL )
+    try
     {
-        f->source = p;
+        TString *sourceString = LoadString(S);
+
+        f->source = sourceString;
+
+        if ( sourceString == NULL )
+        {
+            f->source = p;
+        }
+        else
+        {
+            sourceString->DereferenceGC( S->L );
+        }
+
+        f->linedefined = LoadInt(S);
+        f->lastlinedefined = LoadInt(S);
+        f->nups = LoadByte(S);
+        f->numparams = LoadByte(S);
+        f->is_vararg = LoadByte(S);
+        f->maxstacksize = LoadByte(S);
+
+        LoadCode( S, f );
+        LoadConstants( S, f );
+        LoadDebug( S, f );
+
+        IF ( !luaG_checkcode(f), "bad code" );
+    }
+    catch( ... )
+    {
+        // We dereference as the construction of that proto has failed.
+        f->DereferenceGC( S->L );
+        throw;
     }
 
-    f->linedefined = LoadInt(S);
-    f->lastlinedefined = LoadInt(S);
-    f->nups = LoadByte(S);
-    f->numparams = LoadByte(S);
-    f->is_vararg = LoadByte(S);
-    f->maxstacksize = LoadByte(S);
-
-    LoadCode( S, f );
-    LoadConstants( S, f );
-    LoadDebug( S, f );
-
-    IF ( !luaG_checkcode(f), "bad code" );
-
-    popstack( S->L, 1 );
+    // We do not dereference the proto, since we return it.
     return f;
 }
 
@@ -198,18 +267,45 @@ static void LoadHeader(LoadState* S)
 */
 Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
 {
- LoadState S;
- if (*name=='@' || *name=='=')
-  S.name=name+1;
- else if (*name==LUA_SIGNATURE[0])
-  S.name="binary string";
- else
-  S.name=name;
- S.L=L;
- S.Z=Z;
- S.b=buff;
- LoadHeader(&S);
- return LoadFunction(&S,luaS_newliteral(L,"=?"));
+    LoadState S;
+
+    if ( *name=='@' || *name=='=' )
+    {
+        S.name  =name+1;
+    }
+    else if ( *name==LUA_SIGNATURE[0] )
+    {
+        S.name = "binary string";
+    }
+    else
+    {
+        S.name = name;
+    }
+
+    S.L = L;
+    S.Z = Z;
+    S.b = buff;
+
+    LoadHeader(&S);
+
+    Proto *resultProto = NULL;
+
+    TString *unkLiteral = luaS_newliteral( L, "=?" );
+
+    try
+    {
+        resultProto = LoadFunction( &S, unkLiteral );
+    }
+    catch( ... )
+    {
+        // Everything is principally allowed to fail.
+        unkLiteral->DereferenceGC( L );
+        throw;
+    }
+
+    unkLiteral->DereferenceGC( L );
+
+    return resultProto;
 }
 
 /*

@@ -16,6 +16,7 @@
 #include "ltable.h"
 #include "lzio.h"
 
+#include "lparser.hxx"
 
 
 #define next(ls) (ls->current = zgetc(ls->z))
@@ -54,14 +55,21 @@ static void save (LexState *ls, int c) {
 }
 
 
-void luaX_init (lua_State *L) {
-  int i;
-  for (i=0; i<NUM_RESERVED; i++) {
-    TString *ts = luaS_new(L, luaX_tokens[i]);
-    luaS_fix(ts);  /* reserved words are never collected */
-    lua_assert(strlen(luaX_tokens[i])+1 <= TOKEN_LEN);
-    ts->reserved = cast_byte(i+1);  /* reserved word */
-  }
+void luaX_init (lua_State *L)
+{
+    for (int i = 0; i < NUM_RESERVED; i++)
+    {
+        TString *ts = luaS_new(L, luaX_tokens[i]);
+
+        luaS_fix(ts);  /* reserved words are never collected */
+
+        // Since the string has the fixed bit, we can dereference it now.
+        ts->DereferenceGC( L );
+
+        lua_assert(strlen(luaX_tokens[i])+1 <= TOKEN_LEN);
+
+        ts->reserved = cast_byte(i+1);  /* reserved word */
+    }
 }
 
 
@@ -114,15 +122,27 @@ TString *luaX_newstring (LexState *ls, const char *str, size_t l)
     lua_State *L = ls->L;
     TString *ts = luaS_newlstr(L, str, l);
 
-    FuncState *fs = GetCurrentFuncState( ls );
-
-    ValueAddress o = luaH_setstr(L, fs->h, ts);  /* entry for `str' */
-
-    if (ttisnil(o))
+    try
     {
-        setbvalue(o, 1);  /* make sure `str' will not be collected */
-        luaC_checkGC(L);
+        FuncState *fs = GetCurrentFuncState( ls );
+
+        ValueAddress o = luaH_setstr(L, fs->h, ts);  /* entry for `str' */
+
+        if (ttisnil(o))
+        {
+            setbvalue(o, 1);  /* make sure `str' will not be collected */
+            luaC_checkGC(L);
+        }
     }
+    catch( ... )
+    {
+        // Exceptions can mainly be throw here due to memory allocation errors.
+        ts->DereferenceGC( L );
+        throw;
+    }
+
+    // Since we make sure that the string is not collected anymore, we can dereference it.
+    ts->DereferenceGC( L );
 
     return ts;
 }

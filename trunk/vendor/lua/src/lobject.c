@@ -96,7 +96,20 @@ int luaO_str2d (const char *s, lua_Number *result) {
 
 static void pushstr (lua_State *L, const char *str)
 {
-    pushsvalue(L, luaS_new(L, str));
+    TString *theString = luaS_new(L, str);
+
+    try
+    {
+        pushsvalue(L, theString);
+    }
+    catch( ... )
+    {
+        theString->DereferenceGC( L );
+        throw;
+    }
+
+    // Since the string is now on the stack, we can dereference the string.
+    theString->DereferenceGC( L );
 }
 
 
@@ -116,7 +129,21 @@ const char *luaO_pushvfstring (lua_State *L, const char *fmt, va_list argp)
             break;
         }
 
-        pushsvalue(L, luaS_newlstr(L, fmt, e-fmt));
+        TString *newStrSection = luaS_newlstr(L, fmt, e-fmt);
+
+        try
+        {
+            pushsvalue(L, newStrSection);
+        }
+        catch( ... )
+        {
+            // Handle pretty obscure stack expansion errors.
+            newStrSection->DereferenceGC( L );
+            throw;
+        }
+
+        // Since the new string section is on the stack now, we can dereference it.
+        newStrSection->DereferenceGC( L );
 
         switch( *(e+1) )
         {

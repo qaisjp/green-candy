@@ -741,15 +741,29 @@ void luaC_freeall (lua_State *L)
 
     if ( gcEnv )
     {
-        int i;
-
-        g->currentwhite = WHITEBITS | bitmask(SFIXEDBIT);  /* mask to collect all elements */
+        g->currentwhite = WHITEBITS;    /* mask to collect all elements */
 
         sweepwholelist(L, g, gcEnv, gcEnv->rootgc);
 
-        for (i = 0; i < g->strt.size; i++)  /* free all string lists */
+        for (int i = 0; i < g->strt.size; i++)  /* free all string lists */
         {
             sweepwholelist(L, g, gcEnv, g->strt.hash[i]);
+        }
+
+        // We can now free the ref-count from the main thread.
+        g->mainthread->DereferenceGC( L );
+
+        // If not every object was collected, we obviously have a runtime leak somewhere.
+        // Try to collect where and what.
+        if ( gcEnv->rootgc.GetFirst() != L )
+        {
+            for ( gcObjList_t::iterator iter = gcEnv->rootgc.GetIterator(); !iter.IsEnd(); iter.Increment() )
+            {
+                GCObject *theObj = (GCObject*)iter.Resolve();
+
+                // Investigate the object.
+                __asm nop
+            }
         }
 
         lua_assert(gcEnv->rootgc.GetFirst() == L);
@@ -1143,6 +1157,51 @@ static inline void luaC_processestimate( globalStateGCEnv *gcEnv, size_t mem )
         gcEnv->estimate = 0;
 }
 
+void GCObject::ReferenceGC( lua_State *L )
+{
+    // This method MUST NOT be used to revive a dead object.
+    lua_assert( isdead( G(L), this ) == false );
+
+    this->gcRefCount++;
+
+    /*
+        I previously figured whether any reordering of GC visibility would break the current GC runtime.
+        My conclusion is that it does not, and here is why.
+
+        The ordering is important. First TValues are propagated, then the ref-GC.
+
+        If the GC-pc is at the beginning of its cycle then the runtime is considered always-valid.
+        This can be used as an last-opt-out approach by enforcing a lock until the GC-thread has reached its cycle-begin.
+
+        The most interesting point where things can break is in transition between states. We will explicitly look between
+        TValue and ref-GC and assume any other position is provided valid by the GC runtime.
+
+        Moving an object from TValue to ref-GC. This operation consists of two atomic operations, but three runtime states.
+        First the GC-ref-count is increased and then the object is removed from TValue. We have already proven that an object
+        stays alive if its previous cycle was in TValue and it current stays in it aswell. So the initial state where the
+        object resides on TValue is valid. Directly after increasing the GC-ref-count the object is valid too, because it stays
+        on TValue aswell. But what happens after removing from TValue?
+
+        Since the ref-GC algorithm is after the TValue propagation, the object stays valid. If the GC-pc is directly before the 
+        ref-GC runtime it could have been marked by the TValue propagation. If it was not then the GC runtime must be on the start
+        of its cycle, hence in valid state. Thus the runtime is valid.
+
+        Moving an object from ref-GC to TValue. Again, this operation consists of two atomic operations, but three runtime states.
+        First the object is added to TValue and then the GC-ref-count is decreased. Here a special case counts: the adding to TValue
+        livelyness preservation strategy. The runtime guarrantees through barriers that when adding to TValue the object is valid.
+        A barrier is a state-switch. The object can be either white or black, meaning either propagated or not.
+
+        To be honest, it'd be best if I wrote a book about it.
+    */
+}
+
+void GCObject::DereferenceGC( lua_State *L )
+{
+    lua_assert( this->gcRefCount >= 1 );
+
+    this->gcRefCount--;
+}
+
 static int luaC_runtime( lua_State *L )
 {
     global_State *g = G(L);
@@ -1196,6 +1255,19 @@ static int luaC_runtime( lua_State *L )
             }
 
             /* no more 'gray' objects */
+            /* mark all objects that have a GC reference */
+            {
+                for ( gcObjList_t::iterator iter = gcEnv->rootgc.GetIterator(); !iter.IsEnd(); iter.Increment() )
+                {
+                    GCObject *theObj = (GCObject*)iter.Resolve();
+
+                    if ( theObj->GetGCRefCount() != 0 )
+                    {
+                        // Mark it.
+                        markobject( g, theObj );
+                    }
+                }
+            }
             /* give control to sub-modules to mark their global values */
             {
                 luaJ_gcruntime( L );
@@ -1326,6 +1398,9 @@ void luaC_initthread( global_State *g )
 
         // Set it as the main GC thread.
         gcEnv->GCthread = L;
+
+        // Since we store the GC thread in the global GC table, we can now dereference it.
+        L->DereferenceGC( g->mainthread );
         
         if ( !L->AllocateRuntime() )
             throw lua_exception( g->mainthread, LUA_ERRRUN, "fatal: could not allocate GCthread" );
