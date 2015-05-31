@@ -834,29 +834,29 @@ static const luaL_Reg strlib[] = {
   {NULL, NULL}
 };
 
-
-static void createmetatable (lua_State *L) {
-  lua_createtable(L, 0, 1);  /* create metatable for strings */
-  lua_pushliteral(L, "");  /* dummy string */
-  lua_pushvalue(L, -2);
-  lua_setmetatable(L, -2);  /* set string metatable */
-  lua_pop(L, 1);  /* pop dummy string */
-  lua_pushvalue(L, -2);  /* string library... */
-  lua_setfield(L, -2, "__index");  /* ...is the __index metamethod */
-  lua_pop(L, 1);  /* pop metatable */
+static void createmetatable (lua_State *L)
+{
+    lua_createtable(L, 0, 1);  /* create metatable for strings */
+    lua_pushliteral(L, "");  /* dummy string */
+    lua_pushvalue(L, -2);
+    lua_setmetatable(L, -2);  /* set string metatable */
+    lua_pop(L, 1);  /* pop dummy string */
+    lua_pushvalue(L, -2);  /* string library... */
+    lua_setfield(L, -2, "__index");  /* ...is the __index metamethod */
+    lua_pop(L, 1);  /* pop metatable */
 }
-
 
 /*
 ** Open string library
 */
-LUALIB_API int luaopen_string (lua_State *L) {
-  luaL_register(L, LUA_STRLIBNAME, strlib);
-#if defined(LUA_COMPAT_GFIND)
-  lua_getfield(L, -1, "gmatch");
-  lua_setfield(L, -2, "gfind");
-#endif
-  createmetatable(L);
-  return 1;
+LUALIB_API int luaopen_string (lua_State *L)
+{
+    luaL_register(L, LUA_STRLIBNAME, strlib);
+
+    lua_getfield(L, -1, "gmatch");
+    lua_setfield(L, -2, "gfind");
+
+    createmetatable(L);
+    return 1;
 }
 

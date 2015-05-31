@@ -85,7 +85,9 @@ typedef void * (*lua_Alloc) (void *ud, void *ptr, size_t osize, size_t nsize);
 #define LUA_TUSERDATA   7
 #define LUA_TCLASS      8
 #define LUA_TDISPATCH   9
-#define LUA_TTHREAD		10
+#define LUA_TOBJECT     10
+#define LUA_TTHREAD		11
+#define LUA_TRUNTIME    12
 
 /*
 * WARNING: if you change the order of this enumeration,

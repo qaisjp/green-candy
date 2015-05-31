@@ -231,24 +231,58 @@ inline bool _is_string_equal( const char *left, const char *right )
     return ( strcmp( left, right ) == 0 );
 }
 
-// I wish that future C++ standards make creating such functions much easier through templates.
-LUA_API int lua_setconfig( lua_config *cfg, const char *cfgName, lua_cfgValue valueIn )
+template <typename cfgDispatcher>
+static inline bool DispatchConfigItem( lua_config *cfg, const char *cfgName, lua_cfgValue& value, cfgDispatcher dispatch )
 {
-    lua_assert( cfg != NULL );
-
     bool success = true;
 
-    if ( _is_string_equal( cfgName, "mt" ) )
+    // Only allow setting and getting certain items if the system is capable.
+    bool systemSupportsMultithreading = false;  // by default it does not.
+
+#ifdef _WIN32
+    // Win32 does support it.
+    systemSupportsMultithreading = true;
+#endif //_WIN32
+
+    if ( systemSupportsMultithreading && _is_string_equal( cfgName, "mt" ) )
     {
-        cfg->isMultithreaded = ( valueIn != FALSE );
+        dispatch.Multithreading( cfg, value );
     }
     else
     {
         success = false;
     }
 
+    return success;
+}
+
+struct SetConfigItemDispatch
+{
+    inline void Multithreading( lua_config *cfg, lua_cfgValue value )
+    {
+        cfg->isMultithreaded = ( value != FALSE );
+    }
+};
+
+// I wish that future C++ standards make creating such functions much easier through templates.
+LUA_API int lua_setconfig( lua_config *cfg, const char *cfgName, lua_cfgValue valueIn )
+{
+    lua_assert( cfg != NULL );
+
+    SetConfigItemDispatch dispatch;
+
+    bool success = DispatchConfigItem( cfg, cfgName, valueIn, dispatch );
+
     return ( success ) ? TRUE : FALSE;
 }
+
+struct GetConfigItemDispatch
+{
+    inline void Multithreading( lua_config *cfg, lua_cfgValue& value )
+    {
+        value = ( cfg->isMultithreaded ? TRUE : FALSE );
+    }
+};
 
 // Because things just tend to reoccur and its hard to maintain.
 LUA_API int lua_getconfig( lua_config *cfg, const char *cfgName, lua_cfgValue *valueOut )
@@ -256,16 +290,9 @@ LUA_API int lua_getconfig( lua_config *cfg, const char *cfgName, lua_cfgValue *v
     lua_assert( cfg != NULL );
     lua_assert( valueOut != NULL );
 
-    bool success = true;
+    GetConfigItemDispatch dispatch;
 
-    if ( _is_string_equal( cfgName, "mt" ) )
-    {
-        *valueOut = ( cfg->isMultithreaded ) ? TRUE : FALSE;
-    }
-    else
-    {
-        success = false;
-    }
+    bool success = DispatchConfigItem( cfg, cfgName, *valueOut, dispatch );
 
     return ( success ) ? TRUE : FALSE;
 }

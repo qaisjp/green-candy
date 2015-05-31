@@ -266,7 +266,7 @@ static int typelib_clone( lua_State *L )
     {
         const LuaRTTI *rtSrcObj = LuaTypeSystem::GetTypeStructFromObject( gcObj );
 
-        LuaRTTI *rtClonedObj = typeSys.Clone( rtSrcObj );
+        LuaRTTI *rtClonedObj = typeSys.Clone( g, rtSrcObj );
 
         if ( rtClonedObj )
         {

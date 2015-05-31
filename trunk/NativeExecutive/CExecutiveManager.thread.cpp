@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.2
+*  PROJECT:     Native Executive
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        NativeExecutive/CExecutiveManager.thread.cpp
 *  PURPOSE:     Thread abstraction layer for MTA
@@ -11,6 +11,8 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+
+BEGIN_NATIVE_EXECUTIVE
 
 #ifdef _WIN32
 
@@ -319,8 +321,8 @@ struct nativeThreadPluginInterface : public ExecutiveManager::threadPluginContai
         assert( isCurrentThread == false );
     }
 
-    bool OnPluginConstruct( CExecThread *thread, void *mem, unsigned int id );
-    void OnPluginDestroy( CExecThread *thread, void *mem, unsigned int id );
+    bool OnPluginConstruct( CExecThread *thread, ExecutiveManager::threadPluginContainer_t::pluginOffset_t pluginOffset, ExecutiveManager::threadPluginContainer_t::pluginDescriptor id );
+    void OnPluginDestroy( CExecThread *thread, ExecutiveManager::threadPluginContainer_t::pluginOffset_t pluginOffset, ExecutiveManager::threadPluginContainer_t::pluginDescriptor id );
 };
 
 // This is a native ASM routine. In this there can be no language objects, so its perfect for
@@ -350,9 +352,9 @@ NoTerminationReturn:
     }
 }
 
-bool nativeThreadPluginInterface::OnPluginConstruct( CExecThread *thread, void *mem, unsigned int id )
+bool nativeThreadPluginInterface::OnPluginConstruct( CExecThread *thread, ExecutiveManager::threadPluginContainer_t::pluginOffset_t pluginOffset, ExecutiveManager::threadPluginContainer_t::pluginDescriptor id )
 {
-    nativeThreadPlugin *info = (nativeThreadPlugin*)mem;
+    nativeThreadPlugin *info = ExecutiveManager::threadPluginContainer_t::RESOLVE_STRUCT <nativeThreadPlugin> ( thread, pluginOffset );
 
     // If we are not a remote thread...
     HANDLE hOurThread = NULL;
@@ -398,9 +400,9 @@ bool nativeThreadPluginInterface::OnPluginConstruct( CExecThread *thread, void *
     return true;
 }
 
-void nativeThreadPluginInterface::OnPluginDestroy( CExecThread *thread, void *mem, unsigned int id )
+void nativeThreadPluginInterface::OnPluginDestroy( CExecThread *thread, ExecutiveManager::threadPluginContainer_t::pluginOffset_t pluginOffset, ExecutiveManager::threadPluginContainer_t::pluginDescriptor id )
 {
-    nativeThreadPlugin *info = (nativeThreadPlugin*)mem;
+    nativeThreadPlugin *info = ExecutiveManager::threadPluginContainer_t::RESOLVE_STRUCT <nativeThreadPlugin> ( thread, pluginOffset );
 
     // Only terminate if we have not acquired a remote thread.
     if ( !thread->isRemoteThread )
@@ -483,10 +485,13 @@ inline const nativeThreadPlugin* GetConstNativeThreadPlugin( const CExecutiveMan
     return NULL;
 }
 
-CExecThread::CExecThread( CExecutiveManager *manager, bool isRemoteThread )
+CExecThread::CExecThread( CExecutiveManager *manager, bool isRemoteThread, void *userdata, size_t stackSize, threadEntryPoint_t entryPoint )
 {
     this->manager = manager;
     this->isRemoteThread = isRemoteThread;
+    this->userdata = userdata;
+    this->stackSize = stackSize;
+    this->entryPoint = entryPoint;
 
     LIST_INSERT( manager->threads.root, managerNode );
 }
@@ -672,19 +677,25 @@ void CExecThread::Unlock( void )
 
 struct threadObjectConstructor
 {
-    inline threadObjectConstructor( CExecutiveManager *manager, bool isRemoteThread )
+    inline threadObjectConstructor( CExecutiveManager *manager, bool isRemoteThread, void *userdata, size_t stackSize, CExecThread::threadEntryPoint_t entryPoint )
     {
         this->manager = manager;
         this->isRemoteThread = isRemoteThread;
+        this->userdata = userdata;
+        this->stackSize = stackSize;
+        this->entryPoint = entryPoint;
     }
 
     inline CExecThread* Construct( void *mem )
     {
-        return new (mem) CExecThread( this->manager, this->isRemoteThread );
+        return new (mem) CExecThread( this->manager, this->isRemoteThread, this->userdata, this->stackSize, this->entryPoint );
     }
 
     CExecutiveManager *manager;
     bool isRemoteThread;
+    void *userdata;
+    size_t stackSize;
+    CExecThread::threadEntryPoint_t entryPoint;
 };
 
 CExecThread* CExecutiveManager::CreateThread( CExecThread::threadEntryPoint_t entryPoint, void *userdata, size_t stackSize )
@@ -703,7 +714,7 @@ CExecThread* CExecutiveManager::CreateThread( CExecThread::threadEntryPoint_t en
         
         try
         {
-            threadObjectConstructor threadConstruct( this, false );
+            threadObjectConstructor threadConstruct( this, false, userdata, stackSize, entryPoint );
 
             threadInfo = this->threadPlugins.ConstructTemplate( ExecutiveManager::moduleAllocator, threadConstruct );
         }
@@ -719,11 +730,6 @@ CExecThread* CExecutiveManager::CreateThread( CExecThread::threadEntryPoint_t en
         // Could always happen.
         return NULL;
     }
-
-    // Pass our parameters to our thread info.
-    threadInfo->entryPoint = entryPoint;
-    threadInfo->userdata = userdata;
-    threadInfo->stackSize = stackSize;
 
     // Return the thread.
     return threadInfo;
@@ -776,7 +782,7 @@ CExecThread* CExecutiveManager::GetCurrentThread( void )
 
                     try
                     {
-                        threadObjectConstructor threadConstruct( this, true );
+                        threadObjectConstructor threadConstruct( this, true, NULL, 0, NULL );
 
                         newThreadInfo = this->threadPlugins.ConstructTemplate( ExecutiveManager::moduleAllocator, threadConstruct );
                     }
@@ -873,3 +879,5 @@ void CExecutiveManager::ShutdownThreads( void )
     LockSafety::Shutdown();
 #endif
 }
+
+END_NATIVE_EXECUTIVE

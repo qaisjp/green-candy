@@ -102,9 +102,9 @@ public:
 #define gco2cl(o)	check_exp((o)->tt == LUA_TFUNCTION, (Closure*)(o))
 #define gco2h(o)	check_exp((o)->tt == LUA_TTABLE, (Table*)(o))
 #define gco2j(o)    check_exp((o)->tt == LUA_TCLASS, (Class*)(o))
-#define gco2p(o)	check_exp((o)->tt == LUA_TPROTO, (Proto*)(o))
-#define gco2uv(o)	check_exp((o)->tt == LUA_TUPVAL, (UpVal*)(o))
-#define ngcotouv(o) check_exp((o) == NULL || (o)->tt == LUA_TUPVAL, (UpVal*)(o))
+#define gco2p(o)	check_exp((o)->tt == LUA_TOBJECT, (Proto*)(o))  // TODO: maybe re-add security checks more thoroughly.
+#define gco2uv(o)	check_exp((o)->tt == LUA_TOBJECT, (UpVal*)(o))
+#define ngcotouv(o) check_exp((o) == NULL || (o)->tt == LUA_TOBJECT, (UpVal*)(o))
 #define gco2th(o)	check_exp((o)->tt == LUA_TTHREAD, (lua_State*)(o))
 
 

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.2
+*  PROJECT:     Native Executive
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        NativeExecutive/CExecutiveManager.fiber.cpp
 *  PURPOSE:     Executive manager fiber logic
@@ -34,6 +34,8 @@ static EXCEPTION_REGISTRATION _baseException =
     _defaultHandler
 };
 #endif
+
+BEGIN_NATIVE_EXECUTIVE
 
 #pragma warning(disable:4733)
 
@@ -386,3 +388,5 @@ CFiber* CExecutiveManager::GetCurrentFiber( void )
 
     return currentFiber;
 }
+
+END_NATIVE_EXECUTIVE

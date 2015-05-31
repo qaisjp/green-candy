@@ -21,7 +21,6 @@ struct _globalStateStructFactoryMeta
     }
 };
 
-
 template <typename structType, typename factoryType, typename hostType>
 struct globalStateStructFactoryMeta : public factoryMetaDefault <hostType, factoryType, structType, _globalStateStructFactoryMeta>
 {
@@ -45,6 +44,16 @@ struct _globalStateDependantStructFactoryMeta
 
 template <typename structType, typename factoryType, typename hostType>
 struct globalStateDependantStructFactoryMeta : public factoryMetaDefault <hostType, factoryType, structType, _globalStateDependantStructFactoryMeta>
+{
+};
+
+template <typename structType, typename factoryType, typename hostType, typename registerConditionalType>
+struct globalStateStructConditionalFactoryMeta : public factoryMetaConditional <hostType, factoryType, structType, _globalStateStructFactoryMeta, registerConditionalType>
+{
+};
+
+template <typename structType, typename factoryType, typename hostType, typename registerConditionalType>
+struct globalStateDependantStructConditionalFactoryMeta : public factoryMetaConditional <hostType, factoryType, structType, _globalStateDependantStructFactoryMeta, registerConditionalType>
 {
 };
 

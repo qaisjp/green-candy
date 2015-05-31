@@ -53,7 +53,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared;../../../NativeExecutive/</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
@@ -70,6 +70,8 @@
       <ImportLibrary>../lib/lua5.1_d_2013.lib</ImportLibrary>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
       <ModuleDefinitionFile>../src/lua5.1.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>../../../NativeExecutive/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>native_exec_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y ..\bin\lua5.1d.dll "$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\"
@@ -85,7 +87,7 @@ xcopy /y ..\bin\lua5.1d.dll "..\..\..\lint_out\"
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../../Shared/publicsdk/lua/include;../../../Shared/sdk;../../../Shared;../../../NativeExecutive/</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -107,6 +109,8 @@ xcopy /y ..\bin\lua5.1d.dll "..\..\..\lint_out\"
       <ImportLibrary>../lib/lua5.1_2013.lib</ImportLibrary>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
       <ModuleDefinitionFile>../src/lua5.1.def</ModuleDefinitionFile>
+      <AdditionalLibraryDirectories>../../../NativeExecutive/lib/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>native_exec.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>xcopy /y ..\bin\lua5.1.dll "$(HOMEDRIVE)\Program Files\MTA San Andreas 1.2\mods\deathmatch\"
@@ -147,6 +151,7 @@ xcopy /y ..\bin\lua5.1.dll "..\..\..\lint_out\"
     <ClCompile Include="..\src\llex.c" />
     <ClCompile Include="..\src\lmathlib.c" />
     <ClCompile Include="..\src\lmem.c" />
+    <ClCompile Include="..\src\lmultithreading.c" />
     <ClCompile Include="..\src\loadlib.c" />
     <ClCompile Include="..\src\lobject.c" />
     <ClCompile Include="..\src\lopcodes.c">
@@ -158,6 +163,7 @@ xcopy /y ..\bin\lua5.1.dll "..\..\..\lint_out\"
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\src\lparser.c" />
+    <ClCompile Include="..\src\lrtlib.c" />
     <ClCompile Include="..\src\lstate.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -198,11 +204,13 @@ xcopy /y ..\bin\lua5.1.dll "..\..\..\lint_out\"
     <ClInclude Include="..\src\llex.h" />
     <ClInclude Include="..\src\llimits.h" />
     <ClInclude Include="..\src\lmem.h" />
+    <ClInclude Include="..\src\lmultithreading.hxx" />
     <ClInclude Include="..\src\lobject.h" />
     <ClInclude Include="..\src\lopcodes.h" />
     <ClInclude Include="..\src\lparser.h" />
     <ClInclude Include="..\src\lparser.hxx" />
     <ClInclude Include="..\src\lpluginutil.hxx" />
+    <ClInclude Include="..\src\lrtlib.h" />
     <ClInclude Include="..\src\lstack.h" />
     <ClInclude Include="..\src\lstate.h" />
     <ClInclude Include="..\src\lstate.lowlevel.hxx" />

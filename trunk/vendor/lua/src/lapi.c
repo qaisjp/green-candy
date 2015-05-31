@@ -199,20 +199,18 @@ LUA_API int lua_checkstack (lua_State *L, int size)
 
     lua_lock(L);
 
-    rtStack_t& rtStack = L->rtStack;
-
-    rtStack.Lock( L );
-
-    if (size > LUAI_MAXCSTACK || (rt_stackcount(L) + size) > LUAI_MAXCSTACK)
     {
-        res = 0;  /* stack overflow */
-    }
-    else if (size > 0)
-    {
-        luaD_checkstack(L, size);
-    }
+        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
 
-    rtStack.Unlock( L );
+        if (size > LUAI_MAXCSTACK || (rt_stackcount(L) + size) > LUAI_MAXCSTACK)
+        {
+            res = 0;  /* stack overflow */
+        }
+        else if (size > 0)
+        {
+            luaD_checkstack(L, size);
+        }
+    }
 
     lua_unlock(L);
     return res;

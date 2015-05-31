@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.2
+*  PROJECT:     Native Executive
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        NativeExecutive/CExecutiveManager.cpp
 *  PURPOSE:     MTA thread and fiber execution manager for workload smoothing
@@ -11,6 +11,8 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+
+BEGIN_NATIVE_EXECUTIVE
 
 static void __cdecl _FiberTerm( FiberStatus *status )
 {
@@ -61,11 +63,20 @@ CExecutiveManager* CExecutiveManager::Create( void )
 {
     CExecutiveManagerNative *resultObj = executiveManagerFactory.Construct( ExecutiveManager::moduleAllocator );
 
+    if ( resultObj )
+    {
+        // Initialize sub modules
+        resultObj->InitializeTasks();
+    }
+
     return resultObj;
 }
 
 void CExecutiveManager::Delete( CExecutiveManager *manager )
 {
+    // Shutdown sub modules.
+    manager->ShutdownTasks();
+
     executiveManagerFactory.Destroy( ExecutiveManager::moduleAllocator, (CExecutiveManagerNative*)manager );
 }
 
@@ -74,10 +85,6 @@ CExecutiveManager::CExecutiveManager( void )
     LIST_CLEAR( fibers.root );
     LIST_CLEAR( groups.root );
 
-    // Initialize sub modules
-    InitThreads();
-    InitializeTasks();
-
     // Set up runtime callbacks.
     ExecutiveFiber::setmemfuncs( fiberMemAllocate, fiberMemFree );
 
@@ -85,6 +92,9 @@ CExecutiveManager::CExecutiveManager( void )
 
     frameTime = ExecutiveManager::GetPerformanceTimer();
     frameDuration = 0;
+
+    // Initialize core modules.
+    InitThreads();
 }
 
 CExecutiveManager::~CExecutiveManager( void )
@@ -105,8 +115,7 @@ CExecutiveManager::~CExecutiveManager( void )
         CloseFiber( fiber );
     }
 
-    // Shutdown sub modules.
-    ShutdownTasks();
+    // Shutdown core modules.
     ShutdownThreads();
 }
 
@@ -205,3 +214,5 @@ void CExecutiveManager::DoPulse( void )
         item->DoPulse();
     LIST_FOREACH_END
 }
+
+END_NATIVE_EXECUTIVE

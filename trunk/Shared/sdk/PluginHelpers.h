@@ -50,7 +50,21 @@ public:
     {
         return factoryType::RESOLVE_STRUCT <structType> ( hostObj, this->structPluginOffset );
     }
+
+    inline const structType* GetConstPluginStruct( const typename factoryType::hostType_t *hostObj )
+    {
+        return factoryType::RESOLVE_STRUCT <const structType> ( hostObj, this->structPluginOffset );
+    }
+
+    inline bool IsRegistered( void ) const
+    {
+        return ( factoryType::IsOffsetValid( this->structPluginOffset ) == true );
+    }
 };
+
+// Helper structure for registering a plugin struct that exists depending on runtime conditions.
+// It does otherwise use the same semantics as a dependant struct register.
+
 
 template <typename hostType, typename factoryType, typename structType, typename metaInfoType>
 struct factoryMetaDefault
@@ -69,6 +83,47 @@ struct factoryMetaDefault
         // Register our plugin.
         this->endingPointPluginOffset =
             metaInfo.RegisterPlugin <structType> ( namespaceObj, endingPointFactory_t::ANONYMOUS_PLUGIN_ID );
+    }
+
+    inline void Shutdown( hostType *namespaceObj )
+    {
+        // Unregister our plugin again.
+        if ( this->endingPointPluginOffset != endingPointFactory_t::INVALID_PLUGIN_OFFSET )
+        {
+            endingPointFactory_t& endingPointFactory =
+                metaInfo.ResolveFactoryLink( *namespaceObj );
+
+            endingPointFactory.UnregisterPlugin( this->endingPointPluginOffset );
+        }
+    }
+};
+
+// Some really obscure thing I have found no use for yet.
+// It can be used to determine plugin registration on factory construction, based on the environment.
+template <typename hostType, typename factoryType, typename structType, typename metaInfoType, typename registerConditionalType>
+struct factoryMetaConditional
+{
+    typedef factoryType factoryType;
+
+    typedef factoryType endingPointFactory_t;
+    typedef typename endingPointFactory_t::pluginOffset_t endingPointPluginOffset_t;
+
+    endingPointPluginOffset_t endingPointPluginOffset;
+
+    metaInfoType metaInfo;
+
+    inline void Initialize( hostType *namespaceObj )
+    {
+        endingPointPluginOffset_t thePluginOffset = endingPointFactory_t::INVALID_PLUGIN_OFFSET;
+
+        if ( registerConditionalType::MeetsCondition( namespaceObj ) )
+        {
+            // Register our plugin.
+            thePluginOffset =
+                metaInfo.RegisterPlugin <structType> ( namespaceObj, endingPointFactory_t::ANONYMOUS_PLUGIN_ID );
+        }
+
+        this->endingPointPluginOffset = thePluginOffset;
     }
 
     inline void Shutdown( hostType *namespaceObj )

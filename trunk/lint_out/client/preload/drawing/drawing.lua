@@ -194,7 +194,7 @@ end
 local function multiplyQuadRotation(midPosX, midPosY, rotation)
     -- * Herp derp? How does this work? *
     --All vertices on the pipeline are transformed with the GL_MODELVIEW matrix
-    -- before being sent to the GPU buffer. This means that they x, y, z coordinates
+    -- before being sent to the GPU buffer. This means that the x, y, z coordinates
     -- are relative to the GL_MODELVIEW coordinate system.
     -- First the coordinates are rotated with z-euler-angle rotation+180.
     -- Then, their position is offset by x + midOffY, y + midOffY, so they reside

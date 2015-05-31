@@ -27,6 +27,7 @@ public:
         RwListEntry <block_t> node;
 
         memSlice_t slice;
+        numberType alignment;
     };
 
     RwList <block_t> blockList;
@@ -36,6 +37,7 @@ public:
     struct allocInfo
     {
         memSlice_t slice;
+        numberType alignment;
         blockIter_t blockToAppendAt;
     };
 
@@ -51,6 +53,10 @@ public:
 
         blockIter_t appendNode = &blockList.root;
 
+        // Make sure we align to the system integer.
+        // todo: maybe this is not correct all the time?
+        const numberType alignmentWidth = sizeof( void* );
+
         LIST_FOREACH_BEGIN( block_t, blockList.root, node )
             // Intersect the current memory slice with the ones on our list.
             const memSlice_t& blockSlice = item->slice;
@@ -63,11 +69,7 @@ public:
                 {
                     numberType tryMemPosition = blockSlice.GetSliceEndPoint() + 1;
                     
-                    // Make sure we align to the system integer.
-                    // todo: maybe this is not correct all the time?
-                    const numberType sysIntSize = sizeof( unsigned long );
-
-                    tryMemPosition = ALIGN( tryMemPosition, sysIntSize, sysIntSize );
+                    tryMemPosition = ALIGN( tryMemPosition, alignmentWidth, alignmentWidth );
 
                     newAllocSlice.SetSlicePosition( tryMemPosition );
                 }
@@ -84,6 +86,7 @@ public:
         LIST_FOREACH_END
 
         infoOut.slice = newAllocSlice;
+        infoOut.alignment = alignmentWidth;
         infoOut.blockToAppendAt = appendNode;
         return true;
     }
@@ -91,21 +94,285 @@ public:
     inline void PutBlock( block_t *allocatedStruct, allocInfo& info )
     {
         allocatedStruct->slice = info.slice;
+        allocatedStruct->alignment = info.alignment;
 
         LIST_INSERT( *info.blockToAppendAt, allocatedStruct->node );
-
-        LIST_FOREACH_BEGIN( block_t, blockList.root, node )
-
-            block_t *block = item;
-
-            __asm nop
-
-        LIST_FOREACH_END
     }
 
     inline void RemoveBlock( block_t *theBlock )
     {
         LIST_REMOVE( theBlock->node );
+    }
+
+    inline numberType GetSpanSize( void ) const
+    {
+        numberType theSpanSize = 0;
+
+        if ( LIST_EMPTY( this->blockList.root ) == false )
+        {
+            block_t *lastBlockItem = LIST_GETITEM( block_t, this->blockList.root.prev, node );
+
+            // Thankfully, we depend on the sorting based on memory order.
+            // Getting the span size is very easy then, since the last item is automatically at the top most memory offset.
+            // Since we always start at position zero, its okay to just take the end point.
+            theSpanSize = ( lastBlockItem->slice.GetSliceEndPoint() + 1 );
+        }
+
+        return theSpanSize;
+    }
+    
+    template <typename collisionConditionalType>
+    struct conditionalRegionIterator
+    {
+        const InfiniteCollisionlessBlockAllocator *manager;
+        collisionConditionalType& conditional;
+
+    private:
+        numberType removalByteCount;
+
+        RwListEntry <block_t> *iter;
+
+    public:
+        inline conditionalRegionIterator( const InfiniteCollisionlessBlockAllocator *manager, collisionConditionalType& conditional ) : conditional( conditional )
+        {
+            this->manager = manager;
+
+            this->removalByteCount = 0;
+
+            this->iter = manager->blockList.root.next;
+        }
+
+        inline conditionalRegionIterator( const conditionalRegionIterator& right )
+        {
+            this->manager = right.manager;
+
+            this->removalByteCount = right.removalByteCount;
+
+            this->iter = right.iter;
+        }
+
+        inline void operator = ( const conditionalRegionIterator& right )
+        {
+            this->manager = right.manager;
+
+            this->removalByteCount = right.removalByteCount;
+
+            this->iter = right.iter;
+        }
+
+        inline void Increment( void )
+        {
+            RwListEntry <block_t> *curItem = this->iter;
+
+            block_t *curBlock = NULL;
+
+            if ( curItem != &this->manager->blockList.root )
+            {
+                curBlock = LIST_GETITEM( block_t, curItem, node );
+            }
+
+            do
+            {
+                RwListEntry <block_t> *nextItem = curItem->next;
+
+                bool shouldBreak = false;
+
+                block_t *nextBlock = NULL;
+
+                if ( nextItem != &this->manager->blockList.root )
+                {
+                    nextBlock = LIST_GETITEM( block_t, nextItem, node );
+
+                    if ( curBlock == NULL )
+                    {
+                        this->removalByteCount = 0;
+                    }
+                    else
+                    {
+                        if ( conditional.DoIgnoreBlock( curBlock ) )
+                        {
+                            numberType ignoreByteCount = ( nextBlock->slice.GetSliceStartPoint() - curBlock->slice.GetSliceStartPoint() );
+
+                            this->removalByteCount += ignoreByteCount;
+                        }
+                        else
+                        {
+                            shouldBreak = true;
+                        }
+                    }
+                }
+                else
+                {
+                    shouldBreak = true;
+                }
+
+                curItem = nextItem;
+                curBlock = nextBlock;
+
+                if ( shouldBreak )
+                {
+                    break;
+                }
+            }
+            while ( curItem != &this->manager->blockList.root );
+
+            this->iter = curItem;
+        }
+
+        inline void Decrement( void )
+        {
+            RwListEntry <block_t> *curItem = this->iter;
+
+            block_t *curBlock = LIST_GETITEM( block_t, curItem, node );
+
+            do
+            {
+                RwListEntry <block_t> *prevItem = curItem->prev;
+
+                bool shouldBreak = false;
+
+                block_t *prevBlock = NULL;
+
+                if ( prevItem != &this->manager->blockList.root )
+                {
+                    prevBlock = LIST_GETITEM( block_t, prevItem, node );
+
+                    if ( curBlock == NULL )
+                    {
+                        // TODO annoying shit.
+                        // basically I must restore the state as if the guy went through the list straight.
+                        assert( 0 );
+                    }
+                    else
+                    {
+                        if ( conditional.DoIgnoreBlock( prevBlock ) )
+                        {
+                            numberType ignoreByteCount = ( curBlock->slice.GetSliceStartPoint() - prevBlock->slice.GetSliceStartPoint() );
+
+                            this->removalByteCount -= ignoreByteCount;
+                        }
+                        else
+                        {
+                            shouldBreak = true;
+                        }
+                    }
+                }
+                else
+                {
+                    shouldBreak = true;
+                }
+
+                curItem = prevItem;
+                curBlock = prevBlock;
+
+                if ( shouldBreak )
+                {
+                    break;
+                }
+            }
+            while ( curItem != &this->manager->blockList.root );
+
+            this->iter = curItem;
+        }
+
+        inline bool IsEnd( void ) const
+        {
+            return ( this->iter == &this->manager->blockList.root );
+        }
+
+        inline bool IsNextEnd( void ) const
+        {
+            return ( this->iter->next == &this->manager->blockList.root );
+        }
+
+        inline bool IsPrevEnd( void ) const
+        {
+            return ( this->iter->prev == &this->manager->blockList.root );
+        }
+
+        inline block_t* ResolveBlock( void ) const
+        {
+            return LIST_GETITEM( block_t, this->iter, node );
+        }
+
+        inline numberType ResolveOffset( void ) const
+        {
+            block_t *curBlock = this->ResolveBlock();
+
+            return ( curBlock->slice.GetSliceStartPoint() - this->removalByteCount );
+        }
+
+        inline numberType ResolveOffsetAfter( void ) const
+        {
+            block_t *curBlock = this->ResolveBlock();
+
+            bool ignoreCurrentBlock = conditional.DoIgnoreBlock( curBlock );
+
+            if ( ignoreCurrentBlock )
+            {
+                return ( curBlock->slice.GetSliceStartPoint() - this->removalByteCount );
+            }
+
+            return ( ( curBlock->slice.GetSliceEndPoint() + 1 ) - this->removalByteCount );
+        }
+    };
+
+    // Accelerated conditional look-up routines, so that you can still easily get block offsets and span size when you want to ignore
+    // certain blocks.
+    template <typename collisionConditionalType>
+    inline numberType GetSpanSizeConditional( collisionConditionalType& conditional ) const
+    {
+        conditionalRegionIterator <collisionConditionalType> iterator( this, conditional );
+
+        bool hasItem = false;
+        
+        if ( iterator.IsEnd() == false )
+        {
+            hasItem = true;
+
+            while ( iterator.IsNextEnd() == false )
+            {
+                iterator.Increment();
+            }
+        }
+
+        // If the list of blocks is empty, ignore.
+        if ( hasItem == false )
+        {
+            return 0;
+        }
+
+        return iterator.ResolveOffsetAfter();
+    }
+
+    template <typename collisionConditionalType>
+    inline bool GetBlockOffsetConditional( const block_t *theBlock, numberType& outOffset, collisionConditionalType& conditional ) const
+    {
+        // If the block that we request the offset of should be ignored anyway, we will simply return false.
+        if ( conditional.DoIgnoreBlock( theBlock ) )
+        {
+            assert( 0 );    // we actually never want this.
+            return false;
+        }
+
+        conditionalRegionIterator <collisionConditionalType> iterator( this, conditional );
+
+        bool hasFoundTheBlock = false;
+
+        while ( iterator.IsEnd() == false )
+        {
+            // We terminate if we found our block.
+            if ( iterator.ResolveBlock() == theBlock )
+            {
+                break;
+            }
+
+            iterator.Increment();
+        }
+
+        // Return the actual offset that preserves alignment.
+        outOffset = iterator.ResolveOffset();
+        return true;
     }
 };
 
@@ -179,7 +446,7 @@ public:
     AINLINE void Free( void *ptr )
     {
         // Make sure this structure is a valid pointer from our heap.
-        assert( IsValidPointer( ptr ) );
+        assert( IsValidPointer( ptr ) == true );
 
         // Remove the structure from existance.
         memoryEntry *entry = (memoryEntry*)ptr - 1;
@@ -203,10 +470,292 @@ private:
     char memData[ memorySize ];
 };
 
+// Struct registry flavor is used to fine-tune the performance of said registry by extending it with features.
+// The idea is that we maximize performance by only giving it the features you really want it to have.
+template <typename abstractionType>
+struct cachedMinimalStructRegistryFlavor
+{
+    size_t pluginAllocSize;
+
+    cachedMinimalStructRegistryFlavor( void )
+    {
+        // Reset to zero as we have no plugins allocated.
+        this->pluginAllocSize = 0;
+    }
+
+    template <typename managerType>
+    inline size_t GetPluginAllocSize( managerType *manPtr ) const
+    {
+        return this->pluginAllocSize;
+    }
+
+    template <typename managerType>
+    inline size_t GetPluginAllocSizeByObject( managerType *manPtr, abstractionType *object ) const
+    {
+        return this->pluginAllocSize;
+    }
+
+    template <typename managerType>
+    inline void UpdatePluginRegion( managerType *manPtr )
+    {
+        // Update the overall class size.
+        // It is determined by the end of this plugin struct.
+        this->pluginAllocSize = manPtr->pluginRegions.GetSpanSize();    // often it will just be ( useOffset + pluginSize ), but we must not rely on that.
+    }
+
+    template <typename managerType>
+    struct pluginInterfaceBase
+    {
+        // Nothing really.
+    };
+
+    template <typename managerType>
+    struct regionIterator
+    {
+        typedef typename managerType::blockAlloc_t::block_t block_t;
+
+    private:
+        managerType *manPtr;
+
+        RwListEntry <block_t> *iterator;
+
+    public:
+        inline regionIterator( managerType *manPtr )
+        {
+            this->manPtr = manPtr;
+
+            this->iterator = manPtr->pluginRegions.blockList.root.next;
+        }
+
+        inline regionIterator( const regionIterator& right )
+        {
+            this->manPtr = right.manPtr;
+        }
+
+        inline void operator = ( const regionIterator& right )
+        {
+            this->manPtr = right.manPtr;
+        }
+
+        inline void Increment( void )
+        {
+            this->iterator = this->iterator->next;
+        }
+
+        inline void Decrement( void )
+        {
+            this->iterator = this->iterator->prev;
+        }
+
+        inline bool IsEnd( void ) const
+        {
+            return ( this->iterator == &this->manPtr->pluginRegions.blockList.root );
+        }
+
+        inline bool IsNextEnd( void ) const
+        {
+            return ( this->iterator->next == &this->manPtr->pluginRegions.blockList.root );
+        }
+
+        inline bool IsPrevEnd( void ) const
+        {
+            return ( this->iterator->prev == &this->manPtr->pluginRegions.blockList.root );
+        }
+
+        inline block_t* ResolveBlock( void ) const
+        {
+            return LIST_GETITEM( block_t, this->iterator, node );
+        }
+
+        inline size_t ResolveOffset( void ) const
+        {
+            block_t *curBlock = this->ResolveBlock();
+
+            return ( curBlock->slice.GetSliceStartPoint() );
+        }
+
+        inline size_t ResolveOffsetAfter( void ) const
+        {
+            block_t *curBlock = this->ResolveBlock();
+
+            return ( curBlock->slice.GetSliceEndPoint() + 1 );
+        }
+    };
+};
+
+template <typename abstractionType>
+struct conditionalStructRegistryFlavor
+{
+    conditionalStructRegistryFlavor( void )
+    {
+        return;
+    }
+
+    template <typename managerType>
+    struct runtimeBlockConditional
+    {
+    private:
+        const managerType *manPtr;
+
+    public:
+        inline runtimeBlockConditional( const managerType *manPtr )
+        {
+            this->manPtr = manPtr;
+        }
+
+        inline bool DoIgnoreBlock( typename managerType::blockAlloc_t::block_t *theBlock ) const
+        {
+            // The given block is always a plugin registration, so cast it appropriately.
+            typename managerType::registered_plugin *pluginDesc = (typename managerType::registered_plugin*)theBlock;
+
+            pluginInterfaceBase <managerType> *pluginInterface = (pluginInterfaceBase <managerType>*)pluginDesc->descriptor;
+
+            // Lets just ask the vendor, whether he wants the block.
+            bool isAvailable = pluginInterface->IsPluginAvailableDuringRuntime( pluginDesc->pluginId );
+
+            // We ignore a block registration if it is not available.
+            return ( isAvailable == false );
+        }
+    };
+
+    template <typename managerType>
+    struct regionIterator
+    {
+    private:
+        typedef runtimeBlockConditional <managerType> usedConditional;
+
+        usedConditional conditional;
+        typename managerType::blockAlloc_t::template conditionalRegionIterator <usedConditional> iterator;
+
+    public:
+        typedef typename managerType::blockAlloc_t::block_t block_t;
+
+        inline regionIterator( const managerType *manPtr ) : conditional( manPtr ), iterator( &manPtr->pluginRegions, conditional )
+        {
+            return;
+        }
+
+        inline regionIterator( const regionIterator& right ) : conditional( right.conditional ), iterator( right.iterator )
+        {
+            return;
+        }
+
+        inline void operator = ( const regionIterator& right )
+        {
+            this->conditional = right.conditional;
+            this->iterator = right.iterator;
+        }
+
+        inline void Increment( void )
+        {
+            this->iterator.Increment();
+        }
+
+        inline void Decrement( void )
+        {
+            this->iterator.Decrement();
+        }
+
+        inline bool IsEnd( void ) const
+        {
+            return this->iterator.IsEnd();
+        }
+
+        inline bool IsNextEnd( void ) const
+        {
+            return this->iterator.IsNextEnd();
+        }
+
+        inline bool IsPrevEnd( void ) const
+        {
+            return this->iterator.IsPrevEnd();
+        }
+
+        inline block_t* ResolveBlock( void ) const
+        {
+            return this->iterator.ResolveBlock();
+        }
+
+        inline size_t ResolveOffset( void ) const
+        {
+            return this->iterator.ResolveOffset();
+        }
+
+        inline size_t ResolveOffsetAfter( void ) const
+        {
+            return this->iterator.ResolveOffsetAfter();
+        }
+    };
+
+    template <typename managerType>
+    inline size_t GetPluginAllocSize( managerType *manPtr ) const
+    {
+        runtimeBlockConditional <managerType> conditional( manPtr );
+
+        return manPtr->pluginRegions.GetSpanSizeConditional( conditional );
+    }
+
+    template <typename managerType>
+    struct objectBasedBlockConditional
+    {
+    private:
+        managerType *manPtr;
+        abstractionType *aliveObject;
+
+    public:
+        inline objectBasedBlockConditional( managerType *manPtr, abstractionType *aliveObject )
+        {
+            this->manPtr = manPtr;
+            this->aliveObject = aliveObject;
+        }
+
+        inline bool DoIgnoreBlock( typename managerType::blockAlloc_t::block_t *theBlock ) const
+        {
+            return false;
+        }
+    };
+
+    template <typename managerType>
+    inline size_t GetPluginAllocSizeByObject( managerType *manPtr, abstractionType *object ) const
+    {
+        objectBasedBlockConditional <managerType> conditional( manPtr, object );
+
+        return manPtr->pluginRegions.GetSpanSizeConditional( conditional );
+    }
+
+    template <typename managerType>
+    inline void UpdatePluginRegion( managerType *manPtr )
+    {
+        // Whatever.
+    }
+
+    template <typename managerType>
+    struct pluginInterfaceBase
+    {
+        typedef typename managerType::pluginDescriptorType pluginDescriptorType;
+
+        // Conditional interface. This is based on the state of the runtime.
+        virtual bool IsPluginAvailableDuringRuntime( pluginDescriptorType pluginId ) const
+        {
+            return true;
+        }
+
+        virtual bool IsPluginAvailableAtObject( abstractionType *object, pluginDescriptorType pluginId ) const
+        {
+            // Make sure that the functionality of IsPluginAvailableDuringRuntime and IsPluginAvailableAtObject logically match.
+            // Basically, object must store a snapshot of the runtime state and keep it immutable, while the runtime state
+            // (and by that, the type layout) may change at any time. This is best stored by some kind of bool variable.
+            return true;
+        }
+    };
+};
+
 // Class used to register anonymous structs that can be placed on top of a C++ type.
-template <typename abstractionType, typename pluginDescriptorType>
+template <typename abstractionType, typename pluginDescriptorType, typename pluginAvailabilityDispatchType>
 struct AnonymousPluginStructRegistry
 {
+    typedef typename pluginDescriptorType pluginDescriptorType;
+
     // A plugin struct registry is based on an infinite range of memory that can be allocated on, like a heap.
     // The structure of this memory heap is then applied onto the underlying type.
     typedef InfiniteCollisionlessBlockAllocator <size_t> blockAlloc_t;
@@ -219,8 +768,6 @@ struct AnonymousPluginStructRegistry
 
     inline AnonymousPluginStructRegistry( void )
     {
-        // Reset to zero as we have no plugins allocated.
-        this->pluginAllocSize = 0;
         this->preferredAlignment = (pluginOffset_t)4;
     }
 
@@ -230,9 +777,15 @@ struct AnonymousPluginStructRegistry
         return;
     }
 
+    // Oh my fucking god. "template" can be used other than declaring a templated type?
+    // Why does C++ not make it a job for the compiler to determine things... I mean it would be possible!
+    // You cannot know what a pain in the head it is to find the solution to add the "template" keyword.
+    // Bjarne, seriously.
+    typedef typename pluginAvailabilityDispatchType::template pluginInterfaceBase <AnonymousPluginStructRegistry> pluginInterfaceBase;
+
     // Virtual interface used to describe plugin classes.
     // The construction process must be immutable across the runtime.
-    struct pluginInterface
+    struct pluginInterface : public pluginInterfaceBase
     {
         virtual ~pluginInterface( void )            {}
 
@@ -275,8 +828,18 @@ struct AnonymousPluginStructRegistry
 
     registeredPlugins_t regPlugins;
 
-    // Size of the plugins combined, currently.
-    size_t pluginAllocSize;
+    // Holds things like the way to determine the size of all plugins.
+    pluginAvailabilityDispatchType regBoundFlavor;
+
+    inline size_t GetPluginSizeByRuntime( void ) const
+    {
+        return this->regBoundFlavor.GetPluginAllocSize( this );
+    }
+
+    inline size_t GetPluginSizeByObject( abstractionType *object ) const
+    {
+        return this->regBoundFlavor.GetPluginAllocSizeByObject( this, object );
+    }
 
     // Function used to register a new plugin struct into the class.
     inline pluginOffset_t RegisterPlugin( size_t pluginSize, const pluginDescriptorType& pluginId, pluginInterface *plugInterface )
@@ -287,6 +850,8 @@ struct AnonymousPluginStructRegistry
 
         // Determine the plugin offset that should be used for allocation.
         blockAlloc_t::allocInfo blockAllocInfo;
+
+        // TODO: actually use the preferred alignment.
 
         bool hasSpace = pluginRegions.FindSpace( pluginSize, blockAllocInfo );
 
@@ -309,9 +874,8 @@ struct AnonymousPluginStructRegistry
         // Register the pointer to the registered plugin.
         pluginRegions.PutBlock( &regPlugins.back(), blockAllocInfo );
 
-        // Update the overall class size.
-        // It is determined by the end of this plugin struct.
-        this->pluginAllocSize = useOffset + pluginSize;
+        // Notify the flavor to update.
+        this->regBoundFlavor.UpdatePluginRegion( this );
 
         return useOffset;
     }
@@ -340,27 +904,72 @@ struct AnonymousPluginStructRegistry
             }
         }
 
+        if ( hasDeleted )
+        {
+            // Since we really have deleted, we need to readjust our struct memory size.
+            // This is done by getting the span size of the plugin allocation region, which is a very fast operation!
+            this->regBoundFlavor.UpdatePluginRegion( this );
+        }
+
         return hasDeleted;
     }
 
+private:
+    typedef typename pluginAvailabilityDispatchType::template regionIterator <AnonymousPluginStructRegistry> regionIterator_t;
+
+    inline void DestroyPluginBlockInternal( abstractionType *pluginObj, regionIterator_t& iter )
+    {
+        try
+        {
+            while ( iter.IsPrevEnd() == false )
+            {
+                iter.Decrement();
+
+                const blockAlloc_t::block_t *blockItem = iter.ResolveBlock();
+
+                const registered_plugin *constructedInfo = (const registered_plugin*)blockItem;
+
+                // Destroy that plugin again.
+                constructedInfo->descriptor->OnPluginDestruct(
+                    pluginObj,
+                    iter.ResolveOffset(),
+                    constructedInfo->pluginId
+                );
+            }
+        }
+        catch( ... )
+        {
+            // We must not fail destruction, in any way.
+            assert( 0 );
+        }
+    }
+
+public:
     inline bool ConstructPluginBlock( abstractionType *pluginObj )
     {
         // Construct all plugins.
         bool pluginConstructionSuccessful = true;
 
-        registeredPlugins_t::iterator iter = regPlugins.begin();
+        regionIterator_t iter( this );
 
         try
         {
-            for ( ; iter != regPlugins.end(); iter++ )
+            for ( ; iter.IsEnd() == false; iter.Increment() )
             {
-                registered_plugin& regPluginInfo = *iter;
+                const blockAlloc_t::block_t *blockItem = iter.ResolveBlock();
+
+                const registered_plugin *pluginInfo = (const registered_plugin*)blockItem;
+
+                // TODO: add dispatch based on the reg bound flavor.
+                // it should say whether this plugin exists and where it is ultimatively located.
+                // in the cached handler, this is an O(1) operation, in the conditional it is rather funky.
+                // this is why you really should not use the conditional handler too often.
 
                 bool success =
-                    regPluginInfo.descriptor->OnPluginConstruct(
+                    pluginInfo->descriptor->OnPluginConstruct(
                         pluginObj,
-                        regPluginInfo.pluginOffset,
-                        regPluginInfo.pluginId
+                        iter.ResolveOffset(),
+                        pluginInfo->pluginId
                     );
 
                 if ( !success )
@@ -381,19 +990,7 @@ struct AnonymousPluginStructRegistry
         {
             // The plugin failed to construct, so destroy all plugins that
             // constructed up until that point.
-            while ( iter != regPlugins.begin() )
-            {
-                iter--;
-
-                registered_plugin& constructed_plugin = *iter;
-
-                // Destroy that plugin again.
-                constructed_plugin.descriptor->OnPluginDestruct(
-                    pluginObj,
-                    constructed_plugin.pluginOffset,
-                    constructed_plugin.pluginId
-                );
-            }
+            DestroyPluginBlockInternal( pluginObj, iter );
         }
 
         return pluginConstructionSuccessful;
@@ -404,18 +1001,20 @@ struct AnonymousPluginStructRegistry
         // Call all assignment operators.
         bool cloneSuccess = true;
 
-        registeredPlugins_t::iterator iter = regPlugins.begin();
+        regionIterator_t iter( this );
 
         try
         {
-            for ( ; iter != regPlugins.end(); iter++ )
+            for ( ; !iter.IsEnd(); iter.Increment() )
             {
-                registered_plugin& regPluginInfo = *iter;
+                const blockAlloc_t::block_t *blockInfo = iter.ResolveBlock();
 
-                bool assignSuccess = regPluginInfo.descriptor->OnPluginAssign(
+                const registered_plugin *pluginInfo = (const registered_plugin*)blockInfo;
+
+                bool assignSuccess = pluginInfo->descriptor->OnPluginAssign(
                     dstPluginObj, srcPluginObj,
-                    regPluginInfo.pluginOffset,
-                    regPluginInfo.pluginId
+                    iter.ResolveOffset(),
+                    pluginInfo->pluginId
                 );
 
                 if ( !assignSuccess )
@@ -438,25 +1037,20 @@ struct AnonymousPluginStructRegistry
     inline void DestroyPluginBlock( abstractionType *pluginObj )
     {
         // Call destructors of all registered plugins.
-        try
-        {
-            for ( registeredPlugins_t::reverse_iterator iter = regPlugins.rbegin(); iter != regPlugins.rend(); iter++ )
-            {
-                registered_plugin& regPlugInfo = *iter;
+        regionIterator_t endIter( this );
 
-                regPlugInfo.descriptor->OnPluginDestruct(
-                    pluginObj,
-                    regPlugInfo.pluginOffset,
-                    regPlugInfo.pluginId
-                );
-            }
-        }
-        catch( ... )
+#if 0
+        // By decrementing this double-linked-list iterator by one, we get to the end.
+        endIter.Decrement();
+#else
+        // We want to iterate to the end.
+        while ( endIter.IsEnd() == false )
         {
-            // There was an exception while destroying a plugin.
-            // This should never happen, so throw a breakpoint.
-            assert( 0 );
+            endIter.Increment();
         }
+#endif
+
+        DestroyPluginBlockInternal( pluginObj, endIter );
     }
 };
 
@@ -545,60 +1139,111 @@ struct CommonPluginSystemDispatch
     }
 
     template <typename structType>
+    struct dependantStructPluginInterface : systemType::pluginInterface
+    {
+        bool OnPluginConstruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+        {
+            void *structMem = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+            if ( structMem == NULL )
+                return false;
+
+            // Construct the struct!
+            structType *theStruct = new (structMem) structType;
+
+            if ( theStruct )
+            {
+                // Initialize the manager.
+                theStruct->Initialize( obj );
+            }
+
+            return ( theStruct != NULL );
+        }
+
+        void OnPluginDestruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+        {
+            structType *theStruct = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
+
+            // Deinitialize the manager.
+            theStruct->Shutdown( obj );
+
+            // Destruct the struct!
+            theStruct->~structType();
+        }
+
+        bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
+        {
+            // To an assignment operation.
+            structType *dstStruct = pluginId.RESOLVE_STRUCT <structType> ( dstObject, pluginOffset );
+            const structType *srcStruct = pluginId.RESOLVE_STRUCT <structType> ( srcObject, pluginOffset );
+
+            *dstStruct = *srcStruct;
+            return true;
+        }
+
+        void DeleteOnUnregister( void )
+        {
+            delete this;
+        }
+    };
+
+    template <typename structType>
     inline pluginOffset_t RegisterDependantStructPlugin( const pluginDescriptorType& pluginId, size_t structSize = sizeof(structType) )
     {
-        struct structPluginInterface : systemType::pluginInterface
-        {
-            bool OnPluginConstruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
-            {
-                void *structMem = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
-
-                if ( structMem == NULL )
-                    return false;
-
-                // Construct the struct!
-                structType *theStruct = new (structMem) structType;
-
-                if ( theStruct )
-                {
-                    // Initialize the manager.
-                    theStruct->Initialize( obj );
-                }
-
-                return ( theStruct != NULL );
-            }
-
-            void OnPluginDestruct( classType *obj, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
-            {
-                structType *theStruct = pluginId.RESOLVE_STRUCT <structType> ( obj, pluginOffset );
-
-                // Deinitialize the manager.
-                theStruct->Shutdown( obj );
-
-                // Destruct the struct!
-                theStruct->~structType();
-            }
-
-            bool OnPluginAssign( classType *dstObject, const classType *srcObject, pluginOffset_t pluginOffset, pluginDescriptorType pluginId )
-            {
-                // To an assignment operation.
-                structType *dstStruct = pluginId.RESOLVE_STRUCT <structType> ( dstObject, pluginOffset );
-                const structType *srcStruct = pluginId.RESOLVE_STRUCT <structType> ( srcObject, pluginOffset );
-
-                *dstStruct = *srcStruct;
-                return true;
-            }
-
-            void DeleteOnUnregister( void )
-            {
-                delete this;
-            }
-        };
+        typedef dependantStructPluginInterface <structType> structPluginInterface;
 
         // Create the interface that should handle our plugin.
         structPluginInterface *plugInterface = new structPluginInterface();
 
         return RegisterCommonPluginInterface( plugInterface, structSize, pluginId );
+    }
+
+    struct conditionalPluginStructInterface abstract
+    {
+        // Conditional interface. This is based on the state of the runtime.
+        // Both functions here have to match logically.
+        virtual bool IsPluginAvailableDuringRuntime( pluginDescriptorType pluginId ) const = 0;
+        virtual bool IsPluginAvailableAtObject( classType *object, pluginDescriptorType pluginId ) const = 0;
+    };
+
+    // Helper to register a conditional type that acts as dependant struct.
+    template <typename structType>
+    inline pluginOffset_t RegisterDependantConditionalStructPlugin( const pluginDescriptorType& pluginId, conditionalPluginStructInterface *conditional, size_t structSize = sizeof(structType) )
+    {
+        struct structPluginInterface : public dependantStructPluginInterface <structType>
+        {
+            bool IsPluginAvailableDuringRuntime( pluginDescriptorType pluginId ) const
+            {
+                return conditional->IsPluginAvailableDuringRuntime( pluginId );
+            }
+
+            bool IsPluginAvailableAtObject( classType *object, pluginDescriptorType pluginId ) const
+            {
+                return conditional->IsPluginAvailableAtObject( object, pluginId );
+            }
+
+            void DeleteOnUnregister( void )
+            {
+                // Delete our data.
+                //TODO
+
+                dependantStructPluginInterface <structType>::DeleteOnUnregister();
+            }
+
+            conditionaPluginStructInterface *conditional;
+        };
+
+        // Create the interface that should handle our plugin.
+        structPluginInterface *plugInterface = new structPluginInterface();
+
+        if ( plugInterface )
+        {
+            plugInterface->conditional = conditional;
+
+            return RegisterCommonPluginInterface( plugInterface, structSize, pluginId );
+        }
+
+        return 0;
     }
 };
 
@@ -606,7 +1251,7 @@ struct CommonPluginSystemDispatch
 // This one is inspired by the RenderWare plugin system.
 // This container is NOT MULTI-THREAD SAFE.
 // All operations are expected to be ATOMIC.
-template <typename classType>
+template <typename classType, typename flavorType = cachedMinimalStructRegistryFlavor <classType>>
 struct StaticPluginClassFactory
 {
     typedef classType hostType_t;
@@ -663,7 +1308,7 @@ struct StaticPluginClassFactory
         unsigned int pluginId;
     };
 
-    typedef AnonymousPluginStructRegistry <classType, pluginDescriptor> structRegistry_t;
+    typedef AnonymousPluginStructRegistry <classType, pluginDescriptor, flavorType> structRegistry_t;
 
     structRegistry_t structRegistry;
 
@@ -725,9 +1370,10 @@ struct StaticPluginClassFactory
         return functoidHelper_t( *this ).RegisterDependantStructPlugin <structType> ( pluginId, structSize );
     }
 
+    // Note that this function only guarrantees to return an object size that is correct at this point in time.
     inline size_t GetClassSize( void ) const
     {
-        return ( sizeof( classType ) + this->structRegistry.pluginAllocSize );
+        return ( sizeof( classType ) + this->structRegistry.GetPluginSizeByRuntime() );
     }
 
     template <typename allocatorType, typename constructorType>

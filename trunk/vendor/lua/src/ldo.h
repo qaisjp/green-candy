@@ -15,15 +15,13 @@
 
 FASTAPI void luaD_checkstack( lua_State *L, stackOffset_t n )
 {
-    L->rtStack.Lock( L );
+    RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
 
     RtStackView& currentStackFrame = L->GetCurrentStackFrame();
 
-    stackOffset_t currentTopOffset = currentStackFrame.GetTopOffset( L, L->rtStack );
+    stackOffset_t currentTopOffset = currentStackFrame.GetTopOffset( L, *rtStack );
 
-    currentStackFrame.EnsureOutboundsSlots( L, L->rtStack, currentTopOffset + n );
-
-    L->rtStack.Unlock( L );
+    currentStackFrame.EnsureOutboundsSlots( L, *rtStack, currentTopOffset + n );
 }
 
 FASTAPI stackOffset_t savestack( lua_State *L, StkId_const p )
