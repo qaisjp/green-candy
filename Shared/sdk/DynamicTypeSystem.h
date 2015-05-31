@@ -92,9 +92,9 @@ struct DynamicTypeSystem
         virtual void CopyConstruct( void *mem, const void *srcMem ) const = 0;
         virtual void Destruct( void *mem ) const = 0;
 
-        virtual size_t GetTypeSize( void *construct_params ) const = 0;
+        virtual size_t GetTypeSize( systemPointer_t *sysPtr, void *construct_params ) const = 0;
 
-        virtual size_t GetTypeSizeByObject( const void *mem ) const = 0;
+        virtual size_t GetTypeSizeByObject( systemPointer_t *sysPtr, const void *mem ) const = 0;
     };
 
     struct typeInfoBase;
@@ -131,7 +131,7 @@ struct DynamicTypeSystem
         }
     };
 
-    typedef AnonymousPluginStructRegistry <GenericRTTI, pluginDescriptor> structRegistry_t;
+    typedef AnonymousPluginStructRegistry <GenericRTTI, pluginDescriptor, cachedMinimalStructRegistryFlavor <GenericRTTI>> structRegistry_t;
 
     // Localize important struct details.
     typedef typename structRegistry_t::pluginOffset_t pluginOffset_t;
@@ -401,12 +401,12 @@ struct DynamicTypeSystem
                 return;
             }
 
-            size_t GetTypeSize( void *construct_params ) const
+            size_t GetTypeSize( systemPointer_t *sysPtr, void *construct_params ) const
             {
                 return sizeof( structType );
             }
 
-            size_t GetTypeSizeByObject( const void *langObj ) const
+            size_t GetTypeSizeByObject( systemPointer_t *sysPtr, const void *langObj ) const
             {
                 return (size_t)0;
             }
@@ -458,12 +458,12 @@ struct DynamicTypeSystem
                 ((structType*)mem)->~structType();
             }
 
-            size_t GetTypeSize( void *construct_params ) const
+            size_t GetTypeSize( systemPointer_t *sysPtr, void *construct_params ) const
             {
                 return sizeof( structType );
             }
 
-            size_t GetTypeSizeByObject( const void *langObj ) const
+            size_t GetTypeSizeByObject( systemPointer_t *sysPtr, const void *langObj ) const
             {
                 return sizeof( structType );
             }
@@ -491,7 +491,7 @@ struct DynamicTypeSystem
     }
 
     template <typename classType, typename staticRegistry>
-    inline pluginOffset_t StaticPluginRegistryRegisterTypeConstruction( staticRegistry& registry, typeInfoBase *typeInfo, void *construction_params = NULL ) throw( ... )
+    inline pluginOffset_t StaticPluginRegistryRegisterTypeConstruction( staticRegistry& registry, typeInfoBase *typeInfo, systemPointer_t *sysPtr, void *construction_params = NULL ) throw( ... )
     {
         struct structPluginInterface : staticRegistry::pluginInterface
         {
@@ -559,7 +559,7 @@ struct DynamicTypeSystem
                 tInterface->construction_params = construction_params;
 
                 offset = registry.RegisterPlugin(
-                    this->GetTypeStructSize( typeInfo, construction_params ),
+                    this->GetTypeStructSize( sysPtr, typeInfo, construction_params ),
                     staticRegistry::pluginDescriptor( staticRegistry::ANONYMOUS_PLUGIN_ID ),
                     tInterface
                 );
@@ -628,12 +628,12 @@ struct DynamicTypeSystem
                 ((structType*)mem)->~structType();
             }
 
-            size_t GetTypeSize( void *construct_params ) const
+            size_t GetTypeSize( systemPointer_t *sysPtr, void *construct_params ) const
             {
                 return meta_info->GetTypeSize( construct_params );
             }
 
-            size_t GetTypeSizeByObject( const void *obj ) const
+            size_t GetTypeSizeByObject( systemPointer_t *sysPtr, const void *obj ) const
             {
                 return meta_info->GetTypeSizeByObject( obj );
             }
@@ -670,7 +670,11 @@ struct DynamicTypeSystem
 
     static inline size_t GetTypePluginSize( typeInfoBase *typeInfo )
     {
-        size_t sizeOut = (size_t)typeInfo->structRegistry.pluginAllocSize;
+        // In the DynamicTypeSystem environment, we do not introduce conditional registry plugin structs.
+        // That would complicate things too much, but support can be added if truly required.
+        // Development does not have to be hell.
+        // Without conditional struct support, this operation stays O(1)
+        size_t sizeOut = (size_t)typeInfo->structRegistry.GetPluginSizeByRuntime();
         
         // Add the plugin sizes of all inherited classes.
         if ( typeInfoBase *inheritedClass = typeInfo->inheritsFrom )
@@ -768,12 +772,12 @@ struct DynamicTypeSystem
         }
     }
 
-    inline size_t GetTypeStructSize( typeInfoBase *typeInfo, void *construct_params )
+    inline size_t GetTypeStructSize( systemPointer_t *sysPtr, typeInfoBase *typeInfo, void *construct_params )
     {
         typeInterface *tInterface = typeInfo->tInterface;
 
         // Attempt to get the memory the language object will take.
-        size_t objMemSize = tInterface->GetTypeSize( construct_params );
+        size_t objMemSize = tInterface->GetTypeSize( sysPtr, construct_params );
 
         if ( objMemSize != 0 )
         {
@@ -787,7 +791,7 @@ struct DynamicTypeSystem
         return objMemSize;
     }
 
-    inline size_t GetTypeStructSize( const GenericRTTI *rtObj )
+    inline size_t GetTypeStructSize( systemPointer_t *sysPtr, const GenericRTTI *rtObj )
     {
         typeInfoBase *typeInfo = GetTypeInfoFromTypeStruct( rtObj );
         typeInterface *tInterface = typeInfo->tInterface;
@@ -796,7 +800,7 @@ struct DynamicTypeSystem
         const void *langObj = GetConstObjectFromTypeStruct( rtObj );
 
         // Get the memory that is taken by the language object.
-        size_t objMemSize = tInterface->GetTypeSizeByObject( langObj );
+        size_t objMemSize = tInterface->GetTypeSizeByObject( sysPtr, langObj );
 
         if ( objMemSize != 0 )
         {
@@ -896,7 +900,7 @@ struct DynamicTypeSystem
     {
         GenericRTTI *objOut = NULL;
         {
-            size_t objMemSize = GetTypeStructSize( typeInfo, construct_params );
+            size_t objMemSize = GetTypeStructSize( sysPtr, typeInfo, construct_params );
 
             if ( objMemSize != 0 )
             {
@@ -997,12 +1001,12 @@ struct DynamicTypeSystem
         return objOut;
     }
 
-    inline GenericRTTI* Clone( const GenericRTTI *toBeCloned )
+    inline GenericRTTI* Clone( systemPointer_t *sysPtr, const GenericRTTI *toBeCloned )
     {
         GenericRTTI *objOut = NULL;
         {
             // Get the size toBeCloned currently takes.
-            size_t objMemSize = GetTypeStructSize( toBeCloned );
+            size_t objMemSize = GetTypeStructSize( sysPtr, toBeCloned );
 
             if ( objMemSize != 0 )
             {
@@ -1176,10 +1180,10 @@ public:
         DereferenceTypeInfo( typeInfo );
     }
 
-    inline void Destroy( GenericRTTI *typeStruct )
+    inline void Destroy( systemPointer_t *sysPtr, GenericRTTI *typeStruct )
     {
         // Get the actual type struct size.
-        size_t objMemSize = GetTypeStructSize( typeStruct );
+        size_t objMemSize = GetTypeStructSize( sysPtr, typeStruct );
 
         rtti_assert( objMemSize != 0 );  // it cannot be zero.
 

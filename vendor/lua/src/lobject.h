@@ -23,7 +23,7 @@
 
 
 /* tags for values visible from Lua */
-#define LAST_TAG	LUA_TTHREAD
+#define LAST_TAG	LUA_TRUNTIME
 
 #define NUM_TAGS	(LAST_TAG+1)
 
@@ -32,8 +32,6 @@
 ** Extra tags for non-values
 ** TODO: remove this, since it is a hack.
 */
-#define LUA_TPROTO      (LAST_TAG+1)
-#define LUA_TUPVAL      (LAST_TAG+2)
 #define LUA_TDEADKEY    (LAST_TAG+3)
 
 /*
@@ -1560,7 +1558,7 @@ public:
             this->refCount--;
         }
 
-        valueType* const* GetValuePointer( void )
+        valueType* const* GetValuePointer( lua_State *L )
         {
             return &valPtr;
         }
@@ -1685,13 +1683,15 @@ FASTAPI classType* lua_new( lua_State *L, LuaTypeSystem::typeInfoBase *theType, 
 template <typename classType>
 FASTAPI void lua_delete( lua_State *L, classType *obj )
 {
-    LuaTypeSystem& typeSys = G(L)->config->typeSys;
+    global_State *g = G(L);
+
+    LuaTypeSystem& typeSys = g->config->typeSys;
 
     LuaRTTI *rtObj = typeSys.GetTypeStructFromObject( obj );
 
     if ( rtObj )
     {
-        typeSys.Destroy( rtObj );
+        typeSys.Destroy( g, rtObj );
     }
 }
 
@@ -1983,7 +1983,7 @@ FASTAPI void setuvalue(lua_State *L, TValue *val, Udata *obj)           { setval
 FASTAPI void setthvalue(lua_State *L, TValue *val, lua_State *obj)      { setvalue <LUA_TTHREAD> ( L, val, obj ); }
 FASTAPI void setclvalue(lua_State *L, TValue *val, Closure *obj)        { setvalue <LUA_TFUNCTION> ( L, val, obj ); }
 FASTAPI void sethvalue(lua_State *L, TValue *val, Table *obj)           { setvalue <LUA_TTABLE> ( L, val, obj ); }
-FASTAPI void setptvalue(lua_State *L, TValue *val, Proto *obj)          { setvalue <LUA_TPROTO> ( L, val, obj ); }
+FASTAPI void setptvalue(lua_State *L, TValue *val, Proto *obj)          { setvalue <LUA_TOBJECT> ( L, val, obj ); }
 FASTAPI void setqvalue(lua_State *L, TValue *val, Dispatch *obj)        { setvalue <LUA_TDISPATCH> ( L, val, obj ); }
 FASTAPI void setjvalue(lua_State *L, TValue *val, Class *obj)           { setvalue <LUA_TCLASS> ( L, val, obj ); }
 FASTAPI void setobj(lua_State *L, TValue *dstVal, const TValue *srcVal)
@@ -2046,7 +2046,7 @@ FASTAPI void pushuvalue( lua_State *L, Udata *obj )                     { pushva
 FASTAPI void pushthvalue( lua_State *L, lua_State *obj )                { pushvalue <LUA_TTHREAD> ( L, obj ); }
 FASTAPI void pushclvalue( lua_State *L, Closure *obj )                  { pushvalue <LUA_TFUNCTION> ( L, obj ); }
 FASTAPI void pushhvalue( lua_State *L, Table *obj )                     { pushvalue <LUA_TTABLE> ( L, obj ); }
-FASTAPI void pushptvalue( lua_State *L, Proto *obj )                    { pushvalue <LUA_TPROTO> ( L, obj ); }
+FASTAPI void pushptvalue( lua_State *L, Proto *obj )                    { pushvalue <LUA_TOBJECT> ( L, obj ); }
 FASTAPI void pushqvalue( lua_State *L, Dispatch *obj )                  { pushvalue <LUA_TDISPATCH> ( L, obj ); }
 FASTAPI void pushjvalue( lua_State *L, Class *obj )                     { pushvalue <LUA_TCLASS> ( L, obj ); }
 

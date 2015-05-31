@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.2
+*  PROJECT:     Native Executive
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        NativeExecutive/CExecutiveManager.thread.h
 *  PURPOSE:     Thread abstraction layer for MTA
@@ -12,6 +12,8 @@
 
 #ifndef _EXECUTIVE_MANAGER_THREADS_
 #define _EXECUTIVE_MANAGER_THREADS_
+
+BEGIN_NATIVE_EXECUTIVE
 
 #define THREAD_PLUGIN_NATIVE        0x00000000      // plugin id for OS implementation
 
@@ -32,7 +34,7 @@ public:
 
     typedef void (__stdcall*threadEntryPoint_t)( CExecThread *thisThread, void *userdata );
 
-    CExecThread( CExecutiveManager *manager, bool isRemoteThread );
+    CExecThread( CExecutiveManager *manager, bool isRemoteThread, void *userdata, size_t stackSize, threadEntryPoint_t entryPoint );
     ~CExecThread( void );
 
     eThreadStatus GetStatus( void ) const;
@@ -60,5 +62,7 @@ private:
 public:
     RwListEntry <CExecThread> managerNode;
 };
+
+END_NATIVE_EXECUTIVE
 
 #endif //_EXECUTIVE_MANAGER_THREADS_

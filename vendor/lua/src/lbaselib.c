@@ -335,11 +335,13 @@ static int luaB_typesize( lua_State *L )
 
     if ( iscollectable( typeVal ) )
     {
-        LuaTypeSystem& typeSys = G(L)->config->typeSys;
+        global_State *g = G(L);
+
+        LuaTypeSystem& typeSys = g->config->typeSys;
 
         LuaRTTI *rtObj = typeSys.GetTypeStructFromAbstractObject( gcvalue( typeVal ) );
 
-        typeSize = typeSys.GetTypeStructSize( rtObj );
+        typeSize = typeSys.GetTypeStructSize( g, rtObj );
     }
     else if ( type == LUA_TNUMBER )
     {

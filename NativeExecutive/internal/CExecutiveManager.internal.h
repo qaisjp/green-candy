@@ -1,6 +1,8 @@
 #ifndef _NATIVE_EXECUTIVE_MANAGER_INTERNAL_
 #define _NATIVE_EXECUTIVE_MANAGER_INTERNAL_
 
+BEGIN_NATIVE_EXECUTIVE
+
 // Memory allocator used in this environment.
 struct nativeExecutiveAllocator
 {
@@ -40,5 +42,7 @@ public:
 typedef StaticPluginClassFactory <CExecutiveManagerNative> executiveManagerFactory_t;
 
 extern executiveManagerFactory_t executiveManagerFactory;
+
+END_NATIVE_EXECUTIVE
 
 #endif //_NATIVE_EXECUTIVE_MANAGER_INTERNAL_

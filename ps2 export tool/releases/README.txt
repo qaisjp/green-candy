@@ -57,7 +57,7 @@ CREDITS
 WHAT IS IMGIMPORT ?
 ==================================
 This is a quick tool whose usage should be self-explanatory. It is made
-to aid the reinsertion of files into GTA engine archives. Is supports
+to aid the reinsertion of files into GTA engine archives. It supports
 version 1 and 2 archives.
 
 Simply modify "imgimport.ini" to adjust it.

@@ -9,6 +9,7 @@
 
 #include "lobject.h"
 
+// Public Table API.
 LUAI_FUNC ConstValueAddress     luaH_getnum (lua_State *L, Table *t, int key);
 LUAI_FUNC ValueAddress          luaH_setnum (lua_State *L, Table *t, int key);
 LUAI_FUNC ConstValueAddress     luaH_getstr (lua_State *L, Table *t, TString *key);
@@ -21,11 +22,6 @@ LUAI_FUNC void                  luaH_resizearray (lua_State *L, Table *t, int na
 LUAI_FUNC void                  luaH_ensureslots (lua_State *L, Table *t, int last);
 LUAI_FUNC bool                  luaH_next (lua_State *L, Table *t);
 LUAI_FUNC int                   luaH_getn (lua_State *L, Table *t);
-
-
-#if defined(LUA_DEBUG)
-LUAI_FUNC Node *luaH_mainposition (const Table *t, const TValue *key);
-#endif
 
 // Module initialization.
 void luaH_init( lua_config *cfg );

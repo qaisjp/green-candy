@@ -88,16 +88,19 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\CExecutiveManager.fiber.cpp" />
+    <ClCompile Include="..\CExecutiveManager.rwlock.cpp" />
     <ClCompile Include="..\CExecutiveManager.task.cpp" />
     <ClCompile Include="..\CExecutiveManager.thread.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\CExecutiveManager.fiber.h" />
     <ClInclude Include="..\CExecutiveManager.h" />
+    <ClInclude Include="..\CExecutiveManager.rwlock.h" />
     <ClInclude Include="..\CExecutiveManager.task.h" />
     <ClInclude Include="..\CExecutiveManager.thread.h" />
     <ClInclude Include="..\CommonUtils.h" />
     <ClInclude Include="..\internal\CExecutiveManager.internal.h" />
+    <ClInclude Include="..\internal\CExecutiveManager.rwlock.internal.h" />
     <ClInclude Include="..\StdInc.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

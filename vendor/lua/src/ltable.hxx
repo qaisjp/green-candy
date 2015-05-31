@@ -30,63 +30,476 @@ struct Node
 
 #include "lpluginutil.hxx"
 
-// Table access contexts for TValue reading and writing.
-template <typename valueType, bool updateBarrier>
-struct TableValueAccessContextTemplate : public DataContext <valueType>
+#include "lmultithreading.hxx"
+
+inline Node* GetDummyNode( global_State *g );
+
+// Internal native implementation data of the public Lua Table type.
+// This is appended to any Table to make it actually do stuff.
+// Note that this is not a standard C++ type, use the methods that it exports for struct size and construction!
+struct tableNativeImplementation
 {
-    typedef LuaCachedConstructedClassAllocator <TableValueAccessContextTemplate> allocator_t;
-
-    allocator_t *_usedAlloc;
-
-    unsigned long refCount;
-
-    // These values have to be set on allocation.
-    Table *linkedTable;
-
-    TValue key;
-    valueType *value;
-
-    bool hasFetchedValuePointer;
-
-    inline TableValueAccessContextTemplate( void )
+    static inline size_t GetStructSize( global_State *g )
     {
-        this->refCount = 0;
-        this->_usedAlloc = NULL;
-        this->linkedTable = NULL;
-        setnilvalue( &key );
-        this->value = NULL;
-        this->hasFetchedValuePointer = false;
-    }
+        // If we support multi-threading, we want to include support for locking.
+        size_t ourSize = sizeof( tableNativeImplementation );
 
-    void Reference( lua_State *L )
-    {
-        this->refCount++;
-    }
-
-    void Dereference( lua_State *L )
-    {
-        if ( updateBarrier && this->hasFetchedValuePointer )
+        if ( g->isMultithreaded )
         {
-            // Update the table barrier.
-            luaC_barriert( L, this->linkedTable, this->value );
+            globalStateMultithreadingPlugin *mtEnv = GetGlobalStateMultithreadingEnv( g );
+
+            if ( mtEnv )
+            {
+                NativeExecutive::CExecutiveManager *manager = mtEnv->nativeMan;
+
+                if ( manager )
+                {
+                    ourSize += manager->GetReadWriteLockStructSize();
+                }
+            }
         }
 
-        if ( this->refCount-- == 1 )
+        return ourSize;
+    }
+
+private:
+    inline void* GetNativeRWLockPointer( void ) const
+    {
+        return (void*)( this + 1 );
+    }
+
+public:
+    inline tableNativeImplementation( void )
+    {
+        this->flags = 0;
+        this->lsizenode = 0;
+        this->array = NULL;
+        this->node = NULL;
+        this->lastfree = NULL;
+        this->sizearray = 0;
+
+        LIST_CLEAR( this->mutableDynamicValues.root );
+        LIST_CLEAR( this->immutableDynamicValues.root );
+    }
+
+    inline tableNativeImplementation( const tableNativeImplementation& right, global_State *g )
+    {
+        lua_State *L = g->mainthread;
+
+        // Copy data from the source table.
         {
-            this->_usedAlloc->Free( this );
+            NativeExecutive::CReadWriteReadContextSafe readContext( right.GetRuntimeLock( g ) );
+        
+            this->flags = right.flags;
+
+            Node *rightNode = right.node;
+
+            Node *dummyNode = GetDummyNode( g );
+
+            Node *newNodes = rightNode;
+
+            if ( newNodes != dummyNode )
+            {
+                int nodesize = sizenode(&right);
+
+                newNodes = luaM_newvector <Node> ( L, nodesize );
+
+                for ( int i = 0; i < nodesize; i++ )
+                {
+                    const Node *srcNode = &rightNode[i];
+
+                    Node *newItem = &newNodes[i];
+
+                    // Decide about node linkage.
+                    const Node *srcNextNode = gnext(srcNode);
+
+                    if ( srcNextNode == NULL )
+                    {
+                        gnext(newItem) = NULL;
+                    }
+                    else
+                    {
+                        // Link into our array.
+                        int nodeoff = ( srcNextNode - rightNode );
+
+                        gnext(newItem) = &newNodes[ nodeoff ];
+                    }
+
+                    // Copy values.
+                    setobj( L, gkey(newItem), gkey(srcNode) );
+                    setobj( L, gval(newItem), gval(srcNode) );
+                }
+            }
+
+            this->node = newNodes;
+            this->lsizenode = right.lsizenode;
+
+            try
+            {
+                // Now copy the last free identifier.
+                Node *rightLastfree = right.lastfree;
+
+                Node *newLastfree = NULL;
+
+                if ( rightLastfree != NULL )
+                {
+                    // We need to work with offsets.
+                    int lastfreeoff = ( rightLastfree - rightNode );
+
+                    newLastfree = newNodes + lastfreeoff;
+                }
+
+                this->lastfree = newLastfree;
+
+                // Now copy the array of TValues.
+                int sizearray = right.sizearray;
+
+                TValue *newArray = NULL;
+
+                if ( sizearray > 0 )
+                {
+                    newArray = luaM_clonevector( g->mainthread, right.array, sizearray );
+                }
+
+                this->sizearray = sizearray;
+                this->array = newArray;
+            }
+            catch( ... )
+            {
+                if ( newNodes && newNodes != dummyNode )
+                {
+                    int nodesize = sizenode(&right);
+
+                    luaM_freearray( g->mainthread, newNodes, nodesize );
+                }
+
+                throw;
+            }
+        }
+
+        // Construct the native lock, since we can.
+        if ( g->isMultithreaded )
+        {
+            globalStateMultithreadingPlugin *mtEnv = GetGlobalStateMultithreadingEnv( g );
+
+            if ( mtEnv )
+            {
+                NativeExecutive::CExecutiveManager *nativeMan = mtEnv->nativeMan;
+
+                if ( nativeMan )
+                {
+                    void *lockMem = this->GetNativeRWLockPointer();
+
+                    nativeMan->CreatePlacedReadWriteLock( lockMem );
+                }
+            }
         }
     }
 
-    valueType* const* GetValuePointer( void )
+    inline ~tableNativeImplementation( void )
     {
-        this->hasFetchedValuePointer = true;
+        lua_assert( this->array == NULL );
+        lua_assert( this->node == NULL );
 
-        return &value;
+        lua_assert( LIST_EMPTY( this->mutableDynamicValues.root ) == true );
+        lua_assert( LIST_EMPTY( this->immutableDynamicValues.root ) == true );
     }
+
+    inline void Initialize( global_State *g )
+    {
+        this->flags = cast_byte(~0);
+        /* main table implementation parameters */
+        this->array = NULL;
+        this->sizearray = 0;
+        this->lsizenode = 0;
+        this->node = GetDummyNode( g );
+        this->lastfree = NULL;
+
+        // Construct the native lock, since we can.
+        if ( g->isMultithreaded )
+        {
+            globalStateMultithreadingPlugin *mtEnv = GetGlobalStateMultithreadingEnv( g );
+
+            if ( mtEnv )
+            {
+                NativeExecutive::CExecutiveManager *nativeMan = mtEnv->nativeMan;
+
+                if ( nativeMan )
+                {
+                    void *lockMem = this->GetNativeRWLockPointer();
+
+                    nativeMan->CreatePlacedReadWriteLock( lockMem );
+                }
+            }
+        }
+    }
+
+    inline void Shutdown( global_State *g )
+    {
+        // Destroy the lock.
+        if ( g->isMultithreaded )
+        {
+            globalStateMultithreadingPlugin *mtEnv = GetGlobalStateMultithreadingEnv( g );
+
+            if ( mtEnv )
+            {
+                NativeExecutive::CExecutiveManager *nativeMan = mtEnv->nativeMan;
+
+                if ( nativeMan )
+                {
+                    NativeExecutive::CReadWriteLock *theLock = (NativeExecutive::CReadWriteLock*)this->GetNativeRWLockPointer();
+
+                    nativeMan->ClosePlacedReadWriteLock( theLock );
+                }
+            }
+        }
+
+        // Clean up runtime data of the table.
+        lua_State *L = g->mainthread;
+
+        if ( Node *node = this->node )
+        {
+            if ( node != GetDummyNode( g ) )
+            {
+                luaM_freearray( L, node, sizenode( this ) );
+            }
+
+            this->node = NULL;
+        }
+
+        if ( TValue *array = this->array )
+        {
+            luaM_freearray( L, array, this->sizearray );
+
+            this->array = NULL;
+        }
+    }
+
+    NativeExecutive::CReadWriteLock* GetRuntimeLock( global_State *g ) const
+    {
+        if ( g->isMultithreaded )
+        {
+            return (NativeExecutive::CReadWriteLock*)this->GetNativeRWLockPointer();
+        }
+
+        return NULL;
+    }
+
+    // Helpers for typical critical regions inside of a Table.
+    inline void EnterCriticalReadRegion( global_State *g ) const
+    {
+        NativeExecutive::CReadWriteLock *theLock = this->GetRuntimeLock( g );
+
+        if ( theLock )
+        {
+            theLock->EnterCriticalReadRegion();
+        }
+    }
+
+    inline void LeaveCriticalReadRegion( global_State *g ) const
+    {
+        NativeExecutive::CReadWriteLock *theLock = this->GetRuntimeLock( g );
+
+        if ( theLock )
+        {
+            theLock->LeaveCriticalReadRegion();
+        }
+    }
+
+    inline void EnterCriticalWriteRegion( global_State *g ) const
+    {
+        NativeExecutive::CReadWriteLock *theLock = this->GetRuntimeLock( g );
+
+        if ( theLock )
+        {
+            theLock->EnterCriticalWriteRegion();
+        }
+    }
+
+    inline void LeaveCriticalWriteRegion( global_State *g ) const
+    {
+        NativeExecutive::CReadWriteLock *theLock = this->GetRuntimeLock( g );
+
+        if ( theLock )
+        {
+            theLock->LeaveCriticalWriteRegion();
+        }
+    }
+
+    lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
+    lu_byte lsizenode;  /* log2 of size of `node' array */
+    TValue *array;  /* array part */
+    Node *node;
+    Node *lastfree;  /* any free position is before this position */
+    int sizearray;  /* size of `array' array */
+
+    // Table access contexts for TValue reading and writing.
+    template <typename valueType, bool updateBarrier>
+    struct TableValueAccessContextTemplate : public DataContext <valueType>
+    {
+        typedef LuaCachedConstructedClassAllocator <TableValueAccessContextTemplate> allocator_t;
+
+        allocator_t *_usedAlloc;
+
+        long refCount;
+
+        // These values have to be set on allocation.
+        Table *linkedTable;
+
+        TValue key;
+        valueType *value;
+
+        bool hasFetchedValuePointer;
+
+        RwListEntry <TableValueAccessContextTemplate> managerNode;
+
+        inline TableValueAccessContextTemplate( void )
+        {
+            this->refCount = 0;
+            this->_usedAlloc = NULL;
+            this->linkedTable = NULL;
+            setnilvalue( &key );
+            this->value = NULL;
+            this->hasFetchedValuePointer = false;
+        }
+
+        inline ~TableValueAccessContextTemplate( void )
+        {
+            lua_assert( this->refCount == 0 );
+        }
+
+        void Reference( lua_State *L )
+        {
+            this->refCount++;
+
+            // maybe do something?
+        }
+
+        void Dereference( lua_State *L )
+        {
+            if ( this->hasFetchedValuePointer )
+            {
+                if ( updateBarrier )
+                {
+                    // Update the table barrier.
+                    luaC_barriert( L, this->linkedTable, this->value );
+                }
+
+                tableNativeImplementation *nativeTable = GetTableNativeImplementation( this->linkedTable );
+
+                if ( nativeTable )
+                {
+                    if ( updateBarrier )
+                    {
+                        nativeTable->LeaveCriticalWriteRegion( G(L) );
+                    }
+                    else
+                    {
+                        nativeTable->LeaveCriticalReadRegion( G(L) );
+                    }
+                }
+
+                this->hasFetchedValuePointer = false;
+            }
+
+            if ( this->refCount-- == 1 )
+            {
+                LIST_REMOVE( this->managerNode );
+
+                this->_usedAlloc->Free( L, this );
+            }
+        }
+
+        valueType* const* GetValuePointer( lua_State *L )
+        {
+            if ( this->hasFetchedValuePointer == false )
+            {
+                this->hasFetchedValuePointer = true;
+
+                tableNativeImplementation *nativeTable = GetTableNativeImplementation( this->linkedTable );
+
+                if ( nativeTable )
+                {
+                    global_State *g = G(L);
+
+                    if ( updateBarrier )
+                    {
+                        nativeTable->EnterCriticalWriteRegion( g );
+                    }
+                    else
+                    {
+                        nativeTable->EnterCriticalReadRegion( g );
+                    }
+                }
+            }
+
+            return &value;
+        }
+
+        inline void UpdateContextValue( TValue *arrold, Node *nold, TValue *arrnew, Node *nodenew, int oldasize, int oldnsize, int newasize, int newnsize )
+        {
+            // We kind of never hit that during testing sessions.
+            // I assume that Tables just do not update their size if they still hold a context value pointer.
+            // Why would they anyway? These value pointers are the rarest/most-shortlived in the whole runtime, for good reasons!
+
+            valueType *ourValuePointer = this->value;
+
+            bool hasDone = false;
+
+            // Check whether this item is part of the array.
+            if ( hasDone == false )
+            {
+                int arroff = ( ourValuePointer - arrold );
+
+                if ( arroff < oldasize && arrold != arrnew )
+                {
+                    this->value = ( arrnew + arroff );
+
+                    hasDone = true;
+                }
+            }
+
+            if ( hasDone == false )
+            {
+                // Check whether this item if part of the nodes.
+                Node *asNodeValue = (Node*)( (char*)ourValuePointer - offsetof( Node, i_val ) );
+
+                int real_oldnsize = twoto( oldnsize );
+                
+                int nodeoff = ( asNodeValue - nold );
+
+                if ( nodeoff < real_oldnsize && nold != nodenew )
+                {
+                    this->value = &( nodenew + nodeoff )->i_val;
+
+                    hasDone = true;
+                }
+            }
+
+            // Well, if there had to be something done, I guess we really should have something done!
+            lua_assert( !( ( arrold != arrnew || nold != nodenew ) && hasDone == false ) );
+        }
+    };
+
+    typedef TableValueAccessContextTemplate <TValue, true> TableValueAccessContext;
+    typedef TableValueAccessContextTemplate <const TValue, false> TableValueConstAccessContext;
+
+    RwList <TableValueAccessContext> mutableDynamicValues;
+    RwList <TableValueConstAccessContext> immutableDynamicValues;
 };
 
-typedef TableValueAccessContextTemplate <TValue, true> TableValueAccessContext;
-typedef TableValueAccessContextTemplate <const TValue, false> TableValueConstAccessContext;
+typedef tableNativeImplementation::TableValueAccessContext TableValueAccessContext;
+typedef tableNativeImplementation::TableValueConstAccessContext TableValueConstAccessContext;
+
+inline tableNativeImplementation* GetTableNativeImplementation( Table *tab )
+{
+    return (tableNativeImplementation*)( tab + 1 );
+}
+
+inline const tableNativeImplementation* GetTableConstNativeImplementation( const Table *tab )
+{
+    return (const tableNativeImplementation*)( tab + 1 );
+}
 
 // Table environment plugin.
 struct globalStateTableEnvPlugin
@@ -145,7 +558,7 @@ inline Node* GetDummyNode( global_State *g )
     return &globalEnv->dummynode;
 }
 
-inline TableValueAccessContext* NewTableValueAccessContext( lua_State *L, Table *t )
+inline TableValueAccessContext* NewTableValueAccessContext( lua_State *L, Table *t, tableNativeImplementation *tableImpl )
 {
     globalStateTableEnvPlugin *tableEnv = GetGlobalTableEnv( G(L) );
 
@@ -157,12 +570,14 @@ inline TableValueAccessContext* NewTableValueAccessContext( lua_State *L, Table 
         ctx->linkedTable = t;
         ctx->hasFetchedValuePointer = false;
 
+        LIST_INSERT( tableImpl->mutableDynamicValues.root, ctx->managerNode );
+
         return ctx;
     }
     return NULL;
 }
 
-inline TableValueConstAccessContext* NewTableValueConstAccessContext( lua_State *L, Table *t )
+inline TableValueConstAccessContext* NewTableValueConstAccessContext( lua_State *L, Table *t, tableNativeImplementation *tableImpl )
 {
     globalStateTableEnvPlugin *tableEnv = GetGlobalTableEnv( G(L) );
 
@@ -174,160 +589,12 @@ inline TableValueConstAccessContext* NewTableValueConstAccessContext( lua_State 
         ctx->linkedTable = t;
         ctx->hasFetchedValuePointer = false;
 
+        LIST_INSERT( tableImpl->immutableDynamicValues.root, ctx->managerNode );
+
         return ctx;
     }
     return NULL;
 }
-
-struct tableNativeImplementation
-{
-    inline tableNativeImplementation( void )
-    {
-        this->flags = 0;
-        this->lsizenode = 0;
-        this->array = NULL;
-        this->node = NULL;
-        this->lastfree = NULL;
-        this->sizearray = 0;
-    }
-
-    inline tableNativeImplementation( const tableNativeImplementation& right, global_State *g )
-    {
-        lua_State *L = g->mainthread;
-
-        this->flags = right.flags;
-
-        Node *rightNode = right.node;
-
-        Node *dummyNode = GetDummyNode( g );
-
-        Node *newNodes = rightNode;
-
-        if ( newNodes != dummyNode )
-        {
-            int nodesize = sizenode(&right);
-
-            newNodes = luaM_newvector <Node> ( L, nodesize );
-
-            for ( int i = 0; i < nodesize; i++ )
-            {
-                const Node *srcNode = &rightNode[i];
-
-                Node *newItem = &newNodes[i];
-
-                // Decide about node linkage.
-                const Node *srcNextNode = gnext(srcNode);
-
-                if ( srcNextNode == NULL )
-                {
-                    gnext(newItem) = NULL;
-                }
-                else
-                {
-                    // Link into our array.
-                    int nodeoff = ( srcNextNode - rightNode );
-
-                    gnext(newItem) = &newNodes[ nodeoff ];
-                }
-
-                // Copy values.
-                setobj( L, gkey(newItem), gkey(srcNode) );
-                setobj( L, gval(newItem), gval(srcNode) );
-            }
-        }
-
-        this->node = newNodes;
-        this->lsizenode = right.lsizenode;
-
-        try
-        {
-            // Now copy the last free identifier.
-            Node *rightLastfree = right.lastfree;
-
-            Node *newLastfree = NULL;
-
-            if ( rightLastfree != NULL )
-            {
-                // We need to work with offsets.
-                int lastfreeoff = ( rightLastfree - rightNode );
-
-                newLastfree = newNodes + lastfreeoff;
-            }
-
-            this->lastfree = newLastfree;
-
-            // Now copy the array of TValues.
-            int sizearray = right.sizearray;
-
-            TValue *newArray = NULL;
-
-            if ( sizearray > 0 )
-            {
-                newArray = luaM_clonevector( g->mainthread, right.array, sizearray );
-            }
-
-            this->sizearray = sizearray;
-            this->array = newArray;
-        }
-        catch( ... )
-        {
-            if ( newNodes && newNodes != dummyNode )
-            {
-                int nodesize = sizenode(&right);
-
-                luaM_freearray( g->mainthread, newNodes, nodesize );
-            }
-
-            throw;
-        }
-    }
-
-    inline ~tableNativeImplementation( void )
-    {
-        lua_assert( this->array == NULL );
-    }
-
-    inline void Initialize( global_State *g )
-    {
-        this->flags = cast_byte(~0);
-        /* main table implementation parameters */
-        this->array = NULL;
-        this->sizearray = 0;
-        this->lsizenode = 0;
-        this->node = GetDummyNode( g );
-        this->lastfree = NULL;
-    }
-
-    inline void Shutdown( global_State *g )
-    {
-        // Clean up runtime data of the table.
-        lua_State *L = g->mainthread;
-
-        if ( Node *node = this->node )
-        {
-            if ( node != GetDummyNode( g ) )
-            {
-                luaM_freearray( L, node, sizenode( this ) );
-            }
-
-            this->node = NULL;
-        }
-
-        if ( TValue *array = this->array )
-        {
-            luaM_freearray( L, array, this->sizearray );
-
-            this->array = NULL;
-        }
-    }
-
-    lu_byte flags;  /* 1<<p means tagmethod(p) is not present */ 
-    lu_byte lsizenode;  /* log2 of size of `node' array */
-    TValue *array;  /* array part */
-    Node *node;
-    Node *lastfree;  /* any free position is before this position */
-    int sizearray;  /* size of `array' array */
-};
 
 // Table type information plugin.
 struct tableTypeInfoPlugin : public LuaTypeSystem::typeInterface
@@ -412,14 +679,14 @@ struct tableTypeInfoPlugin : public LuaTypeSystem::typeInterface
         ((Table*)objMem)->~Table();
     }
 
-    size_t GetTypeSize( void *construct_params ) const
+    size_t GetTypeSize( global_State *g, void *construct_params ) const
     {
-        return sizeof( Table ) + sizeof( tableNativeImplementation );
+        return sizeof( Table ) + tableNativeImplementation::GetStructSize( g );
     }
 
-    size_t GetTypeSizeByObject( const void *mem ) const
+    size_t GetTypeSizeByObject( global_State *g, const void *mem ) const
     {
-        return sizeof( Table ) + sizeof( tableNativeImplementation );
+        return sizeof( Table ) + tableNativeImplementation::GetStructSize( g );
     }
 
     inline void Initialize( lua_config *cfg )
@@ -441,15 +708,5 @@ struct tableTypeInfoPlugin : public LuaTypeSystem::typeInterface
 };
 
 extern PluginDependantStructRegister <tableTypeInfoPlugin, namespaceFactory_t> tableTypeInfo;
-
-inline tableNativeImplementation* GetTableNativeImplementation( Table *tab )
-{
-    return (tableNativeImplementation*)( tab + 1 );
-}
-
-inline const tableNativeImplementation* GetTableConstNativeImplementation( const Table *tab )
-{
-    return (const tableNativeImplementation*)( tab + 1 );
-}
 
 #endif //_LUA_TABLE_NATIVE_IMPLEMENTATION_

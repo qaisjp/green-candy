@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.2
+*  PROJECT:     Native Executive
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        NativeExecutive/CExecutiveManager.h
 *  PURPOSE:     MTA thread and fiber execution manager for workload smoothing
@@ -15,6 +15,12 @@
 
 #include <MemoryUtils.h>
 #include <rwlist.hpp>
+
+// Namespace simplification definitions.
+#define BEGIN_NATIVE_EXECUTIVE      namespace NativeExecutive {
+#define END_NATIVE_EXECUTIVE        }
+
+BEGIN_NATIVE_EXECUTIVE
 
 // Forward declarations.
 class CExecThread;
@@ -37,9 +43,14 @@ namespace ExecutiveManager
     typedef StaticPluginClassFactory <CExecThread> threadPluginContainer_t;
 };
 
+END_NATIVE_EXECUTIVE
+
 #include "CExecutiveManager.thread.h"
 #include "CExecutiveManager.fiber.h"
 #include "CExecutiveManager.task.h"
+#include "CExecutiveManager.rwlock.h"
+
+BEGIN_NATIVE_EXECUTIVE
 
 #define DEFAULT_GROUP_MAX_EXEC_TIME     16
 
@@ -97,7 +108,12 @@ public:
     void            CloseTask           ( CExecTask *task );
 
     // Methods for managing synchronization objects.
+    CReadWriteLock* CreateReadWriteLock ( void );
+    void            CloseReadWriteLock  ( CReadWriteLock *theLock );
 
+    size_t          GetReadWriteLockStructSize  ( void );
+    CReadWriteLock* CreatePlacedReadWriteLock   ( void *mem );
+    void            ClosePlacedReadWriteLock    ( CReadWriteLock *theLock );
 
     // DO NOT ACCESS the following fields from your runtime.
     // These MUST ONLY be accessed from the NativeExecutive library!
@@ -210,5 +226,7 @@ public:
         perfMultiplier = mult;
     }
 };
+
+END_NATIVE_EXECUTIVE
 
 #endif //_EXECUTIVE_MANAGER_

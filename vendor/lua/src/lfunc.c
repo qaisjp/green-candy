@@ -499,7 +499,7 @@ static void unlinkupval (UpVal *uv)
 
 UpVal::UpVal( global_State *g, void *construction_params ) : GCObject( g )
 {
-    luaC_register( g, this, LUA_TUPVAL );
+    luaC_register( g, this, LUA_TOBJECT );
 
     this->v = &this->u.value;       // initially the upvalue is closed.
     setnilvalue( &this->u.value );
@@ -569,7 +569,7 @@ Proto *luaF_newproto (lua_State *L)
 Proto::Proto( global_State *g, void *construction_params ) : GrayObject( g )
 {
     // Initialize ourselves.
-    luaC_link(g, this, LUA_TPROTO);
+    luaC_link(g, this, LUA_TOBJECT);
 
     this->k = NULL;
     this->sizek = 0;
@@ -596,7 +596,7 @@ Proto::Proto( const Proto& right ) : GrayObject( right )
 {
     global_State *g = this->gstate;
 
-    luaC_link( g, this, LUA_TPROTO );
+    luaC_link( g, this, LUA_TOBJECT );
 
     // Clone everything.
     this->source = right.source;

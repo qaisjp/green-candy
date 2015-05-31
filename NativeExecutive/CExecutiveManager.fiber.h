@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.2
+*  PROJECT:     Native Executive
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        NativeExecutive/CExecutiveManager.fiber.h
 *  PURPOSE:     Executive manager fiber logic
@@ -14,6 +14,8 @@
 #define _EXECUTIVE_MANAGER_FIBER_
 
 #define THREAD_PLUGIN_FIBER_STACK       0x00000001
+
+BEGIN_NATIVE_EXECUTIVE
 
 struct FiberStatus;
 
@@ -155,5 +157,7 @@ public:
 
     double resumeTimer;
 };
+
+END_NATIVE_EXECUTIVE
 
 #endif //_EXECUTIVE_MANAGER_FIBER_

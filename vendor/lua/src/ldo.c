@@ -428,6 +428,7 @@ int luaD_precall (lua_State *L, RtCtxItem& func, int nresults, stackOffset_t pre
 
                 stackOffset_t nfixargs = p->numparams;
 
+                // Cannot throw exceptions in this code region.
                 rtStack.Lock( L );
 
                 for ( ; actual < nfixargs; ++actual )

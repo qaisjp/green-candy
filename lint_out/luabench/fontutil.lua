@@ -246,6 +246,8 @@ function createFontRenderer(gl)
             local heightData = allocateHeight(height);
             
             if not (heightData) then return false; end;
+            
+            if not (heightData.glyphTex) then return false; end;
         
             local n = 1;
             local max = #str;

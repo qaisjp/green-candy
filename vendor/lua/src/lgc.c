@@ -409,6 +409,7 @@ static void traversestack (global_State *g, lua_State *l)
 
     rtStack_t& rtStack = l->rtStack;
 
+    // Cannot throw exceptions in this code region.
     rtStack.Lock( l );
 
     StkId stackTop = l->rtStack.Top();
@@ -448,7 +449,7 @@ size_t Table::Propagate( global_State *g )
 
 static void markmt( lua_State *L )
 {
-    for ( int i = 0; i < NUM_TAGS; i++ )
+    for ( unsigned int i = 0; i < NUM_TAGS; i++ )
     {
         if ( Table *mt = L->mt[i] )
         {
@@ -630,7 +631,7 @@ static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *g
         {
             // Herp derp. This is a logical clusterfuck that nobody wants to explain, but bears the core of the Lua GC!
             /*
-                The Lua GC is an asynchronous incremental runtime that 
+                The Lua GC is an asynchronous incremental runtime that ... (to be continued)
             */
             if ( (curr->marked ^ WHITEBITS) & deadmask )
             {  
@@ -646,8 +647,6 @@ static inline void sweeplist( lua_State *L, global_State *g, globalStateGCEnv *g
                 isAlive = true;
             }
         }
-
-        // TODO: add a GC keep-alive reference count and make sure its stable.
 
         if ( isAlive )  /* not dead? */
         {

@@ -109,14 +109,17 @@ __forceinline Closure* class_getDelayedMethodRegister( lua_State *L, Class *j, T
 
 __forceinline void class_readFromStorage( lua_State *L, Class *j, const TValue *key, StkId val, bool excludeInternal )
 {
-    ConstValueAddress envRes = luaH_get( L, j->storage, key );
-
-    if ( envRes != luaO_nilobject )
     {
-        setobj( L, val, envRes );
-        return;
+        ConstValueAddress envRes = luaH_get( L, j->storage, key );
+
+        if ( envRes != luaO_nilobject )
+        {
+            setobj( L, val, envRes );
+            return;
+        }
     }
-    else if ( ttype( key ) == LUA_TSTRING )
+    
+    if ( ttype( key ) == LUA_TSTRING )
     {
         // Check the delayed method registry
         TString *methName = tsvalue( key );
@@ -134,37 +137,20 @@ __forceinline void class_readFromStorage( lua_State *L, Class *j, const TValue *
 
 __forceinline ConstValueAddress class_getFromStorage( lua_State *L, Class *j, const TValue *key, bool excludeInternal )
 {
-    ConstValueAddress envRes = luaH_get( L, j->storage, key );
-
-    if ( envRes == luaO_nilobject )
     {
-        if ( ttype( key ) == LUA_TSTRING )
+        ConstValueAddress envRes = luaH_get( L, j->storage, key );
+
+        if ( envRes != luaO_nilobject )
         {
-            // Check the delayed method registry
-            TString *methName = tsvalue( key );
-            Closure *cached = class_getDelayedMethodRegister( L, j, methName, excludeInternal );
-
-            if ( cached )
-            {
-                ValueAddress tmpVal = L->GetTemporaryValue();
-
-                setclvalue( L, tmpVal, cached );
-                return tmpVal.ConstCast();
-            }
+            return envRes;
         }
     }
 
-    return envRes;
-}
-
-__forceinline ConstValueAddress class_getFromStorageString( lua_State *L, Class *j, TString *key, bool excludeInternal )
-{
-    ConstValueAddress envRes = luaH_getstr( L, j->storage, key );
-
-    if ( envRes == luaO_nilobject )
+    if ( ttype( key ) == LUA_TSTRING )
     {
         // Check the delayed method registry
-        Closure *cached = class_getDelayedMethodRegister( L, j, key, excludeInternal );
+        TString *methName = tsvalue( key );
+        Closure *cached = class_getDelayedMethodRegister( L, j, methName, excludeInternal );
 
         if ( cached )
         {
@@ -175,7 +161,33 @@ __forceinline ConstValueAddress class_getFromStorageString( lua_State *L, Class 
         }
     }
 
-    return envRes;
+    return luaO_getnilcontext( L );
+}
+
+__forceinline ConstValueAddress class_getFromStorageString( lua_State *L, Class *j, TString *key, bool excludeInternal )
+{
+    // Try the storage.
+    {
+        ConstValueAddress envRes = luaH_getstr( L, j->storage, key );
+
+        if ( envRes != luaO_nilobject )
+        {
+            return envRes;
+        }
+    }
+
+    // Check the delayed method registry
+    Closure *cached = class_getDelayedMethodRegister( L, j, key, excludeInternal );
+
+    if ( cached )
+    {
+        ValueAddress tmpVal = L->GetTemporaryValue();
+
+        setclvalue( L, tmpVal, cached );
+        return tmpVal.ConstCast();
+    }
+
+    return luaO_getnilcontext( L );
 }
 
 void ClassOutEnvDispatch::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
@@ -259,9 +271,7 @@ void Class::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
     {
         if ( ttisfunction( tm ) )
         {
-            rtStack_t& rtStack = L->rtStack;
-
-            rtStack.Lock( L );
+            RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
 
             luaD_checkstack( L, 3 );
 
@@ -271,8 +281,6 @@ void Class::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
             lua_call( L, 2, 1 );
 
             popstkvalue( L, val );
-
-            rtStack.Unlock( L );
         }
         else
             luaV_gettable( L, tm, key, val );
@@ -295,9 +303,7 @@ void Class::NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& v
     {
         if ( ttisfunction( tm ) )
         {
-            rtStack_t& rtStack = L->rtStack;
-
-            rtStack.Lock( L );
+            RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
 
             luaD_checkstack( L, 4 );    // allocate a new stack
 
@@ -307,8 +313,6 @@ void Class::NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& v
             pushtvalue( L, key );
             pushtvalue( L, val );
             lua_call( L, 3, 0 );
-
-            rtStack.Unlock( L );
         }
         else
         {
@@ -676,10 +680,12 @@ void Class::PushParent( lua_State *L )
 ConstValueAddress Class::GetEnvValue( lua_State *L, const TValue *key )
 {
     // Browse the read-only storage
-    ConstValueAddress res = luaH_get( L, internStorage, key );
+    {
+        ConstValueAddress res = luaH_get( L, internStorage, key );
 
-    if ( ttype( res ) != LUA_TNIL )
-        return res;
+        if ( ttype( res ) != LUA_TNIL )
+            return res;
+    }
 
     return class_getFromStorage( L, this, key, false );
 }
@@ -2293,22 +2299,22 @@ void ClassEnvDispatch::NewIndex( lua_State *L, ConstValueAddress& key, ConstValu
     {
         // Check whether we have a method with this key in the storage.
         // If so, we cannot write to this key because its protected/hidden.
-        ConstValueAddress storageValue = luaH_get( L, j.storage, key );
-
-        if ( ttype( storageValue ) == LUA_TFUNCTION )
         {
-            throw lua_exception( L, LUA_ERRRUN, "class methods cannot be overwritten" );
-        }
-        else
-        {
-            // Make sure we do not hit delayed method writes
-            class_checkMethodDelayOverride( L, m_class, key );
+            ConstValueAddress storageValue = luaH_get( L, j.storage, key );
 
-            // Apply a regular member
-            ValueAddress storageItemPtr = luaH_set( L, j.storage, key );
-
-            setobj( L, storageItemPtr, val );
+            if ( ttype( storageValue ) == LUA_TFUNCTION )
+            {
+                throw lua_exception( L, LUA_ERRRUN, "class methods cannot be overwritten" );
+            }
         }
+
+        // Make sure we do not hit delayed method writes
+        class_checkMethodDelayOverride( L, m_class, key );
+
+        // Apply a regular member
+        ValueAddress storageItemPtr = luaH_set( L, j.storage, key );
+
+        setobj( L, storageItemPtr, val );
     }
 }
 

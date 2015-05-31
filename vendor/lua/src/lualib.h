@@ -45,6 +45,9 @@ LUALIB_API int (luaopen_package) (lua_State *L);
 #define LUA_TYPELIBNAME  "typelib"
 LUALIB_API int (luaopen_typelib) (lua_State *L);
 
+#define LUA_RUNTIMELIBNAME  "runtime"
+LUALIB_API int (luaopen_runtime) (lua_State *L);
+
 
 /* open all previous libraries */
 LUALIB_API void (luaL_openlibs) (lua_State *L); 

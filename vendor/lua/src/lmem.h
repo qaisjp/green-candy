@@ -320,7 +320,7 @@ public:
         return entry;
     }
 
-    AINLINE void Free( dataType *data )
+    AINLINE void Free( lua_State *L, dataType *data )
     {
         dataEntry *entry = (dataEntry*)data;
 

@@ -1,6 +1,6 @@
 /*****************************************************************************
 *
-*  PROJECT:     Multi Theft Auto v1.2
+*  PROJECT:     Native Executive
 *  LICENSE:     See LICENSE in the top level directory
 *  FILE:        NativeExecutive/CExecutiveManager.task.cpp
 *  PURPOSE:     Runtime for quick parallel execution sheduling
@@ -11,6 +11,8 @@
 *****************************************************************************/
 
 #include "StdInc.h"
+
+BEGIN_NATIVE_EXECUTIVE
 
 static CExecThread *shedulerThread = NULL;
 
@@ -234,3 +236,5 @@ void CExecTask::WaitForFinish( void )
 #endif
     }
 }
+
+END_NATIVE_EXECUTIVE

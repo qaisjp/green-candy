@@ -497,6 +497,16 @@ inline void DbgMemAllocEvent( void *memPtr, size_t memSize )
     }
 }
 
+// Block header for correctness.
+// We sometimes _MUST_ strip the debug block header.
+struct _debugMasterHeader
+{
+    bool hasDebugInfoHeader;
+    bool isSilent;
+
+    char pad[2];
+};
+
 // General debug block header.
 struct _debugBlockHeader
 {
@@ -518,6 +528,14 @@ inline bool _doesRequireBlockHeader( void )
 #endif
 
     return doesRequire;
+}
+
+inline void _fillDebugMasterHeader( _debugMasterHeader *header, bool hasBlockHeader, bool isSilent )
+{
+    new (header) _debugMasterHeader;
+
+    header->hasDebugInfoHeader = hasBlockHeader;
+    header->isSilent = isSilent;
 }
 
 inline void _fillDebugBlockHeader( _debugBlockHeader *blockHeader, bool shouldInitExpensiveExtensions )
@@ -543,6 +561,11 @@ inline void _fillDebugBlockHeader( _debugBlockHeader *blockHeader, bool shouldIn
 #endif
 }
 
+inline void _killDebugMasterHeader( _debugMasterHeader *header )
+{
+    header->~_debugMasterHeader();
+}
+
 inline void _killDebugBlockHeader( _debugBlockHeader *blockHeader )
 {
     // Unlist us.
@@ -559,10 +582,21 @@ inline void* DbgMallocNative( size_t memSize )
 
     bool requiresBlockHeader = _doesRequireBlockHeader();
 
+    bool hasBlockHeader = false;
+
     if ( requiresBlockHeader )
     {
-        // Add a debug block header.
-        requiredMemBlockSize += sizeof( _debugBlockHeader );
+        // If we have the possibility to include any kind of headers, we need a master header.
+        requiredMemBlockSize += sizeof( _debugMasterHeader );
+
+        // Check whether we should include the debug block header.
+        // This one has useful information about how a block came to be.
+        if ( _isInManager == false )
+        {
+            requiredMemBlockSize += sizeof( _debugBlockHeader );
+
+            hasBlockHeader = true;
+        }
     }
 
     bool resetManagerFlag = false;
@@ -581,11 +615,24 @@ inline void* DbgMallocNative( size_t memSize )
 
     if ( requiresBlockHeader )
     {
-        _debugBlockHeader *blockHeader = (_debugBlockHeader*)memPtr;
+        // Also fill the block header if we have it.
+        bool isSilent = ( resetManagerFlag == false );
 
-        _fillDebugBlockHeader( blockHeader, resetManagerFlag == true );
+        if ( hasBlockHeader )
+        {
+            _debugBlockHeader *blockHeader = (_debugBlockHeader*)memPtr;
 
-        memPtr = ( blockHeader + 1 );
+            _fillDebugBlockHeader( blockHeader, isSilent == false );
+
+            memPtr = ( blockHeader + 1 );
+        }
+
+        // We must construct the master header last.
+        _debugMasterHeader *masterHeader = (_debugMasterHeader*)memPtr;
+
+        _fillDebugMasterHeader( masterHeader, hasBlockHeader, isSilent );
+
+        memPtr = ( masterHeader + 1 );
     }
 
     if ( resetManagerFlag )
@@ -604,16 +651,36 @@ inline void* DbgReallocNative( void *memPtr, size_t newSize )
 
     size_t actualNewMemSize = newSize;
 
+    bool hasBlockHeader = false;
+    bool isSilent = false;
+
     if ( requiresBlockHeader )
     {
-        actualNewMemSize += sizeof( _debugBlockHeader );
+        actualNewMemSize += sizeof( _debugMasterHeader );
 
-        // Delete the old block header.
-        _debugBlockHeader *oldBlockHeader = (_debugBlockHeader*)memPtr - 1;
+        // Check the master header.
+        _debugMasterHeader *masterHeader = (_debugMasterHeader*)memPtr - 1;
 
-        _killDebugBlockHeader( oldBlockHeader );
+        isSilent = masterHeader->isSilent;
 
-        memPtr = oldBlockHeader;
+        // We might or might not have the block header.
+        if ( masterHeader->hasDebugInfoHeader )
+        {
+            actualNewMemSize += sizeof( _debugBlockHeader );
+
+            // Delete the old block header.
+            _debugBlockHeader *oldBlockHeader = (_debugBlockHeader*)masterHeader - 1;
+
+            _killDebugBlockHeader( oldBlockHeader );
+
+            memPtr = oldBlockHeader;
+
+            hasBlockHeader = true;
+        }
+        else
+        {
+            memPtr = masterHeader;
+        }
     }
 
     // ReAllocate the memory.
@@ -621,13 +688,24 @@ inline void* DbgReallocNative( void *memPtr, size_t newSize )
 
     DbgMemAllocEvent( newPtr, actualNewMemSize );
 
+    // Resurface the structures.
     if ( requiresBlockHeader )
     {
-        _debugBlockHeader *blockHeader = (_debugBlockHeader*)newPtr;
+        if ( hasBlockHeader )
+        {
+            _debugBlockHeader *blockHeader = (_debugBlockHeader*)newPtr;
 
-        _fillDebugBlockHeader( blockHeader, true );
+            _fillDebugBlockHeader( blockHeader, isSilent == false );
 
-        newPtr = ( blockHeader + 1 );
+            newPtr = ( blockHeader + 1 );
+        }
+
+        // Now the master header.
+        _debugMasterHeader *masterHeader = (_debugMasterHeader*)newPtr;
+
+        _fillDebugMasterHeader( masterHeader, hasBlockHeader, isSilent );
+
+        newPtr = ( masterHeader + 1 );
     }
 
     return newPtr;
@@ -641,12 +719,25 @@ inline void DbgFreeNative( void *memPtr )
 
     if ( requiresBlockHeader )
     {
-        _debugBlockHeader *blockHeader = (_debugBlockHeader*)memPtr - 1;
+        // Check the master header.
+        _debugMasterHeader *masterHeader = (_debugMasterHeader*)memPtr - 1;
 
-        // Deconstruct the header.
-        _killDebugBlockHeader( blockHeader );
+        if ( masterHeader->hasDebugInfoHeader )
+        {
+            _debugBlockHeader *blockHeader = (_debugBlockHeader*)masterHeader - 1;
 
-        actualMemPtr = blockHeader;
+            // Deconstruct the block header.
+            _killDebugBlockHeader( blockHeader );
+
+            actualMemPtr = blockHeader;
+        }
+        else
+        {
+            actualMemPtr = masterHeader;
+        }
+
+        // Deconstruct the master header.
+        _killDebugMasterHeader( masterHeader );
     }
 
     _win32_freeMem( actualMemPtr );
@@ -660,11 +751,22 @@ inline bool DbgAllocGetSizeNative( void *memPtr, size_t& sizeOut )
 
     bool requiresHeaders = _doesRequireBlockHeader();
 
+    bool hasBlockHeader = false;
+
     void *blockPtr = memPtr;
     {
         if ( requiresHeaders )
         {
-            blockPtr = (_debugBlockHeader*)memPtr - 1;
+            _debugMasterHeader *masterHeader = (_debugMasterHeader*)memPtr - 1;
+
+            blockPtr = masterHeader;
+
+            if ( masterHeader->hasDebugInfoHeader )
+            {
+                blockPtr = (_debugBlockHeader*)blockPtr - 1;
+
+                hasBlockHeader = true;
+            }
         }
     }
 
@@ -680,7 +782,12 @@ inline bool DbgAllocGetSizeNative( void *memPtr, size_t& sizeOut )
     {
         if ( requiresHeaders )
         {
-            theSizeOut -= sizeof( _debugBlockHeader );
+            theSizeOut -= sizeof( _debugMasterHeader );
+
+            if ( hasBlockHeader )
+            {
+                theSizeOut -= sizeof( _debugBlockHeader );
+            }
         }
 
         sizeOut = theSizeOut;
@@ -694,7 +801,7 @@ void* operator new( size_t memSize ) throw(std::bad_alloc)
     void *mem = DbgMallocNative( memSize );
 
     if ( !mem )
-        throw std::bad_alloc( "failed to allocate memory" );
+        throw std::bad_alloc();
 
     return mem;
 }
@@ -713,7 +820,7 @@ void* operator new[]( size_t memSize ) throw(std::bad_alloc)
     void *mem = DbgMallocNative( memSize );
 
     if ( !mem )
-        throw std::bad_alloc( "failed to allocate memory" );
+        throw std::bad_alloc();
 
     return mem;
 }

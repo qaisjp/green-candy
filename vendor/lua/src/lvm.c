@@ -675,6 +675,7 @@ reentry:  /* entry point */
 
                     rtStack_t& rtStack = L->rtStack;
 
+                    // Cannot throw exceptions in this code region.
                     rtStack.Lock( L );
                     {
                         StkId func = ciPrev->func;
@@ -830,7 +831,7 @@ reentry:  /* entry point */
                         stackOffset_t raOffset = bcframe.RA_getStackOffset(i);
                         stackOffset_t cbOffset = ( raOffset + 3 );
 
-                        callTopOffset = currentFrameCtx.Pointer()->stack.GetAbsoluteStackOffset( L, *bcframe.rtStack, cbOffset + 3 - 1 );   /* func. + 2 args (state and index) */
+                        callTopOffset = currentFrameCtx.Pointer()->stack.GetAbsoluteStackOffset( L, *rtStack, cbOffset + 3 - 1 );   /* func. + 2 args (state and index) */
                     }
 
                     Protect(luaD_call(L, cb, GETARG_C(i), CALLFRAME_STATIC, callTopOffset));

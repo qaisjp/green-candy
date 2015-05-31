@@ -17,12 +17,10 @@ LUAI_FUNC ConstValueAddress luaT_gettmbyobj (lua_State *L, const TValue *o, TMS 
 LUAI_FUNC void luaT_init (lua_State *L);
 LUAI_FUNC unsigned int luaT_getnumtypes (lua_State *L);
 LUAI_FUNC int luaT_gettype (lua_State *L, unsigned int index);
+LUAI_FUNC const char* luaT_gettypename (lua_State *L, int typeIndex);
 
 LUAI_FUNC ConstValueAddress gfasttm( global_State *g, Table *et, TMS e );
 FASTAPI ConstValueAddress fasttm( lua_State *L, Table *et, TMS e )      { return gfasttm( G(L), et, e ); }
-
-// Table of old-style type names.
-LUAI_DATA const char *const luaT_typenames[];
 
 
 // Module initialization.

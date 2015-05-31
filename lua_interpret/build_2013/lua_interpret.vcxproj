@@ -54,6 +54,9 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>..\;..\..\vendor\lua\src;..\..\vendor\zlib\;..\..\vendor\lua\;..\..\vendor;..\..\Shared\sdk;..\..\Shared;..\..\MTA10\mods\shared_logic;"..\..\vendor\freetype-2.4.12\include";"..\..\vendor\jpeg\jpeg-8d";..\..\vendor\opengl\;..\..\vendor\sparsehash\current\src;..\..\vendor\sparsehash\current\src\windows;..\..\vendor\libtga\src;..\..\vendor\detours\include</AdditionalIncludeDirectories>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -77,6 +80,9 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>StdInc.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -207,7 +213,10 @@
     <ClCompile Include="..\luafile.cpp" />
     <ClCompile Include="..\luafilesystem.cpp" />
     <ClCompile Include="..\luamd5.cpp" />
-    <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\main.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\utils\Bitmap.cpp" />
     <ClCompile Include="..\utils\dds\dds_main.cpp" />
     <ClCompile Include="..\utils\jpeg\jpeg_main.cpp" />

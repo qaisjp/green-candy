@@ -16,10 +16,21 @@
 #include "ltable.hxx"
 
 
-const char *const luaT_typenames[] = {
-  "nil", "boolean", "userdata", "number",
-  "string", "table", "function", "userdata", "class", "dispatch", "thread",
-  "proto", "upval"
+const char *const luaT_typenames[] =
+{
+    "nil",          // 0
+    "boolean",      // 1
+    "userdata",     // 2
+    "number",       // 3
+    "string",       // 4
+    "table",        // 5
+    "function",     // 6
+    "userdata",     // 7
+    "class",        // 8
+    "dispatch",     // 9
+    "object",       // 10
+    "thread",       // 11
+    "runtime"       // 12
 };
 
 
@@ -89,8 +100,8 @@ int luaT_gettype( lua_State *L, unsigned int index )
         LUA_TCLASS,
         LUA_TDISPATCH,
         LUA_TTHREAD,
-        LUA_TPROTO,
-        LUA_TUPVAL
+        LUA_TOBJECT,
+        LUA_TRUNTIME
     };
 
     int iTypeNum = -1;
@@ -103,6 +114,10 @@ int luaT_gettype( lua_State *L, unsigned int index )
     return iTypeNum;
 }
 
+const char* luaT_gettypename( lua_State *L, int typeIndex )
+{
+    return (typeIndex == LUA_TNONE || typeIndex < 0 || typeIndex >= (int)luaT_getnumtypes( L )) ? "no value" : luaT_typenames[typeIndex];
+}
 
 /*
 ** function to be used with macro "fasttm": optimized for absence of

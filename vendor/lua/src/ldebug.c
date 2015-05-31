@@ -174,7 +174,7 @@ LUA_API const char *lua_setlocal (lua_State *L, const lua_Debug *ar, int n)
 
         RtCtxItem writeToValue = index2stackadr( L, n - 1 );
 
-        writeToValue.Set( *topItem.Pointer() );
+        writeToValue.Set( *topItem.Pointer( L ) );
     }
     popstack( L, 1 );  /* pop value */
 
@@ -651,7 +651,7 @@ static const char *getfuncname (lua_State *L, CallInfo *ci, const char **name)
 void luaG_typeerror (lua_State *L, ConstValueAddress& o, const char *op)
 {
     const char *name = NULL;
-    const char *t = luaT_typenames[ttype(o)];
+    const char *t = luaT_gettypename( L, ttype(o) );
     const char *kind = NULL;
 
     CallInfo *current_ci = L->ciStack.Top();
@@ -695,8 +695,8 @@ void luaG_aritherror (lua_State *L, ConstValueAddress p1, ConstValueAddress p2)
 
 int luaG_ordererror (lua_State *L, ConstValueAddress& p1, ConstValueAddress& p2)
 {
-    const char *t1 = luaT_typenames[ ttype(p1) ];
-    const char *t2 = luaT_typenames[ ttype(p2) ];
+    const char *t1 = luaT_gettypename( L, ttype(p1) );
+    const char *t2 = luaT_gettypename( L, ttype(p2) );
 
     if ( t1[2] == t2[2] )
     {
@@ -775,7 +775,7 @@ std::list <std::string> luaG_stackdump(lua_State *L)
     std::list <std::string> stackDump;
 
     // Create a list of strings that represents the stack, with the most recent item at the top.
-    RtStackAddr& rtStack = L->rtStack.LockedAcquisition( L );
+    RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
     {
         RtStackView& currentFrame = L->GetCurrentStackFrame();
 

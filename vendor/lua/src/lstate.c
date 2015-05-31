@@ -113,7 +113,7 @@ struct globalStateMainStateFactoryMeta
             // Register the plugin to the global_State!
             this->endingPointPluginOffset = this->managerStruct->typeSys.StaticPluginRegistryRegisterTypeConstruction <lua_MainState> (
                 this->managerStruct->globalStateFactory,
-                this->luaStateTypeInfo
+                this->luaStateTypeInfo, NULL
             );
         }
     }

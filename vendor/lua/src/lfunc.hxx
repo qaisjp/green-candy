@@ -233,11 +233,11 @@ struct globalStateClosureEnvPlugin
         {
             if ( this->refCount-- == 1 )
             {
-                this->_usedAlloc->Free( this );
+                this->_usedAlloc->Free( L, this );
             }
         }
 
-        const TValue* const* GetValuePointer( void )
+        const TValue* const* GetValuePointer( lua_State *L )
         {
             return &theValue;
         }

@@ -91,6 +91,7 @@ void luaH_clearRuntimeMemory( global_State *g )
 
 /*
 ** hash for lua_Numbers
+** atomic operation.
 */
 static Node *hashnum (const tableNativeImplementation *t, lua_Number n)
 {
@@ -122,6 +123,7 @@ static Node *hashnum (const tableNativeImplementation *t, lua_Number n)
 /*
 ** returns the `main' position of an element in a table (that is, the index
 ** of its hash value)
+** atomic operation.
 */
 static Node *mainposition (const tableNativeImplementation *t, const TValue *key)
 {
@@ -165,11 +167,13 @@ static inline long arrayindex( const TValue *key )
     return -1;  /* `key' did not match some condition */
 }
 
+// Lua-based index checking.
 FASTAPI bool isarrayindex( int index, int arraySize )
 {
     return ( 0 < index && index <= arraySize );
 }
 
+// C-based index checking.
 FASTAPI bool isarrayindex_unsigned( int index, int arraySize )
 {
     return ( cast(unsigned int, index-1) < cast(unsigned int, arraySize) );
@@ -179,6 +183,7 @@ FASTAPI bool isarrayindex_unsigned( int index, int arraySize )
 ** returns the index of a `key' for table traversals. First goes all
 ** elements in the array part, then elements in the hash part. The
 ** beginning of a traversal is signalled by -1.
+** atomic operation.
 */
 static inline int findindex (lua_State *L, tableNativeImplementation *t, ConstValueAddress& key )
 {
@@ -191,7 +196,7 @@ static inline int findindex (lua_State *L, tableNativeImplementation *t, ConstVa
 
     if ( isarrayindex( i, t->sizearray ) )  /* is `key' inside array part? */
     {
-        return i-1;  /* yes; that's the index (corrected to C) */
+        return i - 1;  /* yes; that's the index (corrected to C) */
     }
     else
     {
@@ -225,6 +230,10 @@ bool luaH_next( lua_State *L, Table *t )
 
     if ( !nativeTable )
         return false;
+
+    global_State *g = G(L);
+
+    NativeExecutive::CReadWriteReadContextSafe readContext( nativeTable->GetRuntimeLock( g ) );
 
     int i;
     {
@@ -280,6 +289,7 @@ bool luaH_next( lua_State *L, Table *t )
 ** position or not: if it is not, move colliding node to an empty place and 
 ** put new key in its main position; otherwise (colliding node is in its main 
 ** position), new key goes to an empty position. 
+** atomic operation.
 */
 template <typename valueType>
 bool _findkey( tableNativeImplementation *t, const TValue *key, valueType*& valueOut )
@@ -326,7 +336,7 @@ bool _findkey( tableNativeImplementation *t, const TValue *key, valueType*& valu
                 n = gnext(n);
             }
         }
-        while (n);
+        while ( n != 0 );
 
         break;
     }
@@ -342,6 +352,7 @@ bool _findkey( tableNativeImplementation *t, const TValue *key, valueType*& valu
 
 /*
 ** search function for integers
+** atomic operation.
 */
 template <typename valueType>
 bool _findkeybynum( tableNativeImplementation *t, int key, valueType*& valueOut )
@@ -376,7 +387,7 @@ bool _findkeybynum( tableNativeImplementation *t, int key, valueType*& valueOut 
                 n = gnext(n);
             }
         }
-        while (n);
+        while ( n != 0 );
     }
 
     if ( valueFound )
@@ -389,6 +400,7 @@ bool _findkeybynum( tableNativeImplementation *t, int key, valueType*& valueOut 
 
 /*
 ** search function for strings
+** atomic operation.
 */
 template <typename valueType>
 bool _findkeybystr( tableNativeImplementation *t, const TString *key, valueType*& valueOut )
@@ -413,7 +425,7 @@ bool _findkeybystr( tableNativeImplementation *t, const TString *key, valueType*
             n = gnext(n);
         }
     }
-    while (n);
+    while ( n != 0 );
 
     if ( valueFound )
     {
@@ -423,6 +435,7 @@ bool _findkeybystr( tableNativeImplementation *t, const TString *key, valueType*
     return valueFound;
 }
 
+// atomic operation.
 static inline Node* getfreepos (tableNativeImplementation *t)
 {
     if ( t->lastfree == NULL )
@@ -440,6 +453,7 @@ static inline Node* getfreepos (tableNativeImplementation *t)
     return NULL;  /* could not find a free place */
 }
 
+// atomic operation.
 static int computesizes (int nums[], int *narray)
 {
     int i;
@@ -473,6 +487,7 @@ static int computesizes (int nums[], int *narray)
     return na;
 }
 
+// atomic operation.
 static int countint (const TValue *key, int *nums)
 {
     int k = arrayindex(key);
@@ -486,6 +501,7 @@ static int countint (const TValue *key, int *nums)
     return 0;
 }
 
+// atomic operation.
 static int numusearray (const tableNativeImplementation *t, int *nums)
 {
     int lg;
@@ -523,6 +539,7 @@ static int numusearray (const tableNativeImplementation *t, int *nums)
     return ause;
 }
 
+// atomic operation.
 static int numusehash (const tableNativeImplementation *t, int *nums, int *pnasize)
 {
     int totaluse = 0;  /* total number of elements */
@@ -544,6 +561,7 @@ static int numusehash (const tableNativeImplementation *t, int *nums, int *pnasi
     return totaluse;
 }
 
+// special atomic operation.
 static void setarrayvector (lua_State *L, tableNativeImplementation *t, int size)
 {
     int oldsize = t->sizearray;
@@ -557,6 +575,7 @@ static void setarrayvector (lua_State *L, tableNativeImplementation *t, int size
     t->sizearray = size;
 }
 
+// special atomic operation
 static void setnodevector (lua_State *L, tableNativeImplementation *t, int size)
 {
     int lsize;
@@ -595,6 +614,7 @@ static void setnodevector (lua_State *L, tableNativeImplementation *t, int size)
 
 static void resize (lua_State *L, Table *h, tableNativeImplementation *t, int nasize, int nhsize);
 
+// special atomic operation.
 static void rehash (lua_State *L, Table *h, tableNativeImplementation *t, const TValue *ek)
 {
     int nums[MAXBITS+1];  /* nums[i] = number of keys between 2^(i-1) and 2^i */
@@ -617,6 +637,7 @@ static void rehash (lua_State *L, Table *h, tableNativeImplementation *t, const 
     resize(L, h, t, nasize, totaluse - na);
 }
 
+// special atomic operation.
 static TValue* newkey (lua_State *L, Table *h, tableNativeImplementation *t, const TValue *key)
 {
     // Get the dummy node.
@@ -740,11 +761,13 @@ static TValue* settablenativenum( lua_State *L, Table *h, tableNativeImplementat
     return returnValue;
 }
 
+// special atomic operation.
 static void resize (lua_State *L, Table *h, tableNativeImplementation *t, int nasize, int nhsize)
 {
     int oldasize = t->sizearray;
     int oldhsize = t->lsizenode;
     Node *nold = t->node;  /* save old hash ... */
+    TValue *arrold = t->array;
 
     if ( nasize > oldasize )  /* array part must grow? */
     {
@@ -761,11 +784,11 @@ static void resize (lua_State *L, Table *h, tableNativeImplementation *t, int na
         /* re-insert elements from vanishing slice */
         for ( int i = nasize; i < oldasize; i++ )
         {
-            if ( !ttisnil(&t->array[i]) )
+            if ( !ttisnil(&arrold[i]) )
             {
                 TValue *numObj = settablenativenum(L, h, t, i+1);
 
-                setobjt2t(L, numObj, &t->array[i]);
+                setobjt2t(L, numObj, &arrold[i]);
             }
         }
 
@@ -790,6 +813,26 @@ static void resize (lua_State *L, Table *h, tableNativeImplementation *t, int na
     {
         luaM_freearray( L, nold, twoto(oldhsize) );  /* free old array */
     }
+
+    // Update the dynamic pointers, if any base changed.
+    TValue *arrnew = t->array;
+    Node *nodenew = t->node;
+
+    if ( arrold != arrnew || nold != nodenew )
+    {
+        // If anything has changed, go ahead and update.
+        LIST_FOREACH_BEGIN( TableValueAccessContext, t->mutableDynamicValues.root, managerNode )
+
+            item->UpdateContextValue( arrold, nold, arrnew, nodenew, oldasize, oldhsize, nasize, nhsize );
+
+        LIST_FOREACH_END
+
+        LIST_FOREACH_BEGIN( TableValueConstAccessContext, t->immutableDynamicValues.root, managerNode )
+            
+            item->UpdateContextValue( arrold, nold, arrnew, nodenew, oldasize, oldhsize, nasize, nhsize );
+
+        LIST_FOREACH_END
+    }
 }
 
 /*
@@ -804,7 +847,11 @@ void luaH_resizearray (lua_State *L, Table *t, int nasize)
 
     if ( nativeTable )
     {
-        int nsize = (nativeTable->node == GetDummyNode( G(L) )) ? 0 : sizenode(nativeTable);
+        global_State *g = G(L);
+
+        NativeExecutive::CReadWriteWriteContextSafe writeContext( nativeTable->GetRuntimeLock( g ) );
+
+        int nsize = (nativeTable->node == GetDummyNode( g )) ? 0 : sizenode(nativeTable);
         resize(L, t, nativeTable, nasize, nsize);
     }
 }
@@ -884,88 +931,106 @@ void luaH_free (lua_State *L, Table *t)
     lua_delete <Table> ( L, t );
 }
 
-ConstValueAddress luaH_getnum (lua_State *L, Table *t, int key)
+template <typename getDispatcherType, typename customKeyItemType>
+static inline ConstValueAddress TableGetFunctionHelper( lua_State *L, Table *t, const customKeyItemType& keyItem, const getDispatcherType& dispatch )
 {
     ConstValueAddress retAddr;
-
-    const TValue *retValue = luaO_nilobject;
 
     tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
     
     if ( nativeTable )
     {
-        // Give it access to the value.
-        _findkeybynum( nativeTable, key, retValue );
+        const TValue *retValue = luaO_nilobject;
+
+        global_State *g = G(L);
+
+        NativeExecutive::CReadWriteWriteContextSafe writeContext( nativeTable->GetRuntimeLock( g ) );
+
+        // Give access to the value.
+        dispatch.AtomicGetItemFromTable( nativeTable, keyItem, retValue );
+
+        {
+            TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t, nativeTable );
+
+            dispatch.AtomicSetToTValue( L, &ctx->key, keyItem );
+            ctx->value = retValue;
+
+            retAddr.Setup( L,ctx );
+        }
     }
-
+    else
     {
-        TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t );
-
-        setnvalue( &ctx->key, cast_num(key) );
-        ctx->value = retValue;
-
-        retAddr.Setup( L, ctx );
+        retAddr = luaO_getnilcontext( L );
     }
 
     return retAddr;
 }
 
+struct GetTableItemByIntegerDispatch
+{
+    inline bool AtomicGetItemFromTable( tableNativeImplementation *tableImpl, int key, const TValue*& retValue ) const
+    {
+        return _findkeybynum( tableImpl, key, retValue );
+    }
+
+    inline void AtomicSetToTValue( lua_State *L, TValue *keyValue, int key ) const
+    {
+        setnvalue( keyValue, cast_num(key) );
+    }
+};
+
+ConstValueAddress luaH_getnum (lua_State *L, Table *t, int key)
+{
+    GetTableItemByIntegerDispatch dispatch;
+
+    return TableGetFunctionHelper( L, t, key, dispatch );
+}
+
+struct GetTableItemByStringDispatch
+{
+    inline bool AtomicGetItemFromTable( tableNativeImplementation *tableImpl, TString *key, const TValue*& retValue ) const
+    {
+        return _findkeybystr( tableImpl, key, retValue );
+    }
+
+    inline void AtomicSetToTValue( lua_State *L, TValue *keyValue, TString *key ) const
+    {
+        setsvalue( L, keyValue, key );
+    }
+};
+
 ConstValueAddress luaH_getstr (lua_State *L, Table *t, TString *key)
 {
-    ConstValueAddress retAddr;
+    GetTableItemByStringDispatch dispatch;
 
-    const TValue *retValue = luaO_nilobject;
-
-    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
-    
-    if ( nativeTable )
-    {
-        // Give it access to the value.
-        _findkeybystr( nativeTable, key, retValue );
-    }
-
-    {
-        TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t );
-
-        setsvalue( L, &ctx->key, key );
-        ctx->value = retValue;
-
-        retAddr.Setup( L, ctx );
-    }
-
-    return retAddr;
+    return TableGetFunctionHelper( L, t, key, dispatch );
 }
 
 /*
 ** main search function
 */
+struct GetTableItemGenericDispatch
+{
+    inline bool AtomicGetItemFromTable( tableNativeImplementation *tableImpl, const TValue *key, const TValue*& retValue ) const
+    {
+        return _findkey( tableImpl, key, retValue );
+    }
+
+    inline void AtomicSetToTValue( lua_State *L, TValue *keyValue, const TValue *key ) const
+    {
+        setobj( L, keyValue, key );
+    }
+};
+
 ConstValueAddress luaH_get (lua_State *L, Table *t, const TValue *key)
 {
-    ConstValueAddress retAddr;
+    GetTableItemGenericDispatch dispatch;
 
-    const TValue *retValue = luaO_nilobject;
-
-    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
-    
-    if ( nativeTable )
-    {
-        // Give access to the value.
-        _findkey( nativeTable, key, retValue );
-    }
-
-    {
-        TableValueConstAccessContext *ctx = NewTableValueConstAccessContext( L, t );
-
-        setobj( L, &ctx->key, key );
-        ctx->value = retValue;
-
-        retAddr.Setup( L, ctx );
-    }
-
-    return retAddr;
+    return TableGetFunctionHelper( L, t, key, dispatch );
 }
 
-ValueAddress luaH_set (lua_State *L, Table *t, const TValue *key)
+template <typename setDispatcherType, typename keyItemType>
+static inline ValueAddress TableSetFunctionHelper( lua_State *L, Table *t, const keyItemType& keyItem, const setDispatcherType& dispatch )
 {
     ValueAddress retAddr;
 
@@ -973,74 +1038,69 @@ ValueAddress luaH_set (lua_State *L, Table *t, const TValue *key)
 
     if ( nativeTable )
     {
-        TValue *returnValue = settablenative( L, t, nativeTable, key );
+        global_State *g = G(L);
+
+        NativeExecutive::CReadWriteWriteContextSafe writeContext( nativeTable->GetRuntimeLock( g ) );
+
+        TValue *returnValue = dispatch.AtomicSetItemFromTable( L, t, nativeTable, keyItem );
 
         // Give access to the value.
         {
-            TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
+            TableValueAccessContext *ctx = NewTableValueAccessContext( L, t, nativeTable );
 
-            setobj( L, &ctx->key, key );
+            dispatch.AtomicSetToTValue( L, &ctx->key, keyItem );
             ctx->value = returnValue;
 
             retAddr.Setup( L, ctx );
         }
-
-        lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
     }
         
     return retAddr;
 }
 
+struct SetTableItemGenericDispatch : public GetTableItemGenericDispatch
+{
+    inline TValue* AtomicSetItemFromTable( lua_State *L, Table *table, tableNativeImplementation *tableImpl, const TValue *key ) const
+    {
+        return settablenative( L, table, tableImpl, key );
+    }
+};
+
+ValueAddress luaH_set (lua_State *L, Table *t, const TValue *key)
+{
+    SetTableItemGenericDispatch dispatch;
+
+    return TableSetFunctionHelper( L, t, key, dispatch );
+}
+
+struct SetTableItemByIntegerDispatch : public GetTableItemByIntegerDispatch
+{
+    inline TValue* AtomicSetItemFromTable( lua_State *L, Table *table, tableNativeImplementation *tableImpl, int key ) const
+    {
+        return settablenativenum( L, table, tableImpl, key );
+    }
+};
+
 ValueAddress luaH_setnum (lua_State *L, Table *t, int key)
 {
-    ValueAddress retAddr;
+    SetTableItemByIntegerDispatch dispatch;
 
-    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
-
-    if ( nativeTable )
-    {
-        TValue *returnValue = settablenativenum( L, t, nativeTable, key );
-
-        // Give access to the value.
-        {
-            TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
-
-            setnvalue( &ctx->key, cast_num(key) );
-            ctx->value = returnValue;
-
-            retAddr.Setup( L, ctx );
-        }
-
-        lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
-    }
-
-    return retAddr;
+    return TableSetFunctionHelper( L, t, key, dispatch );
 }
+
+struct SetTableItemByStringDispatch : public GetTableItemByStringDispatch
+{
+    inline TValue* AtomicSetItemFromTable( lua_State *L, Table *table, tableNativeImplementation *tableImpl, TString *key ) const
+    {
+        return settablenativestr( L, table, tableImpl, key );
+    }
+};
 
 ValueAddress luaH_setstr (lua_State *L, Table *t, TString *key)
 {
-    ValueAddress retAddr;
+    SetTableItemByStringDispatch dispatch;
 
-    tableNativeImplementation *nativeTable = GetTableNativeImplementation( t );
-
-    if ( nativeTable )
-    {
-        TValue *returnValue = settablenativestr( L, t, nativeTable, key );
-
-        // Give access to the value.
-        {
-            TableValueAccessContext *ctx = NewTableValueAccessContext( L, t );
-
-            setsvalue( L, &ctx->key, key );
-            ctx->value = returnValue;
-
-            retAddr.Setup( L, ctx );
-        }
-
-        lua_assert( retAddr != &GetDummyNode( G(L) )->i_val );
-    }
-
-    return retAddr;
+    return TableSetFunctionHelper( L, t, key, dispatch );
 }
 
 static inline int unbound_search (lua_State *L, Table *t, unsigned int j)
@@ -1110,6 +1170,12 @@ int luaH_getn (lua_State *L, Table *t)
 
     if ( nativeTable )
     {
+        global_State *g = G(L);
+
+        bool hasLock = true;
+
+        nativeTable->EnterCriticalReadRegion( g );
+
         unsigned int j = nativeTable->sizearray;
 
         if ( j > 0 && ttisnil(&nativeTable->array[j - 1]) )
@@ -1140,22 +1206,27 @@ int luaH_getn (lua_State *L, Table *t)
         }
         else
         {
+            if ( hasLock )
+            {
+                nativeTable->LeaveCriticalReadRegion( g );
+
+                hasLock = false;
+            }
+
             // Fall back.
             num = unbound_search(L, t, j);
+        }
+
+        if ( hasLock )
+        {
+            nativeTable->LeaveCriticalReadRegion( g );
+
+            hasLock = false;
         }
     }
 
     return num;
 }
-
-#if defined(LUA_DEBUG)
-
-Node *luaH_mainposition (const Table *t, const TValue *key)
-{
-    return mainposition(t, key);
-}
-
-#endif
 
 void Table::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
 {
@@ -1168,9 +1239,7 @@ void Table::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
     }
     else if ( ttisfunction( tm ) )
     {
-        rtStack_t& rtStack = L->rtStack;
-
-        rtStack.Lock( L );
+        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
 
         luaD_checkstack( L, 3 );    // we allocate the stack here!
 
@@ -1182,8 +1251,6 @@ void Table::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
 
         // Store at appropriate position
         popstkvalue( L, val );
-
-        rtStack.Unlock( L );
     }
     else
         luaV_gettable( L, tm, key, val );
@@ -1191,18 +1258,24 @@ void Table::Index( lua_State *L, ConstValueAddress& key, ValueAddress& val )
 
 void Table::NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& val )
 {
-    ValueAddress oldval = luaH_set( L, this, key ); /* do a primitive set */
     ConstValueAddress tm;
 
-    if ( !ttisnil(oldval) || ( tm = fasttm( L, metatable, TM_NEWINDEX )) == NULL )
+    bool isnil = false;
     {
-        setobj2t(L, oldval, val);
+        ConstValueAddress oldval = luaH_get( L, this, key );
+
+        isnil = ttisnil( oldval );
+    }
+
+    if ( !isnil || ( tm = fasttm( L, metatable, TM_NEWINDEX )) == NULL )
+    {
+        ValueAddress newval = luaH_set( L, this, key );
+
+        setobj2t(L, newval, val);
     }
     else if ( ttisfunction( tm ) )
     {
-        rtStack_t& rtStack = L->rtStack;
-
-        rtStack.Lock( L );
+        RtStackAddr rtStack = L->rtStack.LockedAcquisition( L );
 
         luaD_checkstack( L, 4 );    // allocate a new stack
 
@@ -1212,8 +1285,6 @@ void Table::NewIndex( lua_State *L, ConstValueAddress& key, ConstValueAddress& v
         pushtvalue( L, key );
         pushtvalue( L, val );
         lua_call( L, 3, 0 );
-
-        rtStack.Unlock( L );
     }
     else
     {

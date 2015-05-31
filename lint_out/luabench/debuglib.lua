@@ -178,7 +178,7 @@ function createDebugArgParser()
                         end
                         
                         if (found == false) and not ((isOptional) and (this_type == "nil")) then
-                            return outArgError(name, n, arg, this_type, 1);
+                            return outArgError(name, n, arg, this_type, exp_type, 1);
                         end
                     end
                 elseif not (exp_type == "any") and not (exp_type == "vararg") and not (checkArgumentTypes(name, n, arg, this_type, exp_type, 1)) then

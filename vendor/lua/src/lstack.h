@@ -10,7 +10,7 @@ struct DataContext
     virtual void Reference( lua_State *L ) = 0;
     virtual void Dereference( lua_State *L ) = 0;
 
-    virtual dataType* const* GetValuePointer( void ) = 0;
+    virtual dataType* const* GetValuePointer( lua_State *L ) = 0;
 };
 
 typedef DataContext <TValue> ValueContext;
@@ -103,13 +103,13 @@ public:
         }
     }
 
-    inline structType* Pointer( void ) const
+    inline structType* Pointer( lua_State *L ) const
     {
         if ( !this->address )
         {
             if ( StructContext *ctx = this->valContext )
             {
-                this->address = ctx->GetValuePointer();
+                this->address = ctx->GetValuePointer( this->L );
             }
         }
 
@@ -123,12 +123,12 @@ public:
 
     inline operator structType* ( void ) const
     {
-        return Pointer();
+        return Pointer( this->L );
     }
 
     inline structType* operator -> ( void ) const
     {
-        return Pointer();
+        return Pointer( this->L );
     }
 
     inline StructAddress <const structType>& ConstCast( void )
@@ -191,7 +191,7 @@ private:
             _theStack->Unlock( L );
         }
 
-        growingStack* const* GetValuePointer( void )
+        growingStack* const* GetValuePointer( lua_State *L )
         {
             return &_theStack;
         }
@@ -477,11 +477,11 @@ private:
             if ( this->refCount-- == 1 )
             {
                 // Delete itself.
-                _usedAlloc->Free( this );
+                _usedAlloc->Free( L, this );
             }
         }
 
-        newDataType* const* GetValuePointer( void )
+        newDataType* const* GetValuePointer( lua_State *L )
         {
             return stackItem.ValuePointer();
         }
